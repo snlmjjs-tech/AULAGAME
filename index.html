@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aula Viva — Plataforma de juegos didácticos</title>
-<meta name="description" content="Aula Viva: plataforma de juegos didácticos hecha por profes, para profes. Duplica, personaliza y juega en clase con QR o modo sala.">
+<title>AULAGAMES — Plataforma de juegos didácticos</title>
+<meta name="description" content="AULAGAMES: plataforma de juegos didácticos hecha por profes, para profes. Duplica, personaliza y juega en clase con QR o modo sala.">
 <meta name="author" content="Sebastián Núñez López">
 <meta name="theme-color" content="#1A1040">
-<meta property="og:title" content="Aula Viva — Plataforma de juegos didácticos">
+<meta property="og:title" content="AULAGAMES — Plataforma de juegos didácticos">
 <meta property="og:description" content="Duplica, personaliza y juega en clase. Trivia, tableros y juegos 3D con QR o modo sala.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎲</text></svg>">
@@ -46,97 +46,6 @@
   :focus-visible{ outline: 3px solid var(--amarillo); outline-offset: 3px; border-radius: 6px; }
 
   .oculto{ display:none !important; }
-
-  /* ============ LOGIN ============ */
-  #pantalla-login{
-    min-height:100vh;
-    display:flex; align-items:center; justify-content:center;
-    padding: 30px 20px;
-    position:relative;
-  }
-  .login-card{
-    position:relative;
-    width: 100%; max-width: 420px;
-    background: linear-gradient(150deg, var(--panel), var(--noche-alta));
-    border: 2px solid var(--linea);
-    border-radius: 26px;
-    padding: 42px 38px 38px;
-    box-shadow: 0 10px 0 rgba(0,0,0,0.35);
-    animation: aparecer .5s ease backwards;
-  }
-  .login-wordmark{
-    font-family:'Bungee', cursive;
-    font-size: 30px; letter-spacing: 1px;
-    color: var(--crema); text-align:center;
-    text-shadow: 3px 3px 0 var(--rosa), 6px 6px 0 rgba(46,230,200,0.55);
-    line-height:1;
-  }
-  .login-wordmark small{
-    display:block;
-    font-family:'Nunito Sans', sans-serif;
-    font-weight:700; font-size:10.5px; letter-spacing:2.5px;
-    text-transform:uppercase; color: var(--texto-suave);
-    text-shadow:none; margin-top:10px;
-  }
-  .login-sub{
-    text-align:center; margin: 22px 0 26px;
-    font-family:'Baloo 2', cursive; font-weight:700; font-size:19px;
-  }
-  .campo{ margin-bottom:16px; }
-  .campo label{
-    display:block; margin-bottom:7px;
-    font-family:'Space Mono', monospace; font-size:11px; font-weight:700;
-    letter-spacing:1px; text-transform:uppercase; color: var(--texto-suave);
-  }
-  .campo input{
-    width:100%;
-    background: var(--tinta);
-    border: 2px solid var(--linea);
-    border-radius: 12px;
-    padding: 13px 15px;
-    color: var(--texto);
-    font-family:'Nunito Sans', sans-serif; font-size:15px; font-weight:700;
-    transition: border-color .2s;
-  }
-  .campo input::placeholder{ color: var(--texto-suave); opacity:0.6; font-weight:600; }
-  .campo input:focus{ outline:none; border-color: var(--turquesa); }
-  .login-error{
-    display:none;
-    background: rgba(255,77,141,0.14);
-    border: 2px solid var(--rosa);
-    color: #FFB8D2;
-    border-radius: 12px;
-    padding: 11px 14px;
-    font-size: 13.5px; font-weight:700;
-    margin-bottom: 16px;
-  }
-  .login-error.visible{ display:block; }
-  .sacudir{ animation: sacudir .4s ease; }
-  @keyframes sacudir{
-    0%,100%{ transform: translateX(0); }
-    20%{ transform: translateX(-9px); }
-    40%{ transform: translateX(8px); }
-    60%{ transform: translateX(-6px); }
-    80%{ transform: translateX(4px); }
-  }
-  .btn-entrar{
-    width:100%;
-    background: var(--amarillo); color: var(--tinta);
-    border:none; border-radius: 14px;
-    font-family:'Baloo 2', cursive; font-weight:800; font-size:18px;
-    padding: 14px; cursor:pointer;
-    box-shadow: 0 5px 0 var(--amarillo-dark);
-    transition: transform .1s, box-shadow .1s, filter .15s;
-    margin-top: 6px;
-  }
-  .btn-entrar:hover{ filter: brightness(1.07); }
-  .btn-entrar:active{ transform: translateY(4px); box-shadow: 0 1px 0 var(--amarillo-dark); }
-  .login-pie{
-    text-align:center; margin-top: 20px;
-    font-size: 12.5px; font-weight:600; color: var(--texto-suave);
-  }
-  .login-pie a{ color: var(--turquesa); text-decoration:none; font-weight:800; }
-  .login-pie a:hover{ text-decoration:underline; }
 
   /* ============ HEADER ============ */
   header{
@@ -177,13 +86,6 @@
     display:flex; align-items:center; justify-content:center;
     font-size:13px; font-weight:800;
   }
-  .logout-link{
-    color: var(--texto-suave); font-size:13px; font-weight:700;
-    text-decoration:none; background:none; border:none; cursor:pointer;
-    font-family:'Nunito Sans', sans-serif;
-  }
-  .logout-link:hover{ color: var(--rosa); }
-
   /* ============ BANNER ============ */
   .banner{ position:relative; max-width:1180px; margin: 30px auto 0; padding: 0 40px; }
   .banner-inner{
@@ -448,7 +350,6 @@
     .banner{ padding: 20px 20px 0; }
     .banner-inner{ padding: 26px 24px; }
     main{ padding: 10px 20px 70px; }
-    .login-card{ padding: 34px 26px 30px; }
   }
   @media (prefers-reduced-motion: reduce){
     *{ animation: none !important; transition: none !important; }
@@ -457,43 +358,13 @@
 </head>
 <body>
 
-<!-- ==================== LOGIN ==================== -->
-<div id="pantalla-login">
-  <span class="conf" style="top:12%; left:16%;" aria-hidden="true">🎲</span>
-  <span class="conf" style="top:20%; right:14%; animation-delay:1.4s;" aria-hidden="true">⭐</span>
-  <span class="conf" style="bottom:16%; left:22%; animation-delay:2.6s;" aria-hidden="true">🏆</span>
-  <span class="conf" style="bottom:12%; right:20%; animation-delay:0.8s;" aria-hidden="true">🎉</span>
-
-  <div class="login-card" id="login-card">
-    <div class="login-wordmark">AULA VIVA<small>Plataforma de juegos didácticos</small></div>
-    <div class="login-sub">Inicia sesión para jugar 🚀</div>
-
-    <div class="login-error" id="login-error">Correo o contraseña incorrectos. Inténtalo de nuevo.</div>
-
-    <form id="form-login">
-      <div class="campo">
-        <label for="correo">Correo</label>
-        <input type="email" id="correo" placeholder="tucorreo@gmail.com" autocomplete="email">
-      </div>
-      <div class="campo">
-        <label for="clave">Contraseña</label>
-        <input type="password" id="clave" placeholder="••••••••" autocomplete="current-password">
-      </div>
-      <button type="submit" class="btn-entrar">Entrar</button>
-    </form>
-
-    <div class="login-pie">¿No tienes cuenta? <a href="#">Regístrate gratis</a></div>
-  </div>
-</div>
-
 <!-- ==================== DASHBOARD ==================== -->
-<div id="pantalla-dashboard" class="oculto">
+<div id="pantalla-dashboard">
 
 <header>
-  <div class="wordmark">AULA VIVA<small>Plataforma de juegos didácticos</small></div>
+  <div class="wordmark">AULAGAMES<small>Plataforma de juegos didácticos</small></div>
   <div class="user-area">
     <button class="avatar-btn"><span class="avatar-circle">SN</span> Sebastián</button>
-    <button class="logout-link" id="btn-salir">Cerrar sesión</button>
   </div>
 </header>
 
@@ -651,7 +522,7 @@
 
 </main>
 
-<footer>Aula Viva · Hecho por profes, para profes 🍎</footer>
+<footer>AULAGAMES · Hecho por profes, para profes 🍎</footer>
 
 </div><!-- fin dashboard -->
 
@@ -673,45 +544,6 @@
 <script>
   // ---------- Estado ----------
   var TOTAL_CUPOS = 5;
-  var CORREO_DEMO = "snlmjjs@gmail.com";
-  var CLAVE_DEMO = "1234";
-
-  // ---------- Login simulado ----------
-  var pantallaLogin = document.getElementById("pantalla-login");
-  var pantallaDash = document.getElementById("pantalla-dashboard");
-  var formLogin = document.getElementById("form-login");
-  var inputCorreo = document.getElementById("correo");
-  var inputClave = document.getElementById("clave");
-  var loginError = document.getElementById("login-error");
-  var loginCard = document.getElementById("login-card");
-
-  formLogin.addEventListener("submit", function(e){
-    e.preventDefault();
-    var correo = inputCorreo.value.trim().toLowerCase();
-    var clave = inputClave.value;
-
-    if(correo === CORREO_DEMO && clave === CLAVE_DEMO){
-      loginError.classList.remove("visible");
-      pantallaLogin.classList.add("oculto");
-      pantallaDash.classList.remove("oculto");
-      window.scrollTo(0, 0);
-      actualizarEstado();
-    } else {
-      loginError.classList.add("visible");
-      loginCard.classList.remove("sacudir");
-      void loginCard.offsetWidth; // reinicia la animación
-      loginCard.classList.add("sacudir");
-    }
-  });
-
-  document.getElementById("btn-salir").addEventListener("click", function(){
-    pantallaDash.classList.add("oculto");
-    pantallaLogin.classList.remove("oculto");
-    inputCorreo.value = "";
-    inputClave.value = "";
-    loginError.classList.remove("visible");
-    window.scrollTo(0, 0);
-  });
 
   // ---------- Cupos y contadores ----------
   function actualizarEstado(){
@@ -758,7 +590,7 @@
   }
 
   // ---------- Mis juegos: guardado persistente ----------
-  var STORAGE_KEY = "aulaviva_mis_juegos";
+  var STORAGE_KEY = "aulagames_mis_juegos";
 
   function juegosPorDefecto(){
     return [
