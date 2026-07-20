@@ -427,6 +427,21 @@
     box-shadow: 0 5px 0 var(--rosa-dark);
   }
 
+  /* ============ AVISO ============ */
+  .aviso-toast{
+    position:fixed; left:50%; bottom:26px; z-index:60;
+    transform:translateX(-50%) translateY(20px);
+    background: var(--tinta); border:2px solid var(--turquesa); color:var(--texto);
+    padding:12px 22px; border-radius:14px;
+    font-family:'Nunito Sans', sans-serif; font-weight:800; font-size:13.5px;
+    box-shadow:0 8px 0 rgba(0,0,0,0.35);
+    opacity:0; pointer-events:none;
+    transition: opacity .2s ease, transform .2s ease;
+    max-width:90vw; text-align:center;
+  }
+  .aviso-toast.visible{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .aviso-toast.error{ border-color: var(--rosa); }
+
   @media (max-width: 640px){
     header{ padding: 14px 20px; }
     .wordmark{ font-size:20px; }
@@ -512,34 +527,6 @@
 
     <div class="grid" id="grid-mis-juegos">
 
-      <article class="kard c-naranja kard-mia" data-nombre="Battle Castle — 2ºC Verbos Irregulares">
-        <div class="kard-top"><span class="kard-emoji">🏰</span></div>
-        <div class="kard-body">
-          <div class="kard-title">Battle Castle — 2ºC Verbos Irregulares</div>
-          <div class="kard-meta">Editado hace 3 días</div>
-          <div class="kard-actions">
-            <a class="btn btn-jugar" href="https://claude.ai/public/artifacts/75d035d5-ac5d-48e0-ba0a-5decd01c6952" target="_blank" rel="noopener">▶ Jugar</a>
-            <button class="btn btn-editar">✎ Editar</button>
-            <button class="btn btn-mini" title="Duplicar">⧉</button>
-            <button class="btn btn-mini peligro btn-borrar" title="Eliminar">🗑</button>
-          </div>
-        </div>
-      </article>
-
-      <article class="kard c-violeta kard-mia" data-nombre="¿Quién Quiere Ser Millonario? — 1ºC">
-        <div class="kard-top"><span class="kard-emoji">💰</span></div>
-        <div class="kard-body">
-          <div class="kard-title">¿Quién Quiere Ser Millonario? — 1ºC</div>
-          <div class="kard-meta">Editado hace 1 semana</div>
-          <div class="kard-actions">
-            <a class="btn btn-jugar" href="https://claude.ai/public/artifacts/a07b4281-1de3-456a-8b38-af6b1a53ee31" target="_blank" rel="noopener">▶ Jugar</a>
-            <button class="btn btn-editar">✎ Editar</button>
-            <button class="btn btn-mini" title="Duplicar">⧉</button>
-            <button class="btn btn-mini peligro btn-borrar" title="Eliminar">🗑</button>
-          </div>
-        </div>
-      </article>
-
       <article class="kard kard-vacia" role="button" tabindex="0" id="kard-vacia">
         <span class="mas">+</span>
         <strong>Espacio libre</strong>
@@ -565,7 +552,7 @@
         <div class="kard-body">
           <div class="kard-title">QuizLive</div>
           <p class="kard-desc">Trivia en vivo estilo Kahoot: los alumnos entran desde su celular con un código.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/335e1b18-9b5a-4718-ae4c-992205cb9692" target="_blank" rel="noopener">⧉ Duplicar</a>
+          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/335e1b18-9b5a-4718-ae4c-992205cb9692">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -574,7 +561,7 @@
         <div class="kard-body">
           <div class="kard-title">Battle Castle 3D</div>
           <p class="kard-desc">Batalla de castillos en 3D: cada equipo lanza el misil desde su celular al castillo que elija.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/75d035d5-ac5d-48e0-ba0a-5decd01c6952" target="_blank" rel="noopener">⧉ Duplicar</a>
+          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/75d035d5-ac5d-48e0-ba0a-5decd01c6952">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -583,7 +570,7 @@
         <div class="kard-body">
           <div class="kard-title">Rosco de Palabras</div>
           <p class="kard-desc">Pasapalabra clásico: vocabulario letra por letra contra el reloj.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/2afec95d-891f-4502-9cf9-c6b64d0a9e5d" target="_blank" rel="noopener">⧉ Duplicar</a>
+          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/2afec95d-891f-4502-9cf9-c6b64d0a9e5d">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -592,7 +579,7 @@
         <div class="kard-body">
           <div class="kard-title">¿Quién Quiere Ser Millonario?</div>
           <p class="kard-desc">Preguntas en escalera de dificultad con comodines, editable para cualquier materia.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/a07b4281-1de3-456a-8b38-af6b1a53ee31" target="_blank" rel="noopener">⧉ Duplicar</a>
+          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/a07b4281-1de3-456a-8b38-af6b1a53ee31">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -601,7 +588,7 @@
         <div class="kard-body">
           <div class="kard-title">Monopoly San Fernando</div>
           <p class="kard-desc">Tablero temático local: se proyecta y se juega con turnos por grupo.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/d2cc9a59-0a33-4b5b-9046-60a1c04db8cb" target="_blank" rel="noopener">⧉ Duplicar</a>
+          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/d2cc9a59-0a33-4b5b-9046-60a1c04db8cb">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -610,7 +597,7 @@
         <div class="kard-body">
           <div class="kard-title">Among Us Vocabulario</div>
           <p class="kard-desc">Misiones de vocabulario con impostor incluido: ideal para repasos rápidos.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/c7025a97-8050-4d63-acbe-703d083c02e1" target="_blank" rel="noopener">⧉ Duplicar</a>
+          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/c7025a97-8050-4d63-acbe-703d083c02e1">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -619,7 +606,7 @@
         <div class="kard-body">
           <div class="kard-title">Bet Your Answer</div>
           <p class="kard-desc">Trivia con apuestas de puntos: la tensión sube en la recta final.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/d3d25886-b46b-4ca3-97e7-e09dfca7ba65" target="_blank" rel="noopener">⧉ Duplicar</a>
+          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/d3d25886-b46b-4ca3-97e7-e09dfca7ba65">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -628,7 +615,7 @@
         <div class="kard-body">
           <div class="kard-title">Robot Fight</div>
           <p class="kard-desc">Duelo de robots por respuestas correctas: ritmo rápido y muy visual.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/26324226-3622-4af9-b079-d629877dec6e" target="_blank" rel="noopener">⧉ Duplicar</a>
+          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/26324226-3622-4af9-b079-d629877dec6e">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -637,7 +624,7 @@
         <div class="kard-body">
           <div class="kard-title">Mario Kart Racing Board</div>
           <p class="kard-desc">Carrera por equipos en tablero: se avanza respondiendo bien.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/41d5355a-b698-43df-a0c9-cddb92ceb88d" target="_blank" rel="noopener">⧉ Duplicar</a>
+          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/41d5355a-b698-43df-a0c9-cddb92ceb88d">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -646,7 +633,7 @@
         <div class="kard-body">
           <div class="kard-title">Jeopardy</div>
           <p class="kard-desc">Tablero de categorías y puntajes al estilo clásico: perfecto para repasar unidades completas.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/58408e02-7524-47c2-8502-974ae3ff0bd3" target="_blank" rel="noopener">⧉ Duplicar</a>
+          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/58408e02-7524-47c2-8502-974ae3ff0bd3">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -655,7 +642,7 @@
         <div class="kard-body">
           <div class="kard-title">Evil Game</div>
           <p class="kard-desc">Trivia con giros y penalizaciones: cada equipo tira el dado desde su propio celular.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/cf599c64-bfb0-4687-acd4-d6d76704de0f" target="_blank" rel="noopener">⧉ Duplicar</a>
+          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/cf599c64-bfb0-4687-acd4-d6d76704de0f">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -680,6 +667,8 @@
     </div>
   </div>
 </div>
+
+<div class="aviso-toast" id="aviso-toast" role="status" aria-live="polite"></div>
 
 <script>
   // ---------- Estado ----------
@@ -758,12 +747,118 @@
     document.getElementById("kard-vacia").style.display = libres > 0 ? "" : "none";
   }
 
+  // ---------- Aviso ----------
+  var avisoToast = document.getElementById("aviso-toast");
+  var avisoTimer = null;
+  function mostrarAviso(texto, esError){
+    avisoToast.textContent = texto;
+    avisoToast.className = "aviso-toast visible" + (esError ? " error" : "");
+    clearTimeout(avisoTimer);
+    avisoTimer = setTimeout(function(){ avisoToast.classList.remove("visible"); }, 2600);
+  }
+
+  // ---------- Mis juegos: guardado persistente ----------
+  var STORAGE_KEY = "aulaviva_mis_juegos";
+
+  function juegosPorDefecto(){
+    return [
+      { id:"demo-battle-castle", nombre:"Battle Castle — 2ºC Verbos Irregulares", emoji:"🏰", color:"c-naranja", url:"https://claude.ai/public/artifacts/75d035d5-ac5d-48e0-ba0a-5decd01c6952", meta:"Editado hace 3 días" },
+      { id:"demo-millonario", nombre:"¿Quién Quiere Ser Millonario? — 1ºC", emoji:"💰", color:"c-violeta", url:"https://claude.ai/public/artifacts/a07b4281-1de3-456a-8b38-af6b1a53ee31", meta:"Editado hace 1 semana" }
+    ];
+  }
+
+  function cargarJuegos(){
+    try{
+      var guardado = localStorage.getItem(STORAGE_KEY);
+      if(guardado) return JSON.parse(guardado);
+    }catch(e){}
+    return juegosPorDefecto();
+  }
+
+  function guardarJuegos(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(misJuegos)); }catch(e){}
+  }
+
+  var misJuegos = cargarJuegos();
+
+  function crearKardMia(juego){
+    var art = document.createElement("article");
+    art.className = "kard " + juego.color + " kard-mia";
+    art.setAttribute("data-id", juego.id);
+    art.setAttribute("data-nombre", juego.nombre);
+    art.innerHTML =
+      '<div class="kard-top"><span class="kard-emoji"></span></div>' +
+      '<div class="kard-body">' +
+        '<div class="kard-title"></div>' +
+        '<div class="kard-meta"></div>' +
+        '<div class="kard-actions">' +
+          '<a class="btn btn-jugar" target="_blank" rel="noopener">▶ Jugar</a>' +
+          '<button class="btn btn-editar" type="button">✎ Editar</button>' +
+          '<button class="btn btn-mini btn-dup-mia" type="button" title="Duplicar">⧉</button>' +
+          '<button class="btn btn-mini peligro btn-borrar" type="button" title="Eliminar">🗑</button>' +
+        '</div>' +
+      '</div>';
+    art.querySelector(".kard-emoji").textContent = juego.emoji;
+    art.querySelector(".kard-title").textContent = juego.nombre;
+    art.querySelector(".kard-meta").textContent = juego.meta;
+    art.querySelector(".btn-jugar").href = juego.url;
+    return art;
+  }
+
+  function renderMisJuegos(){
+    var grid = document.getElementById("grid-mis-juegos");
+    var kardVacia = document.getElementById("kard-vacia");
+    grid.querySelectorAll(".kard-mia").forEach(function(k){ k.remove(); });
+    misJuegos.forEach(function(juego){
+      grid.insertBefore(crearKardMia(juego), kardVacia);
+    });
+    actualizarEstado();
+  }
+
+  function duplicarJuego(nombre, emoji, color, url){
+    if(misJuegos.length >= TOTAL_CUPOS){
+      mostrarAviso("Ya usaste tus " + TOTAL_CUPOS + " cupos gratis. Elimina un juego para liberar espacio.", true);
+      return;
+    }
+    misJuegos.push({
+      id: "juego-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+      nombre: nombre,
+      emoji: emoji,
+      color: color,
+      url: url,
+      meta: "Duplicado hoy"
+    });
+    guardarJuegos();
+    renderMisJuegos();
+    mostrarAviso("¡Listo! “" + nombre + "” se guardó en Mis juegos.");
+    document.getElementById("mis-juegos").scrollIntoView({ behavior:"smooth", block:"start" });
+  }
+
+  // Duplicar desde una plantilla
+  document.querySelector("main").addEventListener("click", function(e){
+    var boton = e.target.closest(".btn-dup");
+    if(!boton) return;
+    var kard = boton.closest(".kard");
+    var nombre = kard.querySelector(".kard-title").textContent.trim();
+    var emoji = kard.querySelector(".kard-emoji").textContent.trim();
+    var color = Array.prototype.find.call(kard.classList, function(c){ return c.indexOf("c-") === 0; }) || "c-violeta";
+    duplicarJuego(nombre, emoji, color, boton.getAttribute("data-url"));
+  });
+
   // ---------- Eliminar con modal ----------
   var modal = document.getElementById("modal-eliminar");
   var modalNombre = document.getElementById("modal-nombre");
   var kardPendiente = null;
 
   document.getElementById("grid-mis-juegos").addEventListener("click", function(e){
+    var botonDup = e.target.closest(".btn-dup-mia");
+    if(botonDup){
+      var kardMia = botonDup.closest(".kard-mia");
+      var id = kardMia.getAttribute("data-id");
+      var juego = misJuegos.find(function(j){ return j.id === id; });
+      if(juego) duplicarJuego(juego.nombre, juego.emoji, juego.color, juego.url);
+      return;
+    }
     var boton = e.target.closest(".btn-borrar");
     if(!boton) return;
     kardPendiente = boton.closest(".kard-mia");
@@ -787,8 +882,11 @@
   document.getElementById("btn-confirmar").addEventListener("click", function(){
     if(!kardPendiente) return;
     var kard = kardPendiente;
+    var id = kard.getAttribute("data-id");
     modal.classList.add("oculto");
     kardPendiente = null;
+    misJuegos = misJuegos.filter(function(j){ return j.id !== id; });
+    guardarJuegos();
     kard.classList.add("saliendo");
     setTimeout(function(){
       kard.remove();
@@ -797,7 +895,7 @@
   });
 
   // estado inicial
-  actualizarEstado();
+  renderMisJuegos();
 </script>
 
 </body>
