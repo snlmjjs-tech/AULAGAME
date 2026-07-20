@@ -845,6 +845,18 @@
     duplicarJuego(nombre, emoji, color, boton.getAttribute("data-url"));
   });
 
+  // ---------- Espacio libre: lleva a las plantillas ----------
+  var kardVacia = document.getElementById("kard-vacia");
+  kardVacia.addEventListener("click", function(){
+    document.getElementById("plantillas").scrollIntoView({ behavior:"smooth", block:"start" });
+  });
+  kardVacia.addEventListener("keydown", function(e){
+    if(e.key === "Enter" || e.key === " "){
+      e.preventDefault();
+      document.getElementById("plantillas").scrollIntoView({ behavior:"smooth", block:"start" });
+    }
+  });
+
   // ---------- Eliminar con modal ----------
   var modal = document.getElementById("modal-eliminar");
   var modalNombre = document.getElementById("modal-nombre");
