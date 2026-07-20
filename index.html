@@ -3,548 +3,259 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aula Viva — Plataforma de juegos didácticos</title>
-<meta name="description" content="Aula Viva: plataforma de juegos didácticos hecha por profes, para profes. Duplica, personaliza y juega en clase con QR o modo sala.">
-<meta name="author" content="Sebastián Núñez López">
-<meta name="theme-color" content="#1A1040">
-<meta property="og:title" content="Aula Viva — Plataforma de juegos didácticos">
-<meta property="og:description" content="Duplica, personaliza y juega en clase. Trivia, tableros y juegos 3D con QR o modo sala.">
-<meta property="og:type" content="website">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎲</text></svg>">
+<title>Aula Viva — Panel Principal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Baloo+2:wght@600;700;800&family=Nunito+Sans:wght@400;600;700;800&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --noche: #1A1040;
-    --noche-alta: #241956;
-    --panel: #2B1E63;
-    --tinta: #1C1240;
-    --crema: #FFF7EC;
-    --texto: #F2ECFF;
-    --texto-suave: #B8AEE0;
-    --linea: rgba(242,236,255,0.12);
-
-    --rosa: #FF4D8D;      --rosa-dark: #C22762;
-    --amarillo: #FFC933;  --amarillo-dark: #D19A00;
-    --turquesa: #2EE6C8;  --turquesa-dark: #0FA98F;
-    --violeta: #7C5CFF;   --violeta-dark: #4E33C4;
-    --naranja: #FF8A3D;   --naranja-dark: #C95F14;
+    --pizarra: #1F3B2E;
+    --pizarra-alta: #26473A;
+    --tiza: #F4F1E6;
+    --tiza-suave: #E9E4D2;
+    --plumon-amarillo: #F2B705;
+    --plumon-rojo: #E1523D;
+    --plumon-azul: #4C7EF3;
+    --linea: rgba(244,241,230,0.14);
+    --sombra: rgba(0,0,0,0.35);
   }
-  *{ box-sizing:border-box; }
-  html,body{ margin:0; padding:0; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
   body{
-    background: var(--noche);
+    background: var(--pizarra);
     background-image:
-      radial-gradient(ellipse 70% 45% at 50% -10%, rgba(124,92,255,0.28), transparent 60%),
-      radial-gradient(ellipse 45% 35% at 90% 105%, rgba(255,77,141,0.14), transparent 60%);
-    color: var(--texto);
-    font-family: 'Nunito Sans', sans-serif;
-    min-height:100vh;
-    overflow-x:hidden;
+      radial-gradient(circle at 15% 8%, rgba(244,241,230,0.035) 0%, transparent 40%),
+      radial-gradient(circle at 85% 92%, rgba(244,241,230,0.03) 0%, transparent 45%);
+    color: var(--tiza);
+    font-family: 'Manrope', sans-serif;
+    min-height: 100vh;
   }
-  ::selection{ background: var(--amarillo); color: var(--tinta); }
-  :focus-visible{ outline: 3px solid var(--amarillo); outline-offset: 3px; border-radius: 6px; }
+  ::selection{ background: var(--plumon-amarillo); color: var(--pizarra); }
 
-  .oculto{ display:none !important; }
-
-  /* ============ LOGIN ============ */
-  #pantalla-login{
-    min-height:100vh;
-    display:flex; align-items:center; justify-content:center;
-    padding: 30px 20px;
-    position:relative;
-  }
-  .login-card{
-    position:relative;
-    width: 100%; max-width: 420px;
-    background: linear-gradient(150deg, var(--panel), var(--noche-alta));
-    border: 2px solid var(--linea);
-    border-radius: 26px;
-    padding: 42px 38px 38px;
-    box-shadow: 0 10px 0 rgba(0,0,0,0.35);
-    animation: aparecer .5s ease backwards;
-  }
-  .login-wordmark{
-    font-family:'Bungee', cursive;
-    font-size: 30px; letter-spacing: 1px;
-    color: var(--crema); text-align:center;
-    text-shadow: 3px 3px 0 var(--rosa), 6px 6px 0 rgba(46,230,200,0.55);
-    line-height:1;
-  }
-  .login-wordmark small{
-    display:block;
-    font-family:'Nunito Sans', sans-serif;
-    font-weight:700; font-size:10.5px; letter-spacing:2.5px;
-    text-transform:uppercase; color: var(--texto-suave);
-    text-shadow:none; margin-top:10px;
-  }
-  .login-sub{
-    text-align:center; margin: 22px 0 26px;
-    font-family:'Baloo 2', cursive; font-weight:700; font-size:19px;
-  }
-  .campo{ margin-bottom:16px; }
-  .campo label{
-    display:block; margin-bottom:7px;
-    font-family:'Space Mono', monospace; font-size:11px; font-weight:700;
-    letter-spacing:1px; text-transform:uppercase; color: var(--texto-suave);
-  }
-  .campo input{
-    width:100%;
-    background: var(--tinta);
-    border: 2px solid var(--linea);
-    border-radius: 12px;
-    padding: 13px 15px;
-    color: var(--texto);
-    font-family:'Nunito Sans', sans-serif; font-size:15px; font-weight:700;
-    transition: border-color .2s;
-  }
-  .campo input::placeholder{ color: var(--texto-suave); opacity:0.6; font-weight:600; }
-  .campo input:focus{ outline:none; border-color: var(--turquesa); }
-  .login-error{
-    display:none;
-    background: rgba(255,77,141,0.14);
-    border: 2px solid var(--rosa);
-    color: #FFB8D2;
-    border-radius: 12px;
-    padding: 11px 14px;
-    font-size: 13.5px; font-weight:700;
-    margin-bottom: 16px;
-  }
-  .login-error.visible{ display:block; }
-  .sacudir{ animation: sacudir .4s ease; }
-  @keyframes sacudir{
-    0%,100%{ transform: translateX(0); }
-    20%{ transform: translateX(-9px); }
-    40%{ transform: translateX(8px); }
-    60%{ transform: translateX(-6px); }
-    80%{ transform: translateX(4px); }
-  }
-  .btn-entrar{
-    width:100%;
-    background: var(--amarillo); color: var(--tinta);
-    border:none; border-radius: 14px;
-    font-family:'Baloo 2', cursive; font-weight:800; font-size:18px;
-    padding: 14px; cursor:pointer;
-    box-shadow: 0 5px 0 var(--amarillo-dark);
-    transition: transform .1s, box-shadow .1s, filter .15s;
-    margin-top: 6px;
-  }
-  .btn-entrar:hover{ filter: brightness(1.07); }
-  .btn-entrar:active{ transform: translateY(4px); box-shadow: 0 1px 0 var(--amarillo-dark); }
-  .login-pie{
-    text-align:center; margin-top: 20px;
-    font-size: 12.5px; font-weight:600; color: var(--texto-suave);
-  }
-  .login-pie a{ color: var(--turquesa); text-decoration:none; font-weight:800; }
-  .login-pie a:hover{ text-decoration:underline; }
-
-  /* ============ HEADER ============ */
+  /* ---- Header ---- */
   header{
-    position:sticky; top:0; z-index:20;
     display:flex; align-items:center; justify-content:space-between;
-    padding: 16px 40px;
-    background: rgba(26,16,64,0.85);
-    backdrop-filter: blur(10px);
-    border-bottom:1px solid var(--linea);
+    padding: 22px 40px;
+    border-bottom: 1px solid var(--linea);
+    position: sticky; top:0;
+    background: rgba(31,59,46,0.92);
+    backdrop-filter: blur(6px);
+    z-index: 10;
   }
-  .wordmark{
-    font-family:'Bungee', cursive;
-    font-size: 26px;
-    letter-spacing: 1px;
-    color: var(--crema);
-    text-shadow: 3px 3px 0 var(--rosa), 6px 6px 0 rgba(46,230,200,0.55);
-    line-height:1;
+  .logo{ display:flex; align-items:center; gap:12px; }
+  .logo-mark{
+    width:38px; height:38px; border-radius:10px;
+    background: var(--plumon-amarillo);
+    display:flex; align-items:center; justify-content:center;
+    transform: rotate(-4deg);
+    box-shadow: 0 3px 0 rgba(0,0,0,0.25);
   }
-  .wordmark small{
-    display:block;
-    font-family:'Nunito Sans', sans-serif;
-    font-weight:700; font-size:10.5px; letter-spacing:2.5px;
-    text-transform:uppercase; color: var(--texto-suave);
-    text-shadow:none; margin-top:6px;
-  }
-  .user-area{ display:flex; align-items:center; gap:14px; }
+  .logo-mark span{ font-family:'Kalam', cursive; font-weight:700; color:var(--pizarra); font-size:20px; }
+  .logo-text{ font-family:'Kalam', cursive; font-weight:700; font-size:24px; letter-spacing:0.3px; }
+  .logo-text small{ display:block; font-family:'Manrope',sans-serif; font-weight:500; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--tiza-suave); opacity:0.55; margin-top:-2px;}
+
+  .user-area{ display:flex; align-items:center; gap:18px; }
   .avatar-btn{
     display:flex; align-items:center; gap:10px;
-    background: var(--panel); border:2px solid var(--linea); color: var(--texto);
-    padding: 7px 16px 7px 7px; border-radius: 40px; cursor:pointer;
-    font-family:'Nunito Sans', sans-serif; font-size:14px; font-weight:800;
-    transition: border-color .2s, transform .15s;
+    background: transparent; border:1px solid var(--linea); color:var(--tiza);
+    padding:8px 14px 8px 8px; border-radius:30px; cursor:pointer;
+    font-family:'Manrope',sans-serif; font-size:14px; font-weight:600;
+    transition: border-color .2s ease, background .2s ease;
   }
-  .avatar-btn:hover{ border-color: var(--turquesa); transform: translateY(-1px); }
+  .avatar-btn:hover{ border-color: var(--plumon-amarillo); background: rgba(244,241,230,0.04); }
   .avatar-circle{
-    width:32px; height:32px; border-radius:50%;
-    background: var(--turquesa); color: var(--tinta);
+    width:30px; height:30px; border-radius:50%;
+    background: var(--plumon-azul); color:var(--tiza);
     display:flex; align-items:center; justify-content:center;
     font-size:13px; font-weight:800;
   }
-  .logout-link{
-    color: var(--texto-suave); font-size:13px; font-weight:700;
-    text-decoration:none; background:none; border:none; cursor:pointer;
-    font-family:'Nunito Sans', sans-serif;
-  }
-  .logout-link:hover{ color: var(--rosa); }
+  .logout-link{ color: var(--tiza-suave); opacity:0.7; font-size:13px; text-decoration:none; }
+  .logout-link:hover{ opacity:1; color: var(--plumon-rojo); }
 
-  /* ============ BANNER ============ */
-  .banner{ position:relative; max-width:1180px; margin: 30px auto 0; padding: 0 40px; }
-  .banner-inner{
-    position:relative;
-    background: linear-gradient(120deg, var(--panel), var(--noche-alta));
-    border: 2px solid var(--linea);
-    border-radius: 24px;
-    padding: 34px 38px;
-    display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap;
-    overflow:hidden;
-  }
-  .banner h1{
-    font-family:'Baloo 2', cursive; font-weight:800;
-    font-size: clamp(28px, 4vw, 42px);
-    margin:0; line-height:1.1;
-  }
-  .banner h1 .hola{ color: var(--amarillo); }
-  .banner p{ margin:8px 0 0; color: var(--texto-suave); font-size:15px; font-weight:600; }
+  /* ---- Main ---- */
+  main{ max-width:1180px; margin:0 auto; padding: 40px 40px 90px; }
 
-  .cupos{
-    background: var(--tinta);
-    border:2px solid var(--linea);
-    border-radius: 18px;
-    padding: 16px 22px;
-    text-align:center;
+  .section-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom:22px; gap:16px; flex-wrap:wrap;
   }
-  .cupos-label{
-    font-family:'Space Mono', monospace; font-size:11px; letter-spacing:1px;
-    text-transform:uppercase; color: var(--texto-suave); margin-bottom:8px;
-  }
-  .fichas{ display:flex; gap:8px; justify-content:center; }
-  .ficha{
-    width:26px; height:26px; border-radius:50%;
-    background: var(--amarillo);
-    box-shadow: 0 3px 0 var(--amarillo-dark);
-    display:flex; align-items:center; justify-content:center;
-    font-size:13px; color:var(--tinta); font-weight:800;
-  }
-  .ficha.libre{
-    background: transparent; box-shadow:none;
-    border: 2px dashed var(--texto-suave); color: var(--texto-suave);
-  }
-  .cupos-num{ margin-top:8px; font-size:12.5px; font-weight:800; color: var(--texto); }
-
-  .conf{
-    position:absolute; font-size:22px; opacity:0.5; pointer-events:none;
-    animation: flotar 6s ease-in-out infinite;
-  }
-  @keyframes flotar{
-    0%,100%{ transform: translateY(0) rotate(-6deg); }
-    50%{ transform: translateY(-14px) rotate(8deg); }
-  }
-
-  /* ============ MAIN ============ */
-  main{ max-width:1180px; margin:0 auto; padding: 10px 40px 100px; }
-  section{ margin-top: 52px; }
-
-  .section-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:24px; }
-  .sticker{
-    display:inline-block;
-    font-family:'Space Mono', monospace; font-size:11px; font-weight:700;
-    letter-spacing:1px; text-transform:uppercase;
-    background: var(--rosa); color:#fff;
-    padding: 5px 12px; border-radius: 8px;
-    transform: rotate(-2deg);
-    box-shadow: 0 3px 0 var(--rosa-dark);
-    margin-bottom:10px;
-  }
-  .sticker.turq{ background: var(--turquesa); color: var(--tinta); box-shadow: 0 3px 0 var(--turquesa-dark); transform: rotate(1.5deg); }
   .section-head h2{
-    font-family:'Baloo 2', cursive; font-weight:800;
-    font-size: clamp(24px, 3vw, 32px); margin:0; line-height:1.1;
+    font-family:'Kalam', cursive; font-size:30px; font-weight:700; margin:0;
+    display:flex; align-items:center; gap:12px;
   }
+  .section-head h2 .chalk-underline{
+    position:relative;
+  }
+  .section-head h2 .chalk-underline::after{
+    content:""; position:absolute; left:0; right:0; bottom:-4px; height:6px;
+    background: var(--plumon-amarillo); opacity:0.85; border-radius:3px;
+    transform: rotate(-0.6deg);
+  }
+  .section-head p{ margin:6px 0 0; color: var(--tiza-suave); opacity:0.6; font-size:14px; }
   .count-pill{
-    font-family:'Space Mono', monospace; font-size:12px;
-    background: var(--tinta); border:2px solid var(--linea);
-    padding: 7px 16px; border-radius: 30px; color: var(--texto-suave); white-space:nowrap;
+    font-family:'JetBrains Mono', monospace; font-size:12px; letter-spacing:0.5px;
+    background: rgba(244,241,230,0.06); border:1px solid var(--linea);
+    padding:5px 12px; border-radius:20px; color:var(--tiza-suave); white-space:nowrap;
   }
+
+  section{ margin-bottom: 56px; }
 
   .grid{
-    display:grid;
-    grid-template-columns: repeat(auto-fill, minmax(246px, 1fr));
-    gap: 24px;
+    display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap:22px;
   }
 
-  /* ============ CARDS ============ */
-  .kard{
-    --c: var(--violeta); --c-dark: var(--violeta-dark); --c-ink: #fff;
-    background: var(--panel);
-    border: 2px solid var(--linea);
-    border-radius: 20px;
-    overflow:hidden;
-    display:flex; flex-direction:column;
-    box-shadow: 0 6px 0 rgba(0,0,0,0.35);
-    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, opacity .25s ease;
-    animation: aparecer .45s ease backwards;
+  /* ---- Cards: "mis juegos" (chalk tile, active) ---- */
+  .card{
+    background: var(--pizarra-alta);
+    border:1px solid var(--linea);
+    border-radius:14px;
+    padding:20px;
+    display:flex; flex-direction:column; gap:14px;
+    position:relative; overflow:hidden;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
   }
-  .kard:hover{
-    transform: translateY(-5px) rotate(-0.6deg);
-    border-color: var(--c);
-    box-shadow: 0 12px 0 rgba(0,0,0,0.35);
+  .card:hover{
+    transform: translateY(-3px);
+    border-color: rgba(244,241,230,0.28);
+    box-shadow: 0 14px 28px var(--sombra);
   }
-  @keyframes aparecer{
-    from{ opacity:0; transform: translateY(16px) scale(0.97); }
-    to{ opacity:1; transform: translateY(0) scale(1); }
-  }
-  .grid .kard:nth-child(1){ animation-delay:.02s; } .grid .kard:nth-child(2){ animation-delay:.06s; }
-  .grid .kard:nth-child(3){ animation-delay:.10s; } .grid .kard:nth-child(4){ animation-delay:.14s; }
-  .grid .kard:nth-child(5){ animation-delay:.18s; } .grid .kard:nth-child(6){ animation-delay:.22s; }
-  .grid .kard:nth-child(7){ animation-delay:.26s; } .grid .kard:nth-child(8){ animation-delay:.30s; }
-  .grid .kard:nth-child(9){ animation-delay:.34s; } .grid .kard:nth-child(10){ animation-delay:.38s; }
-  .grid .kard:nth-child(11){ animation-delay:.42s; }
-
-  .kard.saliendo{ opacity:0; transform: scale(0.9); }
-
-  .kard-top{
+  .card-thumb{
+    height:110px; border-radius:9px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:38px;
     position:relative;
-    height: 104px;
-    background: var(--c);
-    background-image: radial-gradient(rgba(255,255,255,0.28) 1.6px, transparent 1.6px);
-    background-size: 16px 16px;
-    display:flex; align-items:center; justify-content:center;
   }
-  .kard-emoji{ font-size: 44px; filter: drop-shadow(0 4px 0 rgba(0,0,0,0.25)); }
-  .chip{
-    position:absolute; top:10px; right:10px;
-    font-family:'Space Mono', monospace; font-size:10px; font-weight:700;
-    letter-spacing:0.5px; text-transform:uppercase;
-    background: var(--tinta); color: var(--texto);
-    padding: 4px 10px; border-radius: 20px;
+  .card-thumb::before{
+    content:""; position:absolute; inset:0; border-radius:9px;
+    background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 14px);
   }
-  .kard-body{ padding: 16px 18px 18px; display:flex; flex-direction:column; gap:9px; flex:1; }
-  .kard-title{ font-family:'Baloo 2', cursive; font-weight:700; font-size:17.5px; line-height:1.25; }
-  .kard-meta{ font-family:'Space Mono', monospace; font-size:11px; color: var(--texto-suave); }
-  .kard-desc{ margin:0; font-size:13.5px; color: var(--texto-suave); font-weight:600; line-height:1.55; flex:1; }
-
+  .card-title{ font-weight:700; font-size:16px; line-height:1.3; }
+  .card-meta{ font-size:12px; color:var(--tiza-suave); opacity:0.55; font-family:'JetBrains Mono', monospace; }
+  .card-actions{ display:flex; gap:8px; margin-top:2px; }
   .btn{
-    border:none; border-radius: 12px;
-    font-family:'Nunito Sans', sans-serif; font-weight:800; font-size:13.5px;
-    padding: 11px 12px; cursor:pointer;
-    display:flex; align-items:center; justify-content:center; gap:7px;
-    text-decoration:none; text-align:center;
-    transition: transform .1s ease, box-shadow .1s ease, filter .15s ease, border-color .15s ease, color .15s ease;
+    flex:1; border:none; border-radius:8px; padding:9px 10px;
+    font-family:'Manrope',sans-serif; font-weight:700; font-size:12.5px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;
+    transition: filter .15s ease, transform .1s ease;
+    text-decoration:none;
   }
-  .btn:active{ transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,0.4) !important; }
-  .btn:hover{ filter: brightness(1.07); }
+  .btn:active{ transform: scale(0.97); }
+  .btn-play{ background: var(--plumon-amarillo); color:var(--pizarra); }
+  .btn-edit{ background: transparent; border:1px solid var(--linea); color:var(--tiza); }
+  .btn-dup{ background: transparent; border:1px solid var(--linea); color:var(--tiza); flex:0 0 40px; }
+  .btn:hover{ filter: brightness(1.08); }
 
-  .btn-jugar{
-    background: var(--amarillo); color: var(--tinta);
-    box-shadow: 0 5px 0 var(--amarillo-dark); flex:1;
-  }
-  .btn-editar{
-    background: var(--tinta); color: var(--texto);
-    border: 2px solid var(--linea);
-    box-shadow: 0 5px 0 rgba(0,0,0,0.4); flex:1;
-  }
-  .btn-mini{
-    background: var(--tinta); color: var(--texto);
-    border: 2px solid var(--linea);
-    box-shadow: 0 5px 0 rgba(0,0,0,0.4);
-    flex: 0 0 46px;
-  }
-  .btn-mini.peligro:hover{ border-color: var(--rosa); color: var(--rosa); filter:none; }
-  .btn-dup{
-    background: var(--c); color: var(--c-ink);
-    box-shadow: 0 5px 0 var(--c-dark);
-    width:100%;
-  }
-  .kard-actions{ display:flex; gap:9px; margin-top:4px; }
-
-  .c-rosa{     --c: var(--rosa);     --c-dark: var(--rosa-dark);     --c-ink:#fff; }
-  .c-amarillo{ --c: var(--amarillo); --c-dark: var(--amarillo-dark); --c-ink: var(--tinta); }
-  .c-turquesa{ --c: var(--turquesa); --c-dark: var(--turquesa-dark); --c-ink: var(--tinta); }
-  .c-violeta{  --c: var(--violeta);  --c-dark: var(--violeta-dark);  --c-ink:#fff; }
-  .c-naranja{  --c: var(--naranja);  --c-dark: var(--naranja-dark);  --c-ink: var(--tinta); }
-
-  .kard-vacia{
-    border: 3px dashed var(--linea);
+  /* ---- Empty slot card ---- */
+  .card-empty{
+    border:2px dashed var(--linea);
     background: transparent;
-    box-shadow:none;
     align-items:center; justify-content:center; text-align:center;
-    padding: 30px 22px; gap:10px; cursor:pointer;
-    color: var(--texto-suave); min-height: 270px;
+    min-height: 218px; gap:8px; cursor:pointer;
+    color: var(--tiza-suave); opacity:0.65;
   }
-  .kard-vacia:hover{ border-color: var(--amarillo); color: var(--texto); transform: translateY(-5px); box-shadow:none; }
-  .kard-vacia .mas{
-    width:52px; height:52px; border-radius:50%;
-    border: 3px dashed var(--texto-suave);
-    display:flex; align-items:center; justify-content:center;
-    font-family:'Baloo 2', cursive; font-size:28px; font-weight:800;
-  }
-  .kard-vacia:hover .mas{ border-color: var(--amarillo); color: var(--amarillo); }
-  .kard-vacia strong{ font-family:'Baloo 2', cursive; font-size:17px; }
-  .kard-vacia small{ font-size:12.5px; font-weight:600; max-width:190px; line-height:1.5; }
+  .card-empty:hover{ opacity:1; border-color: var(--plumon-amarillo); color:var(--tiza); }
+  .card-empty .plus{ font-size:28px; font-family:'Kalam',cursive; }
+  .card-empty small{ font-size:12px; max-width:160px; }
 
-  footer{
-    max-width:1180px; margin: 0 auto; padding: 0 40px 50px;
-    color: var(--texto-suave); font-size:12.5px; font-weight:600; text-align:center;
+  /* ---- Template cards ---- */
+  .tcard{
+    background: var(--pizarra-alta);
+    border:1px solid var(--linea);
+    border-radius:14px;
+    padding:18px;
+    display:flex; flex-direction:column; gap:12px;
+    transition: transform .18s ease, border-color .18s ease;
   }
-
-  /* ============ MODAL ============ */
-  .modal-fondo{
-    position:fixed; inset:0; z-index:50;
-    background: rgba(15,8,40,0.75);
-    backdrop-filter: blur(4px);
-    display:flex; align-items:center; justify-content:center;
-    padding: 20px;
-    animation: fundido .2s ease;
+  .tcard:hover{ transform: translateY(-3px); border-color: rgba(244,241,230,0.28); }
+  .tcard-icon{ font-size:30px; }
+  .tcard-title{ font-weight:700; font-size:15px; }
+  .tcard-tag{
+    align-self:flex-start;
+    font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:0.4px;
+    text-transform:uppercase; padding:3px 9px; border-radius:20px;
+    background: rgba(76,126,243,0.18); color:#9DB8FA;
   }
-  @keyframes fundido{ from{ opacity:0; } to{ opacity:1; } }
-  .modal-caja{
-    background: linear-gradient(150deg, var(--panel), var(--noche-alta));
-    border: 2px solid var(--linea);
-    border-radius: 22px;
-    padding: 30px 30px 26px;
-    max-width: 400px; width:100%;
-    box-shadow: 0 10px 0 rgba(0,0,0,0.4);
-    animation: aparecer .25s ease;
-    text-align:center;
+  .tcard-tag.sala{ background: rgba(225,82,61,0.18); color:#F3A79A; }
+  .tcard-desc{ font-size:12.5px; color:var(--tiza-suave); opacity:0.6; line-height:1.5; flex:1; }
+  .tcard .btn-dup-full{
+    background: transparent; border:1px solid var(--plumon-amarillo); color:var(--plumon-amarillo);
+    border-radius:8px; padding:9px; font-weight:700; font-size:12.5px; cursor:pointer;
+    font-family:'Manrope',sans-serif;
+    transition: background .15s ease, color .15s ease;
+    text-decoration:none; text-align:center; display:block;
   }
-  .modal-caja .icono{ font-size: 40px; margin-bottom: 10px; }
-  .modal-caja h3{
-    font-family:'Baloo 2', cursive; font-weight:800; font-size: 21px;
-    margin: 0 0 8px;
-  }
-  .modal-caja p{
-    margin: 0 0 22px; color: var(--texto-suave);
-    font-size: 14px; font-weight: 600; line-height: 1.55;
-  }
-  .modal-caja p strong{ color: var(--texto); }
-  .modal-acciones{ display:flex; gap:10px; }
-  .btn-cancelar{
-    flex:1;
-    background: var(--tinta); color: var(--texto);
-    border: 2px solid var(--linea);
-    box-shadow: 0 5px 0 rgba(0,0,0,0.4);
-  }
-  .btn-eliminar{
-    flex:1;
-    background: var(--rosa); color:#fff;
-    box-shadow: 0 5px 0 var(--rosa-dark);
-  }
+  .tcard .btn-dup-full:hover{ background: var(--plumon-amarillo); color:var(--pizarra); }
 
   @media (max-width: 640px){
-    header{ padding: 14px 20px; }
-    .wordmark{ font-size:20px; }
-    .banner{ padding: 20px 20px 0; }
-    .banner-inner{ padding: 26px 24px; }
-    main{ padding: 10px 20px 70px; }
-    .login-card{ padding: 34px 26px 30px; }
+    header{ padding:16px 20px; }
+    main{ padding:28px 20px 60px; }
+    .logo-text{ font-size:20px; }
   }
-  @media (prefers-reduced-motion: reduce){
-    *{ animation: none !important; transition: none !important; }
-  }
+
+  a, button{ font-family: inherit; }
+  :focus-visible{ outline: 2px solid var(--plumon-amarillo); outline-offset:2px; }
 </style>
 </head>
 <body>
 
-<!-- ==================== LOGIN ==================== -->
-<div id="pantalla-login">
-  <span class="conf" style="top:12%; left:16%;" aria-hidden="true">🎲</span>
-  <span class="conf" style="top:20%; right:14%; animation-delay:1.4s;" aria-hidden="true">⭐</span>
-  <span class="conf" style="bottom:16%; left:22%; animation-delay:2.6s;" aria-hidden="true">🏆</span>
-  <span class="conf" style="bottom:12%; right:20%; animation-delay:0.8s;" aria-hidden="true">🎉</span>
-
-  <div class="login-card" id="login-card">
-    <div class="login-wordmark">AULA VIVA<small>Plataforma de juegos didácticos</small></div>
-    <div class="login-sub">Inicia sesión para jugar 🚀</div>
-
-    <div class="login-error" id="login-error">Correo o contraseña incorrectos. Inténtalo de nuevo.</div>
-
-    <form id="form-login">
-      <div class="campo">
-        <label for="correo">Correo</label>
-        <input type="email" id="correo" placeholder="tucorreo@gmail.com" autocomplete="email">
-      </div>
-      <div class="campo">
-        <label for="clave">Contraseña</label>
-        <input type="password" id="clave" placeholder="••••••••" autocomplete="current-password">
-      </div>
-      <button type="submit" class="btn-entrar">Entrar</button>
-    </form>
-
-    <div class="login-pie">¿No tienes cuenta? <a href="#">Regístrate gratis</a></div>
-  </div>
-</div>
-
-<!-- ==================== DASHBOARD ==================== -->
-<div id="pantalla-dashboard" class="oculto">
-
 <header>
-  <div class="wordmark">AULA VIVA<small>Plataforma de juegos didácticos</small></div>
+  <div class="logo">
+    <div class="logo-mark"><span>AV</span></div>
+    <div class="logo-text">Aula Viva<small>Panel del profesor</small></div>
+  </div>
   <div class="user-area">
-    <button class="avatar-btn"><span class="avatar-circle">SN</span> Sebastián</button>
-    <button class="logout-link" id="btn-salir">Cerrar sesión</button>
+    <button class="avatar-btn">
+      <span class="avatar-circle">SN</span>
+      Sebastián
+    </button>
+    <a href="#" class="logout-link">Cerrar sesión</a>
   </div>
 </header>
-
-<div class="banner">
-  <div class="banner-inner">
-    <span class="conf" style="top:14px; left:36%;" aria-hidden="true">🎉</span>
-    <span class="conf" style="bottom:16px; left:52%; animation-delay:1.2s;" aria-hidden="true">⭐</span>
-    <span class="conf" style="top:22px; right:30%; animation-delay:2.4s;" aria-hidden="true">🎲</span>
-    <div>
-      <h1><span class="hola">¡Hola, Sebastián!</span><br>¿Qué jugamos hoy?</h1>
-      <p>Elige un juego guardado o duplica una plantilla nueva para tu próxima clase.</p>
-    </div>
-    <div class="cupos">
-      <div class="cupos-label">Cupos gratis</div>
-      <div class="fichas" id="fichas"></div>
-      <div class="cupos-num" id="cupos-num"></div>
-    </div>
-  </div>
-</div>
 
 <main>
 
   <section aria-labelledby="mis-juegos">
     <div class="section-head">
       <div>
-        <span class="sticker">Listos para la clase</span>
-        <h2 id="mis-juegos">Mis juegos</h2>
+        <h2 id="mis-juegos"><span class="chalk-underline">Mis juegos</span></h2>
+        <p>Tus copias guardadas, listas para editar o proyectar en clase.</p>
       </div>
-      <span class="count-pill" id="pill-mis-juegos"></span>
+      <span class="count-pill">2 / 3 usados</span>
     </div>
 
-    <div class="grid" id="grid-mis-juegos">
+    <div class="grid">
 
-      <article class="kard c-naranja kard-mia" data-nombre="Battle Castle — 2ºC Verbos Irregulares">
-        <div class="kard-top"><span class="kard-emoji">🏰</span></div>
-        <div class="kard-body">
-          <div class="kard-title">Battle Castle — 2ºC Verbos Irregulares</div>
-          <div class="kard-meta">Editado hace 3 días</div>
-          <div class="kard-actions">
-            <a class="btn btn-jugar" href="https://claude.ai/public/artifacts/75d035d5-ac5d-48e0-ba0a-5decd01c6952" target="_blank" rel="noopener">▶ Jugar</a>
-            <button class="btn btn-editar">✎ Editar</button>
-            <button class="btn btn-mini" title="Duplicar">⧉</button>
-            <button class="btn btn-mini peligro btn-borrar" title="Eliminar">🗑</button>
-          </div>
+      <div class="card">
+        <div class="card-thumb" style="background:#4C3B2A;">🏰</div>
+        <div>
+          <div class="card-title">Battle Castle — 2ºC Verbos Irregulares</div>
+          <div class="card-meta">Editado hace 3 días</div>
         </div>
-      </article>
-
-      <article class="kard c-violeta kard-mia" data-nombre="¿Quién Quiere Ser Millonario? — 1ºC">
-        <div class="kard-top"><span class="kard-emoji">💰</span></div>
-        <div class="kard-body">
-          <div class="kard-title">¿Quién Quiere Ser Millonario? — 1ºC</div>
-          <div class="kard-meta">Editado hace 1 semana</div>
-          <div class="kard-actions">
-            <a class="btn btn-jugar" href="https://claude.ai/public/artifacts/a07b4281-1de3-456a-8b38-af6b1a53ee31" target="_blank" rel="noopener">▶ Jugar</a>
-            <button class="btn btn-editar">✎ Editar</button>
-            <button class="btn btn-mini" title="Duplicar">⧉</button>
-            <button class="btn btn-mini peligro btn-borrar" title="Eliminar">🗑</button>
-          </div>
+        <div class="card-actions">
+          <a class="btn btn-play" href="https://claude.ai/public/artifacts/75d035d5-ac5d-48e0-ba0a-5decd01c6952" target="_blank" rel="noopener">▶ Jugar</a>
+          <button class="btn btn-edit">✎ Editar</button>
+          <button class="btn btn-dup">⧉</button>
         </div>
-      </article>
+      </div>
 
-      <article class="kard kard-vacia" role="button" tabindex="0" id="kard-vacia">
-        <span class="mas">+</span>
-        <strong>Espacio libre</strong>
-        <small id="texto-vacia"></small>
-      </article>
+      <div class="card">
+        <div class="card-thumb" style="background:#2E3A55;">🕹️</div>
+        <div>
+          <div class="card-title">¿Quién Quiere Ser Millonario? — 1ºC</div>
+          <div class="card-meta">Editado hace 1 semana</div>
+        </div>
+        <div class="card-actions">
+          <a class="btn btn-play" href="https://claude.ai/public/artifacts/a07b4281-1de3-456a-8b38-af6b1a53ee31" target="_blank" rel="noopener">▶ Jugar</a>
+          <button class="btn btn-edit">✎ Editar</button>
+          <button class="btn btn-dup">⧉</button>
+        </div>
+      </div>
+
+      <div class="card card-empty">
+        <div class="plus">+</div>
+        <div style="font-weight:700; font-size:14px;">Espacio disponible</div>
+        <small>Duplica una plantilla de abajo para usar tu último cupo gratuito.</small>
+      </div>
 
     </div>
   </section>
@@ -552,253 +263,106 @@
   <section aria-labelledby="plantillas">
     <div class="section-head">
       <div>
-        <span class="sticker turq">Duplica y personaliza</span>
-        <h2 id="plantillas">Plantillas de juegos</h2>
+        <h2 id="plantillas"><span class="chalk-underline">Plantillas disponibles</span></h2>
+        <p>Duplica cualquiera para crear tu propia versión editable.</p>
       </div>
       <span class="count-pill">11 plantillas</span>
     </div>
 
     <div class="grid">
 
-      <article class="kard c-rosa">
-        <div class="kard-top"><span class="kard-emoji">📺</span><span class="chip">📱 Código QR</span></div>
-        <div class="kard-body">
-          <div class="kard-title">QuizLive</div>
-          <p class="kard-desc">Trivia en vivo estilo Kahoot: los alumnos entran desde su celular con un código.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/335e1b18-9b5a-4718-ae4c-992205cb9692" target="_blank" rel="noopener">⧉ Duplicar</a>
-        </div>
-      </article>
+      <div class="tcard">
+        <div class="tcard-icon">📺</div>
+        <div class="tcard-title">QuizLive</div>
+        <span class="tcard-tag">Código QR</span>
+        <p class="tcard-desc">Trivia en vivo estilo Kahoot, los alumnos se conectan desde su celular.</p>
+        <a class="btn-dup-full" href="https://claude.ai/public/artifacts/335e1b18-9b5a-4718-ae4c-992205cb9692" target="_blank" rel="noopener">⧉ Duplicar plantilla</a>
+      </div>
 
-      <article class="kard c-naranja">
-        <div class="kard-top"><span class="kard-emoji">🏰</span><span class="chip">📱 QR + 📽️ Sala</span></div>
-        <div class="kard-body">
-          <div class="kard-title">Battle Castle 3D</div>
-          <p class="kard-desc">Batalla de castillos en 3D: cada equipo lanza el misil desde su celular al castillo que elija.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/75d035d5-ac5d-48e0-ba0a-5decd01c6952" target="_blank" rel="noopener">⧉ Duplicar</a>
-        </div>
-      </article>
+      <div class="tcard">
+        <div class="tcard-icon">🏰</div>
+        <div class="tcard-title">Battle Castle 3D</div>
+        <span class="tcard-tag sala">Modo sala</span>
+        <p class="tcard-desc">Batalla de castillos en 3D para practicar verbos, se proyecta y se juega en equipos.</p>
+        <a class="btn-dup-full" href="https://claude.ai/public/artifacts/75d035d5-ac5d-48e0-ba0a-5decd01c6952" target="_blank" rel="noopener">⧉ Duplicar plantilla</a>
+      </div>
 
-      <article class="kard c-turquesa">
-        <div class="kard-top"><span class="kard-emoji">🎡</span><span class="chip">📱 Código QR</span></div>
-        <div class="kard-body">
-          <div class="kard-title">Rosco de Palabras</div>
-          <p class="kard-desc">Pasapalabra clásico: vocabulario letra por letra contra el reloj.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/2afec95d-891f-4502-9cf9-c6b64d0a9e5d" target="_blank" rel="noopener">⧉ Duplicar</a>
-        </div>
-      </article>
+      <div class="tcard">
+        <div class="tcard-icon">🎡</div>
+        <div class="tcard-title">Rosco de Palabras</div>
+        <span class="tcard-tag">Código QR</span>
+        <p class="tcard-desc">Pasapalabra clásico, ideal para vocabulario letra por letra.</p>
+        <a class="btn-dup-full" href="https://claude.ai/public/artifacts/2afec95d-891f-4502-9cf9-c6b64d0a9e5d" target="_blank" rel="noopener">⧉ Duplicar plantilla</a>
+      </div>
 
-      <article class="kard c-violeta">
-        <div class="kard-top"><span class="kard-emoji">💰</span><span class="chip">📱 Código QR</span></div>
-        <div class="kard-body">
-          <div class="kard-title">¿Quién Quiere Ser Millonario?</div>
-          <p class="kard-desc">Preguntas en escalera de dificultad con comodines, editable para cualquier materia.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/a07b4281-1de3-456a-8b38-af6b1a53ee31" target="_blank" rel="noopener">⧉ Duplicar</a>
-        </div>
-      </article>
+      <div class="tcard">
+        <div class="tcard-icon">💰</div>
+        <div class="tcard-title">¿Quién Quiere Ser Millonario?</div>
+        <span class="tcard-tag">Código QR</span>
+        <p class="tcard-desc">Preguntas en escalera de dificultad con comodines, editable por materia.</p>
+        <a class="btn-dup-full" href="https://claude.ai/public/artifacts/a07b4281-1de3-456a-8b38-af6b1a53ee31" target="_blank" rel="noopener">⧉ Duplicar plantilla</a>
+      </div>
 
-      <article class="kard c-amarillo">
-        <div class="kard-top"><span class="kard-emoji">🏙️</span><span class="chip">📽️ Modo sala</span></div>
-        <div class="kard-body">
-          <div class="kard-title">Monopoly San Fernando</div>
-          <p class="kard-desc">Tablero temático local: se proyecta y se juega con turnos por grupo.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/d2cc9a59-0a33-4b5b-9046-60a1c04db8cb" target="_blank" rel="noopener">⧉ Duplicar</a>
-        </div>
-      </article>
+      <div class="tcard">
+        <div class="tcard-icon">🏙️</div>
+        <div class="tcard-title">Monopoly San Fernando</div>
+        <span class="tcard-tag sala">Modo sala</span>
+        <p class="tcard-desc">Tablero temático local, se juega proyectado con turnos por grupo.</p>
+        <a class="btn-dup-full" href="https://claude.ai/public/artifacts/d2cc9a59-0a33-4b5b-9046-60a1c04db8cb" target="_blank" rel="noopener">⧉ Duplicar plantilla</a>
+      </div>
 
-      <article class="kard c-rosa">
-        <div class="kard-top"><span class="kard-emoji">👾</span><span class="chip">📱 Código QR</span></div>
-        <div class="kard-body">
-          <div class="kard-title">Among Us Vocabulario</div>
-          <p class="kard-desc">Misiones de vocabulario con impostor incluido: ideal para repasos rápidos.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/c7025a97-8050-4d63-acbe-703d083c02e1" target="_blank" rel="noopener">⧉ Duplicar</a>
-        </div>
-      </article>
+      <div class="tcard">
+        <div class="tcard-icon">👾</div>
+        <div class="tcard-title">Among Us Vocabulario</div>
+        <span class="tcard-tag">Código QR</span>
+        <p class="tcard-desc">Misiones de vocabulario con impostor, ideal para repaso rápido.</p>
+        <a class="btn-dup-full" href="https://claude.ai/public/artifacts/c7025a97-8050-4d63-acbe-703d083c02e1" target="_blank" rel="noopener">⧉ Duplicar plantilla</a>
+      </div>
 
-      <article class="kard c-turquesa">
-        <div class="kard-top"><span class="kard-emoji">🎲</span><span class="chip">📱 Código QR</span></div>
-        <div class="kard-body">
-          <div class="kard-title">Bet Your Answer</div>
-          <p class="kard-desc">Trivia con apuestas de puntos: la tensión sube en la recta final.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/d3d25886-b46b-4ca3-97e7-e09dfca7ba65" target="_blank" rel="noopener">⧉ Duplicar</a>
-        </div>
-      </article>
+      <div class="tcard">
+        <div class="tcard-icon">🎲</div>
+        <div class="tcard-title">Bet Your Answer</div>
+        <span class="tcard-tag">Código QR</span>
+        <p class="tcard-desc">Trivia con apuestas de puntos, sube la tensión en la recta final.</p>
+        <a class="btn-dup-full" href="https://claude.ai/public/artifacts/d3d25886-b46b-4ca3-97e7-e09dfca7ba65" target="_blank" rel="noopener">⧉ Duplicar plantilla</a>
+      </div>
 
-      <article class="kard c-violeta">
-        <div class="kard-top"><span class="kard-emoji">🤖</span><span class="chip">📱 Código QR</span></div>
-        <div class="kard-body">
-          <div class="kard-title">Robot Fight</div>
-          <p class="kard-desc">Duelo de robots por respuestas correctas: ritmo rápido y muy visual.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/26324226-3622-4af9-b079-d629877dec6e" target="_blank" rel="noopener">⧉ Duplicar</a>
-        </div>
-      </article>
+      <div class="tcard">
+        <div class="tcard-icon">🤖</div>
+        <div class="tcard-title">Robot Fight</div>
+        <span class="tcard-tag">Código QR</span>
+        <p class="tcard-desc">Duelo de robots por respuestas correctas, ritmo rápido y visual.</p>
+        <a class="btn-dup-full" href="https://claude.ai/public/artifacts/26324226-3622-4af9-b079-d629877dec6e" target="_blank" rel="noopener">⧉ Duplicar plantilla</a>
+      </div>
 
-      <article class="kard c-amarillo">
-        <div class="kard-top"><span class="kard-emoji">🏁</span><span class="chip">📽️ Modo sala</span></div>
-        <div class="kard-body">
-          <div class="kard-title">Mario Kart Racing Board</div>
-          <p class="kard-desc">Carrera por equipos en tablero: se avanza respondiendo bien.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/41d5355a-b698-43df-a0c9-cddb92ceb88d" target="_blank" rel="noopener">⧉ Duplicar</a>
-        </div>
-      </article>
+      <div class="tcard">
+        <div class="tcard-icon">🏁</div>
+        <div class="tcard-title">Mario Kart Racing Board</div>
+        <span class="tcard-tag sala">Modo sala</span>
+        <p class="tcard-desc">Tablero de carrera por equipos, se proyecta y se avanza respondiendo.</p>
+        <a class="btn-dup-full" href="https://claude.ai/public/artifacts/41d5355a-b698-43df-a0c9-cddb92ceb88d" target="_blank" rel="noopener">⧉ Duplicar plantilla</a>
+      </div>
 
-      <article class="kard c-naranja">
-        <div class="kard-top"><span class="kard-emoji">❓</span><span class="chip">📽️ Modo sala</span></div>
-        <div class="kard-body">
-          <div class="kard-title">Jeopardy</div>
-          <p class="kard-desc">Tablero de categorías y puntajes al estilo clásico: perfecto para repasar unidades completas.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/58408e02-7524-47c2-8502-974ae3ff0bd3" target="_blank" rel="noopener">⧉ Duplicar</a>
-        </div>
-      </article>
+      <div class="tcard">
+        <div class="tcard-icon">❓</div>
+        <div class="tcard-title">Jeopardy</div>
+        <span class="tcard-tag sala">Modo sala</span>
+        <p class="tcard-desc">Tablero de categorías y puntajes al estilo clásico, ideal para repasar unidades completas.</p>
+        <a class="btn-dup-full" href="https://claude.ai/public/artifacts/58408e02-7524-47c2-8502-974ae3ff0bd3" target="_blank" rel="noopener">⧉ Duplicar plantilla</a>
+      </div>
 
-      <article class="kard c-rosa">
-        <div class="kard-top"><span class="kard-emoji">😈</span><span class="chip">📱 QR + 📽️ Sala</span></div>
-        <div class="kard-body">
-          <div class="kard-title">Evil Game</div>
-          <p class="kard-desc">Trivia con giros y penalizaciones: cada equipo tira el dado desde su propio celular.</p>
-          <a class="btn btn-dup" href="https://claude.ai/public/artifacts/cf599c64-bfb0-4687-acd4-d6d76704de0f" target="_blank" rel="noopener">⧉ Duplicar</a>
-        </div>
-      </article>
+      <div class="tcard">
+        <div class="tcard-icon">😈</div>
+        <div class="tcard-title">Evil Game</div>
+        <span class="tcard-tag">Código QR</span>
+        <p class="tcard-desc">Trivia con giros inesperados y penalizaciones, mantiene a los alumnos alerta.</p>
+        <a class="btn-dup-full" href="https://claude.ai/public/artifacts/cf599c64-bfb0-4687-acd4-d6d76704de0f" target="_blank" rel="noopener">⧉ Duplicar plantilla</a>
+      </div>
 
     </div>
   </section>
 
 </main>
-
-<footer>Aula Viva · Hecho por profes, para profes 🍎</footer>
-
-</div><!-- fin dashboard -->
-
-<!-- ==================== MODAL ELIMINAR ==================== -->
-<div class="modal-fondo oculto" id="modal-eliminar">
-  <div class="modal-caja" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
-    <div class="icono">🗑️</div>
-    <h3 id="modal-titulo">¿Eliminar este juego?</h3>
-    <p>Se borrará tu copia de <strong id="modal-nombre"></strong> con todas sus ediciones. El cupo quedará libre para otro juego.</p>
-    <div class="modal-acciones">
-      <button class="btn btn-cancelar" id="btn-cancelar">Cancelar</button>
-      <button class="btn btn-eliminar" id="btn-confirmar">Sí, eliminar</button>
-    </div>
-  </div>
-</div>
-
-<script>
-  // ---------- Estado ----------
-  var TOTAL_CUPOS = 5;
-  var CORREO_DEMO = "snlmjjs@gmail.com";
-  var CLAVE_DEMO = "1234";
-
-  // ---------- Login simulado ----------
-  var pantallaLogin = document.getElementById("pantalla-login");
-  var pantallaDash = document.getElementById("pantalla-dashboard");
-  var formLogin = document.getElementById("form-login");
-  var inputCorreo = document.getElementById("correo");
-  var inputClave = document.getElementById("clave");
-  var loginError = document.getElementById("login-error");
-  var loginCard = document.getElementById("login-card");
-
-  formLogin.addEventListener("submit", function(e){
-    e.preventDefault();
-    var correo = inputCorreo.value.trim().toLowerCase();
-    var clave = inputClave.value;
-
-    if(correo === CORREO_DEMO && clave === CLAVE_DEMO){
-      loginError.classList.remove("visible");
-      pantallaLogin.classList.add("oculto");
-      pantallaDash.classList.remove("oculto");
-      window.scrollTo(0, 0);
-      actualizarEstado();
-    } else {
-      loginError.classList.add("visible");
-      loginCard.classList.remove("sacudir");
-      void loginCard.offsetWidth; // reinicia la animación
-      loginCard.classList.add("sacudir");
-    }
-  });
-
-  document.getElementById("btn-salir").addEventListener("click", function(){
-    pantallaDash.classList.add("oculto");
-    pantallaLogin.classList.remove("oculto");
-    inputCorreo.value = "";
-    inputClave.value = "";
-    loginError.classList.remove("visible");
-    window.scrollTo(0, 0);
-  });
-
-  // ---------- Cupos y contadores ----------
-  function actualizarEstado(){
-    var usados = document.querySelectorAll(".kard-mia").length;
-    var libres = TOTAL_CUPOS - usados;
-
-    // fichas
-    var fichas = document.getElementById("fichas");
-    fichas.innerHTML = "";
-    for(var i = 0; i < TOTAL_CUPOS; i++){
-      var f = document.createElement("span");
-      if(i < usados){
-        f.className = "ficha";
-        f.textContent = "★";
-      } else {
-        f.className = "ficha libre";
-        f.textContent = "+";
-      }
-      fichas.appendChild(f);
-    }
-
-    document.getElementById("cupos-num").textContent = usados + " de " + TOTAL_CUPOS + " usados";
-    document.getElementById("pill-mis-juegos").textContent = usados + " / " + TOTAL_CUPOS + " guardados";
-
-    var textoVacia = document.getElementById("texto-vacia");
-    if(libres === 1){
-      textoVacia.textContent = "Duplica una plantilla de abajo y guárdala aquí. Te queda 1 cupo gratis.";
-    } else {
-      textoVacia.textContent = "Duplica una plantilla de abajo y guárdala aquí. Te quedan " + libres + " cupos gratis.";
-    }
-
-    // si no quedan cupos, se esconde la carta vacía
-    document.getElementById("kard-vacia").style.display = libres > 0 ? "" : "none";
-  }
-
-  // ---------- Eliminar con modal ----------
-  var modal = document.getElementById("modal-eliminar");
-  var modalNombre = document.getElementById("modal-nombre");
-  var kardPendiente = null;
-
-  document.getElementById("grid-mis-juegos").addEventListener("click", function(e){
-    var boton = e.target.closest(".btn-borrar");
-    if(!boton) return;
-    kardPendiente = boton.closest(".kard-mia");
-    modalNombre.textContent = kardPendiente.getAttribute("data-nombre");
-    modal.classList.remove("oculto");
-  });
-
-  document.getElementById("btn-cancelar").addEventListener("click", cerrarModal);
-  modal.addEventListener("click", function(e){
-    if(e.target === modal) cerrarModal();
-  });
-  document.addEventListener("keydown", function(e){
-    if(e.key === "Escape" && !modal.classList.contains("oculto")) cerrarModal();
-  });
-
-  function cerrarModal(){
-    modal.classList.add("oculto");
-    kardPendiente = null;
-  }
-
-  document.getElementById("btn-confirmar").addEventListener("click", function(){
-    if(!kardPendiente) return;
-    var kard = kardPendiente;
-    modal.classList.add("oculto");
-    kardPendiente = null;
-    kard.classList.add("saliendo");
-    setTimeout(function(){
-      kard.remove();
-      actualizarEstado();
-    }, 250);
-  });
-
-  // estado inicial
-  actualizarEstado();
-</script>
 
 </body>
 </html>
