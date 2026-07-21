@@ -620,7 +620,29 @@
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(misJuegos)); }catch(e){}
   }
 
+  // Nombres antiguos con riesgo de marca registrada, migrados a los juegos ya guardados
+  var NOMBRES_ANTIGUOS = [
+    ["Among Us Vocabulario", "Descubre al Impostor"],
+    ["Mario Kart Racing Board", "Race Board"],
+    ["Monopoly San Fernando", "Magnates de San Fernando"],
+    ["¿Quién Quiere Ser Millonario?", "Escalera Millonaria"]
+  ];
+
+  function migrarNombres(lista){
+    var cambiado = false;
+    lista.forEach(function(juego){
+      NOMBRES_ANTIGUOS.forEach(function(par){
+        if(juego.nombre.indexOf(par[0]) !== -1){
+          juego.nombre = juego.nombre.split(par[0]).join(par[1]);
+          cambiado = true;
+        }
+      });
+    });
+    return cambiado;
+  }
+
   var misJuegos = cargarJuegos();
+  if(migrarNombres(misJuegos)) guardarJuegos();
 
   function crearKardMia(juego){
     var art = document.createElement("article");
