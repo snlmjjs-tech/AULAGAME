@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>QuizLive · Teacher Seba</title>
+<!-- ============================================================
+     QUIZLIVE — Quiz interactivo en vivo estilo Kahoot
+     · El profesor crea preguntas (quiz, V/F, ordenar, respuesta corta y larga)
+     · Los estudiantes se conectan EN VIVO con un PIN desde cualquier dispositivo
+     · Requiere Firebase (gratis). Pega tu configuración más abajo o usa el
+       botón "Conexión" dentro del juego.
+     ============================================================ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.14.1/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.14.1/firebase-database-compat.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#2b1660; --bg2:#3a2180; --panel:#41288f; --panel2:#4f33a6;
+  --ink:#ffffff; --ink-dim:#cdbdf5; --line:rgba(255,255,255,.14);
+  --rojo:#e21b3c; --azul:#1368ce; --amarillo:#ffa602; --verde:#26890c;
+  --morado:#7b3ff2; --oro:#ffd23f;
+  --r:18px; --sh:0 10px 0 rgba(0,0,0,.28);
+  font-size:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Nunito',system-ui,sans-serif;color:var(--ink);
+  background:radial-gradient(1200px 700px at 20% -10%,#4b2ba0 0%,var(--bg) 55%),var(--bg);
+  min-height:100vh;overflow-x:hidden;
+}
+/* fondo de formas flotantes (firma visual) */
+.shapes-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.shapes-bg span{position:absolute;font-size:64px;opacity:.07;animation:float 14s linear infinite}
+@keyframes float{0%{transform:translateY(105vh) rotate(0)}100%{transform:translateY(-15vh) rotate(340deg)}}
+@media (prefers-reduced-motion:reduce){.shapes-bg span{animation:none;top:auto!important;bottom:-200px}}
+
+h1,h2,h3,.display{font-family:'Baloo 2',cursive;letter-spacing:.3px}
+.screen{display:none;position:relative;z-index:1;min-height:100vh;padding:22px;max-width:1100px;margin:0 auto}
+.screen.active{display:block}
+.center-col{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:92vh;gap:18px;text-align:center}
+
+.logo{font-family:'Baloo 2';font-size:clamp(2.6rem,7vw,4.4rem);font-weight:800;line-height:1}
+.logo .sh{display:inline-block;transform:translateY(4px)}
+.logo .c1{color:var(--rojo)}.logo .c2{color:var(--azul)}.logo .c3{color:var(--amarillo)}.logo .c4{color:#3fd158}
+.tagline{color:var(--ink-dim);font-weight:600}
+
+.btn{
+  font-family:'Baloo 2';font-weight:700;font-size:1.05rem;color:#fff;
+  border:none;border-radius:var(--r);padding:14px 26px;cursor:pointer;
+  background:var(--morado);box-shadow:var(--sh);transition:transform .08s, box-shadow .08s, filter .15s;
+  display:inline-flex;align-items:center;gap:10px;justify-content:center;
+}
+.btn:hover{filter:brightness(1.1)}
+.btn:active{transform:translateY(6px);box-shadow:0 4px 0 rgba(0,0,0,.28)}
+.btn:focus-visible{outline:3px solid var(--oro);outline-offset:3px}
+.btn.big{font-size:1.35rem;padding:18px 38px}
+.btn.rojo{background:var(--rojo)}.btn.azul{background:var(--azul)}
+.btn.verde{background:var(--verde)}.btn.amarillo{background:var(--amarillo);color:#3a2a00}
+.btn.gris{background:#5d5480}.btn.oro{background:var(--oro);color:#4a3600}
+.btn.ghost{background:transparent;box-shadow:none;border:2px solid var(--line);color:var(--ink-dim)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn.small{font-size:.9rem;padding:8px 16px;border-radius:12px;box-shadow:0 5px 0 rgba(0,0,0,.28)}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:0 14px 34px rgba(0,0,0,.30)}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.grow{flex:1}
+.muted{color:var(--ink-dim)}
+.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.topbar h2{font-size:1.7rem}
+.spacer{flex:1}
+
+input[type=text],input[type=number],textarea,select{
+  width:100%;font-family:'Nunito';font-weight:700;font-size:1rem;color:#2a1758;
+  background:#fff;border:none;border-radius:14px;padding:13px 16px;
+}
+textarea{resize:vertical;min-height:90px}
+input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--oro)}
+label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.6px}
+
+/* ===== lista de preguntas (editor) ===== */
+.qlist{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.qitem{display:flex;align-items:center;gap:14px;background:var(--panel2);border-radius:16px;padding:14px 16px;border:1px solid var(--line)}
+.qitem .num{font-family:'Baloo 2';font-size:1.2rem;color:var(--oro);min-width:34px}
+.qitem .qtxt{flex:1;font-weight:700}
+.badge{font-size:.72rem;font-weight:800;letter-spacing:.5px;padding:4px 10px;border-radius:999px;text-transform:uppercase}
+.badge.quiz{background:var(--rojo)}.badge.vf{background:var(--azul)}
+.badge.orden{background:var(--amarillo);color:#3a2a00}.badge.corta{background:var(--verde)}
+.badge.larga{background:var(--morado)}
+.icon-btn{background:rgba(255,255,255,.12);border:none;color:#fff;border-radius:10px;width:38px;height:38px;font-size:1rem;cursor:pointer}
+.icon-btn:hover{background:rgba(255,255,255,.25)}
+
+/* ===== grilla de alternativas estilo Kahoot ===== */
+.ans-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%}
+.ans{
+  border:none;border-radius:16px;min-height:96px;padding:16px 18px;cursor:pointer;
+  display:flex;align-items:center;gap:14px;color:#fff;font-family:'Nunito';font-weight:800;
+  font-size:clamp(1rem,2.4vw,1.35rem);text-align:left;box-shadow:var(--sh);
+  transition:transform .08s,filter .12s,opacity .3s;
+}
+.ans:hover{filter:brightness(1.12)}
+.ans:active{transform:translateY(6px);box-shadow:0 4px 0 rgba(0,0,0,.28)}
+.ans:focus-visible{outline:4px solid #fff;outline-offset:2px}
+.ans .shape{font-size:2rem;line-height:1;flex-shrink:0;text-shadow:0 2px 0 rgba(0,0,0,.25)}
+.ans.a0{background:var(--rojo)}.ans.a1{background:var(--azul)}
+.ans.a2{background:var(--amarillo);color:#3a2a00}.ans.a3{background:var(--verde)}
+.ans.dim{opacity:.22;pointer-events:none}
+.ans.win{outline:5px solid #fff;animation:pulse .8s ease infinite alternate}
+@keyframes pulse{from{transform:scale(1)}to{transform:scale(1.03)}}
+.ans .pct{margin-left:auto;font-family:'Baloo 2';font-size:1.3rem}
+
+/* ===== pantalla de pregunta (host) ===== */
+.qheader{background:#fff;color:#22104f;border-radius:18px;padding:20px 26px;text-align:center;
+  font-family:'Baloo 2';font-weight:700;font-size:clamp(1.3rem,3.4vw,2.1rem);box-shadow:0 10px 24px rgba(0,0,0,.3)}
+.hud{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:20px 0;flex-wrap:wrap}
+.timer{
+  width:96px;height:96px;border-radius:50%;background:var(--amarillo);color:#3a2a00;
+  display:flex;align-items:center;justify-content:center;font-family:'Baloo 2';
+  font-size:2.4rem;font-weight:800;box-shadow:0 8px 0 rgba(0,0,0,.28);flex-shrink:0;
+}
+.timer.low{background:var(--rojo);color:#fff;animation:pulse .5s infinite alternate}
+.answers-count{text-align:center}
+.answers-count .n{font-family:'Baloo 2';font-size:2.6rem;line-height:1}
+.pin-chip{background:#fff;color:#22104f;border-radius:14px;padding:8px 18px;font-family:'Baloo 2';font-weight:800;font-size:1.2rem}
+
+/* ===== lobby ===== */
+.pin-hero{background:#fff;color:#22104f;border-radius:26px;padding:26px 40px;display:inline-block;box-shadow:0 16px 40px rgba(0,0,0,.35)}
+.pin-hero .lbl{font-weight:800;letter-spacing:2px;font-size:.85rem;color:#6b5aa8;text-transform:uppercase}
+.pin-hero .pin{font-family:'Baloo 2';font-size:clamp(3rem,9vw,5.2rem);font-weight:800;letter-spacing:8px;line-height:1}
+.players-wrap{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:8px}
+.ptag{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:10px 20px;font-weight:800;animation:pop .3s ease}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* ===== podio ===== */
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:14px;margin:26px 0}
+.pod{width:min(28vw,190px);border-radius:18px 18px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:14px;animation:rise .9s ease}
+@keyframes rise{from{height:0!important;opacity:0}to{opacity:1}}
+.pod .medal{font-size:2.4rem}
+.pod .nm{font-family:'Baloo 2';font-size:1.15rem;padding:0 8px;text-align:center;word-break:break-word}
+.pod .pt{font-weight:800;color:rgba(255,255,255,.85)}
+.pod.p1{height:230px;background:linear-gradient(180deg,#ffd23f,#e0a400);color:#4a3600}
+.pod.p2{height:180px;background:linear-gradient(180deg,#c9d6ea,#8fa3c4);color:#20304d}
+.pod.p3{height:140px;background:linear-gradient(180deg,#e8955d,#b05e22);color:#3d1e00}
+.ranking{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+.rk{display:flex;gap:12px;background:var(--panel2);border-radius:12px;padding:10px 16px;font-weight:800}
+.rk .pos{color:var(--oro);min-width:30px}
+
+/* ===== estudiante ===== */
+.stu-shell{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px;min-height:92vh;justify-content:center}
+.stu-status{text-align:center}
+.stu-status .emoji{font-size:4rem;display:block;margin-bottom:10px}
+.scorebar{display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.25);border-radius:14px;padding:10px 16px;font-weight:800}
+.feedback{border-radius:22px;padding:34px 22px;text-align:center;animation:pop .35s ease}
+.feedback.ok{background:var(--verde)}
+.feedback.bad{background:var(--rojo)}
+.feedback.wait{background:var(--panel2)}
+.feedback h2{font-size:2rem}
+.feedback .pts{font-family:'Baloo 2';font-size:1.4rem;margin-top:6px}
+
+/* ===== ordenar ===== */
+.order-pool,.order-out{display:flex;flex-direction:column;gap:10px}
+.chip{background:#fff;color:#22104f;border:none;border-radius:14px;padding:14px 16px;font-weight:800;font-size:1.05rem;cursor:pointer;text-align:left;box-shadow:0 6px 0 rgba(0,0,0,.25);display:flex;gap:10px;align-items:center}
+.chip:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.chip .ix{background:var(--morado);color:#fff;border-radius:8px;min-width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-family:'Baloo 2'}
+.order-out .chip{background:var(--oro)}
+.order-out:empty::after{content:"Toca las opciones en el orden correcto ↑";display:block;text-align:center;color:var(--ink-dim);font-weight:700;padding:14px;border:2px dashed var(--line);border-radius:14px}
+
+/* ===== revisión respuestas abiertas ===== */
+.rev-item{background:var(--panel2);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+.rev-item .who{font-weight:800;color:var(--oro)}
+.rev-item .txt{background:rgba(255,255,255,.1);border-radius:10px;padding:10px 12px;white-space:pre-wrap}
+.rev-item .row{gap:8px}
+.rev-item .btn.sel{outline:3px solid #fff}
+
+/* ===== modales ===== */
+.modal-bg{position:fixed;inset:0;background:rgba(10,4,30,.75);display:none;align-items:center;justify-content:center;z-index:50;padding:18px}
+.modal-bg.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:24px;width:min(680px,100%);max-height:88vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.modal h3{font-size:1.5rem;margin-bottom:6px}
+.opt-row{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.opt-row .shape-tag{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#fff;flex-shrink:0}
+.opt-row input[type=radio]{width:22px;height:22px;accent-color:var(--oro);cursor:pointer;flex-shrink:0}
+.st0{background:var(--rojo)}.st1{background:var(--azul)}.st2{background:var(--amarillo);color:#3a2a00}.st3{background:var(--verde)}
+.help-steps{line-height:1.7;font-weight:600}
+.help-steps b{color:var(--oro)}
+.help-steps code{background:rgba(0,0,0,.3);padding:2px 6px;border-radius:6px;font-size:.85em}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(120px);background:#fff;color:#22104f;font-weight:800;padding:14px 24px;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.4);transition:transform .3s;z-index:99;max-width:90vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.bar{height:10px;background:rgba(255,255,255,.15);border-radius:999px;overflow:hidden;margin-top:14px}
+.bar i{display:block;height:100%;background:var(--oro);border-radius:999px;transition:width 1s linear}
+.stat-bars{display:flex;gap:14px;align-items:flex-end;justify-content:center;height:150px;margin:18px 0}
+.stat-bars .sb{width:70px;border-radius:10px 10px 0 0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;color:#fff;font-weight:800;transition:height .6s ease;min-height:26px}
+/* ===== avatares ===== */
+.avatar-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:4px}
+.av{font-size:1.7rem;background:rgba(255,255,255,.12);border:2px solid transparent;border-radius:14px;padding:8px 0;cursor:pointer;transition:transform .1s}
+.av:hover{transform:scale(1.12)}
+.av.sel{background:var(--oro);border-color:#fff;transform:scale(1.12)}
+.ptag .pav{font-size:1.3rem;margin-right:4px}
+/* ===== imagen de pregunta ===== */
+.qimg{display:block;max-width:min(520px,92%);max-height:36vh;margin:14px auto 0;border-radius:16px;box-shadow:0 12px 28px rgba(0,0,0,.4);object-fit:contain;background:#fff}
+.img-prev{position:relative;display:inline-block;margin-top:10px}
+.img-prev img{max-width:220px;max-height:140px;border-radius:12px;display:block}
+/* ===== música ===== */
+#musicBtn{position:fixed;top:14px;right:14px;z-index:30;display:none}
+/* ===== video de YouTube ===== */
+.ytwrap{position:relative;width:min(680px,100%);margin:14px auto 0;padding-top:min(56.25%,382px);border-radius:16px;overflow:hidden;box-shadow:0 12px 28px rgba(0,0,0,.4)}
+.ytwrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+/* ===== QR del lobby ===== */
+.qr-hero{background:#fff;color:#22104f;border-radius:26px;padding:20px 22px 14px;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
+.qr-hero .lbl{font-weight:800;letter-spacing:2px;font-size:.85rem;color:#6b5aa8;text-transform:uppercase}
+.qr-hero img,.qr-hero canvas{border-radius:8px}
+@media(max-width:640px){
+  .ans-grid{grid-template-columns:1fr}
+  .ans{min-height:76px}
+  .timer{width:72px;height:72px;font-size:1.8rem}
+  .screen{padding:14px}
+}
+</style>
+</head>
+<body>
+<div class="shapes-bg" id="shapesBg"></div>
+<button class="btn small gris" id="musicBtn" onclick="toggleMusic()">🔊 Música</button>
+
+<!-- ================= INICIO ================= -->
+<section class="screen active" id="scr-home">
+  <div class="center-col">
+    <div>
+      <div class="logo"><span class="sh c1">▲</span><span class="sh c2">◆</span><span class="sh c3">●</span><span class="sh c4">■</span><br>Quiz<span style="color:var(--oro)">Live</span></div>
+      <p class="tagline">Crea, proyecta y juega en vivo · Los estudiantes se conectan con un PIN</p>
+    </div>
+    <div class="row" style="justify-content:center">
+      <button class="btn big rojo" onclick="openLibrary()">🎓 Soy el Profesor</button>
+      <button class="btn big azul" onclick="go('scr-join')">🙋 Soy Estudiante</button>
+    </div>
+    <div class="row" style="justify-content:center">
+      <button class="btn small gris" onclick="openConfig()">⚙️ Conexión (Firebase)</button>
+      <button class="btn small ghost" onclick="openModal('modal-help')">❓ ¿Cómo funciona?</button>
+    </div>
+    <p class="muted" id="fbStatus" style="font-weight:700"></p>
+  </div>
+</section>
+
+<!-- ================= BIBLIOTECA (MIS QUIZZES) ================= -->
+<section class="screen" id="scr-library">
+  <div class="topbar">
+    <button class="icon-btn" onclick="go('scr-home')" title="Inicio">←</button>
+    <h2>📚 Mis Quizzes</h2>
+    <span class="spacer"></span>
+    <button class="btn verde" onclick="newQuiz()">＋ Nuevo quiz</button>
+  </div>
+  <div class="card">
+    <p class="muted" style="font-weight:700;margin-bottom:6px">Tus quizzes se guardan automáticamente en este navegador. Usa 📤 Exportar Excel dentro de cada quiz como respaldo o para llevarlos a otro computador.</p>
+    <div class="qlist" id="libList"></div>
+  </div>
+</section>
+
+<!-- ================= EDITOR (PROFESOR) ================= -->
+<section class="screen" id="scr-editor">
+  <div class="topbar">
+    <button class="icon-btn" onclick="openLibrary()" title="Volver">←</button>
+    <h2>Editor de preguntas</h2>
+    <span class="spacer"></span>
+    <button class="btn small amarillo" onclick="exportExcel()">📤 Exportar Excel</button>
+    <button class="btn small amarillo" onclick="document.getElementById('fileExcel').click()">📥 Importar Excel</button>
+    <input type="file" id="fileExcel" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)">
+  </div>
+  <div class="card">
+    <div class="row">
+      <div class="grow">
+        <label class="fld" style="margin-top:0">Título del quiz</label>
+        <input type="text" id="quizTitle" placeholder="Ej: Irregular Verbs – Unit 3" value="Mi Quiz" oninput="autoSave()">
+      </div>
+      <button class="btn verde" onclick="openQuestionModal(-1)" style="align-self:flex-end">＋ Agregar pregunta</button>
+    </div>
+    <div class="qlist" id="qList"></div>
+  </div>
+  <div class="row" style="justify-content:center;margin-top:22px">
+    <button class="btn big oro" onclick="startLive()">📡 Iniciar juego EN VIVO</button>
+    <button class="btn big gris" onclick="startLocal()">📽️ Modo local (sin conexión)</button>
+  </div>
+  <p class="muted" style="text-align:center;margin-top:10px">En vivo: los estudiantes entran con un PIN desde sus dispositivos · Local: solo proyección</p>
+</section>
+
+<!-- ================= LOBBY (HOST) ================= -->
+<section class="screen" id="scr-lobby">
+  <div class="center-col">
+    <h2 class="display" style="font-size:2rem" id="lobbyTitle">Mi Quiz</h2>
+    <p class="muted" style="font-weight:700">Entra en esta misma página, toca <b style="color:#fff">“Soy Estudiante”</b> y usa el PIN:</p>
+    <div class="row" style="justify-content:center;align-items:stretch">
+      <div class="pin-hero"><div class="lbl">PIN del juego</div><div class="pin" id="pinShow">000000</div></div>
+      <div class="qr-hero" id="qrHero"><div id="qrBox"></div><div class="lbl">📱 Escanea y entra</div></div>
+    </div>
+    <h3 id="playerCount" class="display">0 jugadores conectados</h3>
+    <div class="players-wrap" id="playersWrap"></div>
+    <div class="row">
+      <button class="btn big verde" id="btnStartGame" onclick="hostStartGame()" disabled>🚀 ¡Comenzar!</button>
+      <button class="btn gris" onclick="cancelLive()">Cancelar</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= JUEGO (HOST) ================= -->
+<section class="screen" id="scr-host">
+  <div class="hud">
+    <span class="pin-chip">PIN <span id="pinSmall"></span></span>
+    <span class="display" id="hostQNum" style="font-size:1.2rem"></span>
+    <span class="spacer"></span>
+    <div class="answers-count"><div class="n" id="hostAnsCount">0</div><div class="muted">respuestas</div></div>
+    <div class="timer" id="hostTimer">–</div>
+  </div>
+  <div class="qheader" id="hostQText"></div>
+  <div id="hostImg"></div>
+  <div id="hostBody" style="margin-top:20px"></div>
+  <div class="row" style="justify-content:center;margin-top:24px">
+    <button class="btn amarillo" id="btnSkip" onclick="hostEndQuestion()">⏭ Terminar tiempo</button>
+    <button class="btn big verde" id="btnNext" onclick="hostNext()" style="display:none">Siguiente ▶</button>
+  </div>
+</section>
+
+<!-- ================= PODIO ================= -->
+<section class="screen" id="scr-podium">
+  <div class="center-col">
+    <h1 class="display" style="font-size:2.6rem">🏆 ¡Resultados finales!</h1>
+    <div class="podium" id="podiumWrap"></div>
+    <div class="ranking" id="rankingWrap" style="width:100%"></div>
+    <div class="row">
+      <button class="btn oro" onclick="location.reload()">🔁 Nuevo juego</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= UNIRSE (ESTUDIANTE) ================= -->
+<section class="screen" id="scr-join">
+  <div class="stu-shell">
+    <div style="text-align:center"><div class="logo" style="font-size:2.4rem">Quiz<span style="color:var(--oro)">Live</span></div></div>
+    <div class="card">
+      <label class="fld" style="margin-top:0">PIN del juego</label>
+      <input type="text" id="joinPin" inputmode="numeric" maxlength="6" placeholder="123456" style="text-align:center;font-size:1.6rem;letter-spacing:6px;font-family:'Baloo 2'">
+      <label class="fld">Tu nombre</label>
+      <input type="text" id="joinName" maxlength="18" placeholder="Ej: Cata M.">
+      <label class="fld">Elige tu animal 🐾</label>
+      <div class="avatar-grid" id="avatarGrid"></div>
+      <button class="btn big azul" style="width:100%;margin-top:18px" onclick="joinGame()">Entrar ▶</button>
+    </div>
+    <button class="btn small ghost" onclick="go('scr-home')">← Volver</button>
+  </div>
+</section>
+
+<!-- ================= ESTUDIANTE: JUEGO ================= -->
+<section class="screen" id="scr-student">
+  <div class="stu-shell">
+    <div class="scorebar"><span id="stuName"></span><span id="stuScore">0 pts</span></div>
+    <div id="stuBody"></div>
+  </div>
+</section>
+
+<!-- ================= MODO LOCAL ================= -->
+<section class="screen" id="scr-local">
+  <div class="hud">
+    <span class="display" id="locQNum" style="font-size:1.2rem"></span>
+    <span class="spacer"></span>
+    <div class="timer" id="locTimer">–</div>
+  </div>
+  <div class="qheader" id="locQText"></div>
+  <div id="locImg"></div>
+  <div id="locBody" style="margin-top:20px"></div>
+  <div class="row" style="justify-content:center;margin-top:24px">
+    <button class="btn amarillo" id="locReveal" onclick="localReveal()">👁 Mostrar respuesta</button>
+    <button class="btn big verde" id="locNext" onclick="localNext()" style="display:none">Siguiente ▶</button>
+    <button class="btn small gris" onclick="musicStop();go('scr-editor')">Salir</button>
+  </div>
+</section>
+
+<!-- ================= MODAL: PREGUNTA ================= -->
+<div class="modal-bg" id="modal-q">
+  <div class="modal">
+    <h3 id="qModalTitle">Nueva pregunta</h3>
+    <label class="fld">Tipo de pregunta</label>
+    <select id="qType" onchange="renderTypeFields()">
+      <option value="quiz">🎯 Quiz (alternativas de colores)</option>
+      <option value="vf">✅ Verdadero o Falso</option>
+      <option value="orden">🔢 Ordenar</option>
+      <option value="corta">✏️ Respuesta corta</option>
+      <option value="larga">📝 Respuesta larga (revisión del profesor)</option>
+    </select>
+    <label class="fld">Pregunta</label>
+    <textarea id="qText" placeholder="Escribe la pregunta aquí…"></textarea>
+    <div class="row">
+      <div class="grow"><label class="fld">Tiempo (segundos)</label><input type="number" id="qTime" min="5" max="240" value="20"></div>
+      <div class="grow"><label class="fld">Puntos</label><input type="number" id="qPoints" min="50" max="5000" step="50" value="1000"></div>
+    </div>
+    <label class="fld">Imagen (opcional)</label>
+    <div class="row">
+      <button class="btn small azul" onclick="document.getElementById('qImgFile').click()">🖼 Adjuntar imagen</button>
+      <button class="btn small gris" id="btnClearImg" onclick="clearImg()" style="display:none">✖ Quitar</button>
+    </div>
+    <input type="file" id="qImgFile" accept="image/*" style="display:none" onchange="pickImg(this)">
+    <div class="img-prev" id="imgPrev"></div>
+    <label class="fld">Video de YouTube (opcional)</label>
+    <input type="text" id="qYt" placeholder="Pega el link del video (ej: https://youtu.be/…)">
+    <div id="typeFields"></div>
+    <div class="row" style="margin-top:20px;justify-content:flex-end">
+      <button class="btn gris" onclick="closeModal('modal-q')">Cancelar</button>
+      <button class="btn verde" onclick="saveQuestion()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: CONFIG FIREBASE ================= -->
+<div class="modal-bg" id="modal-config">
+  <div class="modal">
+    <h3>⚙️ Conexión en vivo (Firebase)</h3>
+    <p class="muted" style="font-weight:600;margin-bottom:8px">Pega aquí el objeto <code>firebaseConfig</code> de tu proyecto (formato JSON). Se guarda en este navegador.</p>
+    <textarea id="cfgText" style="min-height:160px;font-family:monospace;font-weight:600" placeholder='{
+  "apiKey": "AIza…",
+  "authDomain": "tu-proyecto.firebaseapp.com",
+  "databaseURL": "https://tu-proyecto-default-rtdb.firebaseio.com",
+  "projectId": "tu-proyecto"
+}'></textarea>
+    <div class="row" style="margin-top:16px;justify-content:flex-end">
+      <button class="btn small ghost" onclick="openModal('modal-help')">¿Cómo obtengo esto?</button>
+      <button class="btn gris" onclick="closeModal('modal-config')">Cerrar</button>
+      <button class="btn verde" onclick="saveConfig()">Conectar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: AYUDA ================= -->
+<div class="modal-bg" id="modal-help">
+  <div class="modal">
+    <h3>❓ Cómo funciona QuizLive</h3>
+    <div class="help-steps">
+      <p><b>Modo en vivo (estilo Kahoot):</b> el profesor proyecta esta página, los estudiantes abren la <u>misma página</u> en sus celulares (súbela a tu sitio o hosting) y entran con el PIN.</p>
+      <br>
+      <p><b>Configuración inicial (una sola vez, gratis):</b></p>
+      <p>1. Entra a <code>console.firebase.google.com</code> y crea un proyecto.</p>
+      <p>2. En el menú: <b>Compilación → Realtime Database → Crear base de datos</b> (elige "modo de prueba").</p>
+      <p>3. En <b>Descripción general → ⚙️ Configuración del proyecto → Tus apps → Web (&lt;/&gt;)</b>, registra una app y copia el objeto <code>firebaseConfig</code>.</p>
+      <p>4. Pégalo en <b>⚙️ Conexión</b> aquí en QuizLive. ¡Listo!</p>
+      <br>
+      <p><b>Tipos de pregunta:</b> Quiz con figuras de colores (▲◆●■), Verdadero/Falso, Ordenar, Respuesta corta (se corrige sola) y Respuesta larga (el profesor asigna los puntos en vivo).</p>
+      <p><b>Excel:</b> puedes exportar la plantilla, editar las preguntas en Excel y volver a importarlas. Las <b>imágenes</b> de las preguntas no viajan en el Excel; los <b>videos de YouTube</b> sí (columna Video).</p>
+      <p><b>📚 Mis Quizzes:</b> tus quizzes se guardan solos en este navegador (crea uno por curso, duplícalos y adáptalos). Si cambias de computador, llévalos con Exportar/Importar Excel.</p>
+    </div>
+    <div class="row" style="margin-top:16px;justify-content:flex-end">
+      <button class="btn verde" onclick="closeModal('modal-help')">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: CONFIRMAR ================= -->
+<div class="modal-bg" id="modal-confirm">
+  <div class="modal" style="max-width:420px">
+    <h3 id="confirmTitle">¿Seguro?</h3>
+    <p class="muted" id="confirmMsg" style="font-weight:600;margin-top:6px"></p>
+    <div class="row" style="margin-top:20px;justify-content:flex-end">
+      <button class="btn gris" onclick="closeModal('modal-confirm')">Cancelar</button>
+      <button class="btn rojo" id="confirmBtn">Sí, continuar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+/* ============================================================
+   ✏️ OPCIONAL: pega aquí tu configuración de Firebase para que
+   quede fija en el archivo (así los estudiantes no configuran nada).
+   Si la dejas en null, puedes configurarla con el botón ⚙️ Conexión.
+   ============================================================ */
+const FIREBASE_CONFIG_FIJA = {
+  apiKey: "AIzaSyCnqRftB5jLIqt-_0s6yvzFCjpUEfrcwXc",
+  authDomain: "quizlive-seba.firebaseapp.com",
+  databaseURL: "https://quizlive-seba-default-rtdb.firebaseio.com",
+  projectId: "quizlive-seba",
+  storageBucket: "quizlive-seba.firebasestorage.app",
+  messagingSenderId: "516664063313",
+  appId: "1:516664063313:web:71d2e6d30fcd1c8ae20f70"
+};
+
+/* ================= UTILIDADES ================= */
+const $ = s => document.querySelector(s);
+const SHAPES = ['▲','◆','●','■'];
+const SHAPE_NAMES = ['Triángulo rojo','Rombo azul','Círculo amarillo','Cuadrado verde'];
+const TYPE_LABEL = {quiz:'Quiz', vf:'V / F', orden:'Ordenar', corta:'R. corta', larga:'R. larga'};
+const esc = t => String(t??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = t => String(t??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+
+function go(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); $('#'+id).classList.add('active'); window.scrollTo(0,0);
+  const mb=document.getElementById('musicBtn'); if(mb) mb.style.display=['scr-lobby','scr-host','scr-local'].includes(id)?'inline-flex':'none'; }
+function openModal(id){ $('#'+id).classList.add('open'); }
+function closeModal(id){ $('#'+id).classList.remove('open'); }
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2800); }
+function askConfirm(title,msg,fn){ $('#confirmTitle').textContent=title; $('#confirmMsg').textContent=msg;
+  const b=$('#confirmBtn'); const nb=b.cloneNode(true); b.parentNode.replaceChild(nb,b);
+  nb.addEventListener('click',()=>{ closeModal('modal-confirm'); fn(); }); openModal('modal-confirm'); }
+
+/* fondo de formas flotantes */
+(function(){ const bg=$('#shapesBg'); const cols=['#e21b3c','#1368ce','#ffa602','#26890c'];
+  for(let i=0;i<14;i++){ const s=document.createElement('span'); s.textContent=SHAPES[i%4];
+    s.style.left=(Math.random()*100)+'vw'; s.style.color=cols[i%4];
+    s.style.animationDuration=(10+Math.random()*14)+'s'; s.style.animationDelay=(-Math.random()*14)+'s';
+    s.style.fontSize=(36+Math.random()*70)+'px'; bg.appendChild(s); } })();
+
+/* ================= AUDIO (Web Audio API) ================= */
+let AC=null;
+function ac(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(AC&&AC.state==='suspended') AC.resume(); return AC; }
+function beep(f,d,type='square',g=.12,when=0){ const c=ac(); if(!c) return;
+  const o=c.createOscillator(), v=c.createGain(); o.type=type; o.frequency.value=f;
+  v.gain.setValueAtTime(g,c.currentTime+when); v.gain.exponentialRampToValueAtTime(.001,c.currentTime+when+d);
+  o.connect(v); v.connect(c.destination); o.start(c.currentTime+when); o.stop(c.currentTime+when+d+.05); }
+const sfx={
+  click:()=>beep(700,.06,'square',.08),
+  tick:()=>beep(1000,.05,'square',.07),
+  join:()=>{beep(523,.1,'triangle',.12);beep(784,.12,'triangle',.12,.09);},
+  start:()=>{[523,659,784,1046].forEach((f,i)=>beep(f,.15,'triangle',.14,i*.12));},
+  ok:()=>{[659,784,1046].forEach((f,i)=>beep(f,.16,'triangle',.15,i*.1));},
+  bad:()=>{beep(196,.3,'sawtooth',.12);beep(147,.35,'sawtooth',.12,.15);},
+  reveal:()=>{beep(880,.12,'triangle',.12);beep(1174,.2,'triangle',.12,.1);},
+  fanfare:()=>{[523,659,784,1046,784,1046,1318].forEach((f,i)=>beep(f,.18,'triangle',.14,i*.14));}
+};
+document.addEventListener('pointerdown',()=>ac(),{once:true});
+
+/* ================= MÚSICA (Web Audio, sin archivos) ================= */
+const AVATARS=['🐶','🐱','🦊','🐼','🐸','🐵','🦁','🐯','🐨','🐷','🦄','🐢','🦉','🐝','🐬','🐙','🦜','🐺'];
+const music={h:null, step:0, muted:false, mode:null};
+/* progresión motivadora I–V–vi–IV en La mayor */
+const PROG=[[220,277.2,329.6,440],[164.8,207.7,246.9,329.6],[185,220,277.2,370],[146.8,185,220,293.7]];
+function musicStart(mode){
+  music.mode=mode; clearInterval(music.h); music.step=0;
+  if(music.muted) return;
+  const int = mode==='q'?200:280; // más rápida durante las preguntas
+  music.h=setInterval(()=>{
+    const bar=Math.floor(music.step/8)%4, st=music.step%8, ch=PROG[bar];
+    if(st%2===0) beep(ch[0]/2,.22,'triangle',.055);            // bajo
+    beep(ch[(st*2)%4],.12,'sine',st%4===0?.05:.03);            // arpegio
+    if(mode==='q'&&st===4) beep(ch[3]*2,.08,'square',.02);      // brillo
+    music.step++;
+  },int);
+}
+function musicStop(){ clearInterval(music.h); music.h=null; music.mode=null; }
+function toggleMusic(){
+  music.muted=!music.muted;
+  $('#musicBtn').textContent=music.muted?'🔇 Música':'🔊 Música';
+  if(music.muted) clearInterval(music.h);
+  else if(music.mode) musicStart(music.mode);
+  else if(['scr-lobby','scr-host','scr-local'].some(id=>$('#'+id).classList.contains('active'))) musicStart('lobby');
+}
+
+/* ================= ESTADO ================= */
+const state={
+  questions:[], editing:-1,
+  db:null, pin:null, gameRef:null,
+  role:null, playerId:null, playerName:null,
+  qIndex:-1, timerH:null, timeLeft:0,
+  answered:{}, players:{}, current:null,
+  stuAnswered:false, stuQStart:0, orderSel:[],
+  localRevealed:false, listeners:[]
+};
+
+/* ================= PREGUNTAS DE EJEMPLO ================= */
+state.questions=[
+  {type:'quiz', text:'What is the past tense of "GO"?', time:20, points:1000,
+   options:['goed','went','gone','goes'], correct:1},
+  {type:'vf', text:'"Children" is the plural of "child".', time:15, points:1000, correct:0},
+  {type:'orden', text:'Ordena la oración: pon las palabras en el orden correcto.', time:30, points:1000,
+   options:['She','is','playing','soccer']},
+  {type:'corta', text:'Escribe el pasado del verbo "EAT".', time:25, points:1000, accepted:['ate']},
+  {type:'larga', text:'Write two sentences about your favorite hobby.', time:90, points:1000}
+];
+
+/* ================= IMAGEN DE PREGUNTA ================= */
+function pickImg(inp){
+  const f=inp.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const max=800, k=Math.min(1,max/Math.max(img.width,img.height));
+      const cv=document.createElement('canvas');
+      cv.width=Math.round(img.width*k); cv.height=Math.round(img.height*k);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      state.editImg=cv.toDataURL('image/jpeg',.72);
+      paintImgPrev(); toast('🖼 Imagen lista');
+    };
+    img.src=e.target.result;
+  };
+  rd.readAsDataURL(f); inp.value='';
+}
+function clearImg(){ state.editImg=null; paintImgPrev(); }
+function paintImgPrev(){
+  $('#imgPrev').innerHTML=state.editImg?'<img src="'+state.editImg+'" alt="imagen de la pregunta">':'';
+  $('#btnClearImg').style.display=state.editImg?'inline-flex':'none';
+}
+function imgHTML(src){ return src?'<img class="qimg" src="'+src+'" alt="">':''; }
+
+/* ================= BIBLIOTECA DE QUIZZES (guardado automático) ================= */
+let LIB=[];
+function libLoad(){
+  try{ LIB=JSON.parse(localStorage.getItem('quizlive_lib'))||[]; }catch(e){ LIB=[]; }
+  if(!Array.isArray(LIB)) LIB=[];
+  if(!LIB.length){
+    LIB=[{id:'q'+Date.now(), title:'Quiz de ejemplo', updatedAt:Date.now(), questions:state.questions}];
+    libPersist();
+  }
+}
+function libPersist(){
+  try{ localStorage.setItem('quizlive_lib',JSON.stringify(LIB)); }
+  catch(e){ toast('⚠️ Espacio lleno en este navegador: usa imágenes más pequeñas o exporta a Excel'); }
+}
+function openLibrary(){ renderLib(); go('scr-library'); }
+function renderLib(){
+  const w=$('#libList');
+  const fecha=t=>new Date(t).toLocaleDateString('es-CL',{day:'numeric',month:'short'});
+  w.innerHTML=LIB.map(qz=>`<div class="qitem">
+    <span class="num">📋</span>
+    <span class="qtxt">${esc(qz.title)}<br><span class="muted" style="font-size:.8rem">${qz.questions.length} pregunta${qz.questions.length===1?'':'s'} · ${fecha(qz.updatedAt)}</span></span>
+    <button class="btn small verde" onclick="openQuiz('${qz.id}')">▶ Abrir</button>
+    <button class="icon-btn" title="Duplicar" onclick="dupQuiz('${qz.id}')">⧉</button>
+    <button class="icon-btn" title="Eliminar" onclick="delQuizLib('${qz.id}')">🗑</button>
+  </div>`).join('')||'<p class="muted" style="text-align:center;padding:20px;font-weight:700">No hay quizzes aún</p>';
+}
+function newQuiz(){
+  const qz={id:'q'+Date.now()+Math.random().toString(36).slice(2,6), title:'Nuevo quiz', updatedAt:Date.now(), questions:[]};
+  LIB.unshift(qz); libPersist(); openQuiz(qz.id);
+}
+function openQuiz(id){
+  const qz=LIB.find(x=>x.id===id); if(!qz) return;
+  state.quizId=id;
+  state.questions=qz.questions; // misma referencia: todo cambio se guarda con autoSave()
+  $('#quizTitle').value=qz.title;
+  renderQList(); go('scr-editor');
+}
+function dupQuiz(id){
+  const qz=LIB.find(x=>x.id===id); if(!qz) return;
+  const copia=JSON.parse(JSON.stringify(qz));
+  copia.id='q'+Date.now()+Math.random().toString(36).slice(2,6);
+  copia.title=qz.title+' (copia)'; copia.updatedAt=Date.now();
+  LIB.splice(LIB.indexOf(qz)+1,0,copia); libPersist(); renderLib();
+  toast('⧉ Quiz duplicado — ideal para adaptarlo a otro curso');
+}
+function delQuizLib(id){
+  const qz=LIB.find(x=>x.id===id); if(!qz) return;
+  askConfirm('Eliminar quiz','Se borrará "'+qz.title+'" con sus '+qz.questions.length+' preguntas. No se puede deshacer.',()=>{
+    LIB=LIB.filter(x=>x.id!==id); libPersist(); renderLib(); toast('🗑 Quiz eliminado');
+  });
+}
+function autoSave(){
+  const qz=LIB.find(x=>x.id===state.quizId); if(!qz) return;
+  qz.title=$('#quizTitle').value.trim()||'Quiz';
+  qz.updatedAt=Date.now(); libPersist();
+}
+
+/* ================= VIDEO DE YOUTUBE ================= */
+function parseYT(u){
+  const m=String(u||'').match(/(?:youtu\.be\/|v=|embed\/|shorts\/|live\/)([A-Za-z0-9_-]{11})/);
+  return m?m[1]:null;
+}
+function ytHTML(id){
+  return id?`<div class="ytwrap"><iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0" title="Video" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>`:'';
+}
+
+/* ================= EDITOR ================= */
+function renderQList(){
+  const w=$('#qList'); w.innerHTML='';
+  if(!state.questions.length){ w.innerHTML='<p class="muted" style="text-align:center;padding:20px;font-weight:700">Aún no hay preguntas. ¡Agrega la primera! 🎉</p>'; return; }
+  state.questions.forEach((q,i)=>{
+    const d=document.createElement('div'); d.className='qitem';
+    d.innerHTML=`<span class="num">${i+1}</span>
+      <span class="badge ${q.type}">${TYPE_LABEL[q.type]}</span>
+      <span class="qtxt">${q.img?'🖼 ':''}${q.yt?'🎬 ':''}${esc(q.text)}</span>
+      <span class="muted" style="font-size:.8rem;font-weight:800">⏱${q.time}s</span>
+      <button class="icon-btn" title="Subir" onclick="moveQ(${i},-1)">↑</button>
+      <button class="icon-btn" title="Bajar" onclick="moveQ(${i},1)">↓</button>
+      <button class="icon-btn" title="Editar" onclick="openQuestionModal(${i})">✏️</button>
+      <button class="icon-btn" title="Eliminar" onclick="delQ(${i})">🗑</button>`;
+    w.appendChild(d);
+  });
+}
+function moveQ(i,d){ const j=i+d; if(j<0||j>=state.questions.length) return;
+  [state.questions[i],state.questions[j]]=[state.questions[j],state.questions[i]]; renderQList(); autoSave(); }
+function delQ(i){ askConfirm('Eliminar pregunta','Se borrará la pregunta '+(i+1)+'. Esta acción no se puede deshacer.',()=>{ state.questions.splice(i,1); renderQList(); autoSave(); toast('Pregunta eliminada'); }); }
+
+function openQuestionModal(i){
+  state.editing=i; const q=i>=0?state.questions[i]:null;
+  $('#qModalTitle').textContent=q?('Editar pregunta '+(i+1)):'Nueva pregunta';
+  $('#qType').value=q?q.type:'quiz';
+  $('#qText').value=q?q.text:'';
+  $('#qTime').value=q?q.time:20;
+  $('#qPoints').value=q?q.points:1000;
+  state.editImg=q&&q.img?q.img:null; paintImgPrev();
+  $('#qYt').value=q&&q.yt?('https://youtu.be/'+q.yt):'';
+  renderTypeFields(q); openModal('modal-q');
+}
+function renderTypeFields(q){
+  if(q instanceof Event) q=null;
+  q = q || (state.editing>=0 && state.questions[state.editing] && state.questions[state.editing].type===$('#qType').value ? state.questions[state.editing] : null);
+  const t=$('#qType').value, w=$('#typeFields'); let h='';
+  if(t==='quiz'){
+    h+='<label class="fld">Alternativas (marca la correcta · mínimo 2)</label>';
+    for(let i=0;i<4;i++){
+      h+=`<div class="opt-row"><span class="shape-tag st${i}">${SHAPES[i]}</span>
+        <input type="text" id="opt${i}" placeholder="${SHAPE_NAMES[i]}" value="${q&&q.options&&q.options[i]?esc(q.options[i]):''}">
+        <input type="radio" name="corr" value="${i}" title="Correcta" ${q&&q.correct===i?'checked':''}></div>`;
+    }
+  } else if(t==='vf'){
+    h+=`<label class="fld">Respuesta correcta</label>
+      <div class="opt-row"><span class="shape-tag st3">✔</span><b class="grow">Verdadero</b><input type="radio" name="corr" value="0" ${!q||q.correct===0?'checked':''}></div>
+      <div class="opt-row"><span class="shape-tag st0">✘</span><b class="grow">Falso</b><input type="radio" name="corr" value="1" ${q&&q.correct===1?'checked':''}></div>`;
+  } else if(t==='orden'){
+    h+='<label class="fld">Elementos EN EL ORDEN CORRECTO (se mostrarán desordenados · mínimo 2)</label>';
+    for(let i=0;i<6;i++){
+      h+=`<div class="opt-row"><span class="shape-tag" style="background:var(--morado)">${i+1}º</span>
+        <input type="text" id="opt${i}" placeholder="Elemento ${i+1}${i>1?' (opcional)':''}" value="${q&&q.options&&q.options[i]?esc(q.options[i]):''}"></div>`;
+    }
+  } else if(t==='corta'){
+    h+=`<label class="fld">Respuestas aceptadas (separadas por | · sin importar mayúsculas ni tildes)</label>
+      <input type="text" id="accepted" placeholder="Ej: ate | comió" value="${q&&q.accepted?esc(q.accepted.join(' | ')):''}">`;
+  } else if(t==='larga'){
+    h+=`<p class="muted" style="margin-top:14px;font-weight:700">📝 Los estudiantes escribirán un texto libre. Al terminar el tiempo, <b style="color:var(--oro)">tú revisas cada respuesta en pantalla y asignas los puntos</b> (nada, mitad o completo).</p>`;
+  }
+  w.innerHTML=h;
+}
+function saveQuestion(){
+  const t=$('#qType').value, text=$('#qText').value.trim();
+  const time=Math.max(5,Math.min(240,parseInt($('#qTime').value)||20));
+  const points=Math.max(50,Math.min(5000,parseInt($('#qPoints').value)||1000));
+  if(!text) return toast('⚠️ Escribe la pregunta');
+  const q={type:t,text,time,points};
+  if(state.editImg) q.img=state.editImg;
+  const ytRaw=$('#qYt').value.trim();
+  if(ytRaw){ const yt=parseYT(ytRaw); if(!yt) return toast('⚠️ Ese link de YouTube no es válido'); q.yt=yt; }
+  if(t==='quiz'){
+    q.options=[]; for(let i=0;i<4;i++){ const v=$('#opt'+i).value.trim(); q.options.push(v); }
+    while(q.options.length&&!q.options[q.options.length-1]) q.options.pop();
+    if(q.options.filter(o=>o).length<2) return toast('⚠️ Escribe al menos 2 alternativas');
+    if(q.options.some(o=>!o)) return toast('⚠️ No dejes alternativas vacías entre medio');
+    const r=document.querySelector('input[name=corr]:checked');
+    if(!r) return toast('⚠️ Marca la alternativa correcta');
+    q.correct=parseInt(r.value);
+    if(q.correct>=q.options.length) return toast('⚠️ La correcta debe ser una alternativa escrita');
+  } else if(t==='vf'){
+    const r=document.querySelector('input[name=corr]:checked'); q.correct=r?parseInt(r.value):0;
+  } else if(t==='orden'){
+    q.options=[]; for(let i=0;i<6;i++){ const el=$('#opt'+i); if(el&&el.value.trim()) q.options.push(el.value.trim()); }
+    if(q.options.length<2) return toast('⚠️ Escribe al menos 2 elementos');
+  } else if(t==='corta'){
+    q.accepted=$('#accepted').value.split('|').map(s=>s.trim()).filter(Boolean);
+    if(!q.accepted.length) return toast('⚠️ Escribe al menos una respuesta aceptada');
+  }
+  if(state.editing>=0) state.questions[state.editing]=q; else state.questions.push(q);
+  closeModal('modal-q'); renderQList(); autoSave(); toast('✅ Pregunta guardada'); sfx.click();
+}
+
+/* ================= EXCEL (SheetJS) ================= */
+function exportExcel(){
+  const rows=[['Tipo (quiz/vf/orden/corta/larga)','Pregunta','Tiempo (seg)','Puntos','OpciónA','OpciónB','OpciónC','OpciónD','OpciónE','OpciónF','Correcta','Video (YouTube)']];
+  state.questions.forEach(q=>{
+    let a='',b='',c='',d='',e='',f='',corr='';
+    if(q.type==='quiz'){ [a,b,c,d]=[q.options[0]||'',q.options[1]||'',q.options[2]||'',q.options[3]||'']; corr=['A','B','C','D'][q.correct]; }
+    if(q.type==='vf'){ corr=q.correct===0?'V':'F'; }
+    if(q.type==='orden'){ [a,b,c,d,e,f]=[0,1,2,3,4,5].map(i=>q.options[i]||''); corr='(orden = A→F)'; }
+    if(q.type==='corta'){ corr=q.accepted.join(' | '); }
+    rows.push([q.type,q.text,q.time,q.points,a,b,c,d,e,f,corr,q.yt?('https://youtu.be/'+q.yt):'']);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:10},{wch:50},{wch:8},{wch:8},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:22},{wch:28}];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Preguntas');
+  XLSX.writeFile(wb,'quizlive_preguntas.xlsx'); toast('📤 Excel exportado');
+}
+function importExcel(inp){
+  const file=inp.files[0]; if(!file) return;
+  const rd=new FileReader();
+  rd.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
+      const out=[];
+      rows.slice(1).forEach(r=>{
+        if(!r||!r[1]) return;
+        const type=norm(r[0]); const text=String(r[1]).trim();
+        const time=Math.max(5,Math.min(240,parseInt(r[2])||20));
+        const points=Math.max(50,Math.min(5000,parseInt(r[3])||1000));
+        const ops=[4,5,6,7,8,9].map(i=>r[i]!=null?String(r[i]).trim():'').filter(Boolean);
+        const corr=r[10]!=null?String(r[10]).trim():'';
+        const yt=parseYT(r[11]);
+        let nq=null;
+        if(type==='quiz'&&ops.length>=2){ const ci={a:0,b:1,c:2,d:3}[norm(corr)]??0;
+          nq={type:'quiz',text,time,points,options:ops.slice(0,4),correct:Math.min(ci,ops.length-1)}; }
+        else if(type==='vf'){ nq={type:'vf',text,time,points,correct:norm(corr).startsWith('f')?1:0}; }
+        else if(type==='orden'&&ops.length>=2){ nq={type:'orden',text,time,points,options:ops}; }
+        else if(type==='corta'&&corr){ nq={type:'corta',text,time,points,accepted:corr.split('|').map(s=>s.trim()).filter(Boolean)}; }
+        else if(type==='larga'){ nq={type:'larga',text,time,points}; }
+        if(nq){ if(yt) nq.yt=yt; out.push(nq); }
+      });
+      if(!out.length) return toast('⚠️ No se encontraron preguntas válidas');
+      state.questions.length=0; state.questions.push(...out); // mantiene la referencia del quiz guardado
+      renderQList(); autoSave(); toast('📥 '+out.length+' preguntas importadas');
+    }catch(err){ toast('⚠️ No se pudo leer el archivo'); }
+    inp.value='';
+  };
+  rd.readAsArrayBuffer(file);
+}
+/* ================= FIREBASE ================= */
+function loadSavedConfig(){
+  if(FIREBASE_CONFIG_FIJA) return FIREBASE_CONFIG_FIJA;
+  try{ const s=localStorage.getItem('quizlive_fb'); if(s) return JSON.parse(s); }catch(e){}
+  return null;
+}
+function initFB(cfg){
+  if(typeof firebase==='undefined'){
+    $('#fbStatus').innerHTML='🔴 Sin internet o red bloqueada: no cargó Firebase. Recarga la página con conexión.';
+    return false;
+  }
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    state.db=firebase.database();
+    $('#fbStatus').innerHTML='🟢 Conexión en vivo lista';
+    return true;
+  }catch(e){ $('#fbStatus').innerHTML='🔴 Error en la configuración de Firebase'; return false; }
+}
+function openConfig(){
+  const c=loadSavedConfig();
+  $('#cfgText').value=c?JSON.stringify(c,null,2):'';
+  openModal('modal-config');
+}
+function saveConfig(){
+  const raw=$('#cfgText').value.trim();
+  if(!raw) return toast('⚠️ Pega la configuración primero');
+  // acepta JSON puro o el formato JS que entrega Firebase: const firebaseConfig = {...};
+  let cfg=null;
+  try{ cfg=JSON.parse(raw); }catch(e){
+    try{ const m=raw.match(/\{[\s\S]*\}/); if(m) cfg=(new Function('return ('+m[0]+')'))(); }catch(e2){}
+  }
+  if(!cfg||typeof cfg!=='object') return toast('⚠️ Formato no válido. Pega el objeto {...} completo');
+  if(!cfg.databaseURL){
+    if(cfg.projectId) cfg.databaseURL='https://'+cfg.projectId+'-default-rtdb.firebaseio.com';
+    else return toast('⚠️ Falta databaseURL o projectId');
+  }
+  try{ localStorage.setItem('quizlive_fb',JSON.stringify(cfg)); }catch(e){}
+  if(initFB(cfg)){ closeModal('modal-config'); toast('🟢 ¡Conectado!'); }
+}
+function requireDB(){
+  if(state.db) return true;
+  const c=loadSavedConfig();
+  if(c&&initFB(c)) return true;
+  openConfig(); toast('Configura la conexión primero (es gratis) — mira ❓ ¿Cómo funciona?');
+  return false;
+}
+function clearListeners(){ state.listeners.forEach(({ref,ev,fn})=>{try{ref.off(ev,fn);}catch(e){}}); state.listeners=[]; }
+function listen(ref,ev,fn){ ref.on(ev,fn); state.listeners.push({ref,ev,fn}); }
+
+/* ================= HOST: EN VIVO ================= */
+function startLive(){
+  if(!state.questions.length) return toast('⚠️ Agrega al menos una pregunta');
+  if(!requireDB()) return;
+  state.role='host';
+  state.pin=String(Math.floor(100000+Math.random()*900000));
+  state.gameRef=state.db.ref('quizlive/'+state.pin);
+  state.players={};
+  const btnLive=document.activeElement; toast('⏳ Creando sala…');
+  const crear=state.gameRef.set({
+    status:'lobby', title:$('#quizTitle').value.trim()||'Quiz',
+    total:state.questions.length, createdAt:Date.now()
+  });
+  const tiempoMax=new Promise((_,rej)=>setTimeout(()=>rej('timeout'),6000));
+  Promise.race([crear,tiempoMax]).then(()=>{
+    state.gameRef.onDisconnect().remove();
+    $('#pinShow').textContent=state.pin;
+    $('#pinSmall').textContent=state.pin;
+    $('#lobbyTitle').textContent=$('#quizTitle').value.trim()||'Quiz';
+    // QR con el link de la página + PIN incluido
+    const qb=$('#qrBox'); qb.innerHTML=''; $('#qrHero').style.display='';
+    try{
+      if(typeof QRCode!=='undefined'&&location.protocol.indexOf('http')===0){
+        const url=location.origin+location.pathname+'?pin='+state.pin;
+        new QRCode(qb,{text:url,width:170,height:170,colorDark:'#22104f',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+      } else { $('#qrHero').style.display='none'; }
+    }catch(e){ $('#qrHero').style.display='none'; }
+    listen(state.gameRef.child('players'),'value',snap=>{
+      state.players=snap.val()||{};
+      const arr=Object.values(state.players);
+      const prev=$('#playersWrap').children.length;
+      $('#playerCount').textContent=arr.length+(arr.length===1?' jugador conectado':' jugadores conectados');
+      $('#playersWrap').innerHTML=arr.map(p=>'<span class="ptag"><span class="pav">'+esc(p.avatar||'🐾')+'</span>'+esc(p.name)+'</span>').join('');
+      $('#btnStartGame').disabled=!arr.length;
+      if(arr.length>prev) sfx.join();
+    });
+    musicStart('lobby');
+    go('scr-lobby');
+  }).catch(()=>{
+    askConfirm('No se pudo conectar 📵',
+      'Si estás viendo el juego DENTRO de la app de Claude, la vista previa bloquea las conexiones en vivo. Descarga el archivo y ábrelo en Chrome o Safari, o súbelo a tu sitio web. También revisa que las Reglas de tu Realtime Database permitan escritura en "quizlive".',
+      ()=>{});
+  });
+}
+function cancelLive(){ askConfirm('Cancelar juego','Se cerrará la sala y se desconectará a los estudiantes.',()=>{ musicStop(); clearListeners(); if(state.gameRef) state.gameRef.remove(); go('scr-editor'); }); }
+
+function hostStartGame(){ sfx.start(); musicStart('q'); state.qIndex=-1; hostNext(); }
+
+function hostNext(){
+  state.qIndex++;
+  if(state.qIndex>=state.questions.length) return hostPodium();
+  const q=state.questions[state.qIndex];
+  state.answered={}; state.grading=false; state.current=JSON.parse(JSON.stringify(q));
+  // preparar payload para estudiantes (sin la respuesta correcta)
+  const pub={i:state.qIndex, n:state.questions.length, type:q.type, text:q.text, time:q.time};
+  if(q.img) pub.img=q.img;
+  if(q.yt) pub.yt=q.yt;
+  if(q.type==='quiz') pub.options=q.options;
+  if(q.type==='vf') pub.options=['Verdadero','Falso'];
+  if(q.type==='orden'){ pub.options=shuffle(q.options); state.current.shuffled=pub.options; }
+  state.gameRef.child('answers/'+state.qIndex).remove();
+  state.gameRef.update({status:'question', current:pub, startedAt:firebase.database.ServerValue.TIMESTAMP});
+  // pintar host
+  $('#hostQNum').textContent='Pregunta '+(state.qIndex+1)+' de '+state.questions.length;
+  $('#hostQText').textContent=q.text;
+  $('#hostImg').innerHTML=imgHTML(q.img)+ytHTML(q.yt);
+  $('#hostAnsCount').textContent='0';
+  $('#btnNext').style.display='none'; $('#btnSkip').style.display='';
+  renderHostBody(q,pub);
+  go('scr-host');
+  // escuchar respuestas
+  listen(state.gameRef.child('answers/'+state.qIndex),'value',snap=>{
+    state.answered=snap.val()||{};
+    const n=Object.keys(state.answered).length;
+    $('#hostAnsCount').textContent=n;
+    const tot=Object.keys(state.players).length;
+    if(tot&&n>=tot&&state.timerH) hostEndQuestion(); // todos respondieron
+  });
+  startTimer(q.time,'#hostTimer',()=>hostEndQuestion());
+}
+function renderHostBody(q,pub){
+  const w=$('#hostBody');
+  if(q.type==='quiz'||q.type==='vf'){
+    const ops=q.type==='vf'?['Verdadero','Falso']:q.options;
+    w.innerHTML='<div class="ans-grid">'+ops.map((o,i)=>{
+      const ci=q.type==='vf'?(i===0?3:0):i; // V verde, F rojo
+      return `<div class="ans a${ci}" data-i="${i}"><span class="shape">${q.type==='vf'?(i===0?'✔':'✘'):SHAPES[i]}</span><span>${esc(o)}</span><span class="pct"></span></div>`;
+    }).join('')+'</div>';
+  } else if(q.type==='orden'){
+    w.innerHTML='<p class="muted" style="text-align:center;font-weight:800;margin-bottom:12px">🔢 Ordena en tu dispositivo:</p><div class="ans-grid">'+
+      pub.options.map(o=>`<div class="ans" style="background:var(--panel2)"><span class="shape">🔀</span><span>${esc(o)}</span></div>`).join('')+'</div>';
+  } else {
+    w.innerHTML=`<p class="stu-status" style="margin-top:26px"><span class="emoji">${q.type==='corta'?'✏️':'📝'}</span>
+      <b class="display" style="font-size:1.3rem">Los estudiantes están escribiendo su respuesta…</b></p>`;
+  }
+}
+function startTimer(secs,sel,onEnd){
+  clearInterval(state.timerH); state.timeLeft=secs;
+  const el=$(sel); el.textContent=secs; el.classList.remove('low');
+  state.timerH=setInterval(()=>{
+    state.timeLeft--;
+    el.textContent=Math.max(0,state.timeLeft);
+    if(state.timeLeft<=5&&state.timeLeft>0){ el.classList.add('low'); sfx.tick(); }
+    if(state.timeLeft<=0){ clearInterval(state.timerH); state.timerH=null; onEnd(); }
+  },1000);
+}
+
+function hostEndQuestion(){
+  if(state.grading) return; state.grading=true;
+  clearInterval(state.timerH); state.timerH=null;
+  $('#hostTimer').textContent='0'; $('#btnSkip').style.display='none';
+  // pequeña espera para recibir respuestas enviadas en el último segundo
+  setTimeout(hostGradeNow, 1000);
+}
+function hostGradeNow(){
+  const q=state.current;
+  if(q.type==='larga'){ hostGradeLong(); return; }
+  // calificar automáticamente
+  const results={};
+  Object.entries(state.answered).forEach(([pid,a])=>{
+    let ok=false;
+    if(q.type==='quiz'||q.type==='vf') ok=(a.v===q.correct);
+    else if(q.type==='corta') ok=q.accepted.some(x=>norm(x)===norm(a.v));
+    else if(q.type==='orden') ok=JSON.stringify(a.v)===JSON.stringify(q.options);
+    const frac=Math.max(0,Math.min(1,(a.rem||0)/q.time));
+    const pts=ok?Math.round(q.points*(0.5+0.5*frac)):0;
+    results[pid]={ok, pts};
+  });
+  applyResults(results);
+  revealHost(q,results);
+}
+function applyResults(results){
+  const upd={};
+  Object.entries(results).forEach(([pid,r])=>{
+    const cur=(state.players[pid]&&state.players[pid].score)||0;
+    upd['players/'+pid+'/score']=cur+r.pts;
+    upd['players/'+pid+'/last']={ok:r.ok?1:0, pts:r.pts, q:state.qIndex};
+  });
+  // jugadores que no respondieron
+  Object.keys(state.players).forEach(pid=>{
+    if(!results[pid]) upd['players/'+pid+'/last']={ok:0, pts:0, q:state.qIndex};
+  });
+  upd['status']='reveal';
+  state.gameRef.update(upd);
+}
+function revealHost(q,results){
+  sfx.reveal();
+  const w=$('#hostBody');
+  if(q.type==='quiz'||q.type==='vf'){
+    const counts=[0,0,0,0]; let tot=0;
+    Object.values(state.answered).forEach(a=>{ if(counts[a.v]!=null){counts[a.v]++;tot++;} });
+    w.querySelectorAll('.ans').forEach(el=>{
+      const i=parseInt(el.dataset.i);
+      el.querySelector('.pct').textContent=tot?Math.round(100*counts[i]/tot)+'%':'0%';
+      if(i===q.correct) el.classList.add('win'); else el.classList.add('dim');
+    });
+  } else if(q.type==='orden'){
+    w.innerHTML='<p class="muted" style="text-align:center;font-weight:800;margin-bottom:12px">✅ Orden correcto:</p><div class="order-out" style="max-width:520px;margin:0 auto">'+
+      q.options.map((o,i)=>`<div class="chip"><span class="ix">${i+1}</span>${esc(o)}</div>`).join('')+'</div>';
+  } else if(q.type==='corta'){
+    const list=Object.entries(state.answered).map(([pid,a])=>{
+      const ok=results[pid]&&results[pid].ok; const pl=state.players[pid]||{};
+      return `<div class="rk"><span>${ok?'✅':'❌'}</span><span class="grow">${esc(pl.avatar||'')} ${esc(pl.name||'?')}</span><span>${esc(a.v)}</span></div>`;
+    }).join('');
+    w.innerHTML=`<p style="text-align:center;font-weight:800;margin-bottom:8px">Respuestas aceptadas: <b style="color:var(--oro)">${esc(q.accepted.join(' · '))}</b></p><div class="ranking">${list||'<p class="muted" style="text-align:center">Nadie respondió 😅</p>'}</div>`;
+  }
+  w.insertAdjacentHTML('beforeend', topFiveHTML());
+  $('#btnNext').style.display='';
+  $('#btnNext').textContent = state.qIndex+1>=state.questions.length ? '🏆 Ver podio' : 'Siguiente ▶';
+}
+function topFiveHTML(){
+  const arr=Object.values(state.players).map(p=>({n:p.name,a:p.avatar||'',s:p.score||0})).sort((a,b)=>b.s-a.s).slice(0,5);
+  if(!arr.length) return '';
+  return '<h3 class="display" style="text-align:center;margin-top:22px">Top 5</h3><div class="ranking" style="margin-top:8px">'+
+    arr.map((p,i)=>`<div class="rk"><span class="pos">${i+1}º</span><span class="grow">${esc(p.a)} ${esc(p.n)}</span><span>${p.s} pts</span></div>`).join('')+'</div>';
+}
+
+/* --- revisión manual de respuestas largas --- */
+function hostGradeLong(){
+  const q=state.current;
+  state.gameRef.update({status:'grading'});
+  const w=$('#hostBody'); state.grades={};
+  const entries=Object.entries(state.answered);
+  if(!entries.length){
+    w.innerHTML='<p class="muted" style="text-align:center;font-weight:800;padding:20px">Nadie alcanzó a responder 😅</p>';
+  } else {
+    w.innerHTML='<p style="text-align:center;font-weight:800;margin-bottom:12px">📝 Asigna los puntos a cada respuesta:</p>'+
+      entries.map(([pid,a])=>`<div class="rev-item" id="rev-${pid}">
+        <span class="who">${esc((state.players[pid]||{}).avatar||'')} ${esc((state.players[pid]||{}).name||'?')}</span>
+        <div class="txt">${esc(a.v)||'<i>(vacío)</i>'}</div>
+        <div class="row">
+          <button class="btn small rojo" onclick="gradeSet('${pid}',0,this)">0 pts</button>
+          <button class="btn small amarillo" onclick="gradeSet('${pid}',${Math.round(q.points/2)},this)">½ · ${Math.round(q.points/2)}</button>
+          <button class="btn small verde" onclick="gradeSet('${pid}',${q.points},this)">✔ ${q.points}</button>
+        </div></div>`).join('');
+  }
+  const btn=$('#btnNext'); btn.style.display=''; btn.textContent='Confirmar puntos ▶';
+  btn.onclick=()=>{ 
+    const results={};
+    Object.entries(state.answered).forEach(([pid])=>{ const pts=state.grades[pid]||0; results[pid]={ok:pts>0, pts}; });
+    applyResults(results);
+    $('#hostBody').innerHTML=topFiveHTML()||'<p class="muted" style="text-align:center">Sin puntajes aún</p>';
+    btn.textContent=state.qIndex+1>=state.questions.length?'🏆 Ver podio':'Siguiente ▶';
+    btn.onclick=null; btn.onclick=hostNext; sfx.reveal();
+  };
+}
+function gradeSet(pid,pts,el){
+  state.grades[pid]=pts;
+  document.querySelectorAll('#rev-'+pid+' .btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel'); sfx.click();
+}
+
+/* --- podio final --- */
+function hostPodium(){
+  musicStop();
+  const arr=Object.values(state.players).map(p=>({n:p.name,a:p.avatar||'',s:p.score||0})).sort((a,b)=>b.s-a.s);
+  state.gameRef.update({status:'end'});
+  renderPodium(arr); sfx.fanfare(); go('scr-podium');
+  setTimeout(()=>{ try{ state.gameRef.remove(); clearListeners(); }catch(e){} }, 60000);
+}
+function renderPodium(arr){
+  const medals=['🥇','🥈','🥉'];
+  const order=[1,0,2]; // 2º, 1º, 3º
+  $('#podiumWrap').innerHTML=order.filter(i=>arr[i]).map(i=>
+    `<div class="pod p${i+1}"><span class="medal">${medals[i]}</span><span style="font-size:2rem">${esc(arr[i].a)}</span><span class="nm">${esc(arr[i].n)}</span><span class="pt">${arr[i].s} pts</span></div>`).join('');
+  $('#rankingWrap').innerHTML=arr.slice(3).map((p,i)=>
+    `<div class="rk"><span class="pos">${i+4}º</span><span class="grow">${esc(p.a)} ${esc(p.n)}</span><span>${p.s} pts</span></div>`).join('');
+}
+
+/* ================= ESTUDIANTE ================= */
+function joinGame(){
+  const pin=$('#joinPin').value.trim(), name=$('#joinName').value.trim();
+  if(pin.length!==6) return toast('⚠️ El PIN tiene 6 dígitos');
+  if(!name) return toast('⚠️ Escribe tu nombre');
+  if(!requireDB()) return;
+  const ref=state.db.ref('quizlive/'+pin);
+  ref.child('status').once('value').then(snap=>{
+    if(!snap.exists()) return toast('⚠️ No existe un juego con ese PIN');
+    state.role='student'; state.pin=pin; state.gameRef=ref;
+    state.playerName=name;
+    state.playerId='p'+Math.random().toString(36).slice(2,10);
+    const me=ref.child('players/'+state.playerId);
+    me.set({name, avatar:state.avatar||AVATARS[0], score:0});
+    me.onDisconnect().remove();
+    $('#stuName').textContent=(state.avatar||AVATARS[0])+' '+name;
+    listen(ref,'value',stuRender);
+    go('scr-student'); sfx.join();
+  }).catch(()=>toast('⚠️ Error de conexión'));
+}
+function stuRender(snap){
+  const g=snap.val();
+  const w=$('#stuBody');
+  if(!g){ w.innerHTML='<div class="feedback wait"><h2>El juego terminó</h2><p class="muted">El profesor cerró la sala.</p></div>'; return; }
+  const me=(g.players||{})[state.playerId]||{score:0};
+  $('#stuScore').textContent=(me.score||0)+' pts';
+  const st=g.status;
+  if(st==='lobby'){
+    w.innerHTML=`<div class="stu-status"><span class="emoji">🎮</span><h2 class="display">¡Estás dentro!</h2><p class="muted" style="font-weight:700">${esc(g.title||'')}<br>Espera a que el profesor comience…</p></div>`;
+    state.stuAnswered=false; state.lastQ=-1;
+  }
+  else if(st==='question'){
+    const c=g.current;
+    if(state.lastQ!==c.i){
+      state.lastQ=c.i; state.stuAnswered=false; state.orderSel=[]; state.stuQStart=Date.now();
+      stuRenderQuestion(c); // se pinta UNA sola vez por pregunta (no reiniciar timer ni borrar texto)
+    }
+  }
+  else if(st==='grading'){
+    if(!state.stuAnswered) stuSubmitPending(); // envía lo escrito si no alcanzó
+    w.innerHTML=`<div class="feedback wait"><h2>🧐 El profesor está revisando…</h2><p class="muted" style="font-weight:700">Tus puntos aparecerán en un momento</p></div>`;
+  }
+  else if(st==='reveal'){
+    const last=me.last;
+    if(last&&last.q===state.lastQ){
+      const ok=last.ok===1;
+      w.innerHTML=`<div class="feedback ${ok?'ok':'bad'}"><h2>${ok?'✅ ¡Correcto!':'❌ Incorrecto'}</h2>
+        <div class="pts">${ok?'+'+last.pts+' puntos':'+0 puntos'}</div></div>
+        <div class="scorebar" style="margin-top:14px"><span>Total</span><span>${me.score||0} pts</span></div>`;
+      if(!state.fbPlayed||state.fbPlayed!==state.lastQ){ ok?sfx.ok():sfx.bad(); state.fbPlayed=state.lastQ; }
+    } else {
+      w.innerHTML=`<div class="feedback bad"><h2>⏰ ¡Se acabó el tiempo!</h2><div class="pts">+0 puntos</div></div>`;
+    }
+  }
+  else if(st==='end'){
+    const arr=Object.values(g.players||{}).map(p=>({n:p.name,s:p.score||0})).sort((a,b)=>b.s-a.s);
+    const pos=arr.findIndex(p=>p.n===state.playerName&&p.s===(me.score||0))+1||arr.findIndex(p=>p.s===(me.score||0))+1;
+    w.innerHTML=`<div class="stu-status"><span class="emoji">${me.avatar||'🎉'} ${pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':''}</span>
+      <h2 class="display" style="font-size:2rem">¡Juego terminado!</h2>
+      <p style="font-weight:800;font-size:1.3rem;margin-top:6px">Quedaste en el puesto ${pos}º<br>${me.score||0} puntos</p></div>`;
+    sfx.fanfare();
+  }
+}
+function stuRenderQuestion(c){
+  const w=$('#stuBody');
+  let h=`<div class="qheader" style="font-size:1.1rem;padding:14px">${esc(c.text)}</div>
+    ${c.img?'<img class="qimg" style="max-height:26vh" src="'+c.img+'" alt="">':''}
+    ${c.yt?`<button class="btn small azul" style="margin:10px auto 0" onclick="this.outerHTML=ytHTML('${c.yt}')">🎬 Ver video</button>`:''}
+    <div class="row" style="justify-content:space-between;margin:12px 0"><b class="muted">Pregunta ${c.i+1} de ${c.n}</b><div class="timer" id="stuTimer" style="width:64px;height:64px;font-size:1.5rem">${c.time}</div></div>`;
+  if(c.type==='quiz'){
+    h+='<div class="ans-grid">'+c.options.map((o,i)=>`<button class="ans a${i}" onclick="stuAnswer(${i})"><span class="shape">${SHAPES[i]}</span><span>${esc(o)}</span></button>`).join('')+'</div>';
+  } else if(c.type==='vf'){
+    h+=`<div class="ans-grid">
+      <button class="ans a3" onclick="stuAnswer(0)"><span class="shape">✔</span><span>Verdadero</span></button>
+      <button class="ans a0" onclick="stuAnswer(1)"><span class="shape">✘</span><span>Falso</span></button></div>`;
+  } else if(c.type==='orden'){
+    h+=`<p class="muted" style="font-weight:800;margin-bottom:8px">Tu orden:</p><div class="order-out" id="orderOut"></div>
+      <p class="muted" style="font-weight:800;margin:12px 0 8px">Opciones:</p><div class="order-pool" id="orderPool"></div>
+      <div class="row" style="margin-top:14px"><button class="btn small gris" onclick="orderReset()">↺ Reiniciar</button>
+      <button class="btn verde grow" id="orderSend" onclick="stuAnswer(null)" disabled>Enviar ✔</button></div>`;
+  } else if(c.type==='corta'){
+    h+=`<input type="text" id="stuText" placeholder="Escribe tu respuesta…" style="font-size:1.2rem" onkeydown="if(event.key==='Enter')stuAnswer(null)">
+      <button class="btn big verde" style="width:100%;margin-top:14px" onclick="stuAnswer(null)">Enviar ✔</button>`;
+  } else if(c.type==='larga'){
+    h+=`<textarea id="stuText" placeholder="Escribe tu respuesta…" style="min-height:140px;font-size:1.05rem"></textarea>
+      <button class="btn big verde" style="width:100%;margin-top:14px" onclick="stuAnswer(null)">Enviar ✔</button>`;
+  }
+  w.innerHTML=h;
+  if(c.type==='orden'){ state.orderPool=[...c.options]; orderPaint(); }
+  startTimer(c.time,'#stuTimer',()=>{ if(!state.stuAnswered&&(c.type==='corta'||c.type==='larga'||c.type==='orden')) stuSubmitPending(); });
+}
+function orderPaint(){
+  $('#orderOut').innerHTML=state.orderSel.map((o,i)=>`<div class="chip" onclick="orderRemove(${i})"><span class="ix">${i+1}</span>${esc(o)} <span style="margin-left:auto">✖</span></div>`).join('');
+  $('#orderPool').innerHTML=state.orderPool.map((o,i)=>`<button class="chip" onclick="orderPick(${i})">${esc(o)}</button>`).join('');
+  $('#orderSend').disabled=state.orderPool.length>0;
+}
+function orderPick(i){ state.orderSel.push(state.orderPool.splice(i,1)[0]); orderPaint(); sfx.click(); }
+function orderRemove(i){ state.orderPool.push(state.orderSel.splice(i,1)[0]); orderPaint(); }
+function orderReset(){ state.orderPool.push(...state.orderSel); state.orderSel=[]; orderPaint(); }
+
+function stuAnswer(v){
+  if(state.stuAnswered) return;
+  const c={type:null}; // leer tipo desde DOM actual
+  let val=v;
+  if(v===null){
+    if($('#orderOut')){ if(state.orderPool.length) return toast('⚠️ Ordena todos los elementos'); val=state.orderSel; }
+    else { const t=$('#stuText'); val=t?t.value.trim():''; if(!val) return toast('⚠️ Escribe tu respuesta'); }
+  }
+  state.stuAnswered=true;
+  clearInterval(state.timerH); state.timerH=null;
+  const rem=Math.max(0,state.timeLeft);
+  state.gameRef.child('answers/'+state.lastQ+'/'+state.playerId).set({v:val, rem});
+  $('#stuBody').innerHTML=`<div class="feedback wait"><h2>🚀 ¡Respuesta enviada!</h2><p class="muted" style="font-weight:700">Espera los resultados…</p></div>`;
+  sfx.click();
+}
+function stuSubmitPending(){
+  // envía texto/orden parcial cuando se acaba el tiempo
+  if(state.stuAnswered) return;
+  let val=null;
+  const t=$('#stuText'); if(t&&t.value.trim()) val=t.value.trim();
+  if($('#orderOut')&&state.orderSel.length&&!state.orderPool.length) val=state.orderSel;
+  if(val!==null){
+    state.stuAnswered=true;
+    state.gameRef.child('answers/'+state.lastQ+'/'+state.playerId).set({v:val, rem:0});
+  }
+}
+
+/* ================= MODO LOCAL (sin conexión) ================= */
+function startLocal(){
+  if(!state.questions.length) return toast('⚠️ Agrega al menos una pregunta');
+  state.role='local'; state.qIndex=-1; musicStart('q'); localNext();
+}
+function localNext(){
+  state.qIndex++;
+  if(state.qIndex>=state.questions.length){ musicStop(); toast('🎉 ¡Quiz terminado!'); go('scr-editor'); return; }
+  const q=state.questions[state.qIndex]; state.current=q; state.localRevealed=false;
+  $('#locQNum').textContent='Pregunta '+(state.qIndex+1)+' de '+state.questions.length;
+  $('#locQText').textContent=q.text;
+  $('#locImg').innerHTML=imgHTML(q.img)+ytHTML(q.yt);
+  $('#locNext').style.display='none'; $('#locReveal').style.display='';
+  const w=$('#locBody');
+  if(q.type==='quiz'){ w.innerHTML='<div class="ans-grid">'+q.options.map((o,i)=>`<div class="ans a${i}" data-i="${i}"><span class="shape">${SHAPES[i]}</span><span>${esc(o)}</span></div>`).join('')+'</div>'; }
+  else if(q.type==='vf'){ w.innerHTML=`<div class="ans-grid"><div class="ans a3" data-i="0"><span class="shape">✔</span><span>Verdadero</span></div><div class="ans a0" data-i="1"><span class="shape">✘</span><span>Falso</span></div></div>`; }
+  else if(q.type==='orden'){ const sh=shuffle(q.options); w.innerHTML='<div class="ans-grid">'+sh.map(o=>`<div class="ans" style="background:var(--panel2)"><span class="shape">🔀</span><span>${esc(o)}</span></div>`).join('')+'</div>'; }
+  else if(q.type==='corta'){ w.innerHTML='<p class="stu-status" style="margin-top:26px"><span class="emoji">✏️</span><b class="display" style="font-size:1.3rem">Respuesta corta — los estudiantes escriben en su cuaderno</b></p>'; }
+  else { w.innerHTML='<p class="stu-status" style="margin-top:26px"><span class="emoji">📝</span><b class="display" style="font-size:1.3rem">Respuesta larga — los estudiantes escriben en su cuaderno</b></p>'; }
+  go('scr-local');
+  startTimer(q.time,'#locTimer',()=>{ sfx.reveal(); });
+}
+function localReveal(){
+  clearInterval(state.timerH); state.timerH=null; $('#locTimer').textContent='0';
+  const q=state.current; const w=$('#locBody'); sfx.reveal();
+  if(q.type==='quiz'||q.type==='vf'){
+    w.querySelectorAll('.ans').forEach(el=>{ const i=parseInt(el.dataset.i); if(i===q.correct) el.classList.add('win'); else el.classList.add('dim'); });
+  } else if(q.type==='orden'){
+    w.innerHTML='<div class="order-out" style="max-width:520px;margin:0 auto">'+q.options.map((o,i)=>`<div class="chip"><span class="ix">${i+1}</span>${esc(o)}</div>`).join('')+'</div>';
+  } else if(q.type==='corta'){
+    w.innerHTML=`<p class="stu-status" style="margin-top:26px"><span class="emoji">✅</span><b class="display" style="font-size:1.5rem">Respuestas aceptadas:<br><span style="color:var(--oro)">${esc(q.accepted.join(' · '))}</span></b></p>`;
+  } else { toast('Respuesta abierta: revisión del profesor'); }
+  $('#locReveal').style.display='none'; $('#locNext').style.display='';
+  $('#locNext').textContent = state.qIndex+1>=state.questions.length ? '🏁 Terminar' : 'Siguiente ▶';
+}
+
+/* ================= INICIO ================= */
+(function init(){
+  libLoad();
+  renderQList();
+  // selector de avatares
+  state.avatar=AVATARS[Math.floor(Math.random()*AVATARS.length)];
+  const ag=$('#avatarGrid');
+  ag.innerHTML=AVATARS.map(a=>`<button class="av${a===state.avatar?' sel':''}" data-av="${a}">${a}</button>`).join('');
+  ag.addEventListener('click',e=>{
+    const b=e.target.closest('.av'); if(!b) return;
+    state.avatar=b.dataset.av;
+    ag.querySelectorAll('.av').forEach(x=>x.classList.toggle('sel',x===b));
+    sfx.click();
+  });
+  // entrada directa por QR: la URL trae ?pin=123456
+  const urlPin=new URLSearchParams(location.search).get('pin');
+  if(urlPin&&/^\d{6}$/.test(urlPin)){ $('#joinPin').value=urlPin; go('scr-join'); setTimeout(()=>$('#joinName').focus(),300); }
+  const c=loadSavedConfig();
+  if(c) initFB(c);
+  else $('#fbStatus').innerHTML='⚪ Modo en vivo sin configurar — toca ⚙️ Conexión (solo el profesor, una vez)';
+  document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m&&m.id!=='modal-confirm') m.classList.remove('open'); }));
+})();
+</script>
+</body>
+</html>

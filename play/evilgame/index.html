@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Evil Game - by Mr. Nuñez</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&family=Bungee&display=swap');
+
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    font-family:'Poppins', sans-serif;
+    overflow:hidden;
+    background:#05070f;
+    color:#fff;
+  }
+  .screen{
+    position:fixed; inset:0;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+  }
+  .screen.active{ display:flex; }
+
+  button{ font-family:inherit; cursor:pointer; border:none; outline:none; }
+  .btn{
+    padding:15px 42px;
+    font-size:1.1rem;
+    font-weight:800;
+    border-radius:14px;
+    background:linear-gradient(135deg,#00e5ff,#00b3ff);
+    color:#001018;
+    letter-spacing:.5px;
+    box-shadow:0 0 24px rgba(0,229,255,.45), 0 8px 20px rgba(0,0,0,.45);
+    transition:transform .15s, box-shadow .15s;
+  }
+  .btn:hover{ transform:translateY(-3px) scale(1.03); box-shadow:0 0 36px rgba(0,229,255,.7), 0 12px 24px rgba(0,0,0,.5); }
+  .btn:active{ transform:translateY(1px) scale(.98); }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; transform:none; box-shadow:none; }
+  .btn.secondary{
+    background:rgba(255,255,255,.06);
+    color:#fff;
+    border:1px solid rgba(255,255,255,.25);
+    box-shadow:none;
+  }
+  .btn.secondary:hover{ background:rgba(255,255,255,.12); }
+
+  /* ================= SCREEN 1: TITLE ================= */
+  #screen-title{ background:radial-gradient(circle at 30% 30%, #274a94 0%, #101a3d 60%, #05070f 100%); }
+  .title-card{
+    background:rgba(6,12,34,.85);
+    backdrop-filter:blur(6px);
+    padding:70px 90px;
+    text-align:right;
+    box-shadow:0 30px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.06);
+    border-radius:20px;
+    max-width:82%;
+    animation:floatIn .7s cubic-bezier(.2,1.2,.4,1);
+  }
+  @keyframes floatIn{ from{ transform:translateY(50px) scale(.9); opacity:0;} to{ transform:none; opacity:1;} }
+  .title-card h1{
+    background:linear-gradient(90deg,#22e9f2,#7cf7ff);
+    color:#000;
+    font-family:'Bungee','Poppins',sans-serif;
+    font-size:3.4rem;
+    display:inline-block;
+    padding:8px 26px;
+    margin-bottom:18px;
+    transform:skewX(-3deg);
+    box-shadow:0 0 40px rgba(34,233,242,.5);
+    border-radius:6px;
+  }
+  .title-card .by{
+    display:inline-block;
+    background:#22e9f2;
+    color:#000; font-weight:800; font-style:italic;
+    padding:6px 18px;
+    transform:rotate(-6deg);
+    border-radius:4px;
+  }
+  .title-buttons{ display:flex; gap:14px; margin-top:46px; flex-wrap:wrap; justify-content:center; }
+
+  /* ================= EDITOR SCREEN ================= */
+  #screen-editor{ background:radial-gradient(circle at 30% 20%, #16407e 0%, #0a1c3d 60%, #05070f 100%); }
+  .editor-card{
+    background:rgba(8,16,40,.88);
+    backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:24px;
+    padding:32px 38px;
+    width:min(880px,94vw);
+    max-height:92vh;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 30px 70px rgba(0,0,0,.55);
+  }
+  .editor-card h2{ font-size:1.7rem; margin-bottom:4px; }
+  .editor-card p.sub{ opacity:.6; font-size:.85rem; margin-bottom:18px; }
+  #editor-list{ overflow:auto; flex:1; padding-right:8px; margin-bottom:12px; min-height:0; }
+  .q-row{ display:flex; gap:10px; align-items:center; margin-bottom:8px; }
+  .q-num{
+    width:40px; height:40px; border-radius:50%;
+    background:rgba(255,255,255,.1);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; flex-shrink:0; font-size:.9rem;
+  }
+  .q-row input{
+    flex:1; padding:11px 14px; border-radius:10px;
+    border:1px solid rgba(255,255,255,.15);
+    background:rgba(255,255,255,.06);
+    color:#fff; font-family:inherit; font-size:.9rem;
+  }
+  .q-row input:focus{ outline:none; border-color:#22e9f2; box-shadow:0 0 10px rgba(34,233,242,.25); }
+  .q-fixed{
+    flex:1; padding:11px 14px; border-radius:10px;
+    background:rgba(255,255,255,.03);
+    border:1px dashed rgba(255,255,255,.18);
+    font-size:.85rem; opacity:.65;
+  }
+  .editor-actions{ display:flex; gap:12px; justify-content:flex-end; flex-wrap:wrap; }
+  #editor-msg{ min-height:22px; font-size:.85rem; color:#7cf7a0; text-align:right; margin-bottom:8px; font-weight:600; }
+
+  /* ================= SCREEN 2: INSTRUCTIONS ================= */
+  #screen-instructions{ background:radial-gradient(circle at center,#2f6cb5 0%,#12305e 70%,#0a1c3d 100%); padding:20px; }
+  .instr-title{
+    background:#fff700;
+    color:#000;
+    font-family:'Bungee','Poppins',sans-serif;
+    font-size:4.2rem;
+    text-transform:lowercase;
+    padding:2px 26px;
+    margin-bottom:44px;
+    border-radius:8px;
+    box-shadow:0 0 40px rgba(255,247,0,.4);
+  }
+  .instr-row{ display:flex; gap:64px; align-items:flex-start; justify-content:center; flex-wrap:wrap; }
+  .instr-item{ text-align:center; width:210px; }
+  .instr-label{
+    background:#fff; color:#000;
+    border:3px solid #7fb241;
+    border-radius:10px;
+    padding:12px 14px;
+    font-weight:800;
+    margin-bottom:22px;
+    font-size:.95rem;
+  }
+  .instr-visual{ font-size:4.6rem; animation:bob 2.2s ease-in-out infinite; display:inline-block; }
+  .instr-item:nth-child(2) .instr-visual{ animation-delay:.3s; }
+  .instr-item:nth-child(3) .instr-visual{ animation-delay:.6s; }
+  @keyframes bob{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-14px);} }
+
+  /* ================= SCREEN 4: SETUP ================= */
+  #screen-setup{ background:radial-gradient(circle at 70% 20%, #16407e 0%, #0a1c3d 60%, #05070f 100%); }
+  .setup-card{
+    background:rgba(8,16,40,.8);
+    backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:24px;
+    padding:44px 52px;
+    text-align:center;
+    box-shadow:0 30px 70px rgba(0,0,0,.55);
+    max-width:640px;
+    width:92%;
+  }
+  .setup-card h2{ font-size:2rem; margin-bottom:4px; }
+  .setup-card p.sub{ opacity:.6; margin-bottom:26px; font-size:.9rem; }
+  .team-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:26px; }
+  .team-toggle{
+    display:flex; align-items:center; gap:10px;
+    background:rgba(255,255,255,.05);
+    border:2px solid rgba(255,255,255,.12);
+    border-radius:12px;
+    padding:12px 14px;
+    cursor:pointer;
+    transition:.15s;
+    user-select:none;
+    min-width:0;
+    overflow:hidden;
+  }
+  .team-toggle.on{ border-color:#22e9f2; background:rgba(34,233,242,.12); box-shadow:0 0 16px rgba(34,233,242,.2); }
+  .team-dot{ width:20px; height:20px; border-radius:50%; border:2px solid #fff; flex-shrink:0; }
+  .team-toggle span.tname{ font-weight:700; font-size:.85rem; }
+  .tname-input{
+    flex:1;
+    width:100%;
+    min-width:0;
+    background:transparent;
+    border:none;
+    border-bottom:1px dashed rgba(255,255,255,.25);
+    color:#fff;
+    font-family:inherit;
+    font-weight:700;
+    font-size:.85rem;
+    padding:2px 2px;
+  }
+  .tname-input:focus{ outline:none; border-bottom-color:#22e9f2; }
+  .tname-input::placeholder{ color:rgba(255,255,255,.35); }
+
+  .mode-section{ margin-bottom:26px; }
+  .mode-section h3{ font-size:.8rem; text-transform:uppercase; letter-spacing:2px; opacity:.6; margin-bottom:12px; }
+  .mode-row{ display:flex; gap:14px; justify-content:center; }
+  .mode-opt{
+    flex:1;
+    background:rgba(255,255,255,.05);
+    border:2px solid rgba(255,255,255,.12);
+    border-radius:14px;
+    padding:16px 12px;
+    cursor:pointer;
+    transition:.15s;
+    user-select:none;
+  }
+  .mode-opt.on{ border-color:#ffd54a; background:rgba(255,213,74,.1); box-shadow:0 0 18px rgba(255,213,74,.2); }
+  .mode-opt .mo-icon{ font-size:2rem; margin-bottom:6px; }
+  .mode-opt .mo-title{ font-weight:800; font-size:.9rem; }
+  .mode-opt .mo-sub{ font-size:.72rem; opacity:.6; margin-top:2px; }
+  #setup-warning{ color:#ff9b9b; font-size:.85rem; height:20px; margin-bottom:10px; }
+
+  /* ================= SCREEN 5: BOARD ================= */
+  #screen-board{ background:radial-gradient(circle at 50% 35%, #2b5fa8 0%, #12305e 55%, #060d22 100%); padding:12px; }
+  .board-wrap{ display:flex; gap:16px; width:100%; height:100%; max-width:1560px; align-items:center; }
+  .board-outer{
+    position:relative;
+    flex:1 1 auto;
+    aspect-ratio:16/9;
+    max-height:94vh;
+    max-width:78vw;
+    margin:0 auto;
+  }
+  .board-bg{
+    position:absolute; inset:0;
+    background:
+      radial-gradient(circle at 50% 45%, rgba(90,150,230,.35) 0%, transparent 55%),
+      linear-gradient(160deg,#274a94 0%, #16305f 60%, #0d2148 100%);
+    border-radius:22px;
+    box-shadow:inset 0 0 80px rgba(0,0,0,.55), 0 24px 60px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.07);
+  }
+  .flagbox{
+    position:absolute; left:1%; bottom:3%;
+    font-size:2.4vw;
+    filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));
+    animation:wave 2.4s ease-in-out infinite;
+  }
+  @keyframes wave{ 0%,100%{ transform:rotate(-6deg);} 50%{ transform:rotate(6deg);} }
+
+  .cell{
+    position:absolute;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #ffffff, #dfe9f5 70%);
+    border:3px solid #123a6e;
+    box-shadow:0 5px 0 rgba(0,0,0,.35), 0 8px 16px rgba(0,0,0,.25);
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    font-weight:800; color:#0d1b33;
+    font-size:1.4vw;
+    cursor:pointer;
+    transition:transform .18s, box-shadow .18s;
+  }
+  .cell:hover{ transform:scale(1.1); z-index:5; box-shadow:0 5px 0 rgba(0,0,0,.35), 0 0 22px rgba(120,200,255,.7); }
+  .cell.special-devil{ background:radial-gradient(circle at 35% 30%, #5d1616, #2a0606 70%); color:#ff8a8a; border-color:#ff2e2e; box-shadow:0 5px 0 rgba(0,0,0,.4), 0 0 18px rgba(255,46,46,.35); }
+  .cell.special-mystery{ background:radial-gradient(circle at 35% 30%, #fff6c4, #f3dd7a 75%); border-color:#d9a800; box-shadow:0 5px 0 rgba(0,0,0,.35), 0 0 18px rgba(255,213,74,.35); }
+  .cell.special-ladder{ background:radial-gradient(circle at 35% 30%, #e6f6ff, #bfe3fa 75%); border-color:#0a84c9; box-shadow:0 5px 0 rgba(0,0,0,.35), 0 0 18px rgba(60,170,255,.35); }
+  .cell .icon{ font-size:1.15vw; line-height:1; }
+  .cell.current-highlight{ outline:4px solid #22e9f2; outline-offset:3px; z-index:6; animation:cellGlow 1s ease-in-out infinite; }
+  @keyframes cellGlow{ 0%,100%{ box-shadow:0 5px 0 rgba(0,0,0,.35), 0 0 14px rgba(34,233,242,.6);} 50%{ box-shadow:0 5px 0 rgba(0,0,0,.35), 0 0 30px rgba(34,233,242,1);} }
+  .cell.bump{ animation:bump .35s ease; }
+  @keyframes bump{ 0%{ transform:scale(1);} 40%{ transform:scale(1.18);} 100%{ transform:scale(1);} }
+
+  .team-label{
+    position:absolute; left:0;
+    font-size:.7vw; font-weight:800;
+    padding:.35vw .8vw;
+    border-radius:0 6px 6px 0;
+    white-space:nowrap;
+    box-shadow:0 3px 8px rgba(0,0,0,.4);
+  }
+
+  .token{
+    position:absolute;
+    width:1.8vw; height:1.8vw;
+    border-radius:50%;
+    border:2px solid #fff;
+    box-shadow:0 3px 8px rgba(0,0,0,.55), inset 0 -4px 6px rgba(0,0,0,.3), inset 0 3px 4px rgba(255,255,255,.5);
+    transition:left .28s cubic-bezier(.3,.9,.4,1.2), top .28s cubic-bezier(.3,.9,.4,1.2);
+    z-index:10;
+    transform:translate(-50%,-50%);
+  }
+  .token.hopping{ animation:hop .28s ease; }
+  @keyframes hop{ 0%,100%{ margin-top:0;} 50%{ margin-top:-1.4vw;} }
+  .token.thrown{ animation:thrown .5s ease; }
+  @keyframes thrown{
+    0%{ margin-top:0; filter:none; }
+    40%{ margin-top:-3.2vw; transform:translate(-50%,-50%) rotate(180deg); }
+    100%{ margin-top:0; transform:translate(-50%,-50%) rotate(360deg); }
+  }
+
+  /* ================= SIDE PANEL ================= */
+  .panel{
+    width:310px; flex-shrink:0;
+    background:rgba(6,14,36,.82);
+    backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:20px;
+    padding:20px;
+    max-height:94vh;
+    overflow:auto;
+  }
+  .panel h3{ font-size:.72rem; opacity:.55; text-transform:uppercase; letter-spacing:2px; margin-bottom:10px; }
+  .turn-card{
+    border-radius:14px;
+    padding:14px 16px;
+    margin-bottom:16px;
+    font-weight:800;
+    font-size:1.15rem;
+    display:flex; align-items:center; gap:10px;
+    box-shadow:0 6px 18px rgba(0,0,0,.35);
+  }
+
+  /* ---------- 3D DICE ---------- */
+  .dice-stage{
+    perspective:600px;
+    width:90px; height:90px;
+    margin:6px auto 14px;
+  }
+  .dice-cube{
+    width:100%; height:100%;
+    position:relative;
+    transform-style:preserve-3d;
+    transform:rotateX(-18deg) rotateY(28deg);
+    transition:transform 1.4s cubic-bezier(.2,.8,.3,1);
+  }
+  .dice-cube.rolling{ transition:none; animation:tumble .12s linear infinite; }
+  @keyframes tumble{
+    from{ transform:rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+    to{ transform:rotateX(90deg) rotateY(120deg) rotateZ(60deg); }
+  }
+  .dice-face{
+    position:absolute; inset:0;
+    background:linear-gradient(145deg,#ffffff,#dfe6f2);
+    border:2px solid #b9c4d8;
+    border-radius:14px;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    grid-template-rows:repeat(3,1fr);
+    padding:12px;
+    box-shadow:inset 0 0 14px rgba(0,0,0,.12);
+  }
+  .pip{ width:14px; height:14px; background:#12203f; border-radius:50%; align-self:center; justify-self:center; box-shadow:inset 0 2px 3px rgba(0,0,0,.6); }
+  .f1{ transform:translateZ(45px); }
+  .f2{ transform:rotateY(90deg) translateZ(45px); }
+  .f3{ transform:rotateY(180deg) translateZ(45px); }
+  .f4{ transform:rotateY(-90deg) translateZ(45px); }
+  .f5{ transform:rotateX(90deg) translateZ(45px); }
+  .f6{ transform:rotateX(-90deg) translateZ(45px); }
+
+  /* manual dice buttons */
+  #manual-pad{ display:none; grid-template-columns:repeat(3,1fr); gap:8px; margin:8px 0 14px; }
+  #manual-pad.visible{ display:grid; }
+  .man-btn{
+    padding:12px 0;
+    font-size:1.25rem;
+    font-weight:800;
+    border-radius:10px;
+    background:rgba(255,255,255,.08);
+    color:#fff;
+    border:1px solid rgba(255,255,255,.18);
+    transition:.12s;
+  }
+  .man-btn:hover{ background:rgba(34,233,242,.25); border-color:#22e9f2; transform:scale(1.06); }
+  .man-btn:disabled{ opacity:.3; }
+  #manual-label{ display:none; font-size:.72rem; text-align:center; opacity:.6; margin-bottom:4px; }
+  #manual-label.visible{ display:block; }
+
+  .dice-mode-switch{
+    display:flex;
+    background:rgba(255,255,255,.06);
+    border-radius:10px;
+    padding:3px;
+    margin-bottom:12px;
+    gap:3px;
+  }
+  .dice-mode-switch button{
+    flex:1; padding:7px 4px;
+    background:transparent; color:#fff;
+    font-size:.7rem; font-weight:700;
+    border-radius:8px;
+    opacity:.55;
+  }
+  .dice-mode-switch button.on{ background:#22e9f2; color:#001018; opacity:1; }
+
+  .team-row{
+    display:flex; align-items:center; gap:8px;
+    padding:8px 10px; border-radius:10px; margin-bottom:6px;
+    font-size:.82rem;
+    background:rgba(255,255,255,.05);
+    transition:.2s;
+  }
+  .team-row.active-turn{ background:rgba(34,233,242,.16); border:1px solid #22e9f2; box-shadow:0 0 12px rgba(34,233,242,.25); }
+  .team-row .dot{ width:13px; height:13px; border-radius:50%; border:2px solid #fff; }
+  .team-row .pos{ margin-left:auto; opacity:.7; }
+
+  #dice-btn{ width:100%; }
+  #log{ font-size:.72rem; opacity:.6; line-height:1.55; max-height:110px; overflow:auto; margin-top:8px; }
+
+  /* ================= EVENT OVERLAY (devil / joker / ladder) ================= */
+  #event-overlay{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,.72);
+    backdrop-filter:blur(3px);
+    display:none;
+    align-items:center; justify-content:center;
+    flex-direction:column;
+    z-index:150;
+  }
+  #event-overlay.active{ display:flex; }
+  .event-emoji{
+    font-size:9rem;
+    transform-style:preserve-3d;
+    filter:drop-shadow(0 20px 40px rgba(0,0,0,.7));
+  }
+  .event-emoji.devil-anim{ animation:devil3d 1.9s ease-in-out; }
+  @keyframes devil3d{
+    0%{ transform:scale(0) rotateY(0deg); opacity:0; }
+    25%{ transform:scale(1.35) rotateY(360deg); opacity:1; }
+    45%{ transform:scale(1) rotateY(360deg); }
+    55%{ transform:scale(1.15) rotateY(360deg) rotateZ(-14deg); }
+    65%{ transform:scale(1.15) rotateY(360deg) rotateZ(14deg); }
+    75%{ transform:scale(1.3) rotateY(360deg) rotateZ(-30deg) translateX(-30px); }
+    85%{ transform:scale(1.35) rotateY(360deg) rotateZ(35deg) translateX(50px); }
+    100%{ transform:scale(1.1) rotateY(720deg); }
+  }
+  .event-emoji.joker-anim{ animation:joker3d 1.6s ease-in-out; }
+  @keyframes joker3d{
+    0%{ transform:scale(0) rotate(-180deg); opacity:0; }
+    35%{ transform:scale(1.3) rotate(15deg); opacity:1; }
+    50%{ transform:scale(1) rotate(-10deg); }
+    65%{ transform:scale(1.15) rotate(8deg) translateY(-24px); }
+    80%{ transform:scale(1.05) rotate(-6deg) translateY(0); }
+    100%{ transform:scale(1.1) rotate(0); }
+  }
+  .event-emoji.ladder-anim{ animation:ladder3d 1.6s ease-in-out; }
+  @keyframes ladder3d{
+    0%{ transform:translateY(140px) scale(.4) rotateX(60deg); opacity:0; }
+    40%{ transform:translateY(0) scale(1.2) rotateX(0); opacity:1; }
+    60%{ transform:translateY(-16px) scale(1.1); }
+    80%{ transform:translateY(0) scale(1.15); }
+    100%{ transform:translateY(-8px) scale(1.1); }
+  }
+  .event-text{
+    font-family:'Bungee','Poppins',sans-serif;
+    font-size:2.6rem;
+    margin-top:24px;
+    text-align:center;
+    animation:textPop .5s ease .6s both;
+    text-shadow:0 0 30px currentColor;
+  }
+  .event-sub{ font-size:1rem; opacity:.8; margin-top:8px; animation:textPop .5s ease .8s both; }
+  @keyframes textPop{ from{ transform:scale(.5); opacity:0;} to{ transform:scale(1); opacity:1;} }
+  #event-overlay.devil .event-text{ color:#ff4d4d; }
+  #event-overlay.joker .event-text{ color:#ffd54a; }
+  #event-overlay.ladder-up .event-text{ color:#5ad1ff; }
+  #event-overlay.ladder-down .event-text{ color:#ff9b4d; }
+  #event-overlay.bounce .event-text{ color:#c792ff; }
+  #event-overlay.wrong .event-text{ color:#ff4d4d; }
+
+  .btn.correct{
+    background:linear-gradient(135deg,#39d97b,#1eb85f);
+    color:#03130a;
+    box-shadow:0 0 22px rgba(57,217,123,.45), 0 8px 18px rgba(0,0,0,.4);
+  }
+  .btn.wrong{
+    background:linear-gradient(135deg,#ff5a5a,#e03030);
+    color:#1a0404;
+    box-shadow:0 0 22px rgba(255,90,90,.45), 0 8px 18px rgba(0,0,0,.4);
+  }
+
+  .shake{ animation:shakeScreen .45s ease; }
+  @keyframes shakeScreen{
+    0%,100%{ transform:translate(0,0); }
+    20%{ transform:translate(-10px,4px); }
+    40%{ transform:translate(9px,-5px); }
+    60%{ transform:translate(-7px,3px); }
+    80%{ transform:translate(5px,-2px); }
+  }
+
+  /* ================= QUESTION MODAL ================= */
+  .modal-overlay{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,.68);
+    backdrop-filter:blur(3px);
+    display:none;
+    align-items:center; justify-content:center;
+    z-index:100;
+  }
+  .modal-overlay.active{ display:flex; }
+  .modal-card{
+    background:linear-gradient(160deg,#ffffff,#eef3fa);
+    color:#111;
+    border-radius:22px;
+    padding:42px 46px;
+    max-width:540px;
+    width:92%;
+    text-align:center;
+    box-shadow:0 40px 90px rgba(0,0,0,.6);
+    animation:pop .3s cubic-bezier(.2,1.4,.4,1);
+  }
+  @keyframes pop{ from{ transform:scale(.7) translateY(30px); opacity:0;} to{ transform:none; opacity:1;} }
+  .modal-card .modal-icon{ font-size:3.4rem; margin-bottom:10px; }
+  .modal-card .modal-tag{
+    display:inline-block;
+    background:#123a6e; color:#fff;
+    padding:5px 16px; border-radius:20px;
+    font-size:.72rem; font-weight:800;
+    margin-bottom:16px; letter-spacing:2px;
+  }
+  .modal-card h2{ font-size:1.85rem; margin-bottom:8px; }
+  .modal-card p{ color:#555; margin-bottom:22px; font-size:.92rem; }
+
+  /* ================= WIN ================= */
+  #win-overlay .modal-card{ background:linear-gradient(160deg,#1a2c56,#0d1834); color:#fff; }
+  #win-overlay .modal-card p{ color:rgba(255,255,255,.7); }
+  .confetti{
+    position:fixed;
+    width:12px; height:12px;
+    top:-20px;
+    z-index:200;
+    animation:confall linear forwards;
+    pointer-events:none;
+  }
+  @keyframes confall{
+    to{ transform:translateY(110vh) rotate(720deg); opacity:.9; }
+  }
+
+  @media (max-width: 900px){
+    .board-wrap{ flex-direction:column; overflow:auto; }
+    .board-outer{ max-width:96vw; }
+    .panel{ width:100%; max-height:none; }
+    .cell{ font-size:2.7vw; }
+    .cell .icon{ font-size:2.3vw; }
+    .token{ width:2.8vw; height:2.8vw; }
+    .instr-title{ font-size:2.6rem; }
+    .team-grid{ grid-template-columns:repeat(2,1fr); }
+    .event-emoji{ font-size:6rem; }
+    .event-text{ font-size:1.7rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= SCREEN 1: TITLE ================= -->
+<div class="screen active" id="screen-title">
+  <div class="title-card">
+    <h1>The evil game</h1><br>
+    <span class="by">By mr.nunez</span>
+  </div>
+  <div class="title-buttons">
+    <button class="btn" onclick="goTo('screen-instructions')">Start ▶</button>
+    <button class="btn secondary" onclick="openEditor()">✏️ Modificar preguntas</button>
+  </div>
+</div>
+
+<!-- ================= SCREEN EDITOR ================= -->
+<div class="screen" id="screen-editor">
+  <div class="editor-card">
+    <h2>✏️ Modificar preguntas</h2>
+    <p class="sub">Personaliza el contenido de cada casilla para tu asignatura. Las casillas especiales (😈 diablo, 🎭 comodín, 🪜 escaleras) mantienen su función y no se editan. También puedes <b>exportar las preguntas a Excel</b>, editarlas ahí (o enviárselas a otro profesor) y volver a importarlas.</p>
+    <div id="editor-list"></div>
+    <div id="editor-msg"></div>
+    <div class="editor-actions" style="justify-content:flex-start; margin-bottom:10px;">
+      <button class="btn secondary" onclick="exportExcel()">📤 Exportar a Excel</button>
+      <button class="btn secondary" onclick="document.getElementById('excel-file').click()">📥 Importar desde Excel</button>
+      <input type="file" id="excel-file" accept=".xlsx,.csv" style="display:none" onchange="importExcel(this.files[0]); this.value='';">
+    </div>
+    <div class="editor-actions">
+      <button class="btn secondary" onclick="restoreQuestions()">↺ Restaurar originales</button>
+      <button class="btn secondary" onclick="goTo('screen-title')">Volver</button>
+      <button class="btn" onclick="saveQuestions()">💾 Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= SCREEN 3: INSTRUCTIONS ================= -->
+<div class="screen" id="screen-instructions">
+  <div class="instr-title">instructions</div>
+  <div class="instr-row">
+    <div class="instr-item">
+      <div class="instr-label">YOU MAY GO OR GET BACK</div>
+      <div class="instr-visual">🪜</div>
+    </div>
+    <div class="instr-item">
+      <div class="instr-label">YOU CAN SKIP 3 NUMBERS</div>
+      <div class="instr-visual">🎭</div>
+    </div>
+    <div class="instr-item">
+      <div class="instr-label">DEVIL THROWS YOU BACK 3 NUMBERS</div>
+      <div class="instr-visual">😈</div>
+    </div>
+  </div>
+  <div style="margin-top:36px; background:rgba(0,0,0,.35); padding:12px 26px; border-radius:12px; font-size:.9rem; text-align:center;">
+    🎯 Para ganar debes llegar <b>exacto</b> a la casilla 33.<br>Si el dado se pasa, ¡rebotas hacia atrás!
+  </div>
+  <div style="display:flex; gap:14px; margin-top:36px;">
+    <button class="btn secondary" onclick="goTo('screen-title')">⬅ Volver al inicio</button>
+    <button class="btn" onclick="goTo('screen-setup')">Continue</button>
+  </div>
+</div>
+
+<!-- ================= SCREEN 4: SETUP ================= -->
+<div class="screen" id="screen-setup">
+  <div class="setup-card">
+    <h2>Configura la partida</h2>
+    <p class="sub">Selecciona los equipos, edita sus nombres tocando el texto, y elige el modo de dado</p>
+
+    <div class="mode-section">
+      <h3>Equipos (mínimo 2)</h3>
+      <div class="team-grid" id="team-grid"></div>
+    </div>
+
+    <div class="mode-section">
+      <h3>Modo de dado</h3>
+      <div class="mode-row">
+        <div class="mode-opt on" id="mode-digital" onclick="setDiceMode('digital')">
+          <div class="mo-icon">🎲</div>
+          <div class="mo-title">Dado digital</div>
+          <div class="mo-sub">El juego lanza un dado 3D animado</div>
+        </div>
+        <div class="mode-opt" id="mode-physical" onclick="setDiceMode('physical')">
+          <div class="mo-icon">✋</div>
+          <div class="mo-title">Dado físico</div>
+          <div class="mo-sub">Lanzas tu dado real e ingresas el número</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="setup-warning"></div>
+    <div style="display:flex; gap:14px; justify-content:center;">
+      <button class="btn secondary" onclick="goTo('screen-instructions')">Back</button>
+      <button class="btn" onclick="startGame()">Start Game 🚀</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= SCREEN 5: BOARD ================= -->
+<div class="screen" id="screen-board">
+  <div class="board-wrap" id="board-wrap">
+    <div class="board-outer" id="board-outer">
+      <div class="board-bg"></div>
+      <div class="flagbox">🏁</div>
+    </div>
+    <div class="panel">
+      <h3>Turno actual</h3>
+      <div class="turn-card" id="turn-card">-</div>
+
+      <button class="btn secondary" id="music-btn" style="width:100%; padding:8px; font-size:.8rem; margin-bottom:10px;" onclick="toggleMusic()">🔊 Música: ON</button>
+
+      <div class="dice-mode-switch">
+        <button id="sw-digital" class="on" onclick="setDiceMode('digital', true)">🎲 Digital</button>
+        <button id="sw-physical" onclick="setDiceMode('physical', true)">✋ Físico</button>
+      </div>
+
+      <div class="dice-stage" id="dice-stage">
+        <div class="dice-cube" id="dice-cube">
+          <div class="dice-face f1"><span class="pip" style="grid-area:2/2"></span></div>
+          <div class="dice-face f2"><span class="pip" style="grid-area:1/1"></span><span class="pip" style="grid-area:3/3"></span></div>
+          <div class="dice-face f3"><span class="pip" style="grid-area:1/1"></span><span class="pip" style="grid-area:2/2"></span><span class="pip" style="grid-area:3/3"></span></div>
+          <div class="dice-face f4"><span class="pip" style="grid-area:1/1"></span><span class="pip" style="grid-area:1/3"></span><span class="pip" style="grid-area:3/1"></span><span class="pip" style="grid-area:3/3"></span></div>
+          <div class="dice-face f5"><span class="pip" style="grid-area:1/1"></span><span class="pip" style="grid-area:1/3"></span><span class="pip" style="grid-area:2/2"></span><span class="pip" style="grid-area:3/1"></span><span class="pip" style="grid-area:3/3"></span></div>
+          <div class="dice-face f6"><span class="pip" style="grid-area:1/1"></span><span class="pip" style="grid-area:2/1"></span><span class="pip" style="grid-area:3/1"></span><span class="pip" style="grid-area:1/3"></span><span class="pip" style="grid-area:2/3"></span><span class="pip" style="grid-area:3/3"></span></div>
+        </div>
+      </div>
+
+      <button class="btn" id="dice-btn" onclick="rollDice()">🎲 Lanzar dado</button>
+
+      <div id="manual-label">Lanza tu dado físico y toca el número que salió:</div>
+      <div id="manual-pad">
+        <button class="man-btn" onclick="manualRoll(1)">1</button>
+        <button class="man-btn" onclick="manualRoll(2)">2</button>
+        <button class="man-btn" onclick="manualRoll(3)">3</button>
+        <button class="man-btn" onclick="manualRoll(4)">4</button>
+        <button class="man-btn" onclick="manualRoll(5)">5</button>
+        <button class="man-btn" onclick="manualRoll(6)">6</button>
+      </div>
+
+      <h3 style="margin-top:16px;">Equipos</h3>
+      <div id="team-list"></div>
+
+      <h3 style="margin-top:12px;">Historial</h3>
+      <div id="log"></div>
+
+      <button class="btn secondary" style="width:100%; margin-top:14px;" onclick="resetGame()">↺ Reiniciar partida</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= EVENT OVERLAY ================= -->
+<div id="event-overlay">
+  <div class="event-emoji" id="event-emoji">😈</div>
+  <div class="event-text" id="event-text"></div>
+  <div class="event-sub" id="event-sub"></div>
+</div>
+
+<!-- ================= QUESTION MODAL ================= -->
+<div class="modal-overlay" id="question-modal">
+  <div class="modal-card">
+    <div class="modal-icon" id="q-icon">🃏</div>
+    <div class="modal-tag" id="q-tag">CASILLA</div>
+    <h2 id="q-text">...</h2>
+    <p id="q-sub"></p>
+    <div id="q-buttons-answer" style="display:none; gap:14px; justify-content:center;">
+      <button class="btn correct" onclick="answerQuestion(true)">✅ Correcta</button>
+      <button class="btn wrong" onclick="answerQuestion(false)">❌ Incorrecta</button>
+    </div>
+    <button class="btn" id="q-continue" onclick="closeModal()">Continuar</button>
+  </div>
+</div>
+
+<!-- ================= WIN MODAL ================= -->
+<div class="modal-overlay" id="win-overlay">
+  <div class="modal-card">
+    <div class="modal-icon">🏆</div>
+    <div class="modal-tag" style="background:#ffd54a; color:#000;">¡GANADOR!</div>
+    <h2 id="win-text">...</h2>
+    <p>¡Llegaron exactos a la meta!</p>
+    <button class="btn" onclick="resetGame()">Jugar de nuevo</button>
+  </div>
+</div>
+
+<script>
+/* ============ DATA: exact layout extracted from the original .pptm ============ */
+const CELLS = [
+ {n:1, left:11.87, top:7.22, w:10, h:17.78, q:'WHAT', type:'question'},
+ {n:2, left:22.21, top:7.60, w:10, h:17.78, q:'WHEN', type:'question'},
+ {n:3, left:32.17, top:8.05, w:10, h:17.78, q:'WHY', type:'question'},
+ {n:4, left:42.19, top:7.28, w:10, h:17.78, q:'WHO', type:'question'},
+ {n:5, left:52.13, top:7.30, w:10, h:17.78, type:'mystery'},
+ {n:6, left:61.94, top:6.48, w:10, h:17.78, q:'HOW', type:'question'},
+ {n:7, left:72.01, top:6.86, w:10, h:17.78, type:'ladder', target:11},
+ {n:8, left:82.34, top:6.52, w:10, h:17.78, q:'WHERE', type:'question'},
+ {n:9, left:82.46, top:23.94, w:11, h:17.78, q:'WHERE ARE YOU?', type:'question'},
+ {n:10, left:83.11, top:40.51, w:10, h:17.78, q:'WHO IS YOUR FRIEND?', type:'question'},
+ {n:11, left:72.79, top:38.75, w:10, h:17.78, q:'WHAT IS YOUR FAV. COLOR?', type:'question'},
+ {n:12, left:63.46, top:37.38, w:10, h:17.78, q:'WHY IS SHE SAD?', type:'question'},
+ {n:13, left:53.37, top:36.47, w:10, h:17.78, type:'devil'},
+ {n:14, left:43.44, top:36.45, w:10, h:17.78, q:'¿CUÁNDO ES LA FIESTA?', type:'question'},
+ {n:15, left:33.28, top:36.41, w:10, h:17.78, type:'ladder', target:20},
+ {n:16, left:23.38, top:34.80, w:10, h:17.78, type:'mystery'},
+ {n:17, left:13.40, top:33.96, w:10, h:17.78, q:'¿DÓNDE ESTÁN ELLOS?', type:'question'},
+ {n:18, left:12.56, top:50.52, w:10, h:17.78, q:'¿ES ELLA MI AMIGA?', type:'question'},
+ {n:19, left:23.50, top:59.93, w:10, h:17.78, q:'¿EL ES MI AMIGO?', type:'question'},
+ {n:20, left:34.07, top:61.20, w:10, h:17.78, q:'¿ESTÁN ELLOS FELICES?', type:'question'},
+ {n:21, left:44.10, top:61.80, w:10, h:17.78, q:'¿DÓNDE ESTÁS TÚ?', type:'question'},
+ {n:22, left:54.03, top:61.34, w:10, h:17.78, type:'mystery'},
+ {n:23, left:63.92, top:61.63, w:10, h:17.78, q:'¿SOY YO TU AMIGO?', type:'question'},
+ {n:24, left:73.63, top:60.53, w:10, h:17.78, q:'WHY ARE YOU SO SERIOUS?', type:'question'},
+ {n:25, left:84.59, top:61.53, w:10, h:17.78, type:'ladder', target:10},
+ {n:26, left:89.17, top:79.73, w:10, h:17.78, q:'IS HE HAPPY?', type:'question'},
+ {n:27, left:79.21, top:82.65, w:10, h:17.78, q:'¿POR QUÉ ERES ASÍ?', type:'question'},
+ {n:28, left:69.00, top:82.91, w:10, h:17.78, type:'devil'},
+ {n:29, left:58.47, top:83.14, w:10, h:17.78, q:'¿CUÁNTOS AÑOS TIENES?', type:'question'},
+ {n:30, left:48.85, top:82.65, w:10, h:17.78, type:'ladder', target:21},
+ {n:31, left:38.61, top:82.07, w:10, h:17.78, q:'¿DÓNDE ESTAMOS NOSOTROS?', type:'question'},
+ {n:32, left:28.35, top:82.34, w:10, h:17.78, q:'¿ESTÁS TÚ FELIZ?', type:'question'},
+ {n:33, left:18.19, top:81.38, w:10, h:17.78, q:'🏁 ¡META!', type:'finish'}
+];
+const FINAL = 33;
+
+/* ============ EDITABLE QUESTIONS (persist if the browser allows it) ============ */
+const store = {
+  get(k){ try{ return window.localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ window.localStorage.setItem(k,v); return true; }catch(e){ return false; } },
+  del(k){ try{ window.localStorage.removeItem(k); }catch(e){} }
+};
+const DEFAULT_QUESTIONS = {};
+CELLS.forEach(c=>{ if(c.q !== undefined) DEFAULT_QUESTIONS[c.n] = c.q; });
+(function loadSavedQuestions(){
+  const raw = store.get('evilgame_questions');
+  if(!raw) return;
+  try{
+    const m = JSON.parse(raw);
+    CELLS.forEach(c=>{
+      if((c.type==='question'||c.type==='finish') && typeof m[c.n]==='string' && m[c.n].trim()!==''){
+        c.q = m[c.n];
+      }
+    });
+  }catch(e){}
+})();
+
+function loadSavedTeamNames(){
+  const raw = store.get('evilgame_teamnames');
+  if(!raw) return;
+  try{
+    const m = JSON.parse(raw);
+    TEAM_DEFS.forEach(t=>{
+      if(typeof m[t.id]==='string' && m[t.id].trim()!==''){ t.name = m[t.id].trim(); }
+    });
+  }catch(e){}
+}
+
+function openEditor(){
+  buildEditor();
+  goTo('screen-editor');
+}
+
+function buildEditor(){
+  const list = document.getElementById('editor-list');
+  list.innerHTML = '';
+  document.getElementById('editor-msg').textContent = '';
+  CELLS.forEach(c=>{
+    const row = document.createElement('div');
+    row.className = 'q-row';
+    const num = document.createElement('div');
+    num.className = 'q-num';
+    num.textContent = c.n;
+    row.appendChild(num);
+    if(c.type==='question' || c.type==='finish'){
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.maxLength = 120;
+      inp.value = c.q;
+      inp.dataset.n = c.n;
+      inp.placeholder = 'Escribe la pregunta / contenido...';
+      row.appendChild(inp);
+    } else {
+      const fx = document.createElement('div');
+      fx.className = 'q-fixed';
+      fx.textContent = c.type==='devil' ? '😈 Casilla del diablo — retrocede 3 (fija)'
+        : c.type==='mystery' ? '🎭 Comodín — avanza 3 (fija)'
+        : `🪜 Escalera — va a la casilla ${c.target} (fija)`;
+      row.appendChild(fx);
+    }
+    list.appendChild(row);
+  });
+}
+
+function saveQuestions(){
+  const map = {};
+  document.querySelectorAll('#editor-list input').forEach(inp=>{
+    const n = parseInt(inp.dataset.n);
+    const val = inp.value.trim();
+    const c = CELLS.find(c=>c.n===n);
+    if(c){
+      c.q = val !== '' ? val : DEFAULT_QUESTIONS[n];
+      map[n] = c.q;
+    }
+  });
+  const persisted = store.set('evilgame_questions', JSON.stringify(map));
+  document.getElementById('editor-msg').textContent = persisted
+    ? '✅ Preguntas guardadas. Se conservarán aunque cierres el juego.'
+    : '✅ Preguntas aplicadas para esta sesión.';
+}
+
+function restoreQuestions(){
+  CELLS.forEach(c=>{ if(DEFAULT_QUESTIONS[c.n]!==undefined) c.q = DEFAULT_QUESTIONS[c.n]; });
+  store.del('evilgame_questions');
+  buildEditor();
+  document.getElementById('editor-msg').textContent = '↺ Preguntas originales restauradas.';
+}
+
+/* ============ EXCEL (.xlsx) EXPORT / IMPORT — sin librerías externas ============ */
+function editorMsg(text, ok=true){
+  const m = document.getElementById('editor-msg');
+  m.style.color = ok ? '#7cf7a0' : '#ff9b9b';
+  m.textContent = text;
+}
+function xmlEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ---- ZIP writer (entradas sin comprimir, formato válido para Excel) ---- */
+let CRC_TABLE = null;
+function crc32(u8){
+  if(!CRC_TABLE){
+    CRC_TABLE = new Uint32Array(256);
+    for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c = (c&1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1); CRC_TABLE[n] = c>>>0; }
+  }
+  let crc = 0xFFFFFFFF;
+  for(let i=0;i<u8.length;i++) crc = CRC_TABLE[(crc ^ u8[i]) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+function buildZip(files){
+  const enc = new TextEncoder();
+  const parts = [], central = [];
+  let offset = 0;
+  files.forEach(([name, content])=>{
+    const nameB = enc.encode(name);
+    const data = enc.encode(content);
+    const crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true);
+    lh.setUint16(4, 20, true);
+    lh.setUint16(6, 0x0800, true);
+    lh.setUint16(8, 0, true);
+    lh.setUint32(14, crc, true);
+    lh.setUint32(18, data.length, true);
+    lh.setUint32(22, data.length, true);
+    lh.setUint16(26, nameB.length, true);
+    parts.push(new Uint8Array(lh.buffer), nameB, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true);
+    ch.setUint16(4, 20, true); ch.setUint16(6, 20, true);
+    ch.setUint16(8, 0x0800, true);
+    ch.setUint32(16, crc, true);
+    ch.setUint32(20, data.length, true);
+    ch.setUint32(24, data.length, true);
+    ch.setUint16(28, nameB.length, true);
+    ch.setUint32(42, offset, true);
+    central.push(new Uint8Array(ch.buffer), nameB);
+    offset += 30 + nameB.length + data.length;
+  });
+  let cdSize = 0; central.forEach(p=> cdSize += p.length);
+  const eocd = new DataView(new ArrayBuffer(22));
+  eocd.setUint32(0, 0x06054b50, true);
+  eocd.setUint16(8, files.length, true);
+  eocd.setUint16(10, files.length, true);
+  eocd.setUint32(12, cdSize, true);
+  eocd.setUint32(16, offset, true);
+  const all = [...parts, ...central, new Uint8Array(eocd.buffer)];
+  let total = 0; all.forEach(p=> total += p.length);
+  const out = new Uint8Array(total);
+  let pos = 0; all.forEach(p=>{ out.set(p, pos); pos += p.length; });
+  return out;
+}
+
+function buildXlsxBlob(rows){
+  let sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols><col min="1" max="1" width="10" customWidth="1"/><col min="2" max="2" width="34" customWidth="1"/><col min="3" max="3" width="64" customWidth="1"/></cols><sheetData>';
+  rows.forEach((r, ri)=>{
+    sheet += `<row r="${ri+1}">`;
+    r.forEach((v, ci)=>{
+      const ref = String.fromCharCode(65+ci) + (ri+1);
+      if(typeof v === 'number'){ sheet += `<c r="${ref}"><v>${v}</v></c>`; }
+      else if(v !== ''){ sheet += `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`; }
+    });
+    sheet += '</row>';
+  });
+  sheet += '</sheetData></worksheet>';
+  const files = [
+    ['[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>'],
+    ['_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+    ['xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Preguntas" sheetId="1" r:id="rId1"/></sheets></workbook>'],
+    ['xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>'],
+    ['xl/worksheets/sheet1.xml', sheet],
+  ];
+  return new Blob([buildZip(files)], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
+function exportExcel(){
+  // usa los valores en vivo del editor si está abierto
+  const live = {};
+  document.querySelectorAll('#editor-list input').forEach(inp=>{ live[parseInt(inp.dataset.n)] = inp.value; });
+  const rows = [['CASILLA','TIPO','PREGUNTA (edite solo esta columna)']];
+  CELLS.forEach(c=>{
+    let tipo, preg = '';
+    if(c.type==='question'){ tipo = 'PREGUNTA'; preg = live[c.n] !== undefined ? live[c.n] : c.q; }
+    else if(c.type==='finish'){ tipo = 'META'; preg = live[c.n] !== undefined ? live[c.n] : c.q; }
+    else if(c.type==='devil'){ tipo = 'DIABLO (fija - no editar)'; }
+    else if(c.type==='mystery'){ tipo = 'COMODIN (fija - no editar)'; }
+    else { tipo = `ESCALERA a la casilla ${c.target} (fija - no editar)`; }
+    rows.push([c.n, tipo, preg]);
+  });
+  try{
+    const blob = buildXlsxBlob(rows);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'preguntas_evil_game.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=> URL.revokeObjectURL(a.href), 3000);
+    editorMsg('📤 Excel descargado. Edita la columna PREGUNTA en Excel y luego usa "Importar".');
+  }catch(e){
+    editorMsg('⚠️ No se pudo generar el Excel en este navegador.', false);
+  }
+}
+
+/* ---- ZIP reader (soporta archivos guardados por Excel/LibreOffice) ---- */
+async function readZip(buf){
+  const dv = new DataView(buf);
+  const u8 = new Uint8Array(buf);
+  let i = buf.byteLength - 22;
+  while(i >= 0 && dv.getUint32(i, true) !== 0x06054b50) i--;
+  if(i < 0) throw new Error('ZIP inválido');
+  const count = dv.getUint16(i+10, true);
+  let off = dv.getUint32(i+16, true);
+  const dec = new TextDecoder();
+  const out = {};
+  for(let n=0; n<count; n++){
+    if(dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off+10, true);
+    const csize = dv.getUint32(off+20, true);
+    const nlen = dv.getUint16(off+28, true);
+    const elen = dv.getUint16(off+30, true);
+    const clen = dv.getUint16(off+32, true);
+    const lho = dv.getUint32(off+42, true);
+    const name = dec.decode(u8.subarray(off+46, off+46+nlen));
+    const lnlen = dv.getUint16(lho+26, true);
+    const lelen = dv.getUint16(lho+28, true);
+    const dstart = lho + 30 + lnlen + lelen;
+    const cdata = u8.slice(dstart, dstart+csize);
+    if(method === 0){
+      out[name] = cdata;
+    } else if(method === 8){
+      if(typeof DecompressionStream === 'undefined') throw new Error('navegador sin soporte');
+      const ds = new DecompressionStream('deflate-raw');
+      const ab = await new Response(new Blob([cdata]).stream().pipeThrough(ds)).arrayBuffer();
+      out[name] = new Uint8Array(ab);
+    } else {
+      throw new Error('compresión no soportada');
+    }
+    off += 46 + nlen + elen + clen;
+  }
+  return out;
+}
+
+function parseXlsxRows(files){
+  const dec = new TextDecoder();
+  const dp = new DOMParser();
+  let sst = [];
+  if(files['xl/sharedStrings.xml']){
+    const d = dp.parseFromString(dec.decode(files['xl/sharedStrings.xml']), 'application/xml');
+    for(const si of d.getElementsByTagNameNS('*','si')){
+      let txt = '';
+      for(const t of si.getElementsByTagNameNS('*','t')) txt += t.textContent;
+      sst.push(txt);
+    }
+  }
+  const names = Object.keys(files);
+  const sheetName = names.includes('xl/worksheets/sheet1.xml')
+    ? 'xl/worksheets/sheet1.xml'
+    : names.find(n=>/^xl\/worksheets\/sheet\d+\.xml$/.test(n));
+  if(!sheetName) throw new Error('sin hoja');
+  const d = dp.parseFromString(dec.decode(files[sheetName]), 'application/xml');
+  const rows = [];
+  for(const r of d.getElementsByTagNameNS('*','row')){
+    const cells = {};
+    for(const c of r.getElementsByTagNameNS('*','c')){
+      const col = (c.getAttribute('r')||'').replace(/[0-9]/g,'');
+      const t = c.getAttribute('t');
+      const v = c.getElementsByTagNameNS('*','v')[0];
+      let val = '';
+      if(t === 's'){ val = v ? (sst[parseInt(v.textContent)] || '') : ''; }
+      else if(t === 'inlineStr'){ const is = c.getElementsByTagNameNS('*','is')[0]; val = is ? is.textContent : ''; }
+      else { val = v ? v.textContent : ''; }
+      cells[col] = val;
+    }
+    rows.push(cells);
+  }
+  return rows;
+}
+
+/* ---- CSV de respaldo (por si guardan como .csv) ---- */
+function parseCsvRows(text){
+  text = text.replace(/^\uFEFF/, '');
+  const lines = text.split(/\r?\n/).filter(l=>l.trim() !== '');
+  if(lines.length === 0) return [];
+  const delim = (lines[0].split(';').length > lines[0].split(',').length) ? ';' : ',';
+  return lines.map(line=>{
+    const cells = []; let cur = '', inQ = false;
+    for(let i=0; i<line.length; i++){
+      const ch = line[i];
+      if(inQ){
+        if(ch === '"'){ if(line[i+1] === '"'){ cur += '"'; i++; } else inQ = false; }
+        else cur += ch;
+      } else {
+        if(ch === '"') inQ = true;
+        else if(ch === delim){ cells.push(cur); cur = ''; }
+        else cur += ch;
+      }
+    }
+    cells.push(cur);
+    return { A: cells[0], B: cells[1], C: cells[2] };
+  });
+}
+
+async function importExcel(file){
+  if(!file) return;
+  try{
+    let rows;
+    if(/\.csv$/i.test(file.name)){
+      rows = parseCsvRows(await file.text());
+    } else {
+      rows = parseXlsxRows(await readZip(await file.arrayBuffer()));
+    }
+    let applied = 0;
+    rows.forEach(r=>{
+      const n = parseInt(r.A);
+      const q = (r.C === undefined || r.C === null) ? '' : String(r.C).trim();
+      if(!Number.isInteger(n) || q === '') return;
+      const c = CELLS.find(c=>c.n === n);
+      if(c && (c.type === 'question' || c.type === 'finish')){ c.q = q; applied++; }
+    });
+    if(applied === 0){
+      editorMsg('⚠️ No se encontraron preguntas válidas. Usa el Excel exportado por el juego (columnas CASILLA y PREGUNTA).', false);
+      return;
+    }
+    const map = {};
+    CELLS.forEach(c=>{ if(c.type === 'question' || c.type === 'finish') map[c.n] = c.q; });
+    store.set('evilgame_questions', JSON.stringify(map));
+    buildEditor();
+    editorMsg(`✅ ${applied} preguntas importadas desde "${file.name}" y guardadas.`);
+  }catch(e){
+    editorMsg('⚠️ No se pudo leer el archivo. Verifica que sea un .xlsx (o .csv) válido.', false);
+  }
+}
+
+const TEAM_DEFS = [
+  {id:1, name:'TEAM 1', color:'#8fb8de'},
+  {id:2, name:'TEAM 2', color:'#e64545'},
+  {id:3, name:'TEAM 3', color:'#2b2b2b'},
+  {id:4, name:'TEAM 4', color:'#4caf50'},
+  {id:5, name:'TEAM 5', color:'#d4af37'},
+  {id:6, name:'TEAM 6', color:'#f4f4f4'},
+];
+const DEFAULT_TEAM_NAMES = {};
+TEAM_DEFS.forEach(t=>{ DEFAULT_TEAM_NAMES[t.id] = t.name; });
+
+function renameTeam(id, val){
+  const t = TEAM_DEFS.find(t=>t.id===id);
+  if(!t) return;
+  t.name = val.trim() !== '' ? val.trim() : DEFAULT_TEAM_NAMES[id];
+  const map = {};
+  TEAM_DEFS.forEach(t=>{ map[t.id] = t.name; });
+  // persist silently if the browser allows it
+  try{ store.set('evilgame_teamnames', JSON.stringify(map)); }catch(e){}
+}
+loadSavedTeamNames();
+
+let selectedTeams = [1,2,3,4];
+let teams = [];
+let currentTurn = 0;
+let gameOver = false;
+let busy = false;
+let diceMode = 'digital'; // 'digital' | 'physical'
+let turnStartPos = 0; // posición del equipo al iniciar su turno (para perder el turno)
+
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+/* ============ AUDIO: música de fondo + efectos (WebAudio, sin archivos) ============ */
+let audioCtx = null, musicOn = true, musicTimer = null, musicStep = 0;
+
+function ensureAudio(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ audioCtx = null; }
+  }
+  if(audioCtx && audioCtx.state === 'suspended'){ try{ audioCtx.resume(); }catch(e){} }
+  return !!audioCtx;
+}
+
+function playNote(freq, dur=0.18, type='triangle', gain=0.05, when=0){
+  if(!ensureAudio()) return;
+  try{
+    const t = audioCtx.currentTime + when;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t); o.stop(t+dur+0.05);
+  }catch(e){}
+}
+
+const mf = m => 440*Math.pow(2,(m-69)/12);
+/* Loop alegre de 16 pasos en Do mayor */
+const MELODY = [72,76,79,76, 74,77,81,77, 72,76,79,84, 79,77,74,72];
+const BASS   = [48,48,45,45, 41,41,43,43];
+
+function startMusic(){
+  stopMusic();
+  if(!musicOn || !ensureAudio()) return;
+  musicStep = 0;
+  musicTimer = setInterval(()=>{
+    playNote(mf(MELODY[musicStep % MELODY.length]), 0.16, 'triangle', 0.032);
+    if(musicStep % 2 === 0) playNote(mf(BASS[Math.floor(musicStep/2) % BASS.length]), 0.32, 'sine', 0.05);
+    musicStep++;
+  }, 215);
+}
+function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer = null; } }
+function toggleMusic(){
+  musicOn = !musicOn;
+  const b = document.getElementById('music-btn');
+  if(b) b.textContent = musicOn ? '🔊 Música: ON' : '🔇 Música: OFF';
+  if(musicOn && document.getElementById('screen-board').classList.contains('active') && !gameOver) startMusic();
+  else stopMusic();
+}
+
+/* Efectos de sonido */
+function sfxDice(){ for(let i=0;i<8;i++) playNote(220+Math.random()*520, .06, 'square', .045, i*0.1); }
+function sfxClick(){ playNote(720, .08, 'square', .05); }
+function sfxHop(i){ playNote(320+i*45, .09, 'square', .05); }
+function sfxDevil(){ [420,330,262,196,147].forEach((f,i)=>playNote(f,.24,'sawtooth',.06,i*0.16)); }
+function sfxJoker(){ [523,659,784,1047].forEach((f,i)=>playNote(f,.15,'triangle',.065,i*0.1)); }
+function sfxLadder(up){ for(let i=0;i<8;i++){ const f = up ? 320+i*95 : 1050-i*95; playNote(f,.08,'triangle',.05,i*0.07); } }
+function sfxBounce(){ [700,500,700,420].forEach((f,i)=>playNote(f,.11,'square',.05,i*0.13)); }
+function sfxWin(){ [523,659,784,1047,784,1047,1319].forEach((f,i)=>playNote(f,.24,'triangle',.07,i*0.16)); }
+function sfxCorrect(){ [659,784,1047].forEach((f,i)=>playNote(f,.15,'triangle',.07,i*0.09)); }
+function sfxWrong(){ [320,230,160].forEach((f,i)=>playNote(f,.22,'sawtooth',.06,i*0.13)); }
+
+/* ============ NAV ============ */
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='screen-setup') buildSetup();
+}
+
+/* ============ SETUP ============ */
+function buildSetup(){
+  const grid = document.getElementById('team-grid');
+  grid.innerHTML = '';
+  TEAM_DEFS.forEach(t=>{
+    const on = selectedTeams.includes(t.id);
+    const div = document.createElement('div');
+    div.className = 'team-toggle' + (on?' on':'');
+
+    const dot = document.createElement('div');
+    dot.className = 'team-dot';
+    dot.style.background = t.color;
+
+    const inp = document.createElement('input');
+    inp.className = 'tname-input';
+    inp.type = 'text';
+    inp.maxLength = 18;
+    inp.size = 8;
+    inp.value = t.name;
+    inp.placeholder = DEFAULT_TEAM_NAMES[t.id];
+    inp.title = 'Haz clic para editar el nombre del equipo';
+    inp.addEventListener('click', e=> e.stopPropagation());
+    inp.addEventListener('input', ()=> renameTeam(t.id, inp.value));
+    inp.addEventListener('blur', ()=>{ if(inp.value.trim()==='') { inp.value = DEFAULT_TEAM_NAMES[t.id]; renameTeam(t.id, inp.value); } });
+
+    div.appendChild(dot);
+    div.appendChild(inp);
+    div.onclick = ()=>{
+      const idx = selectedTeams.indexOf(t.id);
+      if(idx>-1) selectedTeams.splice(idx,1); else selectedTeams.push(t.id);
+      div.classList.toggle('on', selectedTeams.includes(t.id));
+    };
+    grid.appendChild(div);
+  });
+}
+
+function setDiceMode(mode, fromBoard){
+  diceMode = mode;
+  // setup screen cards
+  document.getElementById('mode-digital').classList.toggle('on', mode==='digital');
+  document.getElementById('mode-physical').classList.toggle('on', mode==='physical');
+  // board switch
+  document.getElementById('sw-digital').classList.toggle('on', mode==='digital');
+  document.getElementById('sw-physical').classList.toggle('on', mode==='physical');
+  // panel UI
+  const stage = document.getElementById('dice-stage');
+  const btn = document.getElementById('dice-btn');
+  const pad = document.getElementById('manual-pad');
+  const lab = document.getElementById('manual-label');
+  if(mode==='digital'){
+    stage.style.display='block'; btn.style.display='block';
+    pad.classList.remove('visible'); lab.classList.remove('visible');
+  } else {
+    stage.style.display='none'; btn.style.display='none';
+    pad.classList.add('visible'); lab.classList.add('visible');
+  }
+}
+
+function startGame(){
+  if(selectedTeams.length < 2){
+    document.getElementById('setup-warning').textContent = 'Selecciona al menos 2 equipos.';
+    return;
+  }
+  document.getElementById('setup-warning').textContent = '';
+  teams = TEAM_DEFS.filter(t=>selectedTeams.includes(t.id)).map(t=>({...t, pos:0, finished:false}));
+  currentTurn = 0;
+  gameOver = false;
+  busy = false;
+  buildBoard();
+  renderTeams();
+  updateTurnCard();
+  document.getElementById('log').innerHTML = '';
+  setDiceMode(diceMode);
+  goTo('screen-board');
+  startMusic();
+}
+
+function resetGame(){
+  stopMusic();
+  document.getElementById('win-overlay').classList.remove('active');
+  goTo('screen-setup');
+}
+
+/* ============ BOARD ============ */
+function buildBoard(){
+  const board = document.getElementById('board-outer');
+  board.querySelectorAll('.cell, .token, .team-label').forEach(e=>e.remove());
+
+  teams.forEach((t,i)=>{
+    const lab = document.createElement('div');
+    lab.className = 'team-label';
+    lab.style.top = (3 + i*8) + '%';
+    lab.style.background = t.color;
+    lab.style.color = (t.color==='#f4f4f4'||t.color==='#d4af37'||t.color==='#8fb8de') ? '#000' : '#fff';
+    lab.textContent = t.name;
+    board.appendChild(lab);
+  });
+
+  CELLS.forEach(c=>{
+    const div = document.createElement('div');
+    div.className = 'cell';
+    div.style.left = c.left+'%';
+    div.style.top = c.top+'%';
+    div.style.width = c.w+'%';
+    div.style.height = c.h+'%';
+    div.dataset.n = c.n;
+    let icon = '';
+    if(c.type==='devil'){ div.classList.add('special-devil'); icon='<div class="icon">😈</div>'; }
+    else if(c.type==='mystery'){ div.classList.add('special-mystery'); icon='<div class="icon">🎭</div>'; }
+    else if(c.type==='ladder'){ div.classList.add('special-ladder'); icon='<div class="icon">🪜</div>'; }
+    else if(c.type==='finish'){ icon='<div class="icon">🏁</div>'; }
+    div.innerHTML = `<span>${c.n}</span>` + icon;
+    div.onclick = ()=> { if(!busy) inspectCell(c.n); };
+    board.appendChild(div);
+  });
+
+  // create tokens
+  teams.forEach((t,i)=>{
+    const tok = document.createElement('div');
+    tok.className = 'token';
+    tok.id = 'token-'+t.id;
+    tok.style.background = `radial-gradient(circle at 35% 30%, ${lighten(t.color)}, ${t.color} 70%)`;
+    board.appendChild(tok);
+    placeToken(t, i);
+  });
+}
+
+function lighten(hex){
+  const n = parseInt(hex.slice(1),16);
+  const r=Math.min(255,(n>>16)+70), g=Math.min(255,((n>>8)&255)+70), b=Math.min(255,(n&255)+70);
+  return `rgb(${r},${g},${b})`;
+}
+
+function cellCenter(n){
+  const c = CELLS.find(c=>c.n===n);
+  return { left: c.left + c.w/2, top: c.top + c.h/2 };
+}
+
+function tokenTargetPos(t, i){
+  if(t.pos===0) return { left: 3 + i*2.2, top: 2.5 };
+  const c = cellCenter(t.pos);
+  const angle = (i/teams.length)*2*Math.PI;
+  return { left: c.left + Math.cos(angle)*1.7, top: c.top + Math.sin(angle)*1.7 };
+}
+
+function placeToken(t, i){
+  const tok = document.getElementById('token-'+t.id);
+  const p = tokenTargetPos(t, i);
+  tok.style.left = p.left+'%';
+  tok.style.top = p.top+'%';
+}
+
+/* step-by-step animated movement */
+async function moveTokenSteps(t, path, thrown=false){
+  const i = teams.indexOf(t);
+  const tok = document.getElementById('token-'+t.id);
+  let k = 0;
+  for(const step of path){
+    t.pos = step;
+    tok.classList.remove('hopping'); void tok.offsetWidth;
+    tok.classList.add(thrown ? 'thrown' : 'hopping');
+    placeToken(t, i);
+    bumpCell(step);
+    sfxHop(k++);
+    await sleep(thrown ? 480 : 300);
+  }
+  tok.classList.remove('hopping','thrown');
+  renderTeams();
+}
+
+/* direct jump (ladders) */
+async function jumpToken(t, target){
+  const i = teams.indexOf(t);
+  const tok = document.getElementById('token-'+t.id);
+  tok.style.transition = 'left .8s cubic-bezier(.3,1.3,.4,1), top .8s cubic-bezier(.3,1.3,.4,1)';
+  tok.classList.add('hopping');
+  t.pos = target;
+  placeToken(t, i);
+  await sleep(850);
+  tok.style.transition = '';
+  tok.classList.remove('hopping');
+  bumpCell(target);
+  renderTeams();
+}
+
+function bumpCell(n){
+  const el = document.querySelector(`.cell[data-n="${n}"]`);
+  if(!el) return;
+  el.classList.remove('bump'); void el.offsetWidth;
+  el.classList.add('bump');
+}
+
+function highlightCell(n){
+  document.querySelectorAll('.cell').forEach(el=>el.classList.remove('current-highlight'));
+  const el = document.querySelector(`.cell[data-n="${n}"]`);
+  if(el) el.classList.add('current-highlight');
+}
+
+/* ============ PANEL ============ */
+function renderTeams(){
+  const list = document.getElementById('team-list');
+  list.innerHTML = '';
+  teams.forEach((t,i)=>{
+    const row = document.createElement('div');
+    row.className = 'team-row' + (i===currentTurn && !gameOver ? ' active-turn':'');
+    row.innerHTML = `<div class="dot" style="background:${t.color}"></div>${t.name}${t.finished?' 🏆':''}<span class="pos">Casilla ${t.pos}</span>`;
+    list.appendChild(row);
+  });
+}
+
+function updateTurnCard(){
+  const card = document.getElementById('turn-card');
+  const t = teams[currentTurn];
+  card.style.background = t.color;
+  card.style.color = (t.color==='#f4f4f4'||t.color==='#d4af37'||t.color==='#8fb8de') ? '#000' : '#fff';
+  card.textContent = `👉 ${t.name}`;
+}
+
+function log(msg){
+  const l = document.getElementById('log');
+  const line = document.createElement('div');
+  line.textContent = msg;
+  l.prepend(line);
+}
+
+/* ============ 3D DICE ============ */
+const FACE_ROT = {
+  1:'rotateX(0deg) rotateY(0deg)',
+  2:'rotateX(0deg) rotateY(-90deg)',
+  3:'rotateX(0deg) rotateY(-180deg)',
+  4:'rotateX(0deg) rotateY(90deg)',
+  5:'rotateX(-90deg) rotateY(0deg)',
+  6:'rotateX(90deg) rotateY(0deg)',
+};
+
+async function rollDice(){
+  if(gameOver || busy) return;
+  busy = true;
+  setControlsEnabled(false);
+
+  const cube = document.getElementById('dice-cube');
+  const roll = 1 + Math.floor(Math.random()*6);
+
+  sfxDice();
+  cube.classList.add('rolling');
+  await sleep(900);
+  cube.classList.remove('rolling');
+  const spinX = 360*(2+Math.floor(Math.random()*2));
+  const spinY = 360*(2+Math.floor(Math.random()*2));
+  cube.style.transform = `rotateX(${spinX}deg) rotateY(${spinY}deg) ${FACE_ROT[roll]}`;
+  await sleep(1450);
+
+  await playTurn(roll);
+}
+
+async function manualRoll(n){
+  if(gameOver || busy) return;
+  busy = true;
+  setControlsEnabled(false);
+  sfxClick();
+  await playTurn(n);
+}
+
+function setControlsEnabled(en){
+  document.getElementById('dice-btn').disabled = !en;
+  document.querySelectorAll('.man-btn').forEach(b=>b.disabled = !en);
+}
+
+/* ============ TURN LOGIC (ludo-style exact finish) ============ */
+async function playTurn(roll){
+  const t = teams[currentTurn];
+  const start = t.pos;
+  turnStartPos = start;
+  log(`${t.name} sacó 🎲 ${roll}`);
+
+  let path = [];
+  const distToGoal = FINAL - start;
+
+  if(roll <= distToGoal){
+    for(let p=start+1; p<=start+roll; p++) path.push(p);
+    await moveTokenSteps(t, path);
+  } else {
+    // bounce back: go to 33 then reverse the excess
+    for(let p=start+1; p<=FINAL; p++) path.push(p);
+    const excess = roll - distToGoal;
+    for(let p=FINAL-1; p>=FINAL-excess; p--) path.push(p);
+    await moveTokenSteps(t, path.slice(0, distToGoal>0?distToGoal:0));
+    if(distToGoal>0){
+      await showEvent('bounce','🎯','¡TE PASASTE!',`Necesitabas ${distToGoal} exacto. ¡Rebotas ${excess} hacia atrás!`, 1400);
+    } else {
+      await showEvent('bounce','🎯','¡NÚMERO EXACTO NECESARIO!',`Rebotas ${excess} hacia atrás.`, 1400);
+    }
+    await moveTokenSteps(t, path.slice(distToGoal>0?distToGoal:0));
+  }
+
+  highlightCell(t.pos);
+  await sleep(250);
+  await resolveCell(t);
+}
+
+async function resolveCell(t){
+  if(gameOver) return;
+  const c = CELLS.find(c=>c.n===t.pos);
+
+  if(t.pos===FINAL){
+    finishGame(t);
+    return;
+  }
+
+  if(c.type==='devil'){
+    await showEvent('devil','😈','¡EL DIABLO TE ATRAPÓ!','Te lanza 3 casillas hacia atrás...', 2000, true);
+    const back = [];
+    for(let p=t.pos-1; p>=Math.max(t.pos-3, 1); p--) back.push(p);
+    await moveTokenSteps(t, back, true);
+    log(`${t.name} 😈 devil → retrocede a la casilla ${t.pos}`);
+    highlightCell(t.pos);
+    await sleep(300);
+    await afterLandingSecondary(t);
+    endTurn();
+  }
+  else if(c.type==='mystery'){
+    await showEvent('joker','🎭','¡COMODÍN!','Avanzas 3 casillas extra 🎉', 1700);
+    const fwd = [];
+    const dist = FINAL - t.pos;
+    if(dist >= 3){
+      for(let p=t.pos+1; p<=t.pos+3; p++) fwd.push(p);
+    } else {
+      for(let p=t.pos+1; p<=FINAL; p++) fwd.push(p);
+      for(let p=FINAL-1; p>=FINAL-(3-dist); p--) fwd.push(p);
+    }
+    await moveTokenSteps(t, fwd);
+    log(`${t.name} 🎭 joker → casilla ${t.pos}`);
+    highlightCell(t.pos);
+    if(t.pos===FINAL){ finishGame(t); return; }
+    await sleep(300);
+    await afterLandingSecondary(t);
+    endTurn();
+  }
+  else if(c.type==='ladder'){
+    const up = c.target > c.n;
+    await showEvent(up?'ladder-up':'ladder-down','🪜', up?`¡ESCALERA! SUBE A ${c.target}`:`¡ESCALERA! BAJA A ${c.target}`, up?'¡Qué suerte! 🍀':'Mala suerte... 😅', 1700);
+    await jumpToken(t, c.target);
+    log(`${t.name} 🪜 escalera → casilla ${t.pos}`);
+    highlightCell(t.pos);
+    await sleep(300);
+    await afterLandingSecondary(t);
+    endTurn();
+  }
+  else {
+    // question cell: correcta mantiene el avance, incorrecta pierde el turno
+    const ok = await showQuestion(c);
+    if(ok === false){
+      await wrongAnswerPenalty(t);
+    } else {
+      log(`${t.name} ✅ respondió correctamente`);
+    }
+    endTurn();
+  }
+}
+
+/* Penalización por respuesta incorrecta: pierde el turno y vuelve a su casilla anterior */
+async function wrongAnswerPenalty(t){
+  log(`${t.name} ❌ respuesta incorrecta — pierde el turno`);
+  await showEvent('wrong','❌','¡INCORRECTO!','Pierdes el turno: vuelves a tu casilla anterior.', 1700);
+  if(t.pos !== turnStartPos){
+    await jumpToken(t, turnStartPos);
+  }
+  highlightCell(t.pos);
+  await sleep(200);
+}
+
+/* if a devil/joker/ladder lands you on a question cell, show it (but stop chains of specials to keep turns fast) */
+async function afterLandingSecondary(t){
+  const c = CELLS.find(c=>c.n===t.pos);
+  if(c && c.type==='question'){
+    const ok = await showQuestion(c);
+    if(ok === false){
+      await wrongAnswerPenalty(t);
+    } else {
+      log(`${t.name} ✅ respondió correctamente`);
+    }
+  }
+}
+
+function showQuestion(c){
+  return new Promise(resolve=>{
+    document.getElementById('q-icon').textContent = '🃏';
+    document.getElementById('q-tag').textContent = 'CASILLA ' + c.n;
+    document.getElementById('q-text').textContent = c.q;
+    document.getElementById('q-sub').textContent = 'Si la respuesta es correcta el equipo mantiene su avance; si es incorrecta pierde el turno.';
+    document.getElementById('q-buttons-answer').style.display = 'flex';
+    document.getElementById('q-continue').style.display = 'none';
+    modalCallback = resolve;
+    document.getElementById('question-modal').classList.add('active');
+  });
+}
+
+function answerQuestion(ok){
+  document.getElementById('question-modal').classList.remove('active');
+  if(ok) sfxCorrect(); else sfxWrong();
+  if(modalCallback){ const cb = modalCallback; modalCallback = null; cb(ok); }
+}
+
+function endTurn(){
+  if(gameOver) return;
+  do{ currentTurn = (currentTurn+1)%teams.length; } while(teams[currentTurn].finished);
+  updateTurnCard();
+  renderTeams();
+  busy = false;
+  setControlsEnabled(true);
+}
+
+/* ============ EVENT OVERLAY ============ */
+function showEvent(kind, emoji, text, sub, duration, shake){
+  return new Promise(async resolve=>{
+    if(kind==='devil') sfxDevil();
+    else if(kind==='joker') sfxJoker();
+    else if(kind==='ladder-up') sfxLadder(true);
+    else if(kind==='ladder-down') sfxLadder(false);
+    else if(kind==='bounce') sfxBounce();
+    const ov = document.getElementById('event-overlay');
+    const em = document.getElementById('event-emoji');
+    ov.className = ''; ov.id='event-overlay';
+    ov.classList.add('active', kind);
+    em.className = 'event-emoji';
+    void em.offsetWidth;
+    if(kind==='devil') em.classList.add('devil-anim');
+    else if(kind==='joker') em.classList.add('joker-anim');
+    else if(kind.startsWith('ladder')) em.classList.add('ladder-anim');
+    else em.classList.add('joker-anim');
+    em.textContent = emoji;
+    document.getElementById('event-text').textContent = text;
+    document.getElementById('event-sub').textContent = sub || '';
+    if(shake){
+      setTimeout(()=>{
+        document.getElementById('board-wrap').classList.remove('shake');
+        void document.getElementById('board-wrap').offsetWidth;
+        document.getElementById('board-wrap').classList.add('shake');
+      }, 900);
+    }
+    await sleep(duration);
+    ov.classList.remove('active');
+    resolve();
+  });
+}
+
+/* ============ MODAL / INSPECT ============ */
+let modalCallback = null;
+function closeModal(){
+  document.getElementById('question-modal').classList.remove('active');
+  if(modalCallback){ const cb = modalCallback; modalCallback=null; cb(); }
+}
+
+function inspectCell(n){
+  const c = CELLS.find(c=>c.n===n);
+  let icon='🃏', tag=`CASILLA ${n}`, text=c.q || '', sub='Vista previa de la carta.';
+  if(c.type==='ladder'){ icon='🪜'; tag='ESCALERA'; text = c.target>c.n? `GO TO ${c.target}`:`BACK TO ${c.target}`; }
+  if(c.type==='devil'){ icon='😈'; tag='CASILLA DEL DIABLO'; text='RETROCEDE 3 CASILLAS'; }
+  if(c.type==='mystery'){ icon='🎭'; tag='COMODÍN'; text='AVANZA 3 CASILLAS'; }
+  if(c.type==='finish'){ icon='🏁'; tag='META'; text='¡Llega exacto para ganar!'; }
+  document.getElementById('q-icon').textContent = icon;
+  document.getElementById('q-tag').textContent = tag;
+  document.getElementById('q-text').textContent = text;
+  document.getElementById('q-sub').textContent = sub;
+  document.getElementById('q-buttons-answer').style.display = 'none';
+  document.getElementById('q-continue').style.display = 'inline-block';
+  modalCallback = null;
+  document.getElementById('question-modal').classList.add('active');
+}
+
+/* ============ WIN + CONFETTI ============ */
+function finishGame(t){
+  t.finished = true;
+  gameOver = true;
+  stopMusic();
+  sfxWin();
+  renderTeams();
+  document.getElementById('win-text').textContent = `${t.name} ¡ganó el juego!`;
+  launchConfetti();
+  setTimeout(()=>{ document.getElementById('win-overlay').classList.add('active'); }, 500);
+}
+
+function launchConfetti(){
+  const colors = ['#22e9f2','#ffd54a','#ff4d6d','#7cf7a0','#c792ff','#ff9b4d'];
+  for(let i=0;i<120;i++){
+    const c = document.createElement('div');
+    c.className='confetti';
+    c.style.left = Math.random()*100+'vw';
+    c.style.background = colors[Math.floor(Math.random()*colors.length)];
+    c.style.width = c.style.height = (7+Math.random()*9)+'px';
+    c.style.borderRadius = Math.random()>.5 ? '50%' : '2px';
+    c.style.animationDuration = (2.2+Math.random()*2.5)+'s';
+    c.style.animationDelay = (Math.random()*1.2)+'s';
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(), 6000);
+  }
+}
+</script>
+</body>
+</html>

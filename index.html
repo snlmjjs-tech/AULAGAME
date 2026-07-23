@@ -80,6 +80,17 @@
     transition: border-color .2s, transform .15s;
   }
   .avatar-btn:hover{ border-color: var(--turquesa); transform: translateY(-1px); }
+  .btn-header-login{
+    background: var(--amarillo); color: var(--tinta);
+    border:none; border-radius:40px;
+    padding: 10px 22px;
+    font-family:'Nunito Sans', sans-serif; font-weight:800; font-size:14px;
+    cursor:pointer;
+    box-shadow: 0 4px 0 var(--amarillo-dark);
+    transition: transform .15s ease, filter .15s ease, box-shadow .1s ease;
+  }
+  .btn-header-login:hover{ filter:brightness(1.07); transform: translateY(-1px); }
+  .btn-header-login:active{ transform: translateY(3px); box-shadow: 0 1px 0 var(--amarillo-dark); }
   .avatar-circle{
     width:32px; height:32px; border-radius:50%;
     background: var(--turquesa); color: var(--tinta);
@@ -344,6 +355,54 @@
   .aviso-toast.visible{ opacity:1; transform:translateX(-50%) translateY(0); }
   .aviso-toast.error{ border-color: var(--rosa); }
 
+  /* ============ LOGIN (modal) ============ */
+  .login-caja{
+    position:relative;
+    background: linear-gradient(150deg, var(--panel), var(--noche-alta));
+    border: 2px solid var(--linea);
+    border-radius: 22px;
+    padding: 34px 32px 30px;
+    max-width: 380px; width:100%;
+    box-shadow: 0 10px 0 rgba(0,0,0,0.4);
+    text-align:center;
+  }
+  .login-cerrar{
+    position:absolute; top:14px; right:14px;
+    background:none; border:none; color: var(--texto-suave);
+    font-size:18px; line-height:1; cursor:pointer; padding:6px;
+  }
+  .login-cerrar:hover{ color: var(--texto); }
+  .login-caja .wordmark{ display:inline-block; margin-bottom:6px; }
+  .login-caja h3{
+    font-family:'Baloo 2', cursive; font-weight:800; font-size:22px;
+    margin: 18px 0 6px;
+  }
+  .login-caja > p{ margin: 0 0 22px; color: var(--texto-suave); font-size:13.5px; font-weight:600; }
+  #form-login{ display:flex; flex-direction:column; gap:14px; text-align:left; }
+  #form-login label{
+    display:flex; flex-direction:column; gap:6px;
+    font-size:11.5px; font-weight:800; color: var(--texto-suave);
+    text-transform:uppercase; letter-spacing:0.5px;
+  }
+  #form-login input{
+    font-family:'Nunito Sans', sans-serif; font-size:14.5px; font-weight:700;
+    color: var(--texto); background: var(--tinta);
+    border:2px solid var(--linea); border-radius:12px; padding:11px 14px;
+  }
+  #form-login input:focus-visible{ border-color: var(--turquesa); }
+  .login-error{
+    background: rgba(255,77,141,0.12); border:2px solid var(--rosa);
+    color: var(--texto); border-radius:12px; padding:10px 14px;
+    font-size:12.5px; font-weight:700; text-align:left;
+  }
+  #login-submit[disabled]{ opacity:0.6; cursor:not-allowed; filter:none; }
+  .login-toggle{ margin:20px 0 0 !important; font-size:13px; }
+  .login-toggle button{
+    background:none; border:none; color: var(--turquesa);
+    font-weight:800; cursor:pointer; font-size:13px; padding:0;
+    margin-left:4px; text-decoration:underline; font-family:'Nunito Sans', sans-serif;
+  }
+
   @media (max-width: 640px){
     header{ padding: 14px 20px; }
     .wordmark{ font-size:20px; }
@@ -358,13 +417,15 @@
 </head>
 <body>
 
-<!-- ==================== DASHBOARD ==================== -->
-<div id="pantalla-dashboard">
-
 <header>
   <div class="wordmark">AULAGAMES<small>Plataforma de juegos didácticos</small></div>
   <div class="user-area">
-    <button class="avatar-btn"><span class="avatar-circle">P</span> Mi cuenta</button>
+    <button class="btn-header-login" id="btn-iniciar-sesion" type="button">Iniciar sesión</button>
+    <button class="avatar-btn oculto" id="btn-cuenta" type="button">
+      <span class="avatar-circle" id="avatar-circle">P</span>
+      <span id="avatar-email">Mi cuenta</span>
+    </button>
+    <button class="btn btn-mini oculto" id="btn-salir" type="button" title="Cerrar sesión">⏻</button>
   </div>
 </header>
 
@@ -423,7 +484,7 @@
         <div class="kard-body">
           <div class="kard-title">QuizLive</div>
           <p class="kard-desc">Trivia en vivo estilo Kahoot: los alumnos entran desde su celular con un código.</p>
-          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/335e1b18-9b5a-4718-ae4c-992205cb9692">⧉ Duplicar</button>
+          <button class="btn btn-dup" type="button" data-url="/play/quizlive/" data-play="/play/quizlive/">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -432,7 +493,7 @@
         <div class="kard-body">
           <div class="kard-title">Battle Castle 3D</div>
           <p class="kard-desc">Batalla de castillos en 3D: cada equipo lanza el misil desde su celular al castillo que elija.</p>
-          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/75d035d5-ac5d-48e0-ba0a-5decd01c6952">⧉ Duplicar</button>
+          <button class="btn btn-dup" type="button" data-url="/play/battlecastle3d/" data-play="/play/battlecastle3d/">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -441,7 +502,7 @@
         <div class="kard-body">
           <div class="kard-title">Rosco de Palabras</div>
           <p class="kard-desc">Pasapalabra clásico: vocabulario letra por letra contra el reloj.</p>
-          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/2afec95d-891f-4502-9cf9-c6b64d0a9e5d">⧉ Duplicar</button>
+          <button class="btn btn-dup" type="button" data-url="/play/rosco/" data-play="/play/rosco/">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -450,7 +511,7 @@
         <div class="kard-body">
           <div class="kard-title">Escalera Millonaria</div>
           <p class="kard-desc">Preguntas en escalera de dificultad con comodines, editable para cualquier materia.</p>
-          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/a07b4281-1de3-456a-8b38-af6b1a53ee31">⧉ Duplicar</button>
+          <button class="btn btn-dup" type="button" data-url="/play/millonario/" data-play="/play/millonario/">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -459,7 +520,7 @@
         <div class="kard-body">
           <div class="kard-title">Magnates de San Fernando</div>
           <p class="kard-desc">Tablero temático local: se proyecta y se juega con turnos por grupo.</p>
-          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/d2cc9a59-0a33-4b5b-9046-60a1c04db8cb">⧉ Duplicar</button>
+          <button class="btn btn-dup" type="button" data-url="/play/monopoly/" data-play="/play/monopoly/">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -468,7 +529,7 @@
         <div class="kard-body">
           <div class="kard-title">Descubre al Impostor</div>
           <p class="kard-desc">Misiones de vocabulario con impostor incluido: ideal para repasos rápidos.</p>
-          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/c7025a97-8050-4d63-acbe-703d083c02e1">⧉ Duplicar</button>
+          <button class="btn btn-dup" type="button" data-url="/play/impostor/" data-play="/play/impostor/">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -477,7 +538,7 @@
         <div class="kard-body">
           <div class="kard-title">Bet Your Answer</div>
           <p class="kard-desc">Trivia con apuestas de puntos: la tensión sube en la recta final.</p>
-          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/d3d25886-b46b-4ca3-97e7-e09dfca7ba65">⧉ Duplicar</button>
+          <button class="btn btn-dup" type="button" data-url="/play/betyouranswer/" data-play="/play/betyouranswer/">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -486,7 +547,7 @@
         <div class="kard-body">
           <div class="kard-title">Robot Fight</div>
           <p class="kard-desc">Duelo de robots por respuestas correctas: ritmo rápido y muy visual.</p>
-          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/26324226-3622-4af9-b079-d629877dec6e">⧉ Duplicar</button>
+          <button class="btn btn-dup" type="button" data-url="/play/robotfight/" data-play="/play/robotfight/">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -495,7 +556,7 @@
         <div class="kard-body">
           <div class="kard-title">Race Board</div>
           <p class="kard-desc">Carrera por equipos en tablero: se avanza respondiendo bien.</p>
-          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/41d5355a-b698-43df-a0c9-cddb92ceb88d">⧉ Duplicar</button>
+          <button class="btn btn-dup" type="button" data-url="/play/raceboard/" data-play="/play/raceboard/">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -504,7 +565,7 @@
         <div class="kard-body">
           <div class="kard-title">Jeopardy</div>
           <p class="kard-desc">Tablero de categorías y puntajes al estilo clásico: perfecto para repasar unidades completas.</p>
-          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/58408e02-7524-47c2-8502-974ae3ff0bd3">⧉ Duplicar</button>
+          <button class="btn btn-dup" type="button" data-url="/play/jeopardy/" data-play="/play/jeopardy/">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -513,7 +574,7 @@
         <div class="kard-body">
           <div class="kard-title">Evil Game</div>
           <p class="kard-desc">Trivia con giros y penalizaciones: cada equipo tira el dado desde su propio celular.</p>
-          <button class="btn btn-dup" type="button" data-url="https://claude.ai/public/artifacts/cf599c64-bfb0-4687-acd4-d6d76704de0f">⧉ Duplicar</button>
+          <button class="btn btn-dup" type="button" data-url="/play/evilgame/" data-play="/play/evilgame/">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -522,7 +583,7 @@
         <div class="kard-body">
           <div class="kard-title">Memorice</div>
           <p class="kard-desc">El clásico juego de memoria por parejas: se proyecta y se juega por turnos entre equipos.</p>
-          <button class="btn btn-dup" type="button" data-url="https://snlmjjs-tech.github.io/memorice/">⧉ Duplicar</button>
+          <button class="btn btn-dup" type="button" data-url="https://snlmjjs-tech.github.io/memorice/" data-play="/play/memorice/">⧉ Duplicar</button>
         </div>
       </article>
 
@@ -531,9 +592,31 @@
 
 </main>
 
-<footer>AULAGAMES · Hecho por profes, para profes 🍎</footer>
+<footer>AULAGAMES · Hecho por profes, para profes 🍎<br>Diseñada por Sebastián Núñez López</footer>
 
-</div><!-- fin dashboard -->
+<!-- ==================== LOGIN (modal) ==================== -->
+<div class="modal-fondo oculto" id="modal-login">
+  <div class="login-caja" role="dialog" aria-modal="true" aria-labelledby="login-titulo">
+    <button class="login-cerrar" id="login-cerrar" type="button" aria-label="Cerrar">✕</button>
+    <div class="wordmark">AULAGAMES<small>Plataforma de juegos didácticos</small></div>
+    <h3 id="login-titulo">Entrar a tu cuenta</h3>
+    <p id="login-sub">Accede con tu correo y contraseña de profe.</p>
+    <form id="form-login" novalidate>
+      <label>Correo electrónico
+        <input type="email" id="login-email" required autocomplete="email" placeholder="profe@escuela.com">
+      </label>
+      <label>Contraseña
+        <input type="password" id="login-password" required minlength="6" autocomplete="current-password" placeholder="••••••••">
+      </label>
+      <div class="login-error oculto" id="login-error" role="alert"></div>
+      <button type="submit" class="btn btn-jugar" id="login-submit">Entrar</button>
+    </form>
+    <p class="login-toggle">
+      <span id="login-toggle-texto">¿No tienes cuenta?</span>
+      <button type="button" id="login-toggle-btn">Crear cuenta</button>
+    </p>
+  </div>
+</div>
 
 <!-- ==================== MODAL ELIMINAR ==================== -->
 <div class="modal-fondo oculto" id="modal-eliminar">
@@ -550,9 +633,130 @@
 
 <div class="aviso-toast" id="aviso-toast" role="status" aria-live="polite"></div>
 
-<script>
+<script type="module">
+  import { firebaseConfig } from "./firebase-config.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import {
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword,
+    createUserWithEmailAndPassword, signOut
+  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+  import {
+    getFirestore, doc, getDoc, setDoc
+  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+  var app = initializeApp(firebaseConfig);
+  var auth = getAuth(app);
+  var db = getFirestore(app);
+
   // ---------- Estado ----------
   var TOTAL_CUPOS = 5;
+  var uidActual = null;
+
+  // ---------- Modal de login ----------
+  var modalLogin = document.getElementById("modal-login");
+  function abrirLoginModal(){
+    modalLogin.classList.remove("oculto");
+    document.getElementById("login-email").focus();
+  }
+  function cerrarLoginModal(){
+    modalLogin.classList.add("oculto");
+    formLogin.reset();
+    ocultarErrorLogin();
+  }
+  document.getElementById("btn-iniciar-sesion").addEventListener("click", abrirLoginModal);
+  document.getElementById("login-cerrar").addEventListener("click", cerrarLoginModal);
+  modalLogin.addEventListener("click", function(e){
+    if(e.target === modalLogin) cerrarLoginModal();
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && !modalLogin.classList.contains("oculto")) cerrarLoginModal();
+  });
+
+  // ---------- Header según sesión ----------
+  function actualizarUISesion(user){
+    document.getElementById("btn-iniciar-sesion").classList.toggle("oculto", !!user);
+    document.getElementById("btn-cuenta").classList.toggle("oculto", !user);
+    document.getElementById("btn-salir").classList.toggle("oculto", !user);
+    if(user){
+      document.getElementById("avatar-email").textContent = user.email;
+      document.getElementById("avatar-circle").textContent = user.email.charAt(0).toUpperCase();
+    }
+  }
+
+  // ---------- Login / registro ----------
+  var modoRegistro = false;
+  var formLogin = document.getElementById("form-login");
+  var inputEmail = document.getElementById("login-email");
+  var inputPassword = document.getElementById("login-password");
+  var loginError = document.getElementById("login-error");
+  var loginSubmit = document.getElementById("login-submit");
+  var loginTitulo = document.getElementById("login-titulo");
+  var loginSub = document.getElementById("login-sub");
+  var loginToggleTexto = document.getElementById("login-toggle-texto");
+  var loginToggleBtn = document.getElementById("login-toggle-btn");
+
+  function ocultarErrorLogin(){
+    loginError.classList.add("oculto");
+    loginError.textContent = "";
+  }
+
+  function actualizarTextosLogin(){
+    if(modoRegistro){
+      loginTitulo.textContent = "Crea tu cuenta de profe";
+      loginSub.textContent = "Regístrate con tu correo para guardar tus juegos.";
+      loginSubmit.textContent = "Crear cuenta";
+      loginToggleTexto.textContent = "¿Ya tienes cuenta?";
+      loginToggleBtn.textContent = "Entrar";
+      inputPassword.setAttribute("autocomplete", "new-password");
+    } else {
+      loginTitulo.textContent = "Entrar a tu cuenta";
+      loginSub.textContent = "Accede con tu correo y contraseña de profe.";
+      loginSubmit.textContent = "Entrar";
+      loginToggleTexto.textContent = "¿No tienes cuenta?";
+      loginToggleBtn.textContent = "Crear cuenta";
+      inputPassword.setAttribute("autocomplete", "current-password");
+    }
+    ocultarErrorLogin();
+  }
+
+  function mostrarErrorLogin(codigo){
+    var mensajes = {
+      "auth/invalid-email": "Ese correo no parece válido.",
+      "auth/missing-password": "Escribe una contraseña.",
+      "auth/user-not-found": "No existe una cuenta con ese correo.",
+      "auth/wrong-password": "La contraseña es incorrecta.",
+      "auth/invalid-credential": "Correo o contraseña incorrectos.",
+      "auth/email-already-in-use": "Ya existe una cuenta con ese correo. Prueba iniciar sesión.",
+      "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
+      "auth/too-many-requests": "Demasiados intentos. Espera un momento e intenta de nuevo."
+    };
+    loginError.textContent = mensajes[codigo] || "Ocurrió un error. Intenta de nuevo.";
+    loginError.classList.remove("oculto");
+  }
+
+  loginToggleBtn.addEventListener("click", function(){
+    modoRegistro = !modoRegistro;
+    actualizarTextosLogin();
+  });
+
+  formLogin.addEventListener("submit", function(e){
+    e.preventDefault();
+    ocultarErrorLogin();
+    var email = inputEmail.value.trim();
+    var password = inputPassword.value;
+    loginSubmit.disabled = true;
+    var accion = modoRegistro
+      ? createUserWithEmailAndPassword(auth, email, password)
+      : signInWithEmailAndPassword(auth, email, password);
+    accion
+      .then(function(){ cerrarLoginModal(); })
+      .catch(function(err){ mostrarErrorLogin(err.code); })
+      .finally(function(){ loginSubmit.disabled = false; });
+  });
+
+  document.getElementById("btn-salir").addEventListener("click", function(){
+    signOut(auth);
+  });
 
   // ---------- Cupos y contadores ----------
   function actualizarEstado(){
@@ -598,26 +802,32 @@
     avisoTimer = setTimeout(function(){ avisoToast.classList.remove("visible"); }, 2600);
   }
 
-  // ---------- Mis juegos: guardado persistente ----------
-  var STORAGE_KEY = "aulagames_mis_juegos";
-
+  // ---------- Mis juegos: guardado persistente (Firestore) ----------
   function juegosPorDefecto(){
     return [
-      { id:"demo-battle-castle", nombre:"Battle Castle — 2ºC Verbos Irregulares", emoji:"🏰", color:"c-naranja", url:"https://claude.ai/public/artifacts/75d035d5-ac5d-48e0-ba0a-5decd01c6952", meta:"Editado hace 3 días" },
-      { id:"demo-millonario", nombre:"Escalera Millonaria — 1ºC", emoji:"💰", color:"c-violeta", url:"https://claude.ai/public/artifacts/a07b4281-1de3-456a-8b38-af6b1a53ee31", meta:"Editado hace 1 semana" }
+      { id:"demo-battle-castle", nombre:"Battle Castle — 2ºC Verbos Irregulares", emoji:"🏰", color:"c-naranja", url:"/play/battlecastle3d/", editUrl:"/play/battlecastle3d/", meta:"Editado hace 3 días" },
+      { id:"demo-millonario", nombre:"Escalera Millonaria — 1ºC", emoji:"💰", color:"c-violeta", url:"/play/millonario/", editUrl:"/play/millonario/", meta:"Editado hace 1 semana" }
     ];
   }
 
-  function cargarJuegos(){
-    try{
-      var guardado = localStorage.getItem(STORAGE_KEY);
-      if(guardado) return JSON.parse(guardado);
-    }catch(e){}
-    return juegosPorDefecto();
+  async function cargarJuegos(uid){
+    var ref = doc(db, "profes", uid);
+    var snap = await getDoc(ref);
+    if(snap.exists() && Array.isArray(snap.data().juegos)){
+      var lista = snap.data().juegos;
+      if(migrarNombres(lista)) guardarJuegos(lista);
+      return lista;
+    }
+    var porDefecto = juegosPorDefecto();
+    await setDoc(ref, { juegos: porDefecto });
+    return porDefecto;
   }
 
-  function guardarJuegos(){
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(misJuegos)); }catch(e){}
+  function guardarJuegos(lista){
+    if(!uidActual) return;
+    setDoc(doc(db, "profes", uidActual), { juegos: lista || misJuegos }).catch(function(){
+      mostrarAviso("No se pudo guardar. Revisa tu conexión.", true);
+    });
   }
 
   // Nombres antiguos con riesgo de marca registrada, migrados a los juegos ya guardados
@@ -641,8 +851,7 @@
     return cambiado;
   }
 
-  var misJuegos = cargarJuegos();
-  if(migrarNombres(misJuegos)) guardarJuegos();
+  var misJuegos = [];
 
   function crearKardMia(juego){
     var art = document.createElement("article");
@@ -665,7 +874,7 @@
     art.querySelector(".kard-title").textContent = juego.nombre;
     art.querySelector(".kard-meta").textContent = juego.meta;
     art.querySelector(".btn-jugar").href = juego.url;
-    art.querySelector(".btn-editar").href = juego.url;
+    art.querySelector(".btn-editar").href = juego.editUrl || juego.url;
     return art;
   }
 
@@ -679,7 +888,9 @@
     actualizarEstado();
   }
 
-  function duplicarJuego(nombre, emoji, color, url){
+  // url: dónde se juega (propio dominio si ya está migrado, si no la plantilla original)
+  // editUrl: dónde se personaliza el contenido (el artifact original de Claude)
+  function duplicarJuego(nombre, emoji, color, url, editUrl){
     if(misJuegos.length >= TOTAL_CUPOS){
       mostrarAviso("Ya usaste tus " + TOTAL_CUPOS + " cupos gratis. Elimina un juego para liberar espacio.", true);
       return;
@@ -690,12 +901,17 @@
       emoji: emoji,
       color: color,
       url: url,
+      editUrl: editUrl || url,
       meta: "Duplicado hoy"
     });
-    guardarJuegos();
     renderMisJuegos();
-    mostrarAviso("¡Listo! “" + nombre + "” se guardó en Mis juegos.");
     document.getElementById("mis-juegos").scrollIntoView({ behavior:"smooth", block:"start" });
+    if(uidActual){
+      guardarJuegos();
+      mostrarAviso("¡Listo! “" + nombre + "” se guardó en Mis juegos.");
+    } else {
+      mostrarAviso("✨ “" + nombre + "” se agregó a Mis juegos. Inicia sesión para guardarlo: si no, se perderá al salir.");
+    }
   }
 
   // Duplicar desde una plantilla
@@ -706,7 +922,9 @@
     var nombre = kard.querySelector(".kard-title").textContent.trim();
     var emoji = kard.querySelector(".kard-emoji").textContent.trim();
     var color = Array.prototype.find.call(kard.classList, function(c){ return c.indexOf("c-") === 0; }) || "c-violeta";
-    duplicarJuego(nombre, emoji, color, boton.getAttribute("data-url"));
+    var editUrl = boton.getAttribute("data-url");
+    var playUrl = boton.getAttribute("data-play") || editUrl;
+    duplicarJuego(nombre, emoji, color, playUrl, editUrl);
   });
 
   // ---------- Espacio libre: lleva a las plantillas ----------
@@ -732,7 +950,7 @@
       var kardMia = botonDup.closest(".kard-mia");
       var id = kardMia.getAttribute("data-id");
       var juego = misJuegos.find(function(j){ return j.id === id; });
-      if(juego) duplicarJuego(juego.nombre, juego.emoji, juego.color, juego.url);
+      if(juego) duplicarJuego(juego.nombre, juego.emoji, juego.color, juego.url, juego.editUrl);
       return;
     }
     var boton = e.target.closest(".btn-borrar");
@@ -770,8 +988,41 @@
     }, 250);
   });
 
-  // estado inicial
+  // Pinta el estado inicial (sin sesión) de inmediato, sin esperar a Firebase
   renderMisJuegos();
+
+  // ---------- Estado de sesión ----------
+  onAuthStateChanged(auth, async function(user){
+    if(user){
+      uidActual = user.uid;
+      actualizarUISesion(user);
+      var sinGuardar = misJuegos;
+      var nube = [];
+      try{
+        nube = await cargarJuegos(user.uid);
+      }catch(e){
+        mostrarAviso("No se pudieron cargar tus juegos. Revisa tu conexión.", true);
+      }
+      var combinados = nube.slice();
+      sinGuardar.forEach(function(local){
+        if(!combinados.some(function(j){ return j.id === local.id; })){
+          combinados.push(local);
+        }
+      });
+      if(combinados.length > TOTAL_CUPOS) combinados = combinados.slice(0, TOTAL_CUPOS);
+      misJuegos = combinados;
+      renderMisJuegos();
+      if(sinGuardar.length) guardarJuegos();
+    } else {
+      uidActual = null;
+      misJuegos = [];
+      actualizarUISesion(null);
+      renderMisJuegos();
+      formLogin.reset();
+      modoRegistro = false;
+      actualizarTextosLogin();
+    }
+  });
 </script>
 
 </body>

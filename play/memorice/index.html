@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memorice en Clase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --felt:#14524a;
+  --felt-dark:#0d3b35;
+  --paper:#fdfbf4;
+  --ink:#2b2b33;
+  --gold:#f5b52e;
+  --coral:#ff6b5e;
+  --sky:#38a3d8;
+  --lila:#9b6ddf;
+  --lima:#7fc94f;
+  --rosa:#f26fa8;
+  --naranja:#f28b30;
+  --shadow:0 10px 24px rgba(0,0,0,.28);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:'Nunito',sans-serif;
+  color:var(--ink);
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(255,255,255,.07), transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(0,0,0,.22), transparent 50%),
+    repeating-linear-gradient(45deg, rgba(255,255,255,.015) 0 2px, transparent 2px 4px),
+    var(--felt);
+}
+h1,h2,h3,.fredoka{font-family:'Fredoka',sans-serif}
+button{font-family:'Fredoka',sans-serif;cursor:pointer;border:none}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+/* ---------- pantallas ---------- */
+.screen{display:none;min-height:100vh;padding:24px 18px 60px}
+.screen.active{display:block}
+
+/* ---------- SETUP ---------- */
+.setup-wrap{max-width:980px;margin:0 auto}
+.logo{
+  text-align:center;color:#fff;margin-bottom:6px;
+  font-size:clamp(2rem,5vw,3.2rem);font-weight:700;letter-spacing:1px;
+  text-shadow:0 3px 0 rgba(0,0,0,.3);
+}
+.logo .q{color:var(--gold);display:inline-block;transform:rotate(-8deg)}
+.tagline{text-align:center;color:rgba(255,255,255,.85);margin-bottom:26px;font-size:1.05rem}
+.panel{
+  background:var(--paper);border-radius:18px;box-shadow:var(--shadow);
+  padding:22px 24px;margin-bottom:20px;
+}
+.panel h2{font-size:1.25rem;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.panel h2 .step{
+  background:var(--felt);color:#fff;width:30px;height:30px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;
+}
+.panel .hint{color:#777;font-size:.9rem;margin-bottom:14px}
+
+.dropzone{
+  border:3px dashed #c9c2ae;border-radius:14px;padding:28px;text-align:center;
+  background:#faf7ec;transition:.2s;cursor:pointer;
+}
+.dropzone:hover,.dropzone.drag{border-color:var(--felt);background:#eef5ee}
+.dropzone .icon{font-size:2.4rem}
+.dropzone p{margin-top:6px;font-weight:700}
+.dropzone small{color:#888}
+#fileInput{display:none}
+
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:14px;margin-top:16px}
+.thumb{
+  background:#fff;border-radius:10px;padding:8px 8px 6px;box-shadow:0 3px 10px rgba(0,0,0,.12);
+  position:relative;transform:rotate(var(--tilt,0deg));
+}
+.thumb img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;display:block}
+.thumb input{
+  width:100%;margin-top:6px;border:none;border-bottom:2px dotted #ccc;background:transparent;
+  font-family:'Fredoka',sans-serif;font-size:.85rem;text-align:center;padding:2px;
+}
+.thumb .del{
+  position:absolute;top:-9px;right:-9px;width:26px;height:26px;border-radius:50%;
+  background:var(--coral);color:#fff;font-size:.9rem;font-weight:700;line-height:1;
+  box-shadow:0 2px 6px rgba(0,0,0,.3);
+}
+.counter{font-weight:800;color:var(--felt)}
+
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.modes{grid-template-columns:1fr}}
+.mode-card{
+  border:3px solid #e2ddcc;border-radius:14px;padding:16px;text-align:center;cursor:pointer;
+  background:#fff;transition:.15s;
+}
+.mode-card.selected{border-color:var(--felt);background:#eef5ee;box-shadow:0 0 0 3px rgba(20,82,74,.15)}
+.mode-card .icon{font-size:2rem}
+.mode-card h3{margin:4px 0 2px}
+.mode-card p{font-size:.85rem;color:#777}
+
+#teamConfig{margin-top:16px}
+.team-count{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.team-count span{font-weight:800}
+.stepper{display:flex;align-items:center;gap:0;border-radius:10px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.stepper button{width:42px;height:42px;background:var(--felt);color:#fff;font-size:1.3rem}
+.stepper button:disabled{background:#b9c4c2;cursor:not-allowed}
+.stepper .num{width:52px;height:42px;display:flex;align-items:center;justify-content:center;background:#fff;font-weight:800;font-size:1.2rem}
+.team-names{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.team-name-row{display:flex;align-items:center;gap:8px;background:#fff;border-radius:10px;padding:8px 10px;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+.team-dot{width:18px;height:18px;border-radius:50%;flex-shrink:0}
+.team-name-row input{border:none;background:transparent;font-family:'Fredoka',sans-serif;font-size:1rem;width:100%}
+
+.actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.btn{
+  padding:14px 26px;border-radius:14px;font-size:1.1rem;font-weight:600;
+  box-shadow:0 4px 0 rgba(0,0,0,.25);transition:.12s;color:#fff;
+}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.btn-play{background:var(--gold);color:#4a3200;font-size:1.35rem;padding:16px 40px}
+.btn-secondary{background:#6d8f8a;font-size:.95rem;padding:11px 18px}
+.btn-coral{background:var(--coral)}
+.btn-shuffle{background:var(--sky);font-size:.95rem;padding:11px 18px}
+.btn:disabled{background:#b5b5ad;color:#eee;cursor:not-allowed;box-shadow:none}
+
+/* ---------- JUEGO ---------- */
+.game-top{max-width:1200px;margin:0 auto 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.game-title{color:#fff;font-size:1.4rem;text-shadow:0 2px 0 rgba(0,0,0,.3)}
+.game-btns{display:flex;gap:8px}
+
+.scoreboard{
+  max-width:1200px;margin:0 auto 18px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;
+}
+.score-chip{
+  background:var(--paper);border-radius:14px;padding:8px 18px;display:flex;align-items:center;gap:10px;
+  box-shadow:0 4px 10px rgba(0,0,0,.25);border:3px solid transparent;transition:.25s;
+  opacity:.75;transform:scale(.96);
+}
+.score-chip.turn{opacity:1;transform:scale(1.06);border-color:var(--gold);box-shadow:0 0 0 4px rgba(245,181,46,.35),0 6px 14px rgba(0,0,0,.3)}
+.score-chip .team-dot{width:14px;height:14px}
+.score-chip .name{font-family:'Fredoka',sans-serif;font-weight:600}
+.score-chip .pts{font-weight:800;font-size:1.2rem;color:var(--felt)}
+.turn-banner{
+  max-width:1200px;margin:0 auto 16px;text-align:center;color:#fff;font-family:'Fredoka',sans-serif;
+  font-size:1.15rem;text-shadow:0 2px 0 rgba(0,0,0,.3);min-height:1.5em;
+}
+.turn-banner b{color:var(--gold)}
+
+.board{
+  max-width:1200px;margin:0 auto;display:grid;gap:clamp(8px,1.6vw,18px);
+  grid-template-columns:repeat(var(--cols,5),1fr);
+  padding:0 4px;
+}
+.card{
+  aspect-ratio:3/3.6;perspective:900px;cursor:pointer;border:none;background:transparent;padding:0;
+}
+.card-inner{
+  width:100%;height:100%;position:relative;transform-style:preserve-3d;
+  transition:transform .5s cubic-bezier(.34,1.3,.5,1);
+}
+.card.flipped .card-inner{transform:rotateY(180deg)}
+.card-face{
+  position:absolute;inset:0;backface-visibility:hidden;border-radius:10px;
+  box-shadow:0 5px 12px rgba(0,0,0,.3);
+}
+.card-back{
+  background:
+    radial-gradient(circle at 50% 42%, #fff2 0 26%, transparent 27%),
+    repeating-linear-gradient(-45deg,#0d3b35 0 10px,#125048 10px 20px);
+  border:4px solid var(--paper);
+  display:flex;align-items:center;justify-content:center;
+}
+.card-back span{
+  font-family:'Fredoka',sans-serif;font-size:clamp(1.9rem,4.5vw,3rem);font-weight:700;
+  color:var(--gold);transform:rotate(-4deg);text-shadow:0 2px 0 rgba(0,0,0,.4);
+}
+.card-front{
+  background:#fff;transform:rotateY(180deg);padding:6% 6% 0;
+  display:flex;flex-direction:column;
+}
+.card-front img{width:100%;flex:1;object-fit:cover;border-radius:5px;min-height:0}
+.card-front .tape{height:14%;display:flex;align-items:center;justify-content:center}
+.card-front .label{
+  font-family:'Fredoka',sans-serif;font-size:clamp(.6rem,1.5vw,.95rem);color:#555;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+}
+.card.matched{cursor:default}
+.card.matched .card-inner{animation:pop .5s ease}
+.card.matched .card-front{box-shadow:0 0 0 4px var(--match-color,var(--lima)),0 5px 14px rgba(0,0,0,.3)}
+@keyframes pop{
+  0%{transform:rotateY(180deg) scale(1)}
+  45%{transform:rotateY(180deg) scale(1.14)}
+  100%{transform:rotateY(180deg) scale(1)}
+}
+.card.shake .card-inner{animation:shake .45s ease}
+@keyframes shake{
+  0%,100%{transform:rotateY(180deg) translateX(0)}
+  25%{transform:rotateY(180deg) translateX(-7px)}
+  50%{transform:rotateY(180deg) translateX(7px)}
+  75%{transform:rotateY(180deg) translateX(-4px)}
+}
+.card.mixing .card-inner{animation:mixSpin .8s ease}
+@keyframes mixSpin{
+  0%{transform:rotate(0) scale(1)}
+  35%{transform:rotate(-8deg) scale(.82)}
+  65%{transform:rotate(8deg) scale(.82)}
+  100%{transform:rotate(0) scale(1)}
+}
+
+/* clase completa: contadores */
+.class-stats{display:flex;gap:10px}
+.stat-chip{background:var(--paper);border-radius:14px;padding:8px 18px;text-align:center;box-shadow:0 4px 10px rgba(0,0,0,.25)}
+.stat-chip .v{font-weight:800;font-size:1.25rem;color:var(--felt)}
+.stat-chip .l{font-size:.75rem;color:#777;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+
+/* ---------- MODAL ---------- */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(10,30,27,.75);display:none;
+  align-items:center;justify-content:center;z-index:50;padding:20px;
+}
+.modal-overlay.show{display:flex}
+.modal{
+  background:var(--paper);border-radius:20px;padding:30px 28px;max-width:520px;width:100%;
+  text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.5);
+  animation:modalIn .35s cubic-bezier(.34,1.4,.5,1);
+  max-height:90vh;overflow-y:auto;
+}
+@keyframes modalIn{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.modal .big{font-size:3rem}
+.modal h2{font-size:1.7rem;margin:8px 0 6px}
+.modal p{color:#666;margin-bottom:16px}
+.result-list{margin:0 0 18px;display:flex;flex-direction:column;gap:8px}
+.result-row{
+  display:flex;align-items:center;gap:10px;background:#fff;border-radius:12px;padding:10px 14px;
+  box-shadow:0 2px 8px rgba(0,0,0,.1);text-align:left;
+}
+.result-row.winner{border:3px solid var(--gold);background:#fff8e6}
+.result-row .medal{font-size:1.3rem;width:30px;text-align:center}
+.result-row .name{font-family:'Fredoka',sans-serif;font-weight:600;flex:1}
+.result-row .pts{font-weight:800;color:var(--felt)}
+.modal .actions{margin-top:4px}
+
+/* confeti */
+.confetti-piece{
+  position:fixed;top:-20px;width:12px;height:12px;z-index:60;pointer-events:none;
+  animation:fall linear forwards;
+}
+@keyframes fall{
+  to{transform:translateY(110vh) rotate(720deg);opacity:.8}
+}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+@media(max-width:600px){
+  .screen{padding:16px 10px 40px}
+  .panel{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= SETUP ================= -->
+<section class="screen active" id="setupScreen">
+  <div class="setup-wrap">
+    <h1 class="logo">MEMORICE <span class="q">?</span> EN CLASE</h1>
+    <p class="tagline">Sube tus imágenes, elige el modo y ¡a encontrar los pares!</p>
+
+    <div class="panel">
+      <h2><span class="step">1</span> Imágenes del memorice <span style="margin-left:auto;font-size:1rem" class="counter"><span id="imgCount">0</span>/15</span></h2>
+      <p class="hint">Sube entre 2 y 15 imágenes (cada una genera un par: hasta 30 cartas). Puedes escribir una palabra bajo cada imagen — aparecerá en la carta, ideal para vocabulario.</p>
+      <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Subir imágenes">
+        <div class="icon">🖼️</div>
+        <p>Haz clic o arrastra tus imágenes aquí</p>
+        <small>JPG, PNG, GIF o WebP</small>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" multiple>
+      <div class="thumbs" id="thumbs"></div>
+      <div class="actions" style="margin-top:14px">
+        <button class="btn btn-secondary" id="saveSetBtn">💾 Guardar set</button>
+        <button class="btn btn-secondary" id="loadSetBtn">📂 Cargar set</button>
+        <input type="file" id="setInput" accept=".json,application/json" style="display:none">
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="step">2</span> Modo de juego</h2>
+      <p class="hint">El orden de las cartas siempre es al azar. En modo equipos, el que parte también se sortea.</p>
+      <div class="modes">
+        <div class="mode-card selected" id="modeTeams" tabindex="0" role="button">
+          <div class="icon">🏆</div>
+          <h3>Por equipos</h3>
+          <p>Turnos por equipo. Si aciertan un par, ¡siguen jugando!</p>
+        </div>
+        <div class="mode-card" id="modeClass" tabindex="0" role="button">
+          <div class="icon">🏫</div>
+          <h3>Toda la clase</h3>
+          <p>Un solo marcador: pares encontrados e intentos usados.</p>
+        </div>
+      </div>
+      <div id="teamConfig">
+        <div class="team-count">
+          <span>Cantidad de equipos:</span>
+          <div class="stepper">
+            <button id="teamMinus" aria-label="Menos equipos">−</button>
+            <div class="num" id="teamNum">2</div>
+            <button id="teamPlus" aria-label="Más equipos">+</button>
+          </div>
+        </div>
+        <div class="team-names" id="teamNames"></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-play" id="startBtn" disabled>▶ EMPEZAR JUEGO</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= JUEGO ================= -->
+<section class="screen" id="gameScreen">
+  <div class="game-top">
+    <div class="game-title fredoka">MEMORICE <span style="color:var(--gold)">?</span></div>
+    <div class="class-stats" id="classStats" style="display:none">
+      <div class="stat-chip"><div class="v" id="statPairs">0/0</div><div class="l">Pares</div></div>
+      <div class="stat-chip"><div class="v" id="statTries">0</div><div class="l">Intentos</div></div>
+    </div>
+    <div class="game-btns">
+      <button class="btn btn-shuffle" id="shuffleBtn">🌀 Revolver cartas</button>
+      <button class="btn btn-secondary" id="restartBtn">🔁 Reiniciar</button>
+      <button class="btn btn-coral" id="exitBtn" style="font-size:.95rem;padding:11px 18px">⚙️ Configurar</button>
+    </div>
+  </div>
+  <div class="scoreboard" id="scoreboard"></div>
+  <div class="turn-banner" id="turnBanner"></div>
+  <div class="board" id="board"></div>
+</section>
+
+<!-- ================= MODALES ================= -->
+<div class="modal-overlay" id="endOverlay">
+  <div class="modal">
+    <div class="big" id="endEmoji">🎉</div>
+    <h2 id="endTitle">¡Juego terminado!</h2>
+    <p id="endSub"></p>
+    <div class="result-list" id="endResults"></div>
+    <div class="actions">
+      <button class="btn btn-play" id="againBtn" style="font-size:1.1rem;padding:13px 26px">🔁 Jugar de nuevo</button>
+      <button class="btn btn-secondary" id="configBtn">⚙️ Cambiar configuración</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="msgOverlay">
+  <div class="modal">
+    <div class="big" id="msgEmoji">⚠️</div>
+    <h2 id="msgTitle"></h2>
+    <p id="msgText"></p>
+    <div class="actions" id="msgActions"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   MEMORICE EN CLASE — un solo archivo, sin servidor.
+   ============================================================ */
+
+const TEAM_COLORS = ['#ff6b5e','#38a3d8','#9b6ddf','#7fc94f','#f26fa8','#f28b30'];
+const DEFAULT_NAMES = ['Equipo Rojo','Equipo Azul','Equipo Morado','Equipo Verde','Equipo Rosado','Equipo Naranjo'];
+const MAX_IMAGES = 15, MIN_IMAGES = 2, POINTS_PER_PAIR = 10;
+
+let images = [];              // {src, label}
+let mode = 'teams';           // 'teams' | 'class'
+let teamCount = 2;
+let teamNamesCustom = {};     // index -> nombre editado
+
+let game = null;              // estado de la partida
+
+/* ---------- SONIDO (Web Audio API) ---------- */
+let audioCtx = null;
+function ac(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+function tone(freq, dur, type='sine', vol=0.18, when=0){
+  try{
+    const ctx = ac(), t = ctx.currentTime + when;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(t); o.stop(t + dur + .05);
+  }catch(e){}
+}
+const sfx = {
+  flip(){ tone(520, .09, 'triangle', .12); },
+  match(){ [660,830,990].forEach((f,i)=>tone(f,.16,'triangle',.16,i*.09)); },
+  fail(){ tone(300,.18,'sawtooth',.08); tone(230,.25,'sawtooth',.08,.14); },
+  turn(){ tone(440,.1,'sine',.1); tone(550,.12,'sine',.1,.1); },
+  mix(){ [500,420,560,380,600,340].forEach((f,i)=>tone(f,.07,'triangle',.1,i*.09)); },
+  win(){ [523,659,784,1047,784,1047].forEach((f,i)=>tone(f,.22,'triangle',.16,i*.13)); }
+};
+
+/* ---------- SETUP: imágenes ---------- */
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const thumbsEl = document.getElementById('thumbs');
+const imgCountEl = document.getElementById('imgCount');
+const startBtn = document.getElementById('startBtn');
+
+dropzone.addEventListener('click', ()=>fileInput.click());
+dropzone.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();fileInput.click();} });
+['dragover','dragenter'].forEach(ev=>dropzone.addEventListener(ev, e=>{e.preventDefault();dropzone.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev, e=>{e.preventDefault();dropzone.classList.remove('drag');}));
+dropzone.addEventListener('drop', e=>addFiles(e.dataTransfer.files));
+fileInput.addEventListener('change', ()=>{ addFiles(fileInput.files); fileInput.value=''; });
+
+function addFiles(fileList){
+  const files = [...fileList].filter(f=>f.type.startsWith('image/'));
+  if(!files.length) return;
+  const room = MAX_IMAGES - images.length;
+  if(room <= 0){ showMsg('🖼️','Límite alcanzado','Ya tienes 15 imágenes, el máximo. Elimina alguna si quieres cambiarla.'); return; }
+  const toAdd = files.slice(0, room);
+  if(files.length > room) showMsg('🖼️','Límite de 15 imágenes','Se agregaron solo las primeras '+room+' imágenes.');
+  toAdd.forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = ev => compressImage(ev.target.result, src=>{
+      images.push({src, label:''});
+      renderThumbs();
+    });
+    reader.readAsDataURL(file);
+  });
+}
+
+/* Reduce el tamaño para que el juego sea fluido y el set se pueda guardar */
+function compressImage(src, cb){
+  const img = new Image();
+  img.onload = ()=>{
+    const MAX = 600;
+    let {width:w, height:h} = img;
+    if(w>MAX||h>MAX){ const r = Math.min(MAX/w, MAX/h); w=Math.round(w*r); h=Math.round(h*r); }
+    const c = document.createElement('canvas'); c.width=w; c.height=h;
+    c.getContext('2d').drawImage(img,0,0,w,h);
+    cb(c.toDataURL('image/jpeg', .82));
+  };
+  img.onerror = ()=>cb(src);
+  img.src = src;
+}
+
+function renderThumbs(){
+  thumbsEl.innerHTML = '';
+  images.forEach((im,i)=>{
+    const d = document.createElement('div');
+    d.className = 'thumb';
+    d.style.setProperty('--tilt', ((i%3)-1)*1.6+'deg');
+    d.innerHTML = `
+      <img src="${im.src}" alt="Imagen ${i+1}">
+      <input type="text" placeholder="palabra (opcional)" maxlength="24" value="${im.label.replace(/"/g,'&quot;')}" data-i="${i}">
+      <button class="del" data-i="${i}" aria-label="Eliminar imagen">✕</button>`;
+    thumbsEl.appendChild(d);
+  });
+  thumbsEl.querySelectorAll('.del').forEach(b=>b.addEventListener('click', ()=>{
+    images.splice(+b.dataset.i,1); renderThumbs();
+  }));
+  thumbsEl.querySelectorAll('input').forEach(inp=>inp.addEventListener('input', ()=>{
+    images[+inp.dataset.i].label = inp.value;
+  }));
+  imgCountEl.textContent = images.length;
+  startBtn.disabled = images.length < MIN_IMAGES;
+  startBtn.textContent = images.length < MIN_IMAGES
+    ? '▶ EMPEZAR (mínimo 2 imágenes)'
+    : `▶ EMPEZAR · ${images.length*2} cartas`;
+}
+
+/* ---------- Guardar / cargar set ---------- */
+document.getElementById('saveSetBtn').addEventListener('click', ()=>{
+  if(!images.length){ showMsg('💾','Nada que guardar','Primero sube al menos una imagen.'); return; }
+  const blob = new Blob([JSON.stringify({tipo:'memorice-set', images})], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'memorice-set.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+const setInput = document.getElementById('setInput');
+document.getElementById('loadSetBtn').addEventListener('click', ()=>setInput.click());
+setInput.addEventListener('change', ()=>{
+  const f = setInput.files[0]; setInput.value='';
+  if(!f) return;
+  const r = new FileReader();
+  r.onload = ev=>{
+    try{
+      const data = JSON.parse(ev.target.result);
+      if(data.tipo!=='memorice-set' || !Array.isArray(data.images)) throw 0;
+      images = data.images.slice(0, MAX_IMAGES).map(x=>({src:String(x.src||''), label:String(x.label||'')})).filter(x=>x.src.startsWith('data:image'));
+      renderThumbs();
+      showMsg('📂','Set cargado','Se cargaron '+images.length+' imágenes. ¡Listo para jugar!');
+    }catch(e){
+      showMsg('⚠️','Archivo no válido','Ese archivo no parece ser un set de Memorice en Clase.');
+    }
+  };
+  r.readAsText(f);
+});
+
+/* ---------- SETUP: modo y equipos ---------- */
+const modeTeamsEl = document.getElementById('modeTeams');
+const modeClassEl = document.getElementById('modeClass');
+const teamConfigEl = document.getElementById('teamConfig');
+function setMode(m){
+  mode = m;
+  modeTeamsEl.classList.toggle('selected', m==='teams');
+  modeClassEl.classList.toggle('selected', m==='class');
+  teamConfigEl.style.display = m==='teams' ? '' : 'none';
+}
+[[modeTeamsEl,'teams'],[modeClassEl,'class']].forEach(([el,m])=>{
+  el.addEventListener('click', ()=>setMode(m));
+  el.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();setMode(m);} });
+});
+
+const teamNumEl = document.getElementById('teamNum');
+const teamNamesEl = document.getElementById('teamNames');
+document.getElementById('teamMinus').addEventListener('click', ()=>{ if(teamCount>2){teamCount--;renderTeamConfig();} });
+document.getElementById('teamPlus').addEventListener('click', ()=>{ if(teamCount<6){teamCount++;renderTeamConfig();} });
+function renderTeamConfig(){
+  teamNumEl.textContent = teamCount;
+  document.getElementById('teamMinus').disabled = teamCount<=2;
+  document.getElementById('teamPlus').disabled = teamCount>=6;
+  teamNamesEl.innerHTML = '';
+  for(let i=0;i<teamCount;i++){
+    const row = document.createElement('div');
+    row.className = 'team-name-row';
+    row.innerHTML = `
+      <span class="team-dot" style="background:${TEAM_COLORS[i]}"></span>
+      <input type="text" maxlength="20" value="${(teamNamesCustom[i]??DEFAULT_NAMES[i]).replace(/"/g,'&quot;')}" data-i="${i}" aria-label="Nombre del equipo ${i+1}">`;
+    teamNamesEl.appendChild(row);
+  }
+  teamNamesEl.querySelectorAll('input').forEach(inp=>inp.addEventListener('input', ()=>{
+    teamNamesCustom[+inp.dataset.i] = inp.value;
+  }));
+}
+renderTeamConfig();
+
+/* ---------- INICIAR PARTIDA ---------- */
+const setupScreen = document.getElementById('setupScreen');
+const gameScreen = document.getElementById('gameScreen');
+const boardEl = document.getElementById('board');
+const scoreboardEl = document.getElementById('scoreboard');
+const turnBannerEl = document.getElementById('turnBanner');
+const classStatsEl = document.getElementById('classStats');
+
+startBtn.addEventListener('click', startGame);
+document.getElementById('restartBtn').addEventListener('click', ()=>startGame());
+document.getElementById('exitBtn').addEventListener('click', ()=>{
+  gameScreen.classList.remove('active');
+  setupScreen.classList.add('active');
+});
+
+/* ---------- REVOLVER CARTAS ----------
+   Mezcla las cartas NO reveladas entre sus posiciones.
+   Los números se quedan en su lugar: lo que cambia es la imagen escondida. */
+document.getElementById('shuffleBtn').addEventListener('click', ()=>{
+  if(!game || game.lock) return;
+  if(game.flipped.length){ banner('⏳ Termina la jugada actual antes de revolver'); return; }
+  if(game.matched === game.totalPairs) return;
+
+  game.lock = true;
+  sfx.mix();
+
+  // posiciones aún ocultas y sus cartas
+  const freeIdx = game.deck.map((_,i)=>i).filter(i=>!game.matchedInfo[i]);
+  const freeCards = shuffle(freeIdx.map(i=>game.deck[i]));
+  freeIdx.forEach((pos,k)=>{ game.deck[pos] = freeCards[k]; });
+
+  renderBoard();
+  boardEl.querySelectorAll('.card:not(.matched)').forEach(c=>c.classList.add('mixing'));
+  banner('🌀 ¡Cartas revueltas! Los pares encontrados se quedan donde están');
+
+  setTimeout(()=>{
+    boardEl.querySelectorAll('.card').forEach(c=>c.classList.remove('mixing'));
+    game.lock = false;
+  }, 850);
+});
+
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function startGame(){
+  ac(); // desbloquear audio con el gesto del usuario
+  const teams = mode==='teams'
+    ? Array.from({length:teamCount},(_,i)=>({
+        name:(teamNamesCustom[i]??DEFAULT_NAMES[i]).trim()||DEFAULT_NAMES[i],
+        color:TEAM_COLORS[i], score:0, pairs:0
+      }))
+    : null;
+
+  const deck = shuffle(images.flatMap((im,i)=>[
+    {pair:i, src:im.src, label:im.label},
+    {pair:i, src:im.src, label:im.label}
+  ]));
+
+  game = {
+    deck, teams,
+    turn: teams ? Math.floor(Math.random()*teams.length) : 0, // ¡equipo inicial al azar!
+    flipped: [], lock:false,
+    matched:0, tries:0, totalPairs: images.length,
+    matchedInfo:{} // posición -> color del par encontrado (para no revolverlas)
+  };
+
+  // columnas según cantidad de cartas
+  const n = deck.length;
+  const cols = n<=4?2 : n<=6?3 : n<=16?4 : n<=20?5 : 6;
+  boardEl.style.setProperty('--cols', cols);
+
+  renderBoard();
+  renderScore();
+  classStatsEl.style.display = mode==='class' ? 'flex' : 'none';
+  scoreboardEl.style.display = mode==='teams' ? 'flex' : 'none';
+
+  setupScreen.classList.remove('active');
+  gameScreen.classList.add('active');
+
+  if(mode==='teams'){
+    banner(`🎲 Sorteo: parte <b>${game.teams[game.turn].name}</b>`);
+    sfx.turn();
+  }else{
+    banner('¡Encuentren todos los pares con la menor cantidad de intentos!');
+  }
+}
+
+function renderBoard(){
+  boardEl.innerHTML = '';
+  game.deck.forEach((cardData,idx)=>{
+    const btn = document.createElement('button');
+    btn.className = 'card';
+    btn.setAttribute('aria-label','Carta '+(idx+1));
+    btn.innerHTML = `
+      <div class="card-inner">
+        <div class="card-face card-back"><span>${idx+1}</span></div>
+        <div class="card-face card-front">
+          <img src="${cardData.src}" alt="">
+          <div class="tape"><span class="label">${cardData.label?escapeHtml(cardData.label):'&nbsp;'}</span></div>
+        </div>
+      </div>`;
+    if(game.matchedInfo[idx]){
+      btn.classList.add('flipped','matched');
+      btn.style.setProperty('--match-color', game.matchedInfo[idx]);
+    }
+    btn.addEventListener('click', ()=>flipCard(idx, btn));
+    boardEl.appendChild(btn);
+  });
+}
+function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function flipCard(idx, btn){
+  if(game.lock) return;
+  if(btn.classList.contains('flipped') || btn.classList.contains('matched')) return;
+  if(game.flipped.length>=2) return;
+
+  btn.classList.add('flipped');
+  sfx.flip();
+  game.flipped.push({idx, btn});
+
+  if(game.flipped.length===2){
+    game.lock = true;
+    game.tries++;
+    const [a,b] = game.flipped;
+    const isMatch = game.deck[a.idx].pair === game.deck[b.idx].pair;
+    setTimeout(()=> isMatch ? onMatch(a,b) : onFail(a,b), 650);
+  }
+  updateClassStats();
+}
+
+function onMatch(a,b){
+  const color = mode==='teams' ? game.teams[game.turn].color : 'var(--lima)';
+  [a,b].forEach(x=>{
+    x.btn.classList.add('matched');
+    x.btn.style.setProperty('--match-color', color);
+    game.matchedInfo[x.idx] = color;
+  });
+  sfx.match();
+  game.matched++;
+  const label = game.deck[a.idx].label;
+
+  if(mode==='teams'){
+    const t = game.teams[game.turn];
+    t.score += POINTS_PER_PAIR;
+    t.pairs++;
+    renderScore();
+    banner(`✅ ¡Par${label?` de <b>${escapeHtml(label)}</b>`:''}! <b>${escapeHtml(t.name)}</b> gana ${POINTS_PER_PAIR} pts y sigue jugando`);
+  }else{
+    banner(`✅ ¡Par encontrado${label?`: <b>${escapeHtml(label)}</b>`:''}!`);
+  }
+  updateClassStats();
+  game.flipped = [];
+  game.lock = false;
+
+  if(game.matched === game.totalPairs) setTimeout(endGame, 700);
+}
+
+function onFail(a,b){
+  [a,b].forEach(x=>x.btn.classList.add('shake'));
+  sfx.fail();
+  setTimeout(()=>{
+    [a,b].forEach(x=>{ x.btn.classList.remove('flipped','shake'); });
+    game.flipped = [];
+    if(mode==='teams'){
+      game.turn = (game.turn+1) % game.teams.length;
+      renderScore();
+      banner(`Turno de <b>${escapeHtml(game.teams[game.turn].name)}</b>`);
+      sfx.turn();
+    }else{
+      banner('❌ No era par... ¡sigan intentando!');
+    }
+    game.lock = false;
+  }, 750);
+}
+
+function renderScore(){
+  if(mode!=='teams') return;
+  scoreboardEl.innerHTML = '';
+  game.teams.forEach((t,i)=>{
+    const chip = document.createElement('div');
+    chip.className = 'score-chip' + (i===game.turn?' turn':'');
+    chip.innerHTML = `
+      <span class="team-dot" style="background:${t.color}"></span>
+      <span class="name">${escapeHtml(t.name)}</span>
+      <span class="pts">${t.score}</span>`;
+    scoreboardEl.appendChild(chip);
+  });
+}
+
+function updateClassStats(){
+  if(mode!=='class') return;
+  document.getElementById('statPairs').textContent = game.matched+'/'+game.totalPairs;
+  document.getElementById('statTries').textContent = game.tries;
+}
+
+function banner(html){ turnBannerEl.innerHTML = html; }
+
+/* ---------- FIN DEL JUEGO ---------- */
+const endOverlay = document.getElementById('endOverlay');
+function endGame(){
+  sfx.win();
+  confetti();
+  const resultsEl = document.getElementById('endResults');
+  resultsEl.innerHTML = '';
+
+  if(mode==='teams'){
+    const sorted = [...game.teams].sort((x,y)=>y.score-x.score);
+    const top = sorted[0].score;
+    const winners = sorted.filter(t=>t.score===top);
+    document.getElementById('endEmoji').textContent = '🏆';
+    document.getElementById('endTitle').textContent = winners.length>1 ? '¡Empate!' : '¡Tenemos ganador!';
+    document.getElementById('endSub').innerHTML = winners.length>1
+      ? 'Empatan en primer lugar: <b>'+winners.map(t=>escapeHtml(t.name)).join('</b> y <b>')+'</b>'
+      : '¡Felicitaciones al equipo <b>'+escapeHtml(winners[0].name)+'</b>!';
+    const medals = ['🥇','🥈','🥉'];
+    sorted.forEach((t,i)=>{
+      const row = document.createElement('div');
+      row.className = 'result-row' + (t.score===top?' winner':'');
+      row.innerHTML = `
+        <span class="medal">${medals[i]||(i+1)+'°'}</span>
+        <span class="team-dot" style="background:${t.color}"></span>
+        <span class="name">${escapeHtml(t.name)}</span>
+        <span class="pts">${t.score} pts · ${t.pairs} ${t.pairs===1?'par':'pares'}</span>`;
+      resultsEl.appendChild(row);
+    });
+  }else{
+    document.getElementById('endEmoji').textContent = '🎉';
+    document.getElementById('endTitle').textContent = '¡Lo lograron!';
+    const perfect = game.tries === game.totalPairs;
+    document.getElementById('endSub').innerHTML =
+      `La clase encontró los <b>${game.totalPairs} pares</b> en <b>${game.tries}</b> intentos` +
+      (perfect ? ' — ¡memoria perfecta! 🧠' : '');
+  }
+  endOverlay.classList.add('show');
+}
+document.getElementById('againBtn').addEventListener('click', ()=>{
+  endOverlay.classList.remove('show');
+  startGame();
+});
+document.getElementById('configBtn').addEventListener('click', ()=>{
+  endOverlay.classList.remove('show');
+  gameScreen.classList.remove('active');
+  setupScreen.classList.add('active');
+});
+
+function confetti(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const colors = ['#f5b52e','#ff6b5e','#38a3d8','#9b6ddf','#7fc94f','#f26fa8'];
+  for(let i=0;i<90;i++){
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.left = Math.random()*100+'vw';
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.width = p.style.height = (7+Math.random()*9)+'px';
+    p.style.borderRadius = Math.random()<.5?'50%':'2px';
+    p.style.animationDuration = (2.2+Math.random()*2.4)+'s';
+    p.style.animationDelay = (Math.random()*0.9)+'s';
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(), 6000);
+  }
+}
+
+/* ---------- MODAL DE MENSAJES ---------- */
+const msgOverlay = document.getElementById('msgOverlay');
+function showMsg(emoji, title, text){
+  document.getElementById('msgEmoji').textContent = emoji;
+  document.getElementById('msgTitle').textContent = title;
+  document.getElementById('msgText').textContent = text;
+  const actions = document.getElementById('msgActions');
+  actions.innerHTML = '';
+  const ok = document.createElement('button');
+  ok.className = 'btn btn-play';
+  ok.style.cssText = 'font-size:1rem;padding:12px 30px';
+  ok.textContent = 'Entendido';
+  ok.addEventListener('click', ()=>msgOverlay.classList.remove('show'));
+  actions.appendChild(ok);
+  msgOverlay.classList.add('show');
+}
+msgOverlay.addEventListener('click', e=>{ if(e.target===msgOverlay) msgOverlay.classList.remove('show'); });
+</script>
+</body>
+</html>

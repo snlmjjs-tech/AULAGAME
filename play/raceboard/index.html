@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kart Race: Repaso del Verbo To Be</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#E52521;
+    --red-dark:#B71C1C;
+    --blue:#049CD8;
+    --blue-dark:#02689e;
+    --yellow:#FBD000;
+    --yellow-dark:#e0ac00;
+    --green:#43B047;
+    --green-dark:#2c8a30;
+    --ink:#1a1a2e;
+    --cream:#FFF8E7;
+    --panel:#ffffff;
+    --shadow: 0 6px 0 rgba(0,0,0,0.18);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Nunito', sans-serif;
+    color:var(--ink);
+    background:
+      repeating-linear-gradient(45deg, #dfeeff 0 40px, #cfe6ff 40px 80px);
+    min-height:100vh;
+    padding-bottom:40px;
+  }
+  h1,h2,h3, .title-font{ font-family:'Baloo 2', cursive; }
+
+  header{
+    background: linear-gradient(90deg, var(--red), var(--blue));
+    padding:18px 20px;
+    text-align:center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    position:relative;
+    overflow:hidden;
+  }
+  header h1{
+    color:#fff;
+    margin:0;
+    font-size:clamp(22px, 5vw, 38px);
+    text-shadow: 3px 3px 0 rgba(0,0,0,0.25);
+    letter-spacing:1px;
+  }
+  header p{
+    color:#fffbe0;
+    margin:6px 0 0;
+    font-weight:700;
+    font-size:14px;
+  }
+  .flag-strip{
+    position:absolute; top:0; left:0; width:100%; height:8px;
+    background: repeating-linear-gradient(90deg, #111 0 20px, #fff 20px 40px);
+  }
+
+  main{
+    max-width:1440px;
+    margin:0 auto;
+    padding:20px;
+  }
+
+  .hidden{ display:none !important; }
+
+  .panel{
+    background:var(--panel);
+    border-radius:18px;
+    padding:22px;
+    box-shadow: var(--shadow), 0 2px 12px rgba(0,0,0,0.08);
+    border:3px solid var(--ink);
+  }
+
+  button{
+    font-family:'Baloo 2', cursive;
+    cursor:pointer;
+    border:none;
+    border-radius:12px;
+    font-size:16px;
+    padding:12px 20px;
+    color:#fff;
+    background:var(--blue);
+    box-shadow: 0 4px 0 var(--blue-dark);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  button:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--blue-dark); }
+  button.btn-red{ background:var(--red); box-shadow:0 4px 0 var(--red-dark); }
+  button.btn-green{ background:var(--green); box-shadow:0 4px 0 var(--green-dark); }
+  button.btn-ghost{
+    background:#fff; color:var(--ink); box-shadow:0 4px 0 #ccc; border:2px solid #ddd;
+  }
+  button:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  button.small{ padding:8px 14px; font-size:13px; }
+
+  input[type=text], select, textarea{
+    font-family:'Nunito', sans-serif;
+    border:2px solid #cfd8e3;
+    border-radius:10px;
+    padding:9px 12px;
+    font-size:15px;
+    width:100%;
+  }
+
+  /* ---------- SETUP SCREEN ---------- */
+  #setup-screen .rules-box{
+    background:var(--cream);
+    border:2px dashed var(--red);
+    border-radius:14px;
+    padding:14px 18px;
+    margin-bottom:18px;
+    font-size:14px;
+  }
+  #setup-screen .rules-box h3{ margin:0 0 8px; color:var(--red-dark); }
+  #setup-screen .rules-box ul{ margin:0; padding-left:20px; }
+
+  .player-count-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px;}
+  .count-btn{
+    width:44px;height:44px;border-radius:50%;
+    background:#eef3f9; color:var(--ink); box-shadow:0 3px 0 #c9d4e0;
+    font-size:18px; font-weight:800; display:flex; align-items:center; justify-content:center;
+  }
+  .count-btn.active{ background:var(--green); color:#fff; box-shadow:0 3px 0 var(--green-dark);}
+
+  .player-form{ display:grid; gap:12px; }
+  .player-row{
+    display:flex; gap:10px; align-items:center;
+    background:#f7f9fc; padding:10px; border-radius:12px;
+  }
+  .kart-swatch{
+    width:38px;height:38px;border-radius:50%;flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2);
+    color:#fff; font-size:18px;
+  }
+  .color-pick{ display:flex; gap:6px; }
+  .color-dot{
+    width:26px;height:26px;border-radius:50%;cursor:pointer;
+    border:3px solid transparent;
+  }
+  .color-dot.selected{ border-color:var(--ink); transform:scale(1.15); }
+
+  /* ---------- GAME SCREEN LAYOUT ---------- */
+  #game-screen{ display:flex; flex-direction:column; gap:18px; }
+
+  .race-row{
+    display:grid;
+    grid-template-columns: 1fr 280px;
+    gap:18px;
+    align-items:start;
+  }
+  @media (max-width: 900px){
+    .race-row{ grid-template-columns: 1fr; }
+  }
+
+  .info-row{
+    display:grid;
+    grid-template-columns: 1.3fr 1fr 1fr;
+    gap:16px;
+  }
+  @media (max-width: 700px){
+    .info-row{ grid-template-columns: 1fr; }
+  }
+
+  /* ---------- BOARD (SVG TRACK) ---------- */
+  .board-wrap{
+    background: var(--green);
+    border-radius:18px;
+    padding:12px;
+    border:4px solid var(--ink);
+    box-shadow: var(--shadow);
+  }
+  #boardSvg{ width:100%; height:auto; display:block; filter: drop-shadow(0 10px 18px rgba(0,0,0,0.25)); }
+  .tile-number{
+    font-family:'Baloo 2', cursive;
+    font-weight:800;
+    fill:var(--ink);
+    text-anchor:middle;
+    dominant-baseline:central;
+    pointer-events:none;
+  }
+
+  .dice-panel{
+    display:flex; flex-direction:column;
+  }
+
+  .legend{ font-size:13px; display:grid; grid-template-columns: repeat(2, 1fr); gap:8px 20px; }
+  @media (max-width: 600px){ .legend{ grid-template-columns: 1fr; } }
+  .legend div{ display:flex; align-items:center; gap:8px; }
+
+  /* ---------- SIDEBAR ---------- */
+  .sidebar{ display:flex; flex-direction:column; gap:16px; }
+  .current-player-box{
+    display:flex; align-items:center; gap:10px;
+    padding:14px; border-radius:14px;
+    color:#fff; font-family:'Baloo 2', cursive; font-size:18px;
+  }
+  .turn-order{ display:flex; flex-direction:column; gap:6px; font-size:13px; }
+  .turn-order .p-chip{
+    display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; background:#f5f7fa;
+  }
+  .turn-order .p-chip.active{ background:#fff4c9; font-weight:800; }
+  .turn-order .dot{ width:14px;height:14px;border-radius:50%; }
+
+  /* dice */
+  .dice-mode-toggle{ display:flex; gap:6px; margin-bottom:10px; }
+  .dice-mode-toggle button{ flex:1; font-size:12px; padding:8px 6px; }
+  .dice-mode-toggle button.active{ background:var(--green); box-shadow:0 4px 0 var(--green-dark); }
+  #dice3d{
+    width:80px;height:80px; margin:8px auto; background:#fff; border-radius:16px;
+    border:3px solid var(--ink); display:flex; align-items:center; justify-content:center;
+    font-size:36px; font-family:'Baloo 2', cursive; box-shadow:0 4px 0 #999;
+    cursor:pointer; user-select:none;
+  }
+  #dice3d.rolling{ animation: shake .08s infinite; }
+  @keyframes shake{ 0%{transform:rotate(0)} 25%{transform:rotate(-8deg)} 75%{transform:rotate(8deg)} 100%{transform:rotate(0)} }
+  .physical-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:8px; }
+  .physical-row button{ padding:10px 0; font-size:16px; }
+
+  /* music toggle */
+  .music-toggle{
+    display:flex; align-items:center; justify-content:space-between;
+    background:#f5f7fa; border-radius:12px; padding:10px 14px; font-size:14px; font-weight:700;
+  }
+  .music-switch{
+    width:50px; height:28px; border-radius:20px; background:#ccc; position:relative; cursor:pointer;
+    transition: background .2s ease; flex:0 0 auto;
+  }
+  .music-switch.on{ background:var(--green); }
+  .music-switch::after{
+    content:''; position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%;
+    background:#fff; transition: left .2s ease; box-shadow:0 1px 3px rgba(0,0,0,0.4);
+  }
+  .music-switch.on::after{ left:25px; }
+
+  /* ---------- MODAL ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(10,10,25,0.65);
+    display:flex; align-items:center; justify-content:center; z-index:50;
+    padding:16px;
+  }
+  #confirmOverlay{ z-index:80; }
+  .modal{
+    background:#fff; border-radius:18px; max-width:480px; width:100%;
+    padding:24px; border:4px solid var(--ink); text-align:center;
+    box-shadow: var(--shadow);
+    max-height:90vh; overflow-y:auto;
+  }
+  .modal.wide{ max-width:680px; text-align:left; }
+
+  /* ---------- SPECIAL EFFECT POPUP (big animated character) ---------- */
+  #specialOverlay .modal{
+    max-width:420px;
+    background: linear-gradient(180deg,#fff, #fef6da);
+    position:relative;
+    overflow:visible;
+    padding-top:10px;
+  }
+  .burst-wrap{
+    position:relative;
+    width:180px; height:180px;
+    margin:0 auto 4px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .burst-ring{
+    position:absolute; inset:0; border-radius:50%;
+    background: radial-gradient(circle, rgba(255,209,0,0.55) 0%, rgba(255,209,0,0) 70%);
+    animation: burstPulse 1.1s ease-out infinite;
+  }
+  @keyframes burstPulse{
+    0%{ transform:scale(0.4); opacity:0.9; }
+    100%{ transform:scale(1.35); opacity:0; }
+  }
+  #specialIcon{
+    position:relative; z-index:2;
+    font-size:110px;
+    line-height:1;
+    display:inline-block;
+    filter: drop-shadow(0 8px 10px rgba(0,0,0,0.35));
+    animation: popBounce .65s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  @keyframes popBounce{
+    0%{ transform: scale(0) rotate(-25deg); opacity:0; }
+    55%{ transform: scale(1.28) rotate(10deg); opacity:1; }
+    75%{ transform: scale(0.92) rotate(-5deg); }
+    100%{ transform: scale(1) rotate(0deg); opacity:1; }
+  }
+  #specialText{
+    animation: textPop .45s ease .12s both;
+  }
+  @keyframes textPop{
+    0%{ transform: translateY(24px) scale(0.9); opacity:0; }
+    100%{ transform: translateY(0) scale(1); opacity:1; }
+  }
+  .shake{ animation: shakeModal .45s ease; }
+  @keyframes shakeModal{
+    0%,100%{ transform: translateX(0); }
+    20%{ transform: translateX(-8px); }
+    40%{ transform: translateX(7px); }
+    60%{ transform: translateX(-5px); }
+    80%{ transform: translateX(4px); }
+  }
+
+  .cat-badge{
+    display:inline-block; padding:4px 14px; border-radius:20px; font-weight:800; font-size:13px;
+    color:#fff; margin-bottom:10px; font-family:'Baloo 2', cursive;
+  }
+  .question-text{ font-size:20px; font-weight:700; margin:10px 0 20px; line-height:1.4; }
+  .modal .btnrow{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+
+  /* editor */
+  .qedit-row{ display:grid; grid-template-columns: 1fr 40px; gap:8px; align-items:center; margin-bottom:8px; }
+  .qedit-list{ max-height:340px; overflow-y:auto; padding-right:4px; margin-bottom:14px; }
+  .del-btn{ background:var(--red); box-shadow:0 3px 0 var(--red-dark); padding:8px; font-size:12px; }
+  .add-row{ display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; }
+
+  .toast{
+    position:fixed; top:16px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:#fff; padding:12px 22px; border-radius:12px;
+    font-family:'Baloo 2', cursive; font-size:15px; z-index:100;
+    box-shadow:0 4px 14px rgba(0,0,0,0.3);
+    opacity:0; transition:opacity .25s ease, top .25s ease;
+  }
+  .toast.show{ opacity:1; top:26px; }
+
+  .confetti-piece{
+    position:fixed; top:-20px; width:10px;height:16px; z-index:200; opacity:0.95;
+    animation: fall linear forwards;
+  }
+  @keyframes fall{ to{ transform: translateY(110vh) rotate(400deg); opacity:0.4; } }
+
+  footer{ text-align:center; font-size:12px; color:#666; padding:20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="flag-strip"></div>
+  <h1>🏁 KART RACE: Repaso del verbo TO BE</h1>
+  <p>Juego de tablero educativo — AM · IS · ARE</p>
+</header>
+
+<main>
+
+  <!-- ============ SETUP SCREEN ============ -->
+  <section id="setup-screen" class="panel">
+    <div class="rules-box">
+      <h3>📋 Reglas de la clase</h3>
+      <ul>
+        <li>No celulares durante el juego</li>
+        <li>No peleas — ¡respeto entre compañeros!</li>
+        <li>Presta atención cuando sea tu turno</li>
+        <li>Tira tu basura en el basurero</li>
+      </ul>
+    </div>
+
+    <h2 class="title-font">👥 ¿Cuántos jugadores?</h2>
+    <div class="player-count-row" id="playerCountRow"></div>
+
+    <div class="player-form" id="playerForm"></div>
+
+    <div style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;">
+      <button class="btn-green" id="startGameBtn">🏎️ ¡Empezar la carrera!</button>
+      <button class="btn-ghost" id="openEditorFromSetup">✏️ Editar preguntas</button>
+    </div>
+  </section>
+
+  <!-- ============ GAME SCREEN ============ -->
+  <section id="game-screen" class="hidden">
+
+    <!-- Pista + Dado, uno al lado del otro -->
+    <div class="race-row">
+      <div class="board-wrap">
+        <svg id="boardSvg" viewBox="0 0 1200 640" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+
+      <div class="panel dice-panel" style="padding:16px; text-align:center;">
+        <h3 class="title-font" style="margin:0 0 10px;">🎲 Dado</h3>
+        <div class="dice-mode-toggle">
+          <button id="modeVirtualBtn" class="active">Dado virtual</button>
+          <button id="modePhysicalBtn">Dado físico</button>
+        </div>
+
+        <div id="virtualDiceZone">
+          <div id="dice3d">?</div>
+          <button id="rollBtn" class="btn-red" style="width:100%;">Tirar dado</button>
+        </div>
+
+        <div id="physicalDiceZone" class="hidden">
+          <p style="font-size:13px; margin:4px 0;">Toca el número que salió en el dado físico:</p>
+          <div class="physical-row" id="physicalRow"></div>
+        </div>
+
+        <div style="margin-top:14px; padding-top:14px; border-top:2px dashed #e5e5e5; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span id="shellCountLabel" style="font-weight:800; font-size:13px;">🐢 Caparazones: 0</span>
+          <button id="useShellBtn" class="btn-red small" disabled>Usar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info: jugadores / música / reiniciar -->
+    <div class="info-row">
+      <div class="panel" style="padding:16px;">
+        <div id="currentPlayerBox" class="current-player-box"></div>
+        <div class="turn-order" id="turnOrderBox" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="panel" style="padding:16px;">
+        <div class="music-toggle">
+          <span>🎵 Música de carrera</span>
+          <div class="music-switch on" id="musicSwitch"></div>
+        </div>
+      </div>
+
+      <div class="panel" style="padding:16px; display:flex; align-items:center;">
+        <button class="btn-ghost small" id="resetGameBtn" style="width:100%;">🔁 Reiniciar / nuevos jugadores</button>
+      </div>
+    </div>
+
+    <!-- Leyenda, al final -->
+    <div class="panel">
+      <h3 class="title-font" style="margin-top:0;">🗺️ Leyenda</h3>
+      <div class="legend" id="legendBox"></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>Tablero digital inspirado en juegos de carreras tipo Mario Kart — creado para uso didáctico. No usa personajes con derechos de autor. Música generada digitalmente.</footer>
+
+<!-- ============ QUESTION MODAL ============ -->
+<div id="questionOverlay" class="overlay hidden">
+  <div class="modal">
+    <div id="qBonusBanner" class="hidden" style="background:#fff3cf; border:2px dashed #e0ac00; border-radius:12px; padding:8px; font-weight:800; margin-bottom:10px; color:#946f00;">🐢 ¡Casilla Bonus! Responde bien y ganas un caparazón</div>
+    <span class="cat-badge" style="background:var(--blue);">❓ Pregunta</span>
+    <div id="qText" class="question-text">Pregunta</div>
+    <p style="font-size:13px; color:#666; margin-top:-10px;">El profesor decide si la respuesta oral del estudiante fue correcta.</p>
+    <div class="btnrow">
+      <button class="btn-green" id="qCorrectBtn">✅ Correcto</button>
+      <button class="btn-red" id="qWrongBtn">❌ Incorrecto</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SPECIAL TILE TOAST MODAL ============ -->
+<div id="specialOverlay" class="overlay hidden">
+  <div class="modal">
+    <div class="burst-wrap">
+      <div class="burst-ring"></div>
+      <div id="specialIcon">🍌</div>
+    </div>
+    <div id="specialText" class="question-text">Texto</div>
+    <button class="btn-blue" id="specialOkBtn" style="background:var(--blue); box-shadow:0 4px 0 var(--blue-dark);">Continuar</button>
+  </div>
+</div>
+
+<!-- ============ WIN MODAL ============ -->
+<div id="winOverlay" class="overlay hidden">
+  <div class="modal">
+    <div style="font-size:54px;">🏆</div>
+    <div id="winText" class="question-text">¡Ganó Jugador 1!</div>
+    <div class="btnrow">
+      <button class="btn-green" id="playAgainBtn">🔁 Jugar de nuevo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CONFIRM MODAL (genérico, reemplaza confirm() nativo) ============ -->
+<div id="confirmOverlay" class="overlay hidden">
+  <div class="modal">
+    <div style="font-size:40px;">❓</div>
+    <div id="confirmText" class="question-text">¿Estás seguro?</div>
+    <div class="btnrow">
+      <button class="btn-green" id="confirmYesBtn">Sí</button>
+      <button class="btn-ghost" id="confirmNoBtn">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ QUESTION EDITOR MODAL ============ -->
+<div id="editorOverlay" class="overlay hidden">
+  <div class="modal wide">
+    <h2 class="title-font" style="margin-top:0;">✏️ Editar preguntas</h2>
+    <p style="font-size:13px; color:#666;">Modifica, borra o agrega las preguntas que quieras usar en el juego (de cualquier asignatura). Los cambios se guardan en este navegador.</p>
+
+    <div class="btnrow" style="justify-content:flex-start; margin-bottom:14px;">
+      <button class="btn-ghost small" id="exportExcelBtn">📥 Exportar a Excel</button>
+      <button class="btn-ghost small" id="importExcelBtn">📤 Importar desde Excel</button>
+      <input type="file" id="importExcelInput" accept=".xlsx,.xls" class="hidden">
+    </div>
+    <p style="font-size:12px; color:#888; margin-top:-10px;">El Excel debe tener una pregunta por fila, en la primera columna (puedes usar el botón "Exportar" para obtener una plantilla con tus preguntas actuales).</p>
+
+    <div class="qedit-list" id="qeditList"></div>
+    <h3 style="font-size:15px;">➕ Agregar pregunta</h3>
+    <div class="add-row">
+      <input type="text" id="newQText" placeholder="Escribe la nueva pregunta...">
+      <button class="btn-green small" id="addQBtn">Agregar</button>
+    </div>
+    <div class="btnrow" style="margin-top:18px;">
+      <button class="btn-ghost" id="restoreDefaultsBtn">↩️ Restaurar por defecto</button>
+      <button class="btn-blue" id="closeEditorBtn" style="background:var(--blue); box-shadow:0 4px 0 var(--blue-dark);">Guardar y cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SHELL TARGET PICKER MODAL ============ -->
+<div id="shellTargetOverlay" class="overlay hidden">
+  <div class="modal">
+    <div style="font-size:44px;">🐢</div>
+    <h3 class="title-font" style="margin:8px 0 14px;">¿A quién le lanzas el caparazón?</h3>
+    <div id="shellTargetList"></div>
+    <button class="btn-ghost" id="cancelShellBtn" style="margin-top:6px;">Cancelar</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* ================= CONFIG ================= */
+const TOTAL_TILES = 31;
+const KART_COLORS = [
+  {name:'Rojo', hex:'#E52521'},
+  {name:'Azul', hex:'#049CD8'},
+  {name:'Amarillo', hex:'#FBD000'},
+  {name:'Verde', hex:'#43B047'},
+  {name:'Rosa', hex:'#FF6FB5'},
+  {name:'Morado', hex:'#8E44AD'},
+];
+
+const SPECIAL_TYPES = {
+  banana:   { icon:'🍌', label:'-1 casilla', text:t=>`${t} pisó una cáscara de plátano y retrocede 1 casilla.`, back:1 },
+  blueshell:{ icon:'🌀', label:'-5 casillas', text:t=>`¡Remolino! ${t} retrocede 5 casillas.`, back:5 },
+  star:     { icon:'⭐', label:'Escudo protector', text:t=>`¡${t} encontró una estrella! Tiene escudo para evitar el próximo efecto negativo.`, shield:true },
+};
+
+/* Posiciones fijas en el tablero */
+const BANANA_TILES    = [13, 22];
+const BLUESHELL_TILES = [15, 21, 31];
+const STAR_TILES      = [8, 16, 19, 25];
+const SHELL_TILES     = [7, 10, 17, 20, 24]; // 22 se resolvió a favor del plátano (ver nota)
+
+const DEFAULT_QUESTIONS = [
+  "Traduce al inglés usando AM: 'Yo soy genial'",
+  "Traduce al inglés usando AM: 'Yo estoy loco/a'",
+  "Crea tu propia oración en inglés usando AM (Ej: I am happy)",
+  "Traduce al inglés usando AM: 'Yo no estoy triste'",
+  "Traduce al inglés usando AM: 'Yo soy tu amigo'",
+  "Traduce al inglés usando IS: 'Él es mi papá'",
+  "Traduce al inglés usando IS: 'Él es mi hermano'",
+  "Traduce al inglés usando IS: 'Ella no es genial'",
+  "Traduce al inglés usando IS: 'El lápiz es rojo'",
+  "Traduce al inglés usando IS: 'Juan está en el hospital'",
+  "Traduce al inglés usando IS: 'Juan no está en la escuela'",
+  "Traduce al inglés usando IS: 'Eso no está bien'",
+  "Traduce al inglés usando IS: 'Eso está mal'",
+  "Traduce al inglés usando IS: 'Él no está en el parque'",
+  "Crea tu propia oración en inglés usando IS",
+  "Traduce al inglés usando ARE: 'Ellos son amigos'",
+  "Traduce al inglés usando ARE: 'Nosotros no somos amigos'",
+  "Traduce al inglés usando ARE: 'Ellas están en el parque'",
+  "Traduce al inglés usando ARE: 'Nosotras estamos felices'",
+  "Traduce al inglés usando ARE: 'Ellos son hermosos'",
+  "Traduce al inglés usando ARE: 'Tú no eres mi amigo'",
+  "Traduce al inglés usando ARE: 'Tú eres mi mejor amigo'",
+  "Traduce al inglés usando ARE: 'Ellos están en la calle'",
+  "Traduce al inglés usando ARE: 'Mis lápices son rojo y azul'",
+  "Traduce al inglés usando ARE: 'Pedro y Juan son amigos'",
+  "Traduce al inglés usando ARE: 'Cecilia y María son amigas'",
+  "Traduce al inglés usando ARE: 'María y Juan están en la escuela'",
+  "Crea tu propia oración en inglés usando ARE",
+  "Completa: 'She ___ my sister' (am / is / are)",
+  "Completa: 'We ___ happy today' (am / is / are)",
+  "Completa: 'They ___ at school' (am / is / are)",
+  "Completa: 'I ___ ready to play' (am / is / are)",
+  "¿AM, IS o ARE? — 'The dog ___ black'",
+];
+
+/* ================= STATE ================= */
+let questions = loadQuestions();
+let tileMeta = buildTileMeta();
+
+let state = {
+  players: [],
+  currentIndex: 0,
+  mode: 'virtual',
+  gameOver: false,
+};
+
+/* ================= QUESTION STORAGE ================= */
+function loadQuestions(){
+  try{
+    const saved = localStorage.getItem('mkQuestionsBank_v2');
+    if(saved){
+      const parsed = JSON.parse(saved);
+      if(Array.isArray(parsed)) return parsed;
+    }
+    // migración desde una versión anterior con categorías AM/IS/ARE
+    const old = localStorage.getItem('mkQuestionsBank_v1');
+    if(old){
+      const parsedOld = JSON.parse(old);
+      if(parsedOld && !Array.isArray(parsedOld)){
+        return Object.values(parsedOld).flat();
+      }
+    }
+  }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
+}
+function saveQuestions(){
+  localStorage.setItem('mkQuestionsBank_v2', JSON.stringify(questions));
+}
+
+/* ================= TILE META (every tile 1-31 is a question, shell-bonus, or special tile) ================= */
+function buildTileMeta(){
+  const meta = {};
+  for(let i=1;i<=TOTAL_TILES;i++){
+    if(BANANA_TILES.includes(i)){
+      meta[i] = {type:'special', special:'banana'};
+    } else if(BLUESHELL_TILES.includes(i)){
+      meta[i] = {type:'special', special:'blueshell'};
+    } else if(STAR_TILES.includes(i)){
+      meta[i] = {type:'special', special:'star'};
+    } else if(SHELL_TILES.includes(i)){
+      meta[i] = {type:'shell'};
+    } else {
+      meta[i] = {type:'question'};
+    }
+  }
+  return meta;
+}
+
+/* ================= SETUP SCREEN ================= */
+let playerCount = 2;
+const setupScreen = document.getElementById('setup-screen');
+const gameScreen = document.getElementById('game-screen');
+const playerCountRow = document.getElementById('playerCountRow');
+const playerForm = document.getElementById('playerForm');
+
+function renderPlayerCountRow(){
+  playerCountRow.innerHTML = '';
+  for(let n=2;n<=6;n++){
+    const b = document.createElement('div');
+    b.className = 'count-btn' + (n===playerCount ? ' active':'');
+    b.textContent = n;
+    b.onclick = () => { playerCount = n; renderPlayerCountRow(); renderPlayerForm(); };
+    playerCountRow.appendChild(b);
+  }
+}
+
+let playerDrafts = [];
+function renderPlayerForm(){
+  const prev = playerDrafts;
+  playerDrafts = [];
+  for(let i=0;i<playerCount;i++){
+    playerDrafts.push({
+      name: (prev[i] && prev[i].name) || `Jugador ${i+1}`,
+      color: (prev[i] && prev[i].color) || KART_COLORS[i % KART_COLORS.length].hex,
+    });
+  }
+  playerForm.innerHTML = '';
+  playerDrafts.forEach((p, idx) => {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `
+      <div class="kart-swatch" style="background:${p.color}">🏎️</div>
+      <input type="text" value="${escapeHtml(p.name)}" data-idx="${idx}" class="pname" style="flex:1;">
+      <div class="color-pick" data-idx="${idx}"></div>
+    `;
+    playerForm.appendChild(row);
+    const pick = row.querySelector('.color-pick');
+    KART_COLORS.forEach(c => {
+      const dot = document.createElement('div');
+      dot.className = 'color-dot' + (c.hex === p.color ? ' selected':'');
+      dot.style.background = c.hex;
+      dot.onclick = () => {
+        playerDrafts[idx].color = c.hex;
+        renderPlayerForm();
+      };
+      pick.appendChild(dot);
+    });
+  });
+  playerForm.querySelectorAll('.pname').forEach(inp => {
+    inp.addEventListener('input', e => {
+      playerDrafts[e.target.dataset.idx].name = e.target.value || `Jugador ${parseInt(e.target.dataset.idx)+1}`;
+    });
+  });
+}
+
+document.getElementById('startGameBtn').onclick = () => {
+  state.players = playerDrafts.map((p, i) => ({
+    id: i,
+    name: p.name || `Jugador ${i+1}`,
+    color: p.color,
+    position: 0, // 0 = en la zona de salida, fuera de las 31 casillas
+    shield: false,
+    skipTurn: false,
+    shells: 0,
+  }));
+  state.currentIndex = 0;
+  state.gameOver = false;
+  setupScreen.classList.add('hidden');
+  gameScreen.classList.remove('hidden');
+  buildBoardSvg();
+  renderLegend();
+  renderSidebar();
+  startMusic();
+};
+
+renderPlayerCountRow();
+renderPlayerForm();
+
+/* ================= BOARD (SVG TRACK) ================= */
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const ROAD_D = "M 90 300 L 90 500 Q 90 560 150 560 L 980 560 Q 1050 560 1050 500 L 1050 190 Q 1050 110 975 90 L 400 25";
+let trackPoints = []; // {x,y,angle} for tiles 1..31
+let startPoint = {x:0,y:0,angle:0};
+let finishPoint = {x:0,y:0,angle:0};
+
+function computeTrackGeometry(){
+  const tempSvg = document.createElementNS(SVG_NS,'svg');
+  const tempPath = document.createElementNS(SVG_NS,'path');
+  tempPath.setAttribute('d', ROAD_D);
+  tempSvg.appendChild(tempPath);
+  document.body.appendChild(tempSvg);
+  const total = tempPath.getTotalLength();
+
+  const tileStart = total*0.05;
+  const tileEnd = total*0.90;
+  trackPoints = [];
+  for(let i=0;i<TOTAL_TILES;i++){
+    const dist = tileStart + (tileEnd-tileStart) * (i/(TOTAL_TILES-1));
+    const p = tempPath.getPointAtLength(dist);
+    const p2 = tempPath.getPointAtLength(Math.min(dist+6, total));
+    const angle = Math.atan2(p2.y-p.y, p2.x-p.x) * 180/Math.PI;
+    trackPoints.push({x:p.x, y:p.y, angle});
+  }
+  const sp = tempPath.getPointAtLength(0);
+  const sp2 = tempPath.getPointAtLength(6);
+  startPoint = {x:sp.x, y:sp.y, angle:Math.atan2(sp2.y-sp.y, sp2.x-sp.x)*180/Math.PI};
+  const fp = tempPath.getPointAtLength(total);
+  const fp2 = tempPath.getPointAtLength(total-6);
+  finishPoint = {x:fp.x, y:fp.y, angle:Math.atan2(fp.y-fp2.y, fp.x-fp2.x)*180/Math.PI};
+
+  document.body.removeChild(tempSvg);
+}
+
+function svgEl(tag, attrs){
+  const el = document.createElementNS(SVG_NS, tag);
+  for(const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+
+function buildBoardSvg(){
+  computeTrackGeometry();
+  const svg = document.getElementById('boardSvg');
+  svg.innerHTML = '';
+
+  const defs = svgEl('defs',{});
+  svg.appendChild(defs);
+
+  // ---- gradients for a more 3D look ----
+  const fieldGrad = svgEl('radialGradient',{id:'fieldGrad', cx:'50%', cy:'38%', r:'75%'});
+  fieldGrad.appendChild(svgEl('stop',{offset:'0%','stop-color':'#5fc463'}));
+  fieldGrad.appendChild(svgEl('stop',{offset:'100%','stop-color':'#2f9a3a'}));
+  defs.appendChild(fieldGrad);
+
+  const roadGrad = svgEl('linearGradient',{id:'roadGrad', x1:'0%', y1:'0%', x2:'100%', y2:'100%'});
+  roadGrad.appendChild(svgEl('stop',{offset:'0%','stop-color':'#a9a9b3'}));
+  roadGrad.appendChild(svgEl('stop',{offset:'55%','stop-color':'#8c8c97'}));
+  roadGrad.appendChild(svgEl('stop',{offset:'100%','stop-color':'#75757f'}));
+  defs.appendChild(roadGrad);
+
+  const tileGrad = svgEl('radialGradient',{id:'tileGrad', cx:'35%', cy:'28%', r:'75%'});
+  tileGrad.appendChild(svgEl('stop',{offset:'0%','stop-color':'#ffffff'}));
+  tileGrad.appendChild(svgEl('stop',{offset:'100%','stop-color':'#e4e6ea'}));
+  defs.appendChild(tileGrad);
+
+  const specialGrad = svgEl('radialGradient',{id:'specialGrad', cx:'35%', cy:'28%', r:'75%'});
+  specialGrad.appendChild(svgEl('stop',{offset:'0%','stop-color':'#f6ecff'}));
+  specialGrad.appendChild(svgEl('stop',{offset:'100%','stop-color':'#dcc4f5'}));
+  defs.appendChild(specialGrad);
+
+  const shellGrad = svgEl('radialGradient',{id:'shellGrad', cx:'35%', cy:'28%', r:'75%'});
+  shellGrad.appendChild(svgEl('stop',{offset:'0%','stop-color':'#fff9df'}));
+  shellGrad.appendChild(svgEl('stop',{offset:'100%','stop-color':'#ffe28a'}));
+  defs.appendChild(shellGrad);
+
+  const iconShadowGrad = svgEl('radialGradient',{id:'iconShadowGrad', cx:'50%', cy:'50%', r:'50%'});
+  iconShadowGrad.appendChild(svgEl('stop',{offset:'0%','stop-color':'#000000','stop-opacity':'0.32'}));
+  iconShadowGrad.appendChild(svgEl('stop',{offset:'100%','stop-color':'#000000','stop-opacity':'0'}));
+  defs.appendChild(iconShadowGrad);
+
+  const gradStar = svgEl('radialGradient',{id:'gradStar', cx:'35%', cy:'28%', r:'75%'});
+  gradStar.appendChild(svgEl('stop',{offset:'0%','stop-color':'#fff6c9'}));
+  gradStar.appendChild(svgEl('stop',{offset:'55%','stop-color':'#ffd93d'}));
+  gradStar.appendChild(svgEl('stop',{offset:'100%','stop-color':'#d99700'}));
+  defs.appendChild(gradStar);
+
+  // gradients shared by every car token (color-independent gloss/shadow/glass/wheel)
+  const carGloss = svgEl('linearGradient',{id:'carGloss', x1:'0%', y1:'0%', x2:'100%', y2:'100%'});
+  carGloss.appendChild(svgEl('stop',{offset:'0%','stop-color':'#ffffff','stop-opacity':'0.6'}));
+  carGloss.appendChild(svgEl('stop',{offset:'45%','stop-color':'#ffffff','stop-opacity':'0.08'}));
+  carGloss.appendChild(svgEl('stop',{offset:'100%','stop-color':'#000000','stop-opacity':'0.22'}));
+  defs.appendChild(carGloss);
+
+  const glassGrad = svgEl('linearGradient',{id:'glassGrad', x1:'0%', y1:'0%', x2:'0%', y2:'100%'});
+  glassGrad.appendChild(svgEl('stop',{offset:'0%','stop-color':'#eefcff'}));
+  glassGrad.appendChild(svgEl('stop',{offset:'100%','stop-color':'#7dd3ef'}));
+  defs.appendChild(glassGrad);
+
+  const wheelGrad = svgEl('radialGradient',{id:'wheelGrad', cx:'35%', cy:'30%', r:'70%'});
+  wheelGrad.appendChild(svgEl('stop',{offset:'0%','stop-color':'#666'}));
+  wheelGrad.appendChild(svgEl('stop',{offset:'100%','stop-color':'#0a0a0a'}));
+  defs.appendChild(wheelGrad);
+
+  const carShadowGrad = svgEl('radialGradient',{id:'carShadowGrad', cx:'50%', cy:'50%', r:'50%'});
+  carShadowGrad.appendChild(svgEl('stop',{offset:'0%','stop-color':'#000000','stop-opacity':'0.4'}));
+  carShadowGrad.appendChild(svgEl('stop',{offset:'100%','stop-color':'#000000','stop-opacity':'0'}));
+  defs.appendChild(carShadowGrad);
+
+  ensureStarSymbol(defs);
+
+  // background field
+  svg.appendChild(svgEl('rect',{x:0,y:0,width:1200,height:640,fill:'url(#fieldGrad)'}));
+
+  // road curb (wide, darker) + surface with gradient + center dashed line
+  svg.appendChild(svgEl('path',{d:ROAD_D, fill:'none', stroke:'#54545e', 'stroke-width':112, 'stroke-linecap':'round', 'stroke-linejoin':'round'}));
+  svg.appendChild(svgEl('path',{d:ROAD_D, fill:'none', stroke:'url(#roadGrad)', 'stroke-width':96, 'stroke-linecap':'round', 'stroke-linejoin':'round'}));
+  svg.appendChild(svgEl('path',{d:ROAD_D, fill:'none', stroke:'#fbd000', 'stroke-width':5, 'stroke-dasharray':'20 18', 'stroke-linecap':'round'}));
+
+  // START zone
+  const startGroup = svgEl('g',{});
+  startGroup.appendChild(svgEl('circle',{cx:startPoint.x, cy:startPoint.y, r:38, fill:'url(#tileGrad)', stroke:'#111', 'stroke-width':3, 'stroke-dasharray':'6 5'}));
+  const startFlag = svgEl('text',{x:startPoint.x, y:startPoint.y-50, 'font-size':30, 'text-anchor':'middle'});
+  startFlag.textContent = '🚦';
+  startGroup.appendChild(startFlag);
+  const startLbl = svgEl('text',{x:startPoint.x, y:startPoint.y, 'font-size':14, 'font-weight':800, 'text-anchor':'middle','dominant-baseline':'central', fill:'#111', 'font-family':"'Baloo 2', cursive"});
+  startLbl.textContent = 'SALIDA';
+  startGroup.appendChild(startLbl);
+  svg.appendChild(startGroup);
+
+  // mystery box decoration
+  const boxG = svgEl('g',{transform:`translate(${startPoint.x+76}, ${startPoint.y-64})`});
+  boxG.appendChild(svgEl('rect',{x:-22,y:-22,width:44,height:44,rx:7, fill:'#FBD000', stroke:'#946f00','stroke-width':3}));
+  const qm = svgEl('text',{x:0,y:2,'font-size':26,'text-anchor':'middle','dominant-baseline':'central','font-weight':900, fill:'#946f00'});
+  qm.textContent='?';
+  boxG.appendChild(qm);
+  svg.appendChild(boxG);
+
+  // FINISH zone
+  const finishGroup = svgEl('g',{});
+  finishGroup.appendChild(svgEl('rect',{x:finishPoint.x-48, y:finishPoint.y-18, width:96, height:36, rx:6, fill:'#fff','stroke':'#111','stroke-width':3}));
+  // checker pattern
+  const checkPattern = svgEl('pattern',{id:'checker', width:10, height:10, patternUnits:'userSpaceOnUse'});
+  checkPattern.appendChild(svgEl('rect',{width:10,height:10,fill:'#fff'}));
+  checkPattern.appendChild(svgEl('rect',{width:5,height:5,fill:'#111'}));
+  checkPattern.appendChild(svgEl('rect',{x:5,y:5,width:5,height:5,fill:'#111'}));
+  defs.appendChild(checkPattern);
+  finishGroup.appendChild(svgEl('rect',{x:finishPoint.x-48, y:finishPoint.y-18, width:96, height:36, rx:6, fill:'url(#checker)', opacity:0.9}));
+  const finishLbl = svgEl('text',{x:finishPoint.x, y:finishPoint.y+42, 'font-size':17, 'font-weight':800, 'text-anchor':'middle', fill:'#111', 'font-family':"'Baloo 2', cursive"});
+  finishLbl.textContent = '🏆 META';
+  finishGroup.appendChild(finishLbl);
+  svg.appendChild(finishGroup);
+
+  // tiles
+  trackPoints.forEach((pt, idx) => {
+    const num = idx+1;
+    const meta = tileMeta[num];
+    const g = svgEl('g',{id:'tile-'+num});
+    const isSpecial = meta.type === 'special';
+    const isShell = meta.type === 'shell';
+    const tileFill = isSpecial ? 'url(#specialGrad)' : (isShell ? 'url(#shellGrad)' : 'url(#tileGrad)');
+    g.appendChild(svgEl('circle',{
+      cx:pt.x, cy:pt.y, r:27,
+      fill: tileFill,
+      stroke:'#111', 'stroke-width':3
+    }));
+    const txt = svgEl('text',{x:pt.x, y:pt.y+1, class:'tile-number', 'font-size':20});
+    txt.textContent = num;
+    g.appendChild(txt);
+    if(isSpecial || isShell){
+      g.appendChild(svgEl('ellipse',{cx:pt.x, cy:pt.y-34, rx:16, ry:8, fill:'url(#iconShadowGrad)'}));
+      if(isSpecial && meta.special === 'star'){
+        const use = svgEl('use',{href:'#starIconDef', transform:`translate(${pt.x}, ${pt.y-38}) scale(1.7)`});
+        g.appendChild(use);
+      } else {
+        const icon = svgEl('text',{x:pt.x, y:pt.y-38, 'font-size':36, 'text-anchor':'middle', 'dominant-baseline':'central', style:'filter:drop-shadow(0 3px 3px rgba(0,0,0,0.4));'});
+        icon.textContent = isSpecial ? SPECIAL_TYPES[meta.special].icon : '🐢';
+        g.appendChild(icon);
+      }
+    }
+    svg.appendChild(g);
+  });
+
+  // tokens layer (drawn last, above tiles)
+  const tokensLayer = svgEl('g',{id:'tokensLayer'});
+  svg.appendChild(tokensLayer);
+
+  ensurePersistentTokens();
+}
+
+/* estrella dorada 3D reutilizable, definida una sola vez */
+function ensureStarSymbol(defs){
+  if(document.getElementById('starIconDef')) return;
+  const starPath = "M0,-14 L3.3,-4.3 L13.3,-4.3 L5.4,1.6 L8.5,11.3 L0,5.4 L-8.5,11.3 L-5.4,1.6 L-13.3,-4.3 L-3.3,-4.3 Z";
+  const g = svgEl('g',{id:'starIconDef'});
+  g.appendChild(svgEl('path',{d:starPath, fill:'url(#gradStar)', stroke:'#a06e00', 'stroke-width':1.2}));
+  g.appendChild(svgEl('ellipse',{cx:-3.5, cy:-5, rx:3, ry:1.6, fill:'#ffffff', opacity:0.7}));
+  defs.appendChild(g);
+}
+
+function carSvgMarkup(color){
+  return `
+    <ellipse cx="0" cy="18" rx="12" ry="5" fill="url(#carShadowGrad)"></ellipse>
+    <rect x="-10" y="-19" width="20" height="38" rx="7" fill="${color}" stroke="#111" stroke-width="2.5"/>
+    <rect x="-10" y="-19" width="20" height="38" rx="7" fill="url(#carGloss)"/>
+    <rect x="-2.2" y="-19" width="4.4" height="16" fill="rgba(255,255,255,0.4)"/>
+    <rect x="-6.5" y="-11" width="13" height="11" rx="2" fill="url(#glassGrad)" opacity="0.95" stroke="#0a3a4a" stroke-width="0.6"/>
+    <circle cx="-10" cy="-11" r="3.4" fill="url(#wheelGrad)"/>
+    <circle cx="10" cy="-11" r="3.4" fill="url(#wheelGrad)"/>
+    <circle cx="-10" cy="10" r="3.4" fill="url(#wheelGrad)"/>
+    <circle cx="10" cy="10" r="3.4" fill="url(#wheelGrad)"/>
+    </g>`;
+}
+
+function ensurePersistentTokens(){
+  const layer = document.getElementById('tokensLayer');
+  if(!layer) return;
+  layer.innerHTML = '';
+  state.players.forEach(player => {
+    const g = svgEl('g',{
+      id:'token-'+player.id,
+      style:'transition: transform .28s cubic-bezier(.4,0,.2,1);'
+    });
+    g.innerHTML = carSvgMarkup(player.color);
+    layer.appendChild(g);
+  });
+}
+
+function placeAllTokens(){
+  const layer = document.getElementById('tokensLayer');
+  if(!layer) return;
+  if(!document.getElementById('token-'+(state.players[0] && state.players[0].id))){
+    ensurePersistentTokens();
+  }
+
+  // group players by position
+  const groups = {};
+  state.players.forEach(p => {
+    groups[p.position] = groups[p.position] || [];
+    groups[p.position].push(p);
+  });
+
+  Object.keys(groups).forEach(posKey => {
+    const pos = parseInt(posKey);
+    const group = groups[pos];
+    const base = pos === 0 ? startPoint : trackPoints[pos-1];
+    const angle = base.angle + 90; // car nose points "up" by default, rotate to travel direction
+
+    group.forEach((player, i) => {
+      const offsetAngle = (i / Math.max(group.length,1)) * Math.PI * 2;
+      const r = group.length > 1 ? 16 : 0;
+      const ox = Math.cos(offsetAngle) * r;
+      const oy = Math.sin(offsetAngle) * r;
+      const el = document.getElementById('token-'+player.id);
+      if(el) el.setAttribute('transform', `translate(${base.x+ox}, ${base.y+oy}) rotate(${angle})`);
+    });
+  });
+}
+
+function renderLegend(){
+  const box = document.getElementById('legendBox');
+  box.innerHTML = '';
+  const items = [
+    ['🔵','Casilla numerada = responde una pregunta de AM / IS / ARE'],
+    ['🍌','Retrocede 1 casilla'],
+    ['🌀','Retrocede 5 casillas'],
+    ['⭐','Escudo: evita el próximo efecto negativo'],
+    ['🐢','Casilla bonus: responde bien y ganas un caparazón para atacar a otro jugador (-2 casillas)'],
+    ['🏆','¡Llega o pasa la casilla 31 y ganas!'],
+  ];
+  items.forEach(([icon,text]) => {
+    const d = document.createElement('div');
+    d.innerHTML = `<span style="font-size:24px;">${icon}</span> <span>${text}</span>`;
+    box.appendChild(d);
+  });
+}
+
+/* ================= SIDEBAR ================= */
+function renderSidebar(){
+  const cp = state.players[state.currentIndex];
+  const box = document.getElementById('currentPlayerBox');
+  box.style.background = cp.color;
+  box.innerHTML = `<div style="font-size:30px;">🏎️</div><div>Turno de<br>${escapeHtml(cp.name)}</div>`;
+
+  const order = document.getElementById('turnOrderBox');
+  order.innerHTML = '';
+  state.players.forEach((p, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'p-chip' + (i===state.currentIndex ? ' active':'');
+    const posLabel = p.position === 0 ? 'en la salida' : `casilla ${p.position}`;
+    chip.innerHTML = `<span class="dot" style="background:${p.color}"></span> ${escapeHtml(p.name)} — ${posLabel}${p.shield?' ⭐':''}${p.shells?' 🐢x'+p.shells:''}${p.skipTurn?' (pierde próximo turno)':''}`;
+    order.appendChild(chip);
+  });
+
+  document.getElementById('shellCountLabel').textContent = `🐢 Caparazones: ${cp.shells || 0}`;
+  const useShellBtn = document.getElementById('useShellBtn');
+  useShellBtn.disabled = !(cp.shells > 0) || awaitingResolution || state.gameOver;
+
+  const physicalRow = document.getElementById('physicalRow');
+  if(physicalRow.children.length === 0){
+    for(let n=1;n<=6;n++){
+      const b = document.createElement('button');
+      b.className='btn-ghost';
+      b.textContent = n;
+      b.onclick = () => handleRoll(n);
+      physicalRow.appendChild(b);
+    }
+  }
+}
+
+/* dice mode toggle */
+document.getElementById('modeVirtualBtn').onclick = () => setDiceMode('virtual');
+document.getElementById('modePhysicalBtn').onclick = () => setDiceMode('physical');
+function setDiceMode(mode){
+  state.mode = mode;
+  document.getElementById('modeVirtualBtn').classList.toggle('active', mode==='virtual');
+  document.getElementById('modePhysicalBtn').classList.toggle('active', mode==='physical');
+  document.getElementById('virtualDiceZone').classList.toggle('hidden', mode!=='virtual');
+  document.getElementById('physicalDiceZone').classList.toggle('hidden', mode!=='physical');
+}
+
+/* virtual roll */
+const dice3d = document.getElementById('dice3d');
+const rollBtn = document.getElementById('rollBtn');
+dice3d.onclick = () => rollBtn.click();
+rollBtn.onclick = () => {
+  if(state.gameOver) return;
+  rollBtn.disabled = true;
+  dice3d.classList.add('rolling');
+  let ticks = 0;
+  const iv = setInterval(() => {
+    dice3d.textContent = 1+Math.floor(Math.random()*6);
+    ticks++;
+    if(ticks > 10){
+      clearInterval(iv);
+      dice3d.classList.remove('rolling');
+      const final = 1+Math.floor(Math.random()*6);
+      dice3d.textContent = final;
+      handleRoll(final);
+    }
+  }, 70);
+};
+
+/* ================= GAME FLOW ================= */
+let awaitingResolution = false;
+
+function handleRoll(steps){
+  if(state.gameOver || awaitingResolution) return;
+  const player = state.players[state.currentIndex];
+
+  rollBtn.disabled = true;
+  document.querySelectorAll('#physicalRow button').forEach(b=>b.disabled=true);
+
+  if(player.skipTurn){
+    player.skipTurn = false;
+    showToast(`⚡ ${player.name} pierde este turno.`);
+    setTimeout(nextTurn, 1200);
+    return;
+  }
+
+  awaitingResolution = true;
+  const target = Math.min(player.position + steps, TOTAL_TILES);
+  const reachesFinish = target >= TOTAL_TILES;
+  animateAlongTrack(player, target, () => {
+    if(reachesFinish){
+      // Cruzar la meta gana de inmediato, sin importar el efecto de esa casilla
+      // (evita que el remolino de la 31 haga imposible terminar la carrera).
+      endGame(player);
+    } else {
+      resolveTile(player);
+    }
+  });
+}
+
+/* Mueve al jugador casilla por casilla (hacia adelante o atrás) siguiendo la pista,
+   con una pequeña pausa entre cada salto para que se vea como si condujera. */
+function animateAlongTrack(player, targetPos, onDone){
+  const dir = targetPos > player.position ? 1 : (targetPos < player.position ? -1 : 0);
+  if(dir === 0){ setTimeout(onDone, 150); return; }
+  function step(){
+    if(player.position === targetPos){ setTimeout(onDone, 250); return; }
+    player.position += dir;
+    placeAllTokens();
+    renderSidebar();
+    setTimeout(step, 260);
+  }
+  step();
+}
+
+function resolveTile(player){
+  const meta = tileMeta[player.position];
+
+  if(meta.type === 'special'){
+    const s = SPECIAL_TYPES[meta.special];
+    let pendingBack = 0;
+
+    if(player.shield && (s.back || s.skipTurn)){
+      player.shield = false;
+      showSpecialPopup(s.icon, `${player.name} activó su escudo ⭐ y evitó el efecto negativo.`);
+    } else if(s.shield){
+      player.shield = true;
+      showSpecialPopup(s.icon, s.text(player.name));
+    } else if(s.back){
+      pendingBack = s.back;
+      showSpecialPopup(s.icon, s.text(player.name));
+    } else if(s.skipTurn){
+      player.skipTurn = true;
+      showSpecialPopup(s.icon, s.text(player.name));
+    }
+    pendingSpecialBack = pendingBack;
+    renderSidebar();
+    return;
+  }
+
+  if(meta.type === 'question'){
+    askQuestion(false);
+    return;
+  }
+
+  if(meta.type === 'shell'){
+    askQuestion(true);
+    return;
+  }
+
+  finishResolution();
+}
+
+function showSpecialPopup(iconChar, text){
+  const iconEl = document.getElementById('specialIcon');
+  const textEl = document.getElementById('specialText');
+  const modalEl = document.querySelector('#specialOverlay .modal');
+  iconEl.textContent = iconChar;
+  textEl.textContent = text;
+  // reiniciar animaciones cada vez que se muestra
+  iconEl.style.animation = 'none';
+  textEl.style.animation = 'none';
+  modalEl.classList.remove('shake');
+  void iconEl.offsetWidth;
+  void textEl.offsetWidth;
+  iconEl.style.animation = '';
+  textEl.style.animation = '';
+  void modalEl.offsetWidth;
+  modalEl.classList.add('shake');
+  document.getElementById('specialOverlay').classList.remove('hidden');
+}
+
+let pendingSpecialBack = 0;
+document.getElementById('specialOkBtn').onclick = () => {
+  document.getElementById('specialOverlay').classList.add('hidden');
+  const player = state.players[state.currentIndex];
+  const back = pendingSpecialBack;
+  pendingSpecialBack = 0;
+  if(back > 0){
+    const target = Math.max(0, player.position - back);
+    animateAlongTrack(player, target, finishResolution);
+  } else {
+    finishResolution();
+  }
+};
+
+let isShellQuestion = false;
+function askQuestion(isShell){
+  isShellQuestion = !!isShell;
+  const bank = questions.length ? questions : ['(No hay preguntas todavía. ¡Agrega algunas en el editor!)'];
+  const q = bank[Math.floor(Math.random()*bank.length)];
+  document.getElementById('qText').textContent = q;
+  document.getElementById('qBonusBanner').classList.toggle('hidden', !isShellQuestion);
+  document.getElementById('questionOverlay').classList.remove('hidden');
+}
+
+document.getElementById('qCorrectBtn').onclick = () => {
+  document.getElementById('questionOverlay').classList.add('hidden');
+  const player = state.players[state.currentIndex];
+  if(isShellQuestion){
+    player.shells = (player.shells||0) + 1;
+    showToast(`✅ ¡Correcto! ${player.name} ganó un caparazón 🐢`);
+  } else {
+    showToast('✅ ¡Correcto!');
+  }
+  renderSidebar();
+  finishResolution();
+};
+document.getElementById('qWrongBtn').onclick = () => {
+  document.getElementById('questionOverlay').classList.add('hidden');
+  const player = state.players[state.currentIndex];
+  if(player.shield){
+    player.shield = false;
+    showToast(`⭐ ${player.name} usó su escudo para evitar retroceder.`);
+    renderSidebar();
+    finishResolution();
+  } else {
+    showToast(isShellQuestion
+      ? `❌ Incorrecto. No ganaste el caparazón y retrocedes 2 casillas.`
+      : `❌ Incorrecto. ${player.name} retrocede 2 casillas.`);
+    const target = Math.max(0, player.position - 2);
+    animateAlongTrack(player, target, finishResolution);
+  }
+};
+
+function finishResolution(){
+  awaitingResolution = false;
+  const player = state.players[state.currentIndex];
+  if(player.position >= TOTAL_TILES){
+    setTimeout(()=>endGame(player), 500);
+    return;
+  }
+  setTimeout(nextTurn, 900);
+}
+
+function nextTurn(){
+  if(state.gameOver) return;
+  state.currentIndex = (state.currentIndex + 1) % state.players.length;
+  renderSidebar();
+  rollBtn.disabled = false;
+  document.querySelectorAll('#physicalRow button').forEach(b=>b.disabled=false);
+}
+
+/* ================= SHELL ATTACK ================= */
+document.getElementById('useShellBtn').onclick = () => {
+  const player = state.players[state.currentIndex];
+  if(!(player.shells > 0) || awaitingResolution || state.gameOver) return;
+  openShellTargetPicker();
+};
+
+function openShellTargetPicker(){
+  const list = document.getElementById('shellTargetList');
+  list.innerHTML = '';
+  state.players.forEach((p, i) => {
+    if(i === state.currentIndex) return;
+    const b = document.createElement('button');
+    b.className = 'btn-red';
+    b.style.width = '100%';
+    b.style.marginBottom = '8px';
+    const posLabel = p.position === 0 ? 'en la salida' : `casilla ${p.position}`;
+    b.innerHTML = `🐢 Atacar a ${escapeHtml(p.name)} (${posLabel})`;
+    b.onclick = () => useShellOn(p);
+    list.appendChild(b);
+  });
+  document.getElementById('shellTargetOverlay').classList.remove('hidden');
+}
+document.getElementById('cancelShellBtn').onclick = () => {
+  document.getElementById('shellTargetOverlay').classList.add('hidden');
+};
+
+function useShellOn(target){
+  document.getElementById('shellTargetOverlay').classList.add('hidden');
+  const player = state.players[state.currentIndex];
+  player.shells -= 1;
+  renderSidebar();
+  showToast(`🐢 ¡${player.name} le lanzó un caparazón a ${target.name}!`);
+  if(target.shield){
+    target.shield = false;
+    setTimeout(()=>showToast(`⭐ ${target.name} usó su escudo y esquivó el caparazón.`), 700);
+    return;
+  }
+  const dest = Math.max(0, target.position - 2);
+  animateAlongTrack(target, dest, () => { renderSidebar(); });
+}
+
+function endGame(player){
+  state.gameOver = true;
+  document.getElementById('winText').textContent = `🏆 ¡${player.name} ganó la carrera! 🏆`;
+  document.getElementById('winOverlay').classList.remove('hidden');
+  launchConfetti();
+  stopMusic();
+  playVictoryJingle();
+}
+
+document.getElementById('playAgainBtn').onclick = () => {
+  document.getElementById('winOverlay').classList.add('hidden');
+  gameScreen.classList.add('hidden');
+  setupScreen.classList.remove('hidden');
+  stopMusic();
+};
+
+document.getElementById('resetGameBtn').onclick = () => {
+  showConfirm('¿Reiniciar el juego y volver a la pantalla de jugadores?', () => {
+    gameScreen.classList.add('hidden');
+    setupScreen.classList.remove('hidden');
+    stopMusic();
+  });
+};
+
+/* ================= TOAST ================= */
+let toastTimer;
+function showToast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 1800);
+}
+
+/* ================= CONFETTI ================= */
+function launchConfetti(){
+  const colors = ['#E52521','#049CD8','#FBD000','#43B047','#FF6FB5','#8E44AD'];
+  for(let i=0;i<80;i++){
+    const p = document.createElement('div');
+    p.className='confetti-piece';
+    p.style.left = Math.random()*100+'vw';
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.animationDuration = (2+Math.random()*2)+'s';
+    p.style.animationDelay = (Math.random()*0.6)+'s';
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(), 4500);
+  }
+}
+
+/* ================= MUSIC (Web Audio, generado, sin derechos de autor) ================= */
+let audioCtx = null;
+let musicOn = true;
+let musicPlaying = false;
+let musicTimerId = null;
+let musicStep = 0;
+
+const LEAD_PATTERN = [523.25,659.25,783.99,659.25, 587.33,698.46,880.00,698.46]; // C5 E5 G5 E5 D5 F5 A5 F5
+const BASS_PATTERN = [130.81,130.81,196.00,146.83]; // C3 C3 G3 D3
+const TEMPO_BPM = 152;
+const STEP_SEC = 60/TEMPO_BPM/2;
+
+function ensureAudioCtx(){
+  if(!audioCtx){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(AC) audioCtx = new AC();
+  }
+  if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function pluckNote(freq, time, dur, type, peakGain){
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, time);
+  gain.gain.setValueAtTime(0.0001, time);
+  gain.gain.linearRampToValueAtTime(peakGain, time+0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, time+dur);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start(time);
+  osc.stop(time+dur+0.02);
+}
+
+function musicLoop(){
+  if(!musicPlaying || !musicOn || !audioCtx) return;
+  const now = audioCtx.currentTime + 0.04;
+  const lead = LEAD_PATTERN[musicStep % LEAD_PATTERN.length];
+  pluckNote(lead, now, STEP_SEC*0.85, 'square', 0.045);
+  if(musicStep % 2 === 0){
+    const bass = BASS_PATTERN[Math.floor(musicStep/2) % BASS_PATTERN.length];
+    pluckNote(bass, now, STEP_SEC*1.8, 'sawtooth', 0.05);
+  }
+  if(musicStep % 8 === 6){
+    pluckNote(1046.5, now, STEP_SEC*0.6, 'triangle', 0.03); // sparkle accent
+  }
+  musicStep++;
+  musicTimerId = setTimeout(musicLoop, STEP_SEC*1000);
+}
+
+function startMusic(){
+  if(!musicOn) return;
+  ensureAudioCtx();
+  if(!audioCtx) return;
+  if(musicPlaying) return;
+  musicPlaying = true;
+  musicStep = 0;
+  musicLoop();
+}
+function stopMusic(){
+  musicPlaying = false;
+  clearTimeout(musicTimerId);
+}
+function playVictoryJingle(){
+  ensureAudioCtx();
+  if(!audioCtx) return;
+  const notes = [783.99, 987.77, 1174.66, 1567.98];
+  let t = audioCtx.currentTime + 0.05;
+  notes.forEach((f) => {
+    pluckNote(f, t, 0.35, 'square', 0.06);
+    t += 0.18;
+  });
+}
+
+const musicSwitch = document.getElementById('musicSwitch');
+musicSwitch.onclick = () => {
+  musicOn = !musicOn;
+  musicSwitch.classList.toggle('on', musicOn);
+  if(musicOn){ startMusic(); } else { stopMusic(); }
+};
+
+/* ================= QUESTION EDITOR ================= */
+const editorOverlay = document.getElementById('editorOverlay');
+document.getElementById('openEditorFromSetup').onclick = openEditor;
+document.getElementById('closeEditorBtn').onclick = () => {
+  saveQuestions();
+  editorOverlay.classList.add('hidden');
+};
+function openEditor(){
+  renderEditorList();
+  editorOverlay.classList.remove('hidden');
+}
+function renderEditorList(){
+  const list = document.getElementById('qeditList');
+  list.innerHTML = '';
+  questions.forEach((q, idx) => {
+    const row = document.createElement('div');
+    row.className='qedit-row';
+    row.innerHTML = `
+      <input type="text" value="${escapeHtml(q)}" data-idx="${idx}" class="qedit-input">
+      <button class="del-btn" data-idx="${idx}">✕</button>
+    `;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.qedit-input').forEach(inp => {
+    inp.addEventListener('input', e => {
+      questions[e.target.dataset.idx] = e.target.value;
+    });
+  });
+  list.querySelectorAll('.del-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const idx = e.target.dataset.idx;
+      questions.splice(idx,1);
+      renderEditorList();
+    });
+  });
+}
+document.getElementById('addQBtn').onclick = () => {
+  const txt = document.getElementById('newQText').value.trim();
+  if(!txt) return;
+  questions.push(txt);
+  document.getElementById('newQText').value = '';
+  renderEditorList();
+};
+document.getElementById('restoreDefaultsBtn').onclick = () => {
+  showConfirm('¿Restaurar todas las preguntas por defecto? Se perderán tus cambios.', () => {
+    questions = JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
+    renderEditorList();
+  });
+};
+
+/* ================= EXPORTAR / IMPORTAR PREGUNTAS EN EXCEL ================= */
+document.getElementById('exportExcelBtn').onclick = () => {
+  if(typeof XLSX === 'undefined'){
+    showToast('⚠️ No se pudo cargar la librería de Excel. Revisa tu conexión a internet.');
+    return;
+  }
+  const wsData = [['Pregunta'], ...questions.map(q => [q])];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [{wch:80}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Preguntas');
+  XLSX.writeFile(wb, 'preguntas-kart-race.xlsx');
+};
+
+document.getElementById('importExcelBtn').onclick = () => {
+  document.getElementById('importExcelInput').click();
+};
+
+document.getElementById('importExcelInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  e.target.value = ''; // permite volver a elegir el mismo archivo más adelante
+  if(!file) return;
+  if(typeof XLSX === 'undefined'){
+    showToast('⚠️ No se pudo cargar la librería de Excel. Revisa tu conexión a internet.');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try{
+      const data = new Uint8Array(ev.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+
+      let imported = rows
+        .map(r => (r && r[0] !== undefined && r[0] !== null) ? String(r[0]).trim() : '')
+        .filter(v => v.length > 0);
+
+      // quita el encabezado "Pregunta" si viene incluido
+      if(imported.length && /^pregunta$/i.test(imported[0])){
+        imported = imported.slice(1);
+      }
+
+      if(imported.length === 0){
+        showToast('⚠️ No se encontraron preguntas en ese archivo.');
+        return;
+      }
+
+      showConfirm(`Se encontraron ${imported.length} preguntas en el archivo. ¿Reemplazar el banco de preguntas actual con estas?`, () => {
+        questions = imported;
+        saveQuestions();
+        renderEditorList();
+        showToast(`✅ Se importaron ${imported.length} preguntas desde Excel.`);
+      });
+    }catch(err){
+      showToast('⚠️ No se pudo leer el archivo. Asegúrate de que sea un Excel válido (.xlsx).');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+/* ================= CONFIRMACIÓN (modal propio, funciona dentro de iframes) ================= */
+let pendingConfirmAction = null;
+function showConfirm(message, onConfirm){
+  document.getElementById('confirmText').textContent = message;
+  pendingConfirmAction = onConfirm;
+  document.getElementById('confirmOverlay').classList.remove('hidden');
+}
+document.getElementById('confirmYesBtn').onclick = () => {
+  document.getElementById('confirmOverlay').classList.add('hidden');
+  const action = pendingConfirmAction;
+  pendingConfirmAction = null;
+  if(action) action();
+};
+document.getElementById('confirmNoBtn').onclick = () => {
+  document.getElementById('confirmOverlay').classList.add('hidden');
+  pendingConfirmAction = null;
+};
+
+/* ================= UTIL ================= */
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+</script>
+</body>
+</html>

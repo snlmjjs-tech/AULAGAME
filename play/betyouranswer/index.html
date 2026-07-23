@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BET YOUR ANSWER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Poppins:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg1:#1c0b3a;
+  --bg2:#3a1568;
+  --bg3:#5b1c8a;
+  --cream:#fffaf0;
+  --ink:#2a1554;
+  --ink-soft:#4a3372;
+  --yellow:#ffd23f;
+  --yellow-deep:#ffb703;
+  --pink:#ff3d81;
+  --pink-deep:#e0186a;
+  --cyan:#00d9e9;
+  --green:#3ddc97;
+  --orange:#ff8a3d;
+  --purple:#a06cff;
+  --wrong:#ff4d6d;
+  --correct:#2fbf82;
+  --line: rgba(255,255,255,.22);
+  --shadow: 0 12px 28px rgba(20,5,50,.45);
+  --shadow-lg: 0 20px 50px rgba(20,5,50,.55);
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  font-family:'Poppins',sans-serif;
+  color:var(--cream);
+  background:
+    radial-gradient(circle at 12% 15%, rgba(255,61,129,.35), transparent 40%),
+    radial-gradient(circle at 88% 20%, rgba(0,217,233,.30), transparent 42%),
+    radial-gradient(circle at 50% 100%, rgba(160,108,255,.35), transparent 55%),
+    radial-gradient(circle at 80% 80%, rgba(255,210,63,.18), transparent 40%),
+    linear-gradient(160deg, var(--bg1), var(--bg2) 55%, var(--bg1));
+  min-height:100vh;
+  overflow-x:hidden;
+}
+.money-font{font-family:'Roboto Mono',monospace;}
+.display{font-family:'Bebas Neue',sans-serif; letter-spacing:.03em;}
+
+/* ---------- layout / screens ---------- */
+#app{position:relative; min-height:100vh; display:flex; flex-direction:column;}
+.screen{display:none; flex:1; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
+.screen.active{display:flex;}
+
+/* ---------- title screen ---------- */
+.chips-bg{
+  position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:0;
+}
+.chips-bg span{
+  position:absolute; width:26px;height:26px;border-radius:50%;
+  animation: floaty 6s ease-in-out infinite;
+  opacity:.55;
+}
+@keyframes floaty{
+  0%,100%{ transform:translateY(0) scale(1); }
+  50%{ transform:translateY(-22px) scale(1.15); }
+}
+.title-wrap{position:relative; z-index:1;}
+.title-logo{
+  font-size:clamp(52px,11vw,128px);
+  line-height:.88;
+  color:var(--yellow);
+  -webkit-text-stroke: 3px var(--ink);
+  text-shadow: 5px 5px 0 var(--pink-deep), 9px 9px 0 rgba(0,0,0,.25);
+  margin:0;
+}
+.title-sub{
+  font-size:clamp(14px,2.4vw,20px);
+  letter-spacing:.35em;
+  text-transform:uppercase;
+  color:var(--cyan);
+  font-weight:700;
+  opacity:.95;
+  margin:14px 0 30px;
+}
+.credit{
+  font-size:13px; opacity:.6; letter-spacing:.06em; margin-top:20px;
+}
+.btn{
+  font-family:'Poppins',sans-serif;
+  font-weight:800;
+  border:none;
+  cursor:pointer;
+  border-radius:16px;
+  padding:16px 40px;
+  font-size:18px;
+  letter-spacing:.02em;
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s ease, filter .15s ease;
+  box-shadow: var(--shadow);
+}
+.btn:hover{transform:translateY(-3px) scale(1.03) rotate(-1deg); filter:brightness(1.06);}
+.btn:active{transform:translateY(0px) scale(.96);}
+.btn-gold{
+  background:linear-gradient(180deg, var(--yellow), var(--yellow-deep));
+  color:var(--ink);
+  border:3px solid var(--ink);
+}
+.btn-outline{
+  background:linear-gradient(180deg, #ffe27a, var(--yellow-deep));
+  border:2.5px solid var(--ink);
+  color:var(--ink);
+}
+.btn-small{padding:9px 16px; font-size:13px; border-radius:12px;}
+.btn-danger{background:linear-gradient(180deg,#ff7a95,var(--wrong)); color:#3a0012; border:3px solid var(--ink);}
+.btn-correct{background:linear-gradient(180deg,#6df0b8,var(--correct)); color:#04321d; border:3px solid var(--ink);}
+
+.title-actions{display:flex; gap:16px; flex-wrap:wrap; justify-content:center;}
+.top-links{position:absolute; top:16px; right:18px; display:flex; gap:10px; z-index:2;}
+.icon-btn{
+  background:rgba(255,255,255,.12); border:2px solid var(--line); color:var(--cream);
+  width:44px;height:44px;border-radius:50%; cursor:pointer; font-size:19px;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .15s ease;
+}
+.icon-btn:hover{background:rgba(255,255,255,.22); transform:scale(1.08);}
+
+/* ---------- instructions / setup screen (panels are light + didactic) ---------- */
+.card-panel{
+  background:var(--cream);
+  color:var(--ink);
+  border:4px solid var(--ink);
+  border-radius:26px;
+  padding:34px 30px;
+  max-width:720px;
+  width:100%;
+  box-shadow: var(--shadow-lg);
+}
+.card-panel h2{font-family:'Bebas Neue'; font-size:36px; color:var(--pink-deep); letter-spacing:.04em; margin:0 0 10px;}
+.card-panel p{opacity:.85; line-height:1.6; font-size:15px; color:var(--ink-soft);}
+.team-setup-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin:22px 0;}
+.team-setup-item{
+  display:flex; align-items:center; gap:10px;
+  background:#fff;
+  border-radius:14px; padding:10px 12px;
+  border:2px solid rgba(42,21,84,.15);
+}
+.team-dot{width:20px;height:20px;border-radius:50%; flex-shrink:0; box-shadow:0 0 0 3px rgba(42,21,84,.1);}
+.team-setup-item input{
+  background:transparent; border:none; border-bottom:2px solid rgba(42,21,84,.2);
+  color:var(--ink); font-family:'Poppins'; font-weight:700; font-size:14px; padding:4px 2px; width:100%;
+  outline:none;
+}
+
+/* ---------- board screen ---------- */
+.topbar{
+  width:100%;
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:12px 18px;
+  background:linear-gradient(90deg, var(--pink-deep), var(--purple) 50%, var(--cyan));
+  border-bottom:4px solid var(--ink);
+  flex-wrap:wrap;
+}
+.brand-mini{font-family:'Bebas Neue'; color:var(--yellow); font-size:24px; letter-spacing:.05em; white-space:nowrap; -webkit-text-stroke: 1px var(--ink);}
+.scoreboard{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; flex:1;}
+.team-chip{
+  display:flex; flex-direction:column; align-items:center;
+  background:rgba(255,255,255,.92);
+  border-radius:14px; padding:6px 12px; min-width:98px;
+  border:3px solid var(--ink);
+}
+.team-chip.active-turn{border-color:var(--yellow); box-shadow:0 0 0 3px var(--ink), 0 0 16px rgba(255,210,63,.8); transform:scale(1.05);}
+.team-chip .tname{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.02em; color:var(--ink);}
+.team-chip .tscore{font-family:'Roboto Mono'; font-weight:800; font-size:16px; color:var(--pink-deep);}
+.tools{display:flex; gap:8px; align-items:center;}
+
+.board-wrap{flex:1; width:100%; padding:24px 20px; display:flex; flex-direction:column; align-items:center;}
+.turn-bar{display:flex; align-items:center; gap:10px; margin-bottom:16px; font-size:14px; font-weight:600; background:rgba(255,255,255,.1); padding:8px 18px; border-radius:30px; border:2px solid var(--line);}
+.board-grid{
+  display:grid;
+  grid-template-columns:repeat(8, minmax(64px,1fr));
+  gap:12px;
+  width:100%;
+  max-width:1020px;
+}
+@media (max-width:700px){ .board-grid{grid-template-columns:repeat(4, minmax(60px,1fr));} }
+
+.tile{
+  aspect-ratio:1/1;
+  border-radius:16px;
+  border:3px solid var(--ink);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  cursor:pointer;
+  position:relative;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .2s ease;
+  box-shadow: 0 5px 0 rgba(0,0,0,.35);
+}
+.tile:hover{transform:translateY(-4px) rotate(-2deg) scale(1.05); box-shadow:0 10px 0 rgba(0,0,0,.35);}
+.tile .tnum{font-family:'Bebas Neue'; font-size:clamp(20px,3.4vw,30px); color:var(--ink); text-shadow:0 1px 0 rgba(255,255,255,.35);}
+.tile.used{
+  cursor:default; opacity:.28; filter:grayscale(.6);
+  box-shadow:none; border-color:rgba(255,255,255,.15);
+}
+.tile.used:hover{transform:none; box-shadow:none;}
+.tile.type-secret::after{content:"🤫"; position:absolute; top:5px; right:7px; font-size:13px;}
+.tile.type-present::after{content:"🎁"; position:absolute; top:5px; right:7px; font-size:13px;}
+.tile.type-bonus::after{content:"🎀"; position:absolute; top:5px; right:7px; font-size:13px;}
+
+/* ---------- modal (light + didactic content card) ---------- */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(15,4,35,.72);
+  display:flex; align-items:center; justify-content:center; padding:18px;
+  z-index:50; backdrop-filter: blur(3px);
+}
+.modal-overlay.hidden{display:none;}
+.modal-content{
+  background:var(--cream);
+  color:var(--ink);
+  border:4px solid var(--ink);
+  border-radius:24px;
+  max-width:640px; width:100%;
+  max-height:88vh; overflow-y:auto;
+  padding:28px 26px;
+  box-shadow: var(--shadow-lg);
+  position:relative;
+}
+.modal-content h3{font-family:'Bebas Neue'; color:var(--pink-deep); font-size:30px; letter-spacing:.03em; margin:0 0 6px;}
+.value-badge{
+  display:inline-block; font-family:'Roboto Mono'; font-weight:800; font-size:24px;
+  background:var(--yellow); color:var(--ink); border:3px solid var(--ink);
+  padding:5px 16px; border-radius:12px; margin-bottom:14px;
+}
+.q-text{font-size:19px; font-weight:700; line-height:1.5; margin:14px 0 20px; color:var(--ink);}
+.answer-box{
+  background:#e8fbf3; border:3px solid var(--correct); border-radius:14px;
+  padding:14px 16px; margin:14px 0; display:none;
+}
+.answer-box.show{display:block;}
+.answer-box .a-word{font-size:21px; font-weight:800; color:#0f8a54; margin-bottom:6px;}
+.answer-box .a-expl{font-size:13.5px; opacity:.85; line-height:1.5; color:var(--ink-soft);}
+.forbidden-list{list-style:none; padding:0; margin:10px 0; display:flex; flex-direction:column; gap:6px;}
+.forbidden-list li{
+  background:#ffe3ea; border:2px solid var(--wrong); border-radius:12px; color:#9c0033;
+  padding:8px 12px; font-size:13.5px; font-weight:700;
+}
+.close-x{
+  position:absolute; top:14px; right:16px; background:var(--ink); border:none; color:var(--cream);
+  width:32px; height:32px; border-radius:50%; font-size:16px; cursor:pointer; opacity:.85;
+}
+.close-x:hover{opacity:1;}
+.action-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;}
+.team-award-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; margin-top:14px;}
+.team-award-item{
+  display:flex; align-items:center; justify-content:space-between;
+  background:#f1edff; border-radius:12px; padding:8px 10px; gap:6px; border:2px solid rgba(42,21,84,.1);
+}
+.team-award-item .tn{font-size:12.5px; font-weight:800; color:var(--ink);}
+.mini-award-btns{display:flex; gap:4px;}
+.mini-award-btns button{
+  width:30px;height:30px; border-radius:9px; border:2px solid var(--ink); cursor:pointer; font-weight:800; font-size:15px;
+}
+.mini-plus{background:var(--correct); color:#04321d;}
+.mini-minus{background:var(--wrong); color:#3a0012;}
+
+.timer-display{font-family:'Roboto Mono'; font-size:42px; font-weight:800; text-align:center; color:var(--pink-deep); margin:8px 0;}
+.section-label{font-size:11px; text-transform:uppercase; letter-spacing:.08em; opacity:.65; margin:14px 0 6px; font-weight:700; color:var(--ink-soft);}
+
+.boxes-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:12px;}
+.pbox{
+  aspect-ratio:1/1; border-radius:12px; border:3px solid var(--ink); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; font-family:'Bebas Neue'; font-size:20px;
+  background:linear-gradient(160deg, var(--yellow), var(--orange)); color:var(--ink);
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1);
+}
+.pbox:hover{transform:scale(1.08) rotate(-2deg);}
+.pbox.opened{opacity:.4; cursor:default; transform:none;}
+
+/* ---------- admin panel ---------- */
+.admin-list{display:flex; flex-direction:column; gap:10px; margin-top:14px;}
+.admin-item{
+  background:#f6f3ff; border:2px solid rgba(42,21,84,.15); border-radius:14px; padding:12px;
+}
+.admin-item .row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;}
+.admin-item label{font-size:10px; text-transform:uppercase; opacity:.6; display:block; margin-bottom:2px; color:var(--ink-soft); font-weight:700;}
+.admin-item input, .admin-item textarea{
+  width:100%; background:#fff; border:2px solid rgba(42,21,84,.18); border-radius:9px;
+  color:var(--ink); padding:6px 8px; font-family:'Poppins'; font-size:13px; outline:none;
+}
+.admin-item textarea{resize:vertical; min-height:38px;}
+.field-w-small{flex:0 0 100px;}
+.field-w-med{flex:1 1 160px;}
+.field-w-full{flex:1 1 100%;}
+.admin-tag{
+  font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.04em;
+  padding:3px 9px; border-radius:8px; display:inline-block; margin-bottom:6px;
+}
+.tag-trivia{background:#fff1c4; color:#8a5a00;}
+.tag-secret{background:#cdf7f0; color:#0a7d70;}
+.tag-present{background:#ffe1c2; color:#a04d00;}
+.tag-bonus{background:#ffd9e2; color:#a0004d;}
+
+.toast{
+  position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+  background:var(--yellow); color:var(--ink); font-weight:800; padding:11px 24px; border-radius:30px;
+  box-shadow:var(--shadow); z-index:100; opacity:0; pointer-events:none; transition:opacity .3s ease, transform .3s ease;
+  font-size:14px; border:3px solid var(--ink);
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
+
+.hidden{display:none !important;}
+::-webkit-scrollbar{width:8px;}
+::-webkit-scrollbar-thumb{background:var(--purple); border-radius:10px;}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- TITLE SCREEN -->
+  <div class="screen active" id="screen-title">
+    <div class="chips-bg" id="chipsBg"></div>
+    <div class="top-links">
+      <button class="icon-btn" id="muteBtnTitle" title="Silenciar música">🔊</button>
+    </div>
+    <div class="title-wrap">
+      <h1 class="title-logo">BET YOUR<br>ANSWER</h1>
+      <div class="title-sub">Apuesta tu respuesta</div>
+      <div class="title-actions">
+        <button class="btn btn-gold" id="playBtn">▶ PLAY</button>
+        <button class="btn btn-outline" id="editBtnTitle">✏ Editar preguntas</button>
+      </div>
+      <div class="credit">CREATED AND DEVELOPED BY MR. NUÑEZ · versión digital</div>
+    </div>
+  </div>
+
+  <!-- INSTRUCTIONS / TEAM SETUP SCREEN -->
+  <div class="screen" id="screen-instructions">
+    <div class="card-panel">
+      <h2>Hello and welcome to BET YOUR ANSWER</h2>
+      <p>Formen sus grupos para participar. Mientras más dinero consigan, mejor. ¡Buena suerte! 😉<br>
+      Pueden editar el nombre de cada equipo antes de comenzar:</p>
+      <div class="team-setup-grid" id="teamSetupGrid"></div>
+      <div class="title-actions">
+        <button class="btn btn-gold" id="playBoardBtn">▶ PLAY</button>
+        <button class="btn btn-outline" id="backTitleBtn">← Volver</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOARD SCREEN -->
+  <div class="screen" id="screen-board">
+    <div class="topbar">
+      <div class="brand-mini">BET YOUR ANSWER</div>
+      <div class="scoreboard" id="scoreboard"></div>
+      <div class="tools">
+        <button class="icon-btn" id="muteBtnBoard" title="Silenciar música">🔊</button>
+        <button class="btn btn-small btn-outline" id="homeBtnBoard">🏠 Menú</button>
+      </div>
+    </div>
+    <div class="board-wrap">
+      <div class="turn-bar">
+        <span>Turno de:</span>
+        <strong id="turnTeamLabel" style="color:var(--gold-bright)"></strong>
+        <button class="btn btn-small btn-outline" id="nextTurnBtn">Siguiente equipo ➜</button>
+      </div>
+      <div class="board-grid" id="boardGrid"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal-content" id="modalContent"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   BET YOUR ANSWER — juego digital interactivo
+   ============================================================ */
+
+/* ---------------- DATA (editable en vivo desde el panel admin) ---------------- */
+let gameData = {
+  teams: [
+    {id:1, name:'Equipo Rojo', color:'#e74c3c', score:0},
+    {id:2, name:'Equipo Azul', color:'#3498db', score:0},
+    {id:3, name:'Equipo Naranja', color:'#e67e22', score:0},
+    {id:4, name:'Equipo Verde', color:'#27ae60', score:0},
+    {id:5, name:'Equipo Celeste', color:'#00bcd4', score:0},
+    {id:6, name:'Equipo Rosado', color:'#e84393', score:0},
+  ],
+  currentTurn:0,
+  questions: [
+    {id:1, type:'trivia', value:10000, question:'¿De qué color son las cajas negras de los aviones?', answer:'Naranja', explanation:'Deben estar alojadas en compartimentos de color naranja brillante para hacerlas más visibles entre los restos después de un accidente.', used:false},
+    {id:2, type:'trivia', value:5000, question:'¿Cuál es el libro más vendido de todos los tiempos?', answer:'La Biblia', explanation:'Según el Guinness World Records, hasta 1995 la Biblia es el libro más vendido de la historia, con un estimado de 5 mil millones de copias distribuidas.', used:false},
+    {id:3, type:'trivia', value:15000, question:'¿Cuál es la película más vista de todos los tiempos?', answer:'Avatar', explanation:'Con una recaudación mundial de más de $2.9 mil millones, Avatar es considerada la película más taquillera de la historia.', used:false},
+    {id:4, type:'trivia', value:3000, question:'¿De qué colores era la primera bandera chilena?', answer:'Azul, blanco y amarillo', explanation:'15 de junio de 1818.', used:false},
+    {id:5, type:'trivia', value:6000, question:'¿De qué colores era la segunda bandera chilena?', answer:'Azul, blanco y rojo', explanation:'26 de mayo de 1817.', used:false},
+    {id:6, type:'trivia', value:6000, question:'¿De qué colores es la bandera del Reino Unido?', answer:'Azul, blanco y rojo', explanation:'', used:false},
+    {id:7, type:'trivia', value:2000, question:'¿Dónde está ubicado el Cristo Redentor?', answer:'Río de Janeiro, Brasil', explanation:'', used:false},
+    {id:8, type:'trivia', value:1000, question:'¿Dónde está ubicada la Estatua de la Libertad?', answer:'Nueva York, EE.UU.', explanation:'', used:false},
+    {id:9, type:'trivia', value:2000, question:'¿Cuántos meses tienen 28 días?', answer:'Los 12 meses', explanation:'Todos los meses tienen al menos 28 días. Febrero es el único con exactamente 28 (o 29 en años bisiestos).', used:false},
+    {id:10, type:'trivia', value:20000, question:'¿Cuál es el país más grande del mundo?', answer:'Rusia', explanation:'17.098.242 km², equivalente al 11% de la superficie terrestre mundial.', used:false},
+    {id:11, type:'trivia', value:20000, question:'¿Cuál es el país más pequeño del mundo?', answer:'Ciudad del Vaticano', explanation:'Tiene una superficie de tan solo 0,49 km².', used:false},
+    {id:12, type:'trivia', value:12000, question:'¿Cuál es el país más grande de América?', answer:'Canadá', explanation:'Segundo país más grande del mundo después de Rusia, con 9,9 millones de km².', used:false},
+    {id:13, type:'trivia', value:20000, question:'¿Cuál es el video más visto en YouTube?', answer:'Baby Shark Dance', explanation:'El 13 de enero de 2022 se convirtió en el primer video en alcanzar 10.000 millones de vistas.', used:false},
+    {id:14, type:'trivia', value:30000, question:'¿Cuál es el canal de YouTube con más suscriptores?', answer:'T-Series', explanation:'Sello discográfico indio con más de 240 millones de suscriptores (abril 2023).', used:false},
+    {id:15, type:'trivia', value:5000, question:'¿Cuánto vale el número PI?', answer:'3,14', explanation:'3.141592653589793238462643383279502884197...', used:false},
+    {id:16, type:'trivia', value:10000, question:'¿Qué significa: "There is a green carpet at the exit of the library"?', answer:'Hay una alfombra verde en la salida de la biblioteca', explanation:'Library ≠ librería (= biblioteca). Exit ≠ éxito (= salida). Carpet ≠ carpeta (= alfombra).', used:false},
+    {id:17, type:'trivia', value:7000, question:'¿Quién dijo "Solo sé que nada sé"?', answer:'Sócrates', explanation:'Posiblemente el filósofo más grande de la antigüedad.', used:false},
+    {id:18, type:'trivia', value:5000, question:'¿Cuál es la montaña más alta del mundo?', answer:'El Monte Everest', explanation:'Su cima está a 8.848 metros sobre el nivel del mar.', used:false},
+    {id:19, type:'trivia', value:15000, question:'¿Qué país ganó el Mundial de fútbol 2010?', answer:'España', explanation:'La selección española representa a España desde 1920.', used:false},
+    {id:20, type:'present', value:10000, question:'¡EL REGALO! Recibes $10.000 si te lo quedas. Si prefieres abrir una caja misteriosa, podrías ganar más… o mucho menos.', answer:'', explanation:'', used:false},
+    {id:21, type:'trivia', value:20000, question:'¿Cuántos países tiene Sudamérica?', answer:'13 países', explanation:'Argentina, Bolivia, Brasil, Chile, Colombia, Ecuador, Guyana, Paraguay, Perú, Surinam, Trinidad y Tobago, Uruguay, Venezuela y la Guayana Francesa.', used:false},
+    {id:22, type:'trivia', value:20000, question:'¿Cuántos países tiene Norteamérica?', answer:'3 países', explanation:'Canadá, Estados Unidos y México.', used:false},
+    {id:23, type:'trivia', value:20000, question:'¿Cuál es la serie más vista de Netflix?', answer:'Stranger Things', explanation:'La temporada 4 acumuló 1.352.000.000 horas vistas.', used:false},
+    {id:24, type:'trivia', value:30000, question:'¿Cuál es el artista más escuchado en Spotify?', answer:'The Weeknd', explanation:'Con 108,07 millones de oyentes mensuales.', used:false},
+    {id:25, type:'secret', value:30000, word:'EXTINGUISHER', forbidden:['FIRE / BURN  (fuego, incendio, quemar)','TURN OFF  (apagar)','EMERGENCY  (emergencia)'], used:false},
+    {id:26, type:'secret', value:25000, word:'SHARK', forbidden:['OCEAN / SEA  (océano, mar)','FISH / ANIMAL  (pez, animal)','TEETH  (dientes)','BABY  (bebé)'], used:false},
+    {id:27, type:'secret', value:40000, word:'DVD', forbidden:['VIDEO / MOVIE / MUSIC  (video, película, música)','TELEVISION  (televisión)','CIRCLE  (círculo)','PLAYER  (reproductor)'], used:false},
+    {id:28, type:'secret', value:30000, word:'ENGLISH', forbidden:['LANGUAGE / COUNTRY  (idioma, país)','SUBJECT  (asignatura)','TEACHER / TEACH  (profesor, enseñar)','SPEAK / KNOW  (hablar, saber)'], used:false},
+    {id:29, type:'secret', value:50000, word:'MONEY', forbidden:['SPEND / BUY / EARN / PAY / WORK  (gastar, comprar, ganar, pagar, trabajar)','THIS GAME  (este juego)','RICH / POOR / SOCIAL STATUS  (rico, pobre, estatus social)','$ / PAPER MONEY  (billete, dinero)'], used:false},
+    {id:30, type:'secret', value:null, word:'CASTLE', forbidden:['PRINCESS / PRINCE / KING / QUEEN  (princesa, príncipe, rey, reina)','FAIRY TALES  (cuentos de hadas)','OLD HOUSE  (casa antigua)','DRAGON / SHREK / FIONA / RAPUNZEL'], used:false},
+    {id:31, type:'secret', value:null, word:'NOTHING', forbidden:['THERE IS NOT  (no hay)','LACK OF SOMETHING  (falta algo)','ZERO  (cero)','HAVE  (tener)'], used:false},
+    {id:32, type:'secret', value:null, word:'HORSE', forbidden:['ANIMAL / FOUR PAWS  (animal, cuatro patas)','NEIGH  (relinchar)','COUNTRYSIDE  (campo)','RACE / BET / RODEO  (carrera, apuesta, rodeo)'], used:false},
+    {id:33, type:'bonus', value:25000, question:'¿Cuánto dinero crees que hay dentro de la caja?', answer:'A criterio del profesor', explanation:'Casilla bonus sorpresa — el profesor define el monto real antes de jugar (editable en el panel de edición).', used:false},
+  ],
+  presentBoxes: [500,0,1000,800,10000,0,0,0,7000,11000,400,20000,0]
+};
+
+let presentBoxesState = [...gameData.presentBoxes];
+let secretTimer = null, secretTimeLeft = 45;
+
+/* ---------------- UTIL ---------------- */
+const $ = s => document.querySelector(s);
+const fmt = n => n===null || n===undefined ? '¿?' : '$' + n.toLocaleString('es-CL');
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $('#'+id).classList.add('active');
+}
+function openModal(html){
+  $('#modalContent').innerHTML = html;
+  $('#modalOverlay').classList.remove('hidden');
+}
+function closeModal(){
+  $('#modalOverlay').classList.add('hidden');
+  if(secretTimer){clearInterval(secretTimer); secretTimer=null;}
+}
+$('#modalOverlay').addEventListener('click', e=>{ if(e.target.id==='modalOverlay') closeModal(); });
+
+/* ---------------- AUDIO: música motivadora tipo concurso (Web Audio API) ---------------- */
+let audioCtx=null, musicGain=null, musicOn=true, musicTimer=null, noiseBuffer=null;
+function initAudio(){
+  if(audioCtx) return;
+  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  musicGain = audioCtx.createGain();
+  musicGain.gain.value = 0.06;
+  musicGain.connect(audioCtx.destination);
+  // buffer de ruido blanco para el hi-hat
+  const len = audioCtx.sampleRate * 0.2;
+  noiseBuffer = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+  const data = noiseBuffer.getChannelData(0);
+  for(let i=0;i<len;i++) data[i] = Math.random()*2-1;
+}
+function playNote(freq, time, dur, type='triangle', vol=1){
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = type; osc.frequency.value = freq;
+  g.gain.setValueAtTime(0, time);
+  g.gain.linearRampToValueAtTime(vol, time+0.015);
+  g.gain.exponentialRampToValueAtTime(0.001, time+dur);
+  osc.connect(g); g.connect(musicGain);
+  osc.start(time); osc.stop(time+dur+0.05);
+}
+function playKick(time){
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(150, time);
+  osc.frequency.exponentialRampToValueAtTime(45, time+0.14);
+  g.gain.setValueAtTime(0.9, time);
+  g.gain.exponentialRampToValueAtTime(0.001, time+0.18);
+  osc.connect(g); g.connect(musicGain);
+  osc.start(time); osc.stop(time+0.2);
+}
+function playHihat(time, vol=0.22){
+  const src = audioCtx.createBufferSource();
+  src.buffer = noiseBuffer;
+  const hp = audioCtx.createBiquadFilter();
+  hp.type = 'highpass'; hp.frequency.value = 7000;
+  const g = audioCtx.createGain();
+  g.gain.setValueAtTime(vol, time);
+  g.gain.exponentialRampToValueAtTime(0.001, time+0.06);
+  src.connect(hp); hp.connect(g); g.connect(musicGain);
+  src.start(time); src.stop(time+0.07);
+}
+// Progresión de acordes alegre y energética (I - V - vi - IV en Do mayor), estilo "concurso de TV"
+const chordProgression = [
+  {bass:130.81, arp:[261.63,329.63,392.00,523.25]}, // C
+  {bass:196.00, arp:[392.00,493.88,587.33,783.99]}, // G
+  {bass:110.00, arp:[220.00,261.63,329.63,440.00]}, // Am
+  {bass:174.61, arp:[349.23,440.00,523.25,698.46]}, // F
+];
+function scheduleLoop(){
+  if(!musicOn) return;
+  const eighth = 0.235; // ~128 bpm, ritmo animado
+  let t = audioCtx.currentTime + 0.05;
+  chordProgression.forEach((chord, ci)=>{
+    playKick(t);
+    playKick(t + eighth*4);
+    for(let i=0;i<8;i++){
+      const note = chord.arp[i % chord.arp.length];
+      playNote(note, t + i*eighth, eighth*0.9, i%2===0?'square':'triangle', i%2===0?0.32:0.22);
+      playHihat(t + i*eighth, i%2===0?0.16:0.24);
+    }
+    t += eighth*8;
+  });
+  musicTimer = setTimeout(scheduleLoop, chordProgression.length*8*eighth*1000);
+}
+function startMusic(){
+  initAudio();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  musicOn = true;
+  updateMuteIcons();
+  if(!musicTimer) scheduleLoop();
+}
+function toggleMute(){
+  if(!audioCtx){ startMusic(); return; }
+  musicOn = !musicOn;
+  musicGain.gain.value = musicOn ? 0.06 : 0;
+  if(musicOn && !musicTimer) scheduleLoop();
+  updateMuteIcons();
+}
+function updateMuteIcons(){
+  const icon = musicOn ? '🔊' : '🔇';
+  $('#muteBtnTitle').textContent = icon;
+  $('#muteBtnBoard').textContent = icon;
+}
+function stingCorrect(){
+  if(!audioCtx) return;
+  const t = audioCtx.currentTime;
+  [659.25,830.61,987.77,1318.51].forEach((f,i)=>playNote(f, t+i*0.09, 0.28,'square',0.6));
+}
+function stingWrong(){
+  if(!audioCtx) return;
+  const t = audioCtx.currentTime;
+  [300,260,220].forEach((f,i)=>playNote(f, t+i*0.11, 0.3,'sawtooth',0.5));
+}
+
+/* ---------------- TEAM SETUP SCREEN ---------------- */
+function renderTeamSetup(){
+  const grid = $('#teamSetupGrid');
+  grid.innerHTML = gameData.teams.map(t=>`
+    <div class="team-setup-item">
+      <span class="team-dot" style="background:${t.color}"></span>
+      <input type="text" value="${t.name}" data-team="${t.id}" class="team-name-input">
+    </div>
+  `).join('');
+  grid.querySelectorAll('.team-name-input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const team = gameData.teams.find(t=>t.id==e.target.dataset.team);
+      team.name = e.target.value || team.name;
+      renderScoreboard();
+    });
+  });
+}
+
+/* ---------------- SCOREBOARD ---------------- */
+function renderScoreboard(){
+  const el = $('#scoreboard');
+  el.innerHTML = gameData.teams.map((t,i)=>`
+    <div class="team-chip ${i===gameData.currentTurn?'active-turn':''}" style="box-shadow:0 0 0 1px ${t.color} inset;">
+      <div class="tname" style="color:${t.color}">${t.name}</div>
+      <div class="tscore money-font" id="score-${t.id}">${fmt(t.score)}</div>
+    </div>
+  `).join('');
+  $('#turnTeamLabel').textContent = gameData.teams[gameData.currentTurn].name;
+}
+$('#nextTurnBtn').addEventListener('click', ()=>{
+  gameData.currentTurn = (gameData.currentTurn+1) % gameData.teams.length;
+  renderScoreboard();
+});
+
+function awardTeam(teamId, amount){
+  const team = gameData.teams.find(t=>t.id===teamId);
+  team.score += amount;
+  renderScoreboard();
+  toast(`${team.name}: ${amount>=0?'+':''}${amount.toLocaleString('es-CL')}`);
+}
+
+/* ---------------- BOARD ---------------- */
+// Precios secretos: el tablero NUNCA muestra el valor, solo aparece al abrir la pregunta.
+// Las casillas solo muestran el número (los tipos especiales se distinguen con un ícono pequeño en la esquina).
+const tilePalette = ['#ff3d81','#ffd23f','#00d9e9','#3ddc97','#a06cff','#ff8a3d','#ff6f91','#5de4c7'];
+function renderBoard(){
+  const grid = $('#boardGrid');
+  grid.innerHTML = gameData.questions.map((q,i)=>`
+    <div class="tile type-${q.type} ${q.used?'used':''}" data-id="${q.id}" style="background:${tilePalette[i % tilePalette.length]}">
+      <div class="tnum">${q.id}</div>
+    </div>
+  `).join('');
+  grid.querySelectorAll('.tile').forEach(tile=>{
+    tile.addEventListener('click', ()=>{
+      const q = gameData.questions.find(x=>x.id==tile.dataset.id);
+      if(q.used) return;
+      openQuestion(q);
+    });
+  });
+}
+
+function markUsed(id){
+  const q = gameData.questions.find(x=>x.id===id);
+  q.used = true;
+  renderBoard();
+}
+
+function teamAwardButtons(q, extraOnClick){
+  return `<div class="team-award-grid">${gameData.teams.map(t=>`
+    <div class="team-award-item">
+      <span class="tn" style="color:${t.color}">${t.name}</span>
+      <div class="mini-award-btns">
+        <button class="mini-minus" data-team="${t.id}" data-sign="-1">−</button>
+        <button class="mini-plus" data-team="${t.id}" data-sign="1">+</button>
+      </div>
+    </div>`).join('')}</div>`;
+}
+function bindAwardButtons(container, value, onAward){
+  container.querySelectorAll('.mini-plus, .mini-minus').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const teamId = parseInt(btn.dataset.team);
+      const sign = parseInt(btn.dataset.sign);
+      const amt = sign * value;
+      amt>0 ? stingCorrect() : stingWrong();
+      awardTeam(teamId, amt);
+      if(onAward) onAward();
+    });
+  });
+}
+
+/* ----- Trivia question modal ----- */
+function openQuestion(q){
+  if(q.type==='secret') return openSecretWord(q);
+  if(q.type==='present') return openPresent(q);
+  const html = `
+    <button class="close-x" onclick="closeModal()">✕</button>
+    <span class="admin-tag tag-trivia">Pregunta #${q.id}</span>
+    <h3>${q.type==='bonus'?'Caja Bonus':'Pregunta'}</h3>
+    <div class="value-badge money-font">${fmt(q.value)}</div>
+    <div class="q-text">${q.question}</div>
+    <button class="btn btn-outline btn-small" id="revealBtn">👁 Revelar respuesta</button>
+    <div class="answer-box" id="answerBox">
+      <div class="a-word">${q.answer}</div>
+      <div class="a-expl">${q.explanation||''}</div>
+    </div>
+    <div class="section-label">Otorgar / restar puntos</div>
+    ${teamAwardButtons(q)}
+    <div class="action-row">
+      <button class="btn btn-small btn-outline" id="markUsedBtn">✔ Marcar como usada y cerrar</button>
+    </div>
+  `;
+  openModal(html);
+  $('#revealBtn').addEventListener('click', ()=>{ $('#answerBox').classList.add('show'); });
+  bindAwardButtons($('#modalContent'), q.value);
+  $('#markUsedBtn').addEventListener('click', ()=>{ markUsed(q.id); closeModal(); });
+}
+
+/* ----- Secret word (taboo) modal ----- */
+function openSecretWord(q){
+  if(q.value===null){ q.value = Math.round((Math.random()*30000+10000)/1000)*1000; }
+  secretTimeLeft = 45;
+  const html = `
+    <button class="close-x" onclick="closeModal()">✕</button>
+    <span class="admin-tag tag-secret">Secret word #${q.id}</span>
+    <h3>Describe la palabra sin decir las prohibidas</h3>
+    <div class="value-badge money-font">${fmt(q.value)}</div>
+    <div class="section-label">Palabra secreta (mostrar solo al equipo que describe)</div>
+    <div class="q-text" id="secretWordText" style="filter:blur(6px); cursor:pointer;" title="Click para revelar">${q.word}</div>
+    <div class="section-label">Palabras prohibidas</div>
+    <ul class="forbidden-list">${q.forbidden.map(w=>`<li>${w}</li>`).join('')}</ul>
+    <div class="timer-display" id="secretTimer">0:45</div>
+    <div class="action-row">
+      <button class="btn btn-small btn-gold" id="startTimerBtn">▶ Iniciar tiempo</button>
+      <button class="btn btn-small btn-outline" id="resetTimerBtn">↺ Reiniciar</button>
+    </div>
+    <div class="section-label">¿Quién adivinó? Otorgar puntos</div>
+    ${teamAwardButtons(q)}
+    <div class="action-row">
+      <button class="btn btn-small btn-outline" id="markUsedBtn">✔ Marcar como usada y cerrar</button>
+    </div>
+  `;
+  openModal(html);
+  $('#secretWordText').addEventListener('click', e=>{ e.target.style.filter='none'; });
+  bindAwardButtons($('#modalContent'), q.value, ()=>{ if(secretTimer){clearInterval(secretTimer); secretTimer=null;} });
+  $('#markUsedBtn').addEventListener('click', ()=>{ markUsed(q.id); closeModal(); });
+  $('#startTimerBtn').addEventListener('click', ()=>{
+    if(secretTimer) return;
+    secretTimer = setInterval(()=>{
+      secretTimeLeft--;
+      const m = Math.floor(secretTimeLeft/60), s = secretTimeLeft%60;
+      const disp = $('#secretTimer'); if(disp) disp.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+      if(secretTimeLeft<=0){ clearInterval(secretTimer); secretTimer=null; stingWrong(); toast('¡Tiempo terminado!'); }
+    },1000);
+  });
+  $('#resetTimerBtn').addEventListener('click', ()=>{
+    if(secretTimer){clearInterval(secretTimer); secretTimer=null;}
+    secretTimeLeft=45; $('#secretTimer').textContent='0:45';
+  });
+}
+
+/* ----- Present (bet) modal ----- */
+function openPresent(q){
+  const html = `
+    <button class="close-x" onclick="closeModal()">✕</button>
+    <span class="admin-tag tag-present">Casilla #${q.id} — Present</span>
+    <h3>🎁 ¡El regalo!</h3>
+    <div class="q-text">${q.question}</div>
+    <div class="section-label">Elige un equipo y decide</div>
+    <div id="presentTeamPicker" class="team-award-grid">
+      ${gameData.teams.map(t=>`<button class="btn btn-small btn-outline" data-team="${t.id}" style="border-color:${t.color}">${t.name}</button>`).join('')}
+    </div>
+    <div id="presentActionZone" style="margin-top:16px; display:none;">
+      <p style="font-size:14px; opacity:.85;">Equipo seleccionado: <strong id="presentTeamName" style="color:var(--gold-bright)"></strong></p>
+      <div class="action-row">
+        <button class="btn btn-small btn-correct" id="takeSafeBtn">💰 Quedarse con ${fmt(q.value)} seguros</button>
+        <button class="btn btn-small btn-gold" id="openBoxesBtn">🎲 Abrir caja misteriosa</button>
+      </div>
+      <div id="boxesZone"></div>
+    </div>
+  `;
+  openModal(html);
+  let selectedTeam = null;
+  $('#presentTeamPicker').querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      selectedTeam = gameData.teams.find(t=>t.id==btn.dataset.team);
+      $('#presentTeamName').textContent = selectedTeam.name;
+      $('#presentActionZone').style.display = 'block';
+    });
+  });
+  $('#takeSafeBtn').addEventListener('click', ()=>{
+    if(!selectedTeam) return;
+    stingCorrect();
+    awardTeam(selectedTeam.id, q.value);
+    markUsed(q.id); closeModal();
+  });
+  $('#openBoxesBtn').addEventListener('click', ()=>{
+    if(!selectedTeam) return;
+    const zone = $('#boxesZone');
+    zone.innerHTML = `<div class="section-label">Elige una caja (${presentBoxesState.filter(v=>v!==null).length} disponibles)</div>
+      <div class="boxes-grid">${presentBoxesState.map((v,i)=> v===null ? `<div class="pbox opened">✔</div>` : `<div class="pbox" data-idx="${i}">🎁</div>`).join('')}</div>`;
+    zone.querySelectorAll('.pbox[data-idx]').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const idx = parseInt(b.dataset.idx);
+        const val = presentBoxesState[idx];
+        b.textContent = fmt(val);
+        b.classList.add('opened');
+        presentBoxesState[idx] = null;
+        val>0 ? stingCorrect() : stingWrong();
+        awardTeam(selectedTeam.id, val);
+        markUsed(q.id);
+        setTimeout(closeModal, 1400);
+      }, {once:true});
+    });
+  });
+}
+
+/* ---------------- ADMIN / EDIT PANEL ---------------- */
+function openAdmin(){
+  const html = `
+    <button class="close-x" onclick="closeModal()">✕</button>
+    <h3>✏ Editar todas las preguntas</h3>
+    <p style="font-size:13px; opacity:.75; margin-top:-6px;">Modifica valores, preguntas, respuestas y palabras. Los cambios se aplican de inmediato al tablero. También puedes exportar todo a un Excel, editarlo ahí, y volver a importarlo.</p>
+    <div class="action-row">
+      <button class="btn btn-small btn-gold" id="exportBtn">⬇ Exportar (Excel)</button>
+      <label class="btn btn-small btn-outline" style="cursor:pointer;">⬆ Importar (Excel)
+        <input type="file" id="importFile" accept=".xlsx,.xls" style="display:none;">
+      </label>
+      <button class="btn btn-small btn-outline" id="resetAllBtn">↺ Reiniciar tablero (desmarcar usadas)</button>
+    </div>
+    <div class="admin-list" id="adminList"></div>
+  `;
+  openModal(html);
+  renderAdminList();
+  $('#exportBtn').addEventListener('click', exportData);
+  $('#importFile').addEventListener('change', importData);
+  $('#resetAllBtn').addEventListener('click', ()=>{
+    gameData.questions.forEach(q=>q.used=false);
+    presentBoxesState = [...gameData.presentBoxes];
+    renderBoard();
+    toast('Tablero reiniciado');
+  });
+}
+
+function tagFor(type){
+  if(type==='secret') return `<span class="admin-tag tag-secret">Secret word</span>`;
+  if(type==='present') return `<span class="admin-tag tag-present">Present</span>`;
+  if(type==='bonus') return `<span class="admin-tag tag-bonus">Bonus</span>`;
+  return `<span class="admin-tag tag-trivia">Trivia</span>`;
+}
+function renderAdminList(){
+  const list = $('#adminList');
+  list.innerHTML = gameData.questions.map(q=>{
+    if(q.type==='secret'){
+      return `<div class="admin-item" data-id="${q.id}">
+        ${tagFor(q.type)}
+        <div class="row">
+          <div class="field-w-small"><label>#</label><input value="${q.id}" disabled></div>
+          <div class="field-w-small"><label>Valor</label><input type="number" class="f-value" value="${q.value??''}" placeholder="¿?"></div>
+          <div class="field-w-med"><label>Palabra secreta</label><input class="f-word" value="${q.word}"></div>
+        </div>
+        <div class="row"><div class="field-w-full"><label>Palabras prohibidas (una por línea)</label><textarea class="f-forbidden">${q.forbidden.join('\n')}</textarea></div></div>
+      </div>`;
+    }
+    return `<div class="admin-item" data-id="${q.id}">
+      ${tagFor(q.type)}
+      <div class="row">
+        <div class="field-w-small"><label>#</label><input value="${q.id}" disabled></div>
+        <div class="field-w-small"><label>Valor</label><input type="number" class="f-value" value="${q.value??''}"></div>
+        <div class="field-w-full"><label>Pregunta</label><textarea class="f-question">${q.question||''}</textarea></div>
+      </div>
+      <div class="row">
+        <div class="field-w-med"><label>Respuesta</label><input class="f-answer" value="${q.answer||''}"></div>
+        <div class="field-w-full"><label>Explicación</label><textarea class="f-explanation">${q.explanation||''}</textarea></div>
+      </div>
+    </div>`;
+  }).join('') + `<button class="btn btn-gold" id="saveAdminBtn" style="margin-top:8px;">💾 Guardar cambios</button>`;
+
+  $('#saveAdminBtn').addEventListener('click', ()=>{
+    list.querySelectorAll('.admin-item').forEach(item=>{
+      const id = parseInt(item.dataset.id);
+      const q = gameData.questions.find(x=>x.id===id);
+      const valEl = item.querySelector('.f-value');
+      q.value = valEl.value===''? null : parseInt(valEl.value);
+      if(q.type==='secret'){
+        q.word = item.querySelector('.f-word').value;
+        q.forbidden = item.querySelector('.f-forbidden').value.split('\n').map(s=>s.trim()).filter(Boolean);
+      } else {
+        q.question = item.querySelector('.f-question').value;
+        q.answer = item.querySelector('.f-answer').value;
+        q.explanation = item.querySelector('.f-explanation').value;
+      }
+    });
+    renderBoard();
+    toast('Preguntas actualizadas ✔');
+    closeModal();
+  });
+}
+function exportData(){
+  const rows = gameData.questions.map(q=>({
+    'ID': q.id,
+    'Tipo': q.type,               // trivia | secret | present | bonus
+    'Valor ($)': q.value===null || q.value===undefined ? '' : q.value,
+    'Pregunta': q.question || '',
+    'Respuesta': q.answer || '',
+    'Explicación': q.explanation || '',
+    'Palabra secreta (Secret Word)': q.word || '',
+    'Palabras prohibidas (separadas por |)': q.forbidden ? q.forbidden.join(' | ') : '',
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{wch:5},{wch:9},{wch:10},{wch:45},{wch:22},{wch:45},{wch:20},{wch:45}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Preguntas');
+  XLSX.writeFile(wb, 'bet_your_answer_preguntas.xlsx');
+  toast('Preguntas exportadas a Excel');
+}
+function importData(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    try{
+      const wb = XLSX.read(ev.target.result, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      if(!rows.length){ toast('El archivo está vacío'); return; }
+      rows.forEach(row=>{
+        const id = parseInt(row['ID']);
+        const q = gameData.questions.find(x=>x.id===id);
+        if(!q) return;
+        const rawValue = row['Valor ($)'];
+        q.value = (rawValue===''||rawValue===undefined||rawValue===null) ? null : parseInt(rawValue);
+        if(q.type==='secret'){
+          q.word = row['Palabra secreta (Secret Word)'] || q.word;
+          const forb = row['Palabras prohibidas (separadas por |)'];
+          if(forb) q.forbidden = String(forb).split('|').map(s=>s.trim()).filter(Boolean);
+        } else {
+          q.question = row['Pregunta'] ?? q.question;
+          q.answer = row['Respuesta'] ?? q.answer;
+          q.explanation = row['Explicación'] ?? q.explanation;
+        }
+      });
+      renderBoard(); renderAdminList();
+      toast('Preguntas importadas desde Excel ✔');
+    }catch(err){ toast('Error al leer el archivo Excel'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ---------------- NAV EVENTS ---------------- */
+$('#playBtn').addEventListener('click', ()=>{ startMusic(); renderTeamSetup(); showScreen('screen-instructions'); });
+$('#editBtnTitle').addEventListener('click', ()=>{ startMusic(); openAdmin(); });
+$('#backTitleBtn').addEventListener('click', ()=> showScreen('screen-title'));
+$('#playBoardBtn').addEventListener('click', ()=>{ renderScoreboard(); renderBoard(); showScreen('screen-board'); });
+$('#homeBtnBoard').addEventListener('click', ()=> showScreen('screen-title'));
+$('#muteBtnTitle').addEventListener('click', toggleMute);
+$('#muteBtnBoard').addEventListener('click', toggleMute);
+
+/* decorative confetti background */
+(function(){
+  const bg = $('#chipsBg');
+  const colors = ['#ff3d81','#ffd23f','#00d9e9','#3ddc97','#a06cff','#ff8a3d'];
+  const shapes = ['50%','30%','10%'];
+  for(let i=0;i<22;i++){
+    const s = document.createElement('span');
+    s.style.left = Math.random()*100+'%';
+    s.style.top = Math.random()*100+'%';
+    s.style.background = colors[i % colors.length];
+    s.style.borderRadius = shapes[i % shapes.length];
+    s.style.animationDelay = (Math.random()*4)+'s';
+    s.style.transform = `scale(${0.6+Math.random()*2.2})`;
+    bg.appendChild(s);
+  }
+})();
+
+/* initial render */
+renderTeamSetup();
+</script>
+</body>
+</html>

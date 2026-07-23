@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONOPOLY · Verbs & Questions Edition</title>
+<style>
+  :root{
+    --bg1:#1b1030;
+    --bg2:#2c1b4d;
+    --cream:#faf3e0;
+    --cream-dark:#e9dcb8;
+    --gold:#e0a92e;
+    --gold-light:#f7cf5c;
+    --ink:#241a2e;
+    --panel:#28193f;
+    --panel-light:#3a2559;
+    --red:#e2483a;
+    --shadow: 0 10px 30px rgba(0,0,0,.5);
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    font-family:'Segoe UI', Arial, sans-serif;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(255,255,255,0.06), transparent 45%),
+      radial-gradient(circle at 85% 90%, rgba(255,255,255,0.04), transparent 40%),
+      linear-gradient(150deg, var(--bg1), var(--bg2) 55%, #201038);
+    color:var(--cream);
+    overflow-x:hidden;
+  }
+  .screen{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .hidden{display:none !important;}
+
+  /* ---------- Title Screen ---------- */
+  #titleScreen h1{
+    font-size:clamp(2.2rem,7vw,4.2rem);
+    margin:0;
+    letter-spacing:4px;
+    text-align:center;
+    background:linear-gradient(180deg,#ffe27a,var(--gold));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow: 0 0 40px rgba(224,169,46,.4);
+    font-weight:900;
+  }
+  #titleScreen .subtitle{
+    color:var(--cream-dark);
+    letter-spacing:4px;
+    margin-top:6px;
+    font-size:0.85rem;
+    text-transform:uppercase;
+    text-align:center;
+  }
+  .board-deco{
+    width:min(300px,65vw);
+    aspect-ratio:1;
+    margin:26px 0;
+    border-radius:16px;
+    background:
+      repeating-conic-gradient(#43a047 0% 12.5%, #e53935 0% 25%, #fdd835 25% 37.5%, #1e88e5 37.5% 50%);
+    border:10px solid var(--gold);
+    box-shadow:var(--shadow), inset 0 0 0 6px rgba(27,16,48,.55);
+    display:flex;align-items:center;justify-content:center;
+    position:relative;
+  }
+  .board-deco:before{
+    content:"?";
+    font-size:4.6rem;
+    color:var(--cream);
+    font-weight:900;
+    opacity:.9;
+    background:var(--panel);
+    width:56%;height:56%;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:var(--shadow);
+  }
+  .btn{
+    appearance:none;border:none;cursor:pointer;
+    font-family:inherit; font-weight:800;
+    letter-spacing:1px;
+    padding:14px 32px;
+    border-radius:50px;
+    font-size:1rem;
+    background:linear-gradient(180deg, var(--gold-light), var(--gold));
+    color:#3a2a05;
+    box-shadow:0 6px 0 #8a6a10, 0 10px 20px rgba(0,0,0,.35);
+    transition:transform .08s ease, box-shadow .08s ease;
+    text-transform:uppercase;
+  }
+  .btn:active{transform:translateY(4px); box-shadow:0 2px 0 #8a6a10, 0 4px 10px rgba(0,0,0,.3);}
+  .btn.secondary{
+    background:linear-gradient(180deg,#7a5ec9,#5b3fa8);
+    color:#fff;
+    box-shadow:0 6px 0 #382569, 0 10px 20px rgba(0,0,0,.3);
+  }
+  .btn.secondary:active{box-shadow:0 2px 0 #382569, 0 4px 10px rgba(0,0,0,.3);}
+  .btn.danger{
+    background:linear-gradient(180deg,#f0685a,var(--red));
+    color:#fff;
+    box-shadow:0 6px 0 #8a2318, 0 10px 20px rgba(0,0,0,.3);
+  }
+  .btn.small{padding:8px 16px;font-size:.75rem;border-radius:30px;}
+  .btn.music{background:linear-gradient(180deg,#4fc3a1,#2a9d7f); color:#062a20; box-shadow:0 6px 0 #14503f, 0 10px 20px rgba(0,0,0,.3);}
+  .btn.bonus{background:linear-gradient(180deg,#ff9de2,#e5389f); color:#3a0525; box-shadow:0 6px 0 #8a1a5c, 0 10px 20px rgba(0,0,0,.3);}
+  .row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+
+  /* ---------- Setup Screen ---------- */
+  .setup-panel{
+    background:var(--panel);
+    border:3px solid var(--gold);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:26px 30px;
+    max-width:560px;
+    width:100%;
+  }
+  .setup-panel h2{
+    margin-top:0;color:var(--gold-light);text-align:center;letter-spacing:2px;
+  }
+  .field-label{
+    font-size:.85rem;color:var(--cream-dark);
+    text-transform:uppercase;letter-spacing:1px;
+    margin:14px 0 6px;font-weight:700;
+  }
+  input[type=text], input[type=number]{
+    width:100%;
+    padding:10px 12px;
+    border-radius:8px;
+    border:2px solid var(--panel-light);
+    background:#fff;
+    color:var(--ink);
+    font-size:1rem;
+    font-family:inherit;
+  }
+  .team-row{
+    display:flex;gap:10px;align-items:center;margin-bottom:8px;
+  }
+  .team-swatch{
+    width:26px;height:26px;border-radius:50%;flex:0 0 auto;
+    border:2px solid rgba(255,255,255,.6);
+  }
+  .stepper{display:flex;align-items:center;gap:12px;justify-content:center;margin:10px 0;}
+  .stepper button{
+    width:38px;height:38px;border-radius:50%;border:none;cursor:pointer;
+    background:var(--gold); color:#3a2a05; font-weight:900;font-size:1.2rem;
+  }
+  .stepper span{font-size:1.4rem;font-weight:800;min-width:30px;text-align:center;}
+
+  /* ---------- Game Screen ---------- */
+  #gameScreen{padding:10px;min-height:100vh;justify-content:flex-start;}
+  .game-wrap{
+    display:flex; gap:14px; width:100%; max-width:1750px;
+    align-items:flex-start; margin:0 auto;
+    flex-wrap:wrap; justify-content:center;
+  }
+  .board-outer{
+    background:var(--gold);
+    padding:10px;
+    border-radius:16px;
+    box-shadow:var(--shadow);
+    overflow-x:auto;
+    max-width:100%;
+  }
+  .board{
+    display:grid;
+    grid-template-columns: repeat(10, minmax(68px,112px));
+    grid-template-rows: repeat(10, minmax(68px,112px));
+    gap:3px;
+    background:var(--bg1);
+    border-radius:10px;
+    padding:3px;
+  }
+  .cell{
+    background:var(--cream);
+    color:var(--ink);
+    border-radius:6px;
+    position:relative;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:flex-end;
+    font-size:.78rem;
+    font-weight:800;
+    text-align:center;
+    padding:4px 3px 6px;
+    line-height:1.08;
+    overflow:hidden;
+    cursor:default;
+  }
+  .cell .stripe{
+    position:absolute;top:0;left:0;right:0;height:22%;
+  }
+  .cell .name{position:relative;z-index:1;}
+  .cell.corner{
+    font-size:.92rem;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--panel);
+    color:var(--gold-light);
+    font-weight:900;
+    border:3px solid var(--gold);
+  }
+  .cell.corner .name{white-space:pre-line;}
+  .cell .price{font-size:.72rem;font-weight:700;color:#4a4a4a;position:relative;z-index:1;}
+  .cell.owned .price{color:rgba(255,255,255,.9);}
+  .cell.pc0 .stripe{background:#8b5a2b;}
+  .cell.pc1 .stripe{background:#79c7e3;}
+  .cell.pc2 .stripe{background:#e5389f;}
+  .cell.pc3 .stripe{background:#ff9224;}
+  .cell.pc4 .stripe{background:#e53935;}
+  .cell.pc5 .stripe{background:#fdd835;}
+  .cell.pc6 .stripe{background:#43a047;}
+  .cell.pc7 .stripe{background:#2f6fe0;}
+  .cell.util .stripe{background:#5a7fa6;}
+  .cell.question{background:#fff2cf;}
+  .cell.question .name{font-size:2rem;}
+  .cell.owned{color:#fff;}
+  .owner-badge{
+    position:absolute; top:3px; right:3px;
+    width:16px;height:16px;border-radius:50%;
+    border:2px solid #fff; z-index:2;
+  }
+
+  .center-area{
+    grid-column: 2 / 10; grid-row: 2 / 10;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255,255,255,.06), transparent 60%),
+      linear-gradient(160deg, var(--panel), var(--bg1));
+    border-radius:10px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:8px;
+    padding:10px;
+    position:relative;
+    border:2px solid var(--gold);
+  }
+  .center-area h2{
+    margin:0; color:var(--gold-light); letter-spacing:2px;
+    font-size:clamp(.9rem,2vw,1.5rem); text-align:center;
+    text-shadow:2px 2px 0 var(--red);
+  }
+  .turn-banner{
+    background:var(--panel-light);
+    border:2px solid var(--gold);
+    border-radius:30px;
+    padding:8px 20px;
+    font-weight:800;
+    font-size:.9rem;
+    display:flex;align-items:center;gap:8px;
+  }
+  .turn-dot{width:14px;height:14px;border-radius:50%;border:2px solid #fff;}
+  .dice-area{display:flex;gap:10px;align-items:center;}
+  .die{
+    width:52px;height:52px;background:#fff;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.7rem;font-weight:900;color:var(--ink);
+    box-shadow:0 4px 10px rgba(0,0,0,.4);
+  }
+  .center-area .btn{margin-top:2px;}
+  #logBox{
+    width:100%;
+    max-height:90px;
+    overflow-y:auto;
+    background:rgba(0,0,0,.3);
+    border-radius:8px;
+    padding:6px 10px;
+    font-size:.66rem;
+    color:var(--cream-dark);
+  }
+  #logBox div{padding:2px 0; border-bottom:1px dashed rgba(255,255,255,.08);}
+
+  .token{
+    position:absolute;
+    width:26px;height:26px;
+    border-radius:50%;
+    border:3px solid #fff;
+    box-shadow:0 2px 5px rgba(0,0,0,.5);
+    display:flex;align-items:center;justify-content:center;
+    font-size:.85rem;font-weight:900;color:#fff;
+    transition: left .28s ease, top .28s ease;
+    z-index:5;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    width:280px;
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .team-card{
+    border-radius:10px;
+    padding:10px 14px;
+    border:2px solid transparent;
+    background:var(--panel);
+  }
+  .team-card.active{border-color:var(--gold); box-shadow:0 0 14px rgba(224,169,46,.5);}
+  .team-card .head{display:flex;align-items:center;gap:8px;font-weight:800;}
+  .money-row{display:flex;align-items:center;gap:8px;margin:4px 0;}
+  .team-card .money{font-size:1.15rem;color:var(--gold-light);font-weight:900;}
+  .edit-money-btn{
+    border:none;background:var(--panel-light);color:var(--cream);
+    width:22px;height:22px;border-radius:6px;cursor:pointer;font-size:.7rem;
+  }
+  .team-card .props{font-size:.68rem;color:var(--cream-dark); max-height:70px;overflow-y:auto;}
+  .team-card.bankrupt{opacity:.4;}
+  .prop-line{padding:2px 0;}
+  .top-controls{display:flex;gap:8px; justify-content:center; margin-bottom:8px; flex-wrap:wrap;}
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.65);
+    display:flex;align-items:center;justify-content:center;
+    z-index:100; padding:16px;
+    animation:fadeIn .15s ease;
+  }
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+  .modal{
+    background:var(--cream); color:var(--ink);
+    border-radius:16px; border:5px solid var(--gold);
+    max-width:420px;width:100%;
+    padding:26px;
+    box-shadow:var(--shadow);
+    text-align:center;
+    animation:popIn .18s ease;
+  }
+  @keyframes popIn{from{transform:scale(.85);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .modal h3{margin-top:0;color:var(--red);letter-spacing:1px;}
+  .modal .amount{font-size:1.8rem;font-weight:900;color:#1c6b4f;margin:10px 0;}
+  .modal .desc{font-size:.95rem;margin-bottom:16px;line-height:1.4;}
+  .modal .btnrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px;}
+  .card-face{
+    background:var(--cream); border:3px dashed var(--gold);
+    border-radius:12px; padding:16px; margin-bottom:14px; font-weight:700;
+  }
+  .prop-detail-table{width:100%;font-size:.85rem;text-align:left;margin:12px 0;border-collapse:collapse;}
+  .prop-detail-table td{padding:4px 6px;border-bottom:1px solid var(--cream-dark);}
+  .prop-detail-table td:last-child{text-align:right;font-weight:800;}
+
+  /* Editor */
+  .editor-body{max-height:60vh;overflow-y:auto;text-align:left;}
+  .editor-body h4{color:var(--red);margin:14px 0 6px;}
+  textarea{
+    width:100%;min-height:140px;font-family:monospace;font-size:.75rem;
+    padding:10px;border-radius:8px;border:2px solid var(--panel-light);
+  }
+  .edit-price-row{display:grid;grid-template-columns:1.6fr 1fr;gap:6px;align-items:center;margin-bottom:4px;font-size:.75rem;}
+  .edit-price-row input{padding:4px 6px;font-size:.75rem;}
+
+  #confettiCanvas{position:fixed;inset:0;pointer-events:none;z-index:200;}
+
+  footer.note{
+    font-size:.7rem; color:var(--cream-dark); opacity:.6; margin-top:16px; text-align:center;
+  }
+  @media (max-width:1200px){
+    .board{grid-template-columns: repeat(10, minmax(48px,68px)); grid-template-rows: repeat(10, minmax(48px,68px));}
+    .cell{font-size:.58rem;}
+    .cell.corner{font-size:.66rem;}
+    .cell .price{font-size:.5rem;}
+    .cell.question .name{font-size:1.4rem;}
+    .token{width:20px;height:20px;font-size:.65rem;}
+  }
+  @media (max-width:700px){
+    .board{grid-template-columns: repeat(10, minmax(34px,46px)); grid-template-rows: repeat(10, minmax(34px,46px));}
+    .cell{font-size:.42rem;}
+    .cell.corner{font-size:.48rem;}
+    .cell .price{font-size:.36rem;}
+    .cell.question .name{font-size:1rem;}
+    .token{width:15px;height:15px;font-size:.5rem;}
+    .sidebar{width:100%;max-width:520px;}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="confettiCanvas"></canvas>
+
+<!-- ============ TITLE SCREEN ============ -->
+<div id="titleScreen" class="screen">
+  <h1>MONOPOLY</h1>
+  <div class="subtitle">Verbs & Questions Edition · English Class</div>
+  <div class="board-deco"></div>
+  <div class="row">
+    <button class="btn" id="btnGoSetup">▶ PLAY</button>
+    <button class="btn secondary" id="btnEditor">✏ Editar preguntas y precios</button>
+    <button class="btn music musicBtn" id="btnMusicTitle">🔇 Music</button>
+  </div>
+  <footer class="note">Basado en el tablero original de Mr. Núñez</footer>
+</div>
+
+<!-- ============ SETUP SCREEN ============ -->
+<div id="setupScreen" class="screen hidden">
+  <div class="setup-panel">
+    <h2>👥 SET UP TEAMS</h2>
+    <div class="field-label">Number of teams</div>
+    <div class="stepper">
+      <button id="teamMinus">−</button>
+      <span id="teamCountLabel">4</span>
+      <button id="teamPlus">+</button>
+    </div>
+    <div id="teamNamesWrap"></div>
+    <div class="field-label">Starting money ($)</div>
+    <input type="number" id="startMoney" value="50000" step="500" min="1000">
+    <div class="row" style="margin-top:22px;">
+      <button class="btn secondary" id="btnBackTitle">← Back</button>
+      <button class="btn" id="btnStartGame">🎲 START GAME</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ GAME SCREEN ============ -->
+<div id="gameScreen" class="screen hidden">
+  <div class="top-controls">
+    <button class="btn small bonus" id="btnBonus">🎁 Bonus</button>
+    <button class="btn small music musicBtn" id="btnMusicGame">🔇 Music</button>
+    <button class="btn small danger" id="btnEndGame">🏁 End Game</button>
+  </div>
+  <div class="game-wrap">
+    <div class="board-outer">
+      <div class="board" id="board"></div>
+    </div>
+    <div class="sidebar" id="sidebar"></div>
+  </div>
+</div>
+
+<div id="modalRoot"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ==================================================================
+   AUDIO — procedural Web Audio API, no external files
+================================================================== */
+let actx = null;
+function ac(){ if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)(); return actx; }
+function tone(freq, start, dur, type, gain){
+  const c = ac();
+  const o = c.createOscillator();
+  const g = c.createGain();
+  o.type = type||'sine';
+  o.frequency.value = freq;
+  g.gain.value = 0;
+  o.connect(g); g.connect(c.destination);
+  const t0 = c.currentTime + start;
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(gain||0.18, t0+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+  o.start(t0); o.stop(t0+dur+0.02);
+}
+function noiseBurst(start, dur, gain){
+  const c = ac();
+  const bufferSize = c.sampleRate * dur;
+  const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++){ data[i] = (Math.random()*2-1) * (1 - i/bufferSize); }
+  const src = c.createBufferSource();
+  src.buffer = buffer;
+  const g = c.createGain();
+  g.gain.value = gain||0.15;
+  src.connect(g); g.connect(c.destination);
+  src.start(c.currentTime+start);
+}
+const SFX = {
+  diceRoll(){ for(let i=0;i<5;i++) noiseBurst(i*0.06, 0.05, 0.12); },
+  cash(){ tone(523,0,0.12,'square',0.12); tone(659,0.08,0.12,'square',0.12); tone(784,0.16,0.18,'square',0.14); },
+  error(){ tone(160,0,0.25,'sawtooth',0.15); tone(120,0.1,0.3,'sawtooth',0.13); },
+  purchase(){ tone(392,0,0.1,'triangle',0.15); tone(523,0.08,0.1,'triangle',0.15); tone(659,0.16,0.22,'triangle',0.17); },
+  click(){ tone(300,0,0.05,'square',0.08); },
+  win(){ [523,659,784,1046].forEach((f,i)=>tone(f,i*0.13,0.3,'triangle',0.18)); },
+  jail(){ tone(180,0,0.15,'square',0.12); tone(150,0.15,0.2,'square',0.12); },
+};
+
+/* ---------- Background music (procedural loop) ---------- */
+let musicOn = false;
+let musicTimer = null;
+let musicGainNode = null;
+let melodyIdx = 0;
+const MELODY = [523,659,784,659, 698,880,784,659, 587,698,880,698, 523,659,523,392];
+function musicNote(freq){
+  const c = ac();
+  if(!musicGainNode){ musicGainNode = c.createGain(); musicGainNode.gain.value = 0.05; musicGainNode.connect(c.destination); }
+  const o = c.createOscillator();
+  const g = c.createGain();
+  o.type = 'triangle';
+  o.frequency.value = freq;
+  g.gain.value = 0;
+  o.connect(g); g.connect(musicGainNode);
+  const t0 = c.currentTime;
+  g.gain.linearRampToValueAtTime(0.5, t0+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0+0.32);
+  o.start(t0); o.stop(t0+0.35);
+  if(melodyIdx%2===0){
+    const o2 = c.createOscillator();
+    const g2 = c.createGain();
+    o2.type = 'sine'; o2.frequency.value = freq/2;
+    g2.gain.value = 0;
+    o2.connect(g2); g2.connect(musicGainNode);
+    g2.gain.linearRampToValueAtTime(0.35, t0+0.02);
+    g2.gain.exponentialRampToValueAtTime(0.0001, t0+0.32);
+    o2.start(t0); o2.stop(t0+0.35);
+  }
+}
+function musicStep(){
+  if(!musicOn) return;
+  musicNote(MELODY[melodyIdx % MELODY.length]);
+  melodyIdx++;
+  musicTimer = setTimeout(musicStep, 360);
+}
+function toggleMusic(){
+  ac();
+  musicOn = !musicOn;
+  document.querySelectorAll('.musicBtn').forEach(b=> b.textContent = musicOn ? '🔊 Music' : '🔇 Music');
+  if(musicOn){ melodyIdx = 0; musicStep(); }
+  else { clearTimeout(musicTimer); }
+}
+document.getElementById('btnMusicTitle').onclick = toggleMusic;
+document.getElementById('btnMusicGame').onclick = toggleMusic;
+
+/* ==================================================================
+   BOARD DATA — 36 spaces: 4 corners, 16 properties, 16 question cells
+   Rent is ALWAYS half the purchase price. No hotels, no tax.
+================================================================== */
+const SPACES = [
+ {id:0, type:'go', name:'START'},
+ {id:1, type:'property', name:'AV. MANSO DE VELASCO', price:10000},
+ {id:2, type:'question', name:'?'},
+ {id:3, type:'property', name:'CHACABUCO', price:10000},
+ {id:4, type:'question', name:'?'},
+ {id:5, type:'property', name:'M. RODRÍGUEZ', price:15000},
+ {id:6, type:'question', name:'?'},
+ {id:7, type:'property', name:'ARGOMEDO', price:11000},
+ {id:8, type:'question', name:'?'},
+ {id:9, type:'jail', name:'JAIL'},
+ {id:10, type:'property', name:'VALDIVIA', price:10500},
+ {id:11, type:'question', name:'?'},
+ {id:12, type:'property', name:'JUAN JIMÉNEZ', price:10000},
+ {id:13, type:'question', name:'?'},
+ {id:14, type:'property', name:'CURALÍ', price:10000},
+ {id:15, type:'question', name:'?'},
+ {id:16, type:'property', name:'NEGRETE', price:12500},
+ {id:17, type:'question', name:'?'},
+ {id:18, type:'bank', name:'BANK'},
+ {id:19, type:'property', name:'CANCHA RAYADA', price:9000},
+ {id:20, type:'question', name:'?'},
+ {id:21, type:'property', name:'18 DE SEPTIEMBRE', price:9000},
+ {id:22, type:'question', name:'?'},
+ {id:23, type:'property', name:'GABRIELA MISTRAL', price:10000},
+ {id:24, type:'question', name:'?'},
+ {id:25, type:'property', name:'QUECHEREGUAS', price:8500},
+ {id:26, type:'question', name:'?'},
+ {id:27, type:'gotojail', name:'GO TO\nJAIL', bail:8600},
+ {id:28, type:'property', name:'SAN HERNÁN', price:5500},
+ {id:29, type:'question', name:'?'},
+ {id:30, type:'property', name:'AV. OHIGGINS', price:10000},
+ {id:31, type:'question', name:'?'},
+ {id:32, type:'utility', name:'WATER COMPANY', price:20050},
+ {id:33, type:'question', name:'?'},
+ {id:34, type:'utility', name:'LIGHT COMPANY', price:20100},
+ {id:35, type:'question', name:'?'},
+];
+const BOARD_SIZE = SPACES.length; // 36
+
+function rentOf(sp){ return Math.round(sp.price/2); }
+
+// rotate color groups across the 16 ownable cells for a colorful board
+(function assignColors(){
+  let idx = 0;
+  SPACES.forEach(sp=>{ if(sp.type==='property'||sp.type==='utility'){ sp.colorIdx = idx % 8; idx++; } });
+})();
+
+// grid position (row, col) 1-indexed, 10x10 — corners every 9 cells
+const GRID_POS = {
+ 0:[10,10],1:[10,9],2:[10,8],3:[10,7],4:[10,6],5:[10,5],6:[10,4],7:[10,3],8:[10,2],
+ 9:[10,1],10:[9,1],11:[8,1],12:[7,1],13:[6,1],14:[5,1],15:[4,1],16:[3,1],17:[2,1],
+ 18:[1,1],19:[1,2],20:[1,3],21:[1,4],22:[1,5],23:[1,6],24:[1,7],25:[1,8],26:[1,9],
+ 27:[1,10],28:[2,10],29:[3,10],30:[4,10],31:[5,10],32:[6,10],33:[7,10],34:[8,10],35:[9,10]
+};
+
+/* ==================================================================
+   QUESTION / VERB CARDS (landed on "?" cells) — teacher customizes.
+   Correct answer wins money; wrong answer returns money to the bank.
+================================================================== */
+let QUESTION_CARDS = [
+ {t:"Say a regular verb in the past tense.", win:3000, lose:3000},
+ {t:"Name 3 irregular verbs.", win:4000, lose:4000},
+ {t:"Conjugate 'to go' in the past tense.", win:3000, lose:3000},
+ {t:"Give an example sentence using 'must'.", win:3000, lose:3000},
+ {t:"Say the past participle of 'eat'.", win:3000, lose:3000},
+ {t:"Name a verb that starts with the letter S.", win:2000, lose:2000},
+ {t:"Translate: 'Yesterday I went to school.'", win:4000, lose:4000},
+ {t:"Say 5 verbs in 10 seconds.", win:5000, lose:5000},
+ {t:"Give the opposite of a verb, e.g. 'buy' → 'sell'.", win:3000, lose:3000},
+ {t:"Make a sentence using the present continuous.", win:3000, lose:3000},
+ {t:"Say a phrasal verb and explain its meaning.", win:4000, lose:4000},
+ {t:"Conjugate 'to have' in all forms (I/you/he...).", win:3000, lose:3000},
+ {t:"Name a verb that means 'to run fast'.", win:3000, lose:3000},
+ {t:"Use a modal verb correctly in a sentence.", win:3000, lose:3000},
+ {t:"Say the -ing form of 'swim'.", win:2000, lose:2000},
+ {t:"Give a synonym for the adjective 'happy'.", win:2500, lose:2500},
+];
+
+/* ==================================================================
+   BONUS CHEST CARDS (drawn manually via the 🎁 Bonus button)
+================================================================== */
+let BONUS_CARDS = [
+ {t:"¡Ganaste $5.000 en un concurso de belleza!", kind:'money', amt:5000},
+ {t:"Perdiste $2.000 en la lotería.", kind:'money', amt:-2000},
+ {t:"Hoy es tu cumpleaños, ¡todos te dan $5.000!", kind:'collectAll', amt:5000},
+ {t:"Te robaron $3.000.", kind:'money', amt:-3000},
+ {t:"Ganaste $10.000 en un concurso de talentos.", kind:'money', amt:10000},
+ {t:"Debes pagar una multa de $4.000.", kind:'money', amt:-4000},
+ {t:"Encontraste $2.000 en la calle.", kind:'money', amt:2000},
+ {t:"Perdiste $5.000 apostando.", kind:'money', amt:-5000},
+ {t:"El banco te regala $3.000.", kind:'money', amt:3000},
+ {t:"Es Navidad, todos te dan $5.000.", kind:'collectAll', amt:5000},
+ {t:"Rompiste una ventana, paga $6.000.", kind:'money', amt:-6000},
+ {t:"Ganaste la lotería: +$8.000.", kind:'money', amt:8000},
+ {t:"Invitaste a todos: paga $2.000 a cada equipo.", kind:'payAll', amt:2000},
+ {t:"Tu equipo ganó un concurso de baile: +$7.000.", kind:'money', amt:7000},
+ {t:"Perdiste tu billetera: -$3.500.", kind:'money', amt:-3500},
+ {t:"Encontraste plata debajo del sillón: +$1.500.", kind:'money', amt:1500},
+ {t:"Pagaste de más en el supermercado: -$2.500.", kind:'money', amt:-2500},
+ {t:"Ganaste una rifa: +$6.000.", kind:'money', amt:6000},
+ {t:"Todos tus compañeros te prestan plata: +$1.000 de cada uno.", kind:'collectAll', amt:1000},
+ {t:"Chocaste el auto, paga $9.000.", kind:'money', amt:-9000},
+ {t:"Ganaste el Kahoot de la clase: +$4.000.", kind:'money', amt:4000},
+ {t:"Te multan por hablar español en clase: -$2.000.", kind:'money', amt:-2000},
+ {t:"Ganaste un concurso de canto: +$5.000.", kind:'money', amt:5000},
+ {t:"Se te rompió el celular, paga $7.000.", kind:'money', amt:-7000},
+ {t:"Ganaste una trivia de cultura general: +$3.000.", kind:'money', amt:3000},
+ {t:"Es tu cumpleaños: todos te pagan $1.500.", kind:'collectAll', amt:1500},
+ {t:"Perdiste una apuesta con un compañero: -$2.000.", kind:'money', amt:-2000},
+ {t:"Ganaste el primer lugar en una maratón: +$6.000.", kind:'money', amt:6000},
+ {t:"Compartiste tu premio: paga $1.000 a cada equipo.", kind:'payAll', amt:1000},
+ {t:"Encontraste un billete perdido: +$2.000.", kind:'money', amt:2000},
+];
+
+const TEAM_COLORS = ['#e05a4e','#3aa0e0','#4caf50','#f2c94c','#a463d6','#ff8c42'];
+
+/* ==================================================================
+   STATE
+================================================================== */
+let state = {
+  teams: [],
+  currentTeam: 0,
+  qDeck: [], qDiscard: [],
+  bonusDeck: [],
+  ownership: {},
+  started: false,
+  gameOver: false,
+};
+
+function fmt(n){
+  return '$' + Math.round(n).toLocaleString('en-US');
+}
+function log(msg){
+  const box = document.getElementById('logBox');
+  if(!box) return;
+  const d = document.createElement('div');
+  d.textContent = msg;
+  box.prepend(d);
+  while(box.children.length > 40) box.removeChild(box.lastChild);
+}
+
+/* ==================================================================
+   NAV
+================================================================== */
+function showScreen(id){
+  ['titleScreen','setupScreen','gameScreen'].forEach(s=>{
+    document.getElementById(s).classList.toggle('hidden', s!==id);
+  });
+}
+document.getElementById('btnGoSetup').onclick = ()=>{SFX.click(); showScreen('setupScreen'); buildTeamInputs();};
+document.getElementById('btnBackTitle').onclick = ()=>{SFX.click();showScreen('titleScreen');};
+document.getElementById('btnEndGame').onclick = ()=>{
+  openModal(confirmModal('¿Terminar la partida ahora y ver los resultados?', ()=> endGame()));
+};
+document.getElementById('btnBonus').onclick = ()=> openModal(bonusTeamSelectModal());
+
+let teamCount = 4;
+function buildTeamInputs(){
+  const wrap = document.getElementById('teamNamesWrap');
+  wrap.innerHTML = '';
+  const defaults = ['Team Red','Team Blue','Team Green','Team Yellow','Team Purple','Team Orange'];
+  for(let i=0;i<teamCount;i++){
+    const row = document.createElement('div');
+    row.className = 'team-row';
+    row.innerHTML = `<div class="team-swatch" style="background:${TEAM_COLORS[i]}"></div>
+      <input type="text" id="teamName${i}" value="${defaults[i]}">`;
+    wrap.appendChild(row);
+  }
+}
+document.getElementById('teamMinus').onclick = ()=>{ if(teamCount>2){teamCount--; document.getElementById('teamCountLabel').textContent=teamCount; buildTeamInputs(); SFX.click();}};
+document.getElementById('teamPlus').onclick = ()=>{ if(teamCount<6){teamCount++; document.getElementById('teamCountLabel').textContent=teamCount; buildTeamInputs(); SFX.click();}};
+
+document.getElementById('btnStartGame').onclick = ()=>{
+  const money = parseInt(document.getElementById('startMoney').value) || 50000;
+  state.teams = [];
+  for(let i=0;i<teamCount;i++){
+    const nameEl = document.getElementById('teamName'+i);
+    state.teams.push({
+      name: (nameEl.value||('Team '+(i+1))).trim() || ('Team '+(i+1)),
+      color: TEAM_COLORS[i],
+      money: money,
+      pos: 0,
+      skipTurn: 0,
+      bankrupt: false,
+      props: [],
+    });
+  }
+  state.currentTeam = 0;
+  state.ownership = {};
+  state.qDeck = shuffle(QUESTION_CARDS.map((_,i)=>i));
+  state.qDiscard = [];
+  state.bonusDeck = shuffle(BONUS_CARDS.map((_,i)=>i));
+  state.started = true;
+  state.gameOver = false;
+  SFX.click();
+  showScreen('gameScreen');
+  buildBoard();
+  renderAll();
+  log('🎲 ¡Comienza el juego! Turno de ' + state.teams[0].name + '.');
+};
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+/* ==================================================================
+   BOARD RENDER
+================================================================== */
+function cornerLabel(space){
+  if(space.type==='go') return 'START\n▶';
+  if(space.type==='jail') return '🔒\nJAIL';
+  if(space.type==='bank') return '🏦\nBANK';
+  if(space.type==='gotojail') return '🚔\nGO TO\nJAIL';
+  return space.name;
+}
+
+function buildBoard(){
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  SPACES.forEach(sp=>{
+    const [r,c] = GRID_POS[sp.id];
+    const div = document.createElement('div');
+    let cls = 'cell';
+    const own = state.ownership[sp.id];
+    if(['go','jail','bank','gotojail'].includes(sp.type)) cls += ' corner';
+    else if(sp.type==='property') cls += ' pc'+sp.colorIdx + (own?' owned':'');
+    else if(sp.type==='utility') cls += ' util' + (own?' owned':'');
+    else if(sp.type==='question') cls += ' question';
+    div.className = cls;
+    div.style.gridRow = r; div.style.gridColumn = c;
+    div.id = 'cell-'+sp.id;
+    if(['go','jail','bank','gotojail'].includes(sp.type)){
+      div.innerHTML = `<div class="name">${cornerLabel(sp)}</div>`;
+    } else if(sp.type==='question'){
+      div.innerHTML = `<div class="stripe"></div><div class="name">❓</div><div class="price">VERB</div>`;
+    } else {
+      div.innerHTML = `<div class="stripe"></div><div class="name">${sp.name}</div><div class="price">${fmt(sp.price)}</div>`;
+      if(own){
+        div.style.background = state.teams[own.teamIdx].color;
+        const badge = document.createElement('div');
+        badge.className = 'owner-badge';
+        badge.style.background = '#fff';
+        div.appendChild(badge);
+      }
+    }
+    div.onclick = ()=>{ if(sp.type==='property'||sp.type==='utility') openModal(propertyInfoModal(sp.id)); };
+    board.appendChild(div);
+  });
+  // center area
+  const center = document.createElement('div');
+  center.className = 'center-area';
+  center.innerHTML = `
+    <h2>MONOPOLY<br><span style="font-size:.6em;">Verbs & Questions</span></h2>
+    <div class="turn-banner" id="turnBanner"></div>
+    <div class="dice-area">
+      <div class="die" id="die1">1</div>
+    </div>
+    <button class="btn" id="btnRoll">🎲 ROLL DICE</button>
+    <div id="logBox"></div>
+  `;
+  board.appendChild(center);
+  document.getElementById('btnRoll').onclick = doRoll;
+  renderTokens();
+}
+
+function renderTokens(){
+  document.querySelectorAll('.token').forEach(t=>t.remove());
+  state.teams.forEach((team,i)=>{
+    if(team.bankrupt) return;
+    const cell = document.getElementById('cell-'+team.pos);
+    if(!cell) return;
+    const tok = document.createElement('div');
+    tok.className = 'token';
+    tok.style.background = team.color;
+    const sameCellIdx = state.teams.slice(0,i).filter(t=>!t.bankrupt && t.pos===team.pos).length;
+    const offX = 4 + (sameCellIdx%2)*30;
+    const offY = 4 + Math.floor(sameCellIdx/2)*30;
+    tok.style.left = offX+'px';
+    tok.style.top = offY+'px';
+    cell.appendChild(tok);
+  });
+}
+
+/* ==================================================================
+   SIDEBAR RENDER
+================================================================== */
+function renderSidebar(){
+  const sb = document.getElementById('sidebar');
+  sb.innerHTML = '';
+  state.teams.forEach((team,i)=>{
+    const div = document.createElement('div');
+    div.className = 'team-card' + (i===state.currentTeam && !team.bankrupt ? ' active':'') + (team.bankrupt?' bankrupt':'');
+    let propsHtml = team.props.map(pid=>{
+      const sp = SPACES.find(s=>s.id===pid);
+      return `<div class="prop-line">🏠 ${sp.name}</div>`;
+    }).join('') || '<div style="opacity:.6;">Sin propiedades</div>';
+    div.innerHTML = `
+      <div class="head"><span class="team-swatch" style="width:16px;height:16px;background:${team.color};display:inline-block;border-radius:50%;"></span> ${team.name} ${team.bankrupt?'💀':''}</div>
+      <div class="money-row">
+        <div class="money">${fmt(team.money)}</div>
+        <button class="edit-money-btn" onclick="window.__editMoney(${i})" title="Editar dinero">✏</button>
+      </div>
+      <div class="props">${propsHtml}</div>
+    `;
+    sb.appendChild(div);
+  });
+}
+window.__editMoney = function(teamIdx){ openModal(editMoneyModal(teamIdx)); };
+function editMoneyModal(teamIdx){
+  const team = state.teams[teamIdx];
+  const el = document.createElement('div');
+  el.className = 'modal-overlay';
+  el.innerHTML = `<div class="modal">
+    <h3>✏ Editar dinero</h3>
+    <div class="desc">${team.name}</div>
+    <input type="number" id="moneyInput" value="${team.money}" style="text-align:center;font-size:1.2rem;font-weight:800;">
+    <div class="btnrow">
+      <button class="btn" id="mSave">💾 Guardar</button>
+      <button class="btn secondary" id="mCancel">Cancelar</button>
+    </div>
+  </div>`;
+  el.querySelector('#mSave').onclick = ()=>{
+    const val = parseInt(el.querySelector('#moneyInput').value);
+    team.money = isNaN(val) ? team.money : val;
+    SFX.click();
+    closeModal();
+    renderSidebar();
+  };
+  el.querySelector('#mCancel').onclick = closeModal;
+  return el;
+}
+
+function updateTurnBanner(){
+  const team = state.teams[state.currentTeam];
+  const banner = document.getElementById('turnBanner');
+  if(!banner) return;
+  banner.innerHTML = `<span class="turn-dot" style="background:${team.color}"></span> Turno de ${team.name}`;
+}
+
+function renderAll(){
+  renderSidebar();
+  renderTokens();
+  updateTurnBanner();
+  const rollBtn = document.getElementById('btnRoll');
+  if(rollBtn){ rollBtn.disabled = false; rollBtn.classList.remove('hidden'); }
+}
+
+/* ==================================================================
+   DICE / MOVEMENT — single die
+================================================================== */
+function doRoll(){
+  if(state.gameOver) return;
+  const team = state.teams[state.currentTeam];
+  document.getElementById('btnRoll').disabled = true;
+  SFX.diceRoll();
+  let ticks = 0;
+  const maxTicks = 10;
+  const iv = setInterval(()=>{
+    document.getElementById('die1').textContent = 1+Math.floor(Math.random()*6);
+    ticks++;
+    if(ticks>=maxTicks){
+      clearInterval(iv);
+      const d1 = 1+Math.floor(Math.random()*6);
+      document.getElementById('die1').textContent = d1;
+      handleRollResult(team, d1);
+    }
+  }, 90);
+}
+
+function handleRollResult(team, steps){
+  if(team.skipTurn > 0){
+    team.skipTurn--;
+    log(`⏭ ${team.name} está en la cárcel y pierde este turno (${team.skipTurn} más).`);
+    finishLanding();
+    return;
+  }
+  let passedGo = false;
+  let stepsLeft = steps;
+  function stepOnce(){
+    if(stepsLeft<=0){
+      onLand(team);
+      return;
+    }
+    team.pos = (team.pos+1)%BOARD_SIZE;
+    if(team.pos===0) passedGo = true;
+    stepsLeft--;
+    renderTokens();
+    setTimeout(stepOnce, 200);
+  }
+  log(`🎲 ${team.name} sacó ${steps}.`);
+  stepOnce();
+  setTimeout(()=>{
+    if(passedGo){
+      team.money += 2000;
+      log(`💰 ${team.name} pasó por START y ganó $2.000.`);
+      renderSidebar();
+    }
+  }, (steps+1)*200);
+}
+
+function onLand(team){
+  const sp = SPACES[team.pos];
+  log(`📍 ${team.name} cayó en ${sp.name||sp.type.toUpperCase()}.`);
+  switch(sp.type){
+    case 'go': team.money += 2000; log(`💰 ${team.name} ganó $2.000 por caer en START.`); SFX.cash(); finishLanding(); break;
+    case 'jail': openModal(infoModal('🔒 De visita', 'Nada pasa aquí — ¡solo estás de visita en la cárcel!', finishLanding)); break;
+    case 'bank': team.money += 5000; SFX.cash(); openModal(infoModal('🏦 Bono del Banco', 'El banco te regala $5.000.', finishLanding)); break;
+    case 'gotojail':
+      team.money -= sp.bail;
+      team.pos = 9;
+      team.skipTurn = 1;
+      SFX.jail();
+      openModal(infoModal('🚔 ¡A la cárcel!', `Pierdes un turno y debes pagar la fianza: ${fmt(sp.bail)}.`, ()=>{ renderTokens(); finishLanding(); }));
+      break;
+    case 'question': drawQuestion(team); break;
+    case 'property':
+    case 'utility': landOnOwnable(team, sp); break;
+    default: finishLanding();
+  }
+  renderSidebar();
+}
+
+function finishLanding(){
+  checkBankrupt();
+  renderSidebar();
+  if(state.gameOver) return;
+  setTimeout(()=>{ advanceTurn(); }, 550);
+}
+
+/* ---------- ownable spaces (property / utility) ---------- */
+function landOnOwnable(team, sp){
+  const own = state.ownership[sp.id];
+  if(!own){
+    openModal(buyModal(team, sp));
+  } else if(own.teamIdx === state.currentTeam){
+    openModal(infoModal('🏠 '+sp.name, 'Ya es tuya. ¡Sigue jugando!', finishLanding));
+  } else {
+    const owner = state.teams[own.teamIdx];
+    const rent = rentOf(sp);
+    team.money -= rent;
+    owner.money += rent;
+    SFX.cash();
+    openModal(infoModal('💳 Renta', `${sp.name} es de ${owner.name}.<br>Pagas ${fmt(rent)} (mitad del precio).`, finishLanding));
+  }
+}
+
+function buyModal(team, sp){
+  const el = document.createElement('div');
+  el.className = 'modal-overlay';
+  el.innerHTML = `
+    <div class="modal">
+      <h3>🏷 ${sp.name}</h3>
+      <table class="prop-detail-table">
+        <tr><td>Precio</td><td>${fmt(sp.price)}</td></tr>
+        <tr><td>Renta (mitad del precio)</td><td>${fmt(rentOf(sp))}</td></tr>
+      </table>
+      <div class="desc">${team.name}, ¿quieres comprar esta propiedad?</div>
+      <div class="btnrow">
+        <button class="btn" id="mBuy">💰 Comprar</button>
+        <button class="btn secondary" id="mSkip">Pasar</button>
+      </div>
+    </div>`;
+  el.querySelector('#mBuy').onclick = ()=>{
+    if(team.money < sp.price){ SFX.error(); flashError('¡No tienes suficiente dinero!'); return; }
+    team.money -= sp.price;
+    state.ownership[sp.id] = {teamIdx: state.currentTeam};
+    team.props.push(sp.id);
+    SFX.purchase();
+    log(`🏠 ${team.name} compró ${sp.name} por ${fmt(sp.price)}.`);
+    closeModal();
+    buildBoard();
+    finishLanding();
+  };
+  el.querySelector('#mSkip').onclick = ()=>{ closeModal(); finishLanding(); };
+  return el;
+}
+
+function propertyInfoModal(spaceId){
+  const sp = SPACES.find(s=>s.id===spaceId);
+  const own = state.ownership[spaceId];
+  const el = document.createElement('div');
+  el.className = 'modal-overlay';
+  const ownerLine = own ? `Es de <b>${state.teams[own.teamIdx].name}</b>` : 'Sin dueño';
+  el.innerHTML = `
+    <div class="modal">
+      <h3>${sp.name}</h3>
+      <table class="prop-detail-table">
+        <tr><td>Precio</td><td>${fmt(sp.price)}</td></tr>
+        <tr><td>Renta (mitad del precio)</td><td>${fmt(rentOf(sp))}</td></tr>
+      </table>
+      <div class="desc">${ownerLine}</div>
+      <div class="btnrow"><button class="btn" id="mClose">Cerrar</button></div>
+    </div>`;
+  el.querySelector('#mClose').onclick = closeModal;
+  return el;
+}
+
+/* ---------- question / verb cards ---------- */
+function drawQuestion(team){
+  if(state.qDeck.length===0){
+    state.qDeck = shuffle(state.qDiscard);
+    state.qDiscard = [];
+  }
+  const idx = state.qDeck.pop();
+  state.qDiscard.push(idx);
+  const card = QUESTION_CARDS[idx];
+  const el = document.createElement('div');
+  el.className = 'modal-overlay';
+  el.innerHTML = `
+    <div class="modal">
+      <h3>❓ Verb / Question</h3>
+      <div class="card-face">${card.t}</div>
+      <div class="desc">${team.name} — el profesor decide: ¿respondió bien?</div>
+      <div class="btnrow">
+        <button class="btn" id="mWin">✅ Correcto — gana ${fmt(card.win)}</button>
+        <button class="btn danger" id="mLose">❌ Incorrecto — devuelve ${fmt(card.lose)}</button>
+      </div>
+    </div>`;
+  el.querySelector('#mWin').onclick = ()=>{ team.money += card.win; SFX.cash(); closeModal(); finishLanding(); };
+  el.querySelector('#mLose').onclick = ()=>{ team.money -= card.lose; SFX.error(); closeModal(); finishLanding(); };
+  openModal(el);
+}
+
+/* ---------- bonus chest (manual button, any team, any time) ---------- */
+function bonusTeamSelectModal(){
+  const el = document.createElement('div');
+  el.className = 'modal-overlay';
+  const active = state.teams.map((t,i)=>({t,i})).filter(o=>!o.t.bankrupt);
+  el.innerHTML = `<div class="modal">
+    <h3>🎁 Cofre de Sorpresas</h3>
+    <div class="desc">¿Qué equipo va a sacar una carta?</div>
+    <div class="btnrow">
+      ${active.map(o=>`<button class="btn" style="background:${o.t.color};color:#fff;box-shadow:none;" data-i="${o.i}">${o.t.name}</button>`).join('')}
+    </div>
+    <div class="btnrow"><button class="btn secondary" id="mCancel">Cancelar</button></div>
+  </div>`;
+  el.querySelectorAll('button[data-i]').forEach(btn=>{
+    btn.onclick = ()=>{ const i = parseInt(btn.dataset.i); closeModal(); drawBonusCard(i); };
+  });
+  el.querySelector('#mCancel').onclick = closeModal;
+  return el;
+}
+function drawBonusCard(teamIdx){
+  if(!state.started) return;
+  if(state.bonusDeck.length===0){ state.bonusDeck = shuffle(BONUS_CARDS.map((_,i)=>i)); }
+  const idx = state.bonusDeck.pop();
+  const card = BONUS_CARDS[idx];
+  const team = state.teams[teamIdx];
+  let effectDesc = '';
+  if(card.kind==='money'){
+    team.money += card.amt;
+    effectDesc = (card.amt>=0?'+':'') + fmt(card.amt);
+  } else if(card.kind==='collectAll'){
+    state.teams.forEach((t,i)=>{ if(i!==teamIdx && !t.bankrupt){ t.money -= card.amt; team.money += card.amt; } });
+    effectDesc = `${team.name} recibe ${fmt(card.amt)} de cada equipo`;
+  } else if(card.kind==='payAll'){
+    state.teams.forEach((t,i)=>{ if(i!==teamIdx && !t.bankrupt){ t.money += card.amt; team.money -= card.amt; } });
+    effectDesc = `${team.name} paga ${fmt(card.amt)} a cada equipo`;
+  }
+  SFX.cash();
+  renderSidebar();
+  openModal(infoModal('🎁 '+team.name, `${card.t}<br><br><b>${effectDesc}</b>`, null));
+}
+
+/* ---------- misc modals ---------- */
+function infoModal(title, desc, onClose){
+  const el = document.createElement('div');
+  el.className = 'modal-overlay';
+  el.innerHTML = `<div class="modal"><h3>${title}</h3><div class="desc">${desc}</div>
+    <div class="btnrow"><button class="btn" id="mOk">Continuar</button></div></div>`;
+  el.querySelector('#mOk').onclick = ()=>{ closeModal(); if(onClose) onClose(); };
+  return el;
+}
+function confirmModal(msg, onYes){
+  const el = document.createElement('div');
+  el.className = 'modal-overlay';
+  el.innerHTML = `<div class="modal"><h3>⚠ Confirmar</h3><div class="desc">${msg}</div>
+    <div class="btnrow">
+      <button class="btn danger" id="cYes">Sí</button>
+      <button class="btn secondary" id="cNo">Cancelar</button>
+    </div></div>`;
+  el.querySelector('#cYes').onclick = ()=>{ closeModal(); onYes(); };
+  el.querySelector('#cNo').onclick = closeModal;
+  return el;
+}
+function flashError(msg){
+  openModal(infoModal('🚫 Ups', msg));
+}
+
+/* ==================================================================
+   BANKRUPTCY / GAME OVER / TURN ADVANCE
+================================================================== */
+function checkBankrupt(){
+  const team = state.teams[state.currentTeam];
+  if(team.money < 0 && !team.bankrupt){
+    team.bankrupt = true;
+    team.props.forEach(pid=>{ delete state.ownership[pid]; });
+    team.props = [];
+    team.money = 0;
+    SFX.error();
+    log(`💀 ${team.name} quedó en bancarrota y sale del juego.`);
+    buildBoard();
+    const remaining = state.teams.filter(t=>!t.bankrupt);
+    if(remaining.length<=1){ state.gameOver = true; setTimeout(()=>endGame(), 400); }
+  }
+}
+function advanceTurn(){
+  if(state.gameOver) return;
+  let next = state.currentTeam;
+  do{ next = (next+1)%state.teams.length; } while(state.teams[next].bankrupt && next!==state.currentTeam);
+  state.currentTeam = next;
+  renderAll();
+}
+function endGame(){
+  if(!state.started) return;
+  state.gameOver = true;
+  const allRanked = state.teams.slice().sort((a,b)=>b.money-a.money);
+  const medals = ['🥇','🥈','🥉'];
+  const list = allRanked.map((t,i)=>`<div class="prop-line" style="display:flex;justify-content:space-between;"><span>${medals[i]||'　'} ${t.name}${t.bankrupt?' 💀':''}</span><span>${fmt(t.money)}</span></div>`).join('');
+  SFX.win();
+  fireConfetti();
+  const el = document.createElement('div');
+  el.className = 'modal-overlay';
+  el.innerHTML = `<div class="modal">
+    <h3>🏆 GAME OVER</h3>
+    <div class="desc">Ganador: <b>${allRanked[0].name}</b>!</div>
+    <div style="text-align:left;margin:10px 0;">${list}</div>
+    <div class="btnrow">
+      <button class="btn" id="mAgain">🔄 Nueva Partida</button>
+    </div>
+  </div>`;
+  el.querySelector('#mAgain').onclick = ()=>{
+    state.started = false;
+    closeModal();
+    showScreen('setupScreen');
+    buildTeamInputs();
+  };
+  openModal(el);
+}
+
+/* ==================================================================
+   MODAL ROOT
+================================================================== */
+function openModal(el){
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = '';
+  root.appendChild(el);
+}
+function closeModal(){
+  document.getElementById('modalRoot').innerHTML = '';
+}
+
+/* ==================================================================
+   CONFETTI
+================================================================== */
+function fireConfetti(){
+  const canvas = document.getElementById('confettiCanvas');
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+  const colors = ['#e05a4e','#f2c94c','#4caf50','#3aa0e0','#a463d6'];
+  let particles = [];
+  for(let i=0;i<140;i++){
+    particles.push({
+      x: Math.random()*canvas.width, y: -20-Math.random()*canvas.height*0.5,
+      r: 4+Math.random()*5, c: colors[Math.floor(Math.random()*colors.length)],
+      vy: 2+Math.random()*3, vx: -2+Math.random()*4, rot: Math.random()*360, vr: -6+Math.random()*12
+    });
+  }
+  let frame=0;
+  function anim(){
+    frame++;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle=p.c; ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*1.6); ctx.restore();
+    });
+    if(frame<160) requestAnimationFrame(anim); else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  anim();
+}
+
+/* ==================================================================
+   EDITOR (questions, bonus cards, prices) — from title screen
+================================================================== */
+document.getElementById('btnEditor').onclick = ()=>openModal(editorModal());
+function editorModal(){
+  const el = document.createElement('div');
+  el.className = 'modal-overlay';
+  el.innerHTML = `<div class="modal" style="max-width:640px;">
+    <h3>✏ Editor</h3>
+    <div class="editor-body">
+      <div class="desc" style="margin-top:0;">También puedes editar todo directamente en Excel: exporta, edita las columnas <b>Texto / Gana / Pierde</b> (preguntas), <b>Texto / Tipo / Monto</b> (bonus) o <b>Propiedad / Precio</b>, y vuelve a importar el mismo archivo.</div>
+      <h4>Verb / Question Cards — una por línea: "Texto | gana | pierde"</h4>
+      <textarea id="editQ">${QUESTION_CARDS.map(c=>`${c.t} | ${c.win} | ${c.lose}`).join('\n')}</textarea>
+      <h4>Bonus Chest Cards — "Texto | money:MONTO" / "collectAll:MONTO" / "payAll:MONTO"</h4>
+      <textarea id="editBonus">${BONUS_CARDS.map(c=>`${c.t} | ${c.kind}:${c.amt}`).join('\n')}</textarea>
+      <h4>Property Prices</h4>
+      <div id="editPrices"></div>
+      <div class="row" style="margin-top:14px;">
+        <button class="btn small" id="expXlsx">⬇ Exportar a Excel</button>
+        <button class="btn small secondary" id="impXlsx">⬆ Importar desde Excel</button>
+        <input type="file" id="impFile" accept=".xlsx,.xls" style="display:none;">
+      </div>
+    </div>
+    <div class="btnrow">
+      <button class="btn" id="saveEdit">💾 Guardar</button>
+      <button class="btn secondary" id="closeEdit">Cerrar</button>
+    </div>
+  </div>`;
+
+  const pricesWrap = el.querySelector('#editPrices');
+  SPACES.filter(s=>s.type==='property'||s.type==='utility').forEach(sp=>{
+    const row = document.createElement('div');
+    row.className = 'edit-price-row';
+    row.innerHTML = `<span>${sp.name}</span>
+      <input type="number" data-id="${sp.id}" value="${sp.price}">`;
+    pricesWrap.appendChild(row);
+  });
+
+  el.querySelector('#saveEdit').onclick = ()=>{
+    const qLines = el.querySelector('#editQ').value.split('\n').map(l=>l.trim()).filter(Boolean);
+    const newQ = qLines.map(line=>{
+      const parts = line.split('|').map(s=>s.trim());
+      return {t:parts[0], win:parseInt(parts[1])||0, lose:parseInt(parts[2])||parseInt(parts[1])||0};
+    });
+    if(newQ.length>0) QUESTION_CARDS = newQ;
+
+    const bLines = el.querySelector('#editBonus').value.split('\n').map(l=>l.trim()).filter(Boolean);
+    const newB = bLines.map(line=>{
+      const parts = line.split('|').map(s=>s.trim());
+      const spec = parts[1]||'money:0';
+      const [kind, amtStr] = spec.split(':');
+      return {t:parts[0], kind: (kind||'money').trim(), amt: parseInt(amtStr)||0};
+    });
+    if(newB.length>0) BONUS_CARDS = newB;
+
+    pricesWrap.querySelectorAll('input').forEach(inp=>{
+      const sp = SPACES.find(s=>s.id==inp.dataset.id);
+      sp.price = parseInt(inp.value)||sp.price;
+    });
+    SFX.purchase();
+    closeModal();
+  };
+  el.querySelector('#closeEdit').onclick = closeModal;
+  el.querySelector('#expXlsx').onclick = ()=>{
+    const wb = XLSX.utils.book_new();
+    const wsQ = XLSX.utils.json_to_sheet(QUESTION_CARDS.map(c=>({Texto:c.t, Gana:c.win, Pierde:c.lose})));
+    XLSX.utils.book_append_sheet(wb, wsQ, 'Preguntas');
+    const wsB = XLSX.utils.json_to_sheet(BONUS_CARDS.map(c=>({Texto:c.t, Tipo:c.kind, Monto:c.amt})));
+    XLSX.utils.book_append_sheet(wb, wsB, 'Bonus');
+    const wsP = XLSX.utils.json_to_sheet(SPACES.filter(s=>s.type==='property'||s.type==='utility').map(s=>({Propiedad:s.name, Precio:s.price})));
+    XLSX.utils.book_append_sheet(wb, wsP, 'Precios');
+    XLSX.writeFile(wb, 'monopoly_datos.xlsx');
+  };
+  el.querySelector('#impXlsx').onclick = ()=> el.querySelector('#impFile').click();
+  el.querySelector('#impFile').onchange = (ev)=>{
+    const file = ev.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      try{
+        const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+        if(wb.SheetNames.includes('Preguntas')){
+          const rows = XLSX.utils.sheet_to_json(wb.Sheets['Preguntas']);
+          const newQ = rows.filter(r=>r.Texto).map(r=>({
+            t: String(r.Texto),
+            win: parseInt(r.Gana)||0,
+            lose: parseInt(r.Pierde)||parseInt(r.Gana)||0
+          }));
+          if(newQ.length>0) QUESTION_CARDS = newQ;
+        }
+        if(wb.SheetNames.includes('Bonus')){
+          const rows = XLSX.utils.sheet_to_json(wb.Sheets['Bonus']);
+          const newB = rows.filter(r=>r.Texto).map(r=>({
+            t: String(r.Texto),
+            kind: (r.Tipo||'money').toString().trim(),
+            amt: parseInt(r.Monto)||0
+          }));
+          if(newB.length>0) BONUS_CARDS = newB;
+        }
+        if(wb.SheetNames.includes('Precios')){
+          const rows = XLSX.utils.sheet_to_json(wb.Sheets['Precios']);
+          rows.forEach(r=>{
+            const target = SPACES.find(sp=> sp.name.toUpperCase() === String(r.Propiedad).toUpperCase());
+            if(target && r.Precio) target.price = parseInt(r.Precio)||target.price;
+          });
+        }
+        closeModal();
+        openModal(editorModal());
+      }catch(err){ closeModal(); openModal(infoModal('⚠ Error','Ese archivo no es un Excel válido. Usa el formato exportado por este mismo juego.')); }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+  return el;
+}
+
+})();
+</script>
+</body>
+</html>

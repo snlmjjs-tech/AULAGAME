@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIGHT!!! 3D - English Numbers Battle</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --gold:#ffd23f;
+    --p-color:#2f8fe0;
+    --r-color:#e03b3b;
+    --hud-bg:rgba(8,5,16,0.82);
+    --white:#fdfaf5;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    font-family:'Segoe UI',Arial,sans-serif;
+    background:#000;
+    color:var(--white);
+    overflow:hidden;
+    -webkit-user-select:none;user-select:none;
+  }
+  #app{position:relative;width:100%;height:100vh;min-height:560px;}
+  #gameCanvas{
+    position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0;
+  }
+  #loadingOverlay{
+    position:absolute;inset:0;z-index:50;background:#0a0614;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  }
+  #loadingOverlay .spinner{
+    width:46px;height:46px;border-radius:50%;
+    border:5px solid rgba(255,255,255,0.15);border-top-color:var(--gold);
+    animation:spin 0.9s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .screen{
+    position:absolute;inset:0;z-index:5;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    text-align:center;
+    pointer-events:none;
+  }
+  .screen.active{display:flex;}
+  .screen > *{pointer-events:auto;}
+
+  #screen-title h1{
+    font-size:clamp(48px,10vw,110px);
+    margin:0;
+    font-family:'Arial Black',Impact,sans-serif;
+    letter-spacing:4px;
+    color:var(--gold);
+    -webkit-text-stroke:3px #7a1010;
+    text-shadow:6px 6px 0 #7a1010, 0 0 40px rgba(255,210,63,0.6);
+    animation:pulseTitle 1.4s infinite ease-in-out;
+  }
+  @keyframes pulseTitle{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+  #screen-title h2{
+    font-size:clamp(16px,3vw,26px);
+    margin:6px 0 26px;
+    color:#fff;font-weight:400;
+    text-shadow:2px 2px 4px rgba(0,0,0,0.6);
+  }
+  .btn{
+    font-size:20px;font-weight:700;padding:14px 36px;border-radius:12px;border:none;cursor:pointer;
+    background:linear-gradient(180deg,#ffe27a,var(--gold));color:#4a1400;
+    box-shadow:0 6px 0 #a3720a, 0 8px 18px rgba(0,0,0,0.4);
+    transition:transform .08s ease;
+  }
+  .btn:active{transform:translateY(5px);box-shadow:0 1px 0 #a3720a;}
+  .btn.secondary{
+    background:linear-gradient(180deg,#6fb8ff,#2f7fce);color:#04203b;
+    box-shadow:0 6px 0 #184a72, 0 8px 18px rgba(0,0,0,0.4);
+  }
+  .btn.ghost{
+    background:linear-gradient(180deg,#3a2a52,#241634);color:#fff;
+    box-shadow:0 6px 0 #140c1f, 0 8px 18px rgba(0,0,0,0.4);
+  }
+  .btn.small{font-size:14px;padding:8px 16px;border-radius:8px;box-shadow:0 4px 0 rgba(0,0,0,0.35);}
+  .btn-row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;}
+  #screen-title .instructions{
+    max-width:560px;font-size:14px;line-height:1.5;color:#e9dcff;
+    margin-top:20px;background:rgba(0,0,0,0.35);padding:12px 18px;border-radius:10px;
+  }
+
+  /* ---------- Game HUD ---------- */
+  #screen-game{justify-content:flex-start;padding-top:14px;}
+  .hud{width:100%;max-width:980px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;}
+  .hp-block{width:40%;text-align:left;}
+  .hp-block.right{text-align:right;}
+  .hp-name{font-weight:700;font-size:14px;margin-bottom:4px;color:#fff;text-shadow:1px 1px 2px #000;}
+  .hp-bar-outer{height:20px;border-radius:10px;background:rgba(0,0,0,0.6);border:2px solid #fff3;overflow:hidden;}
+  .hp-bar-inner{height:100%;border-radius:10px;background:linear-gradient(90deg,#5cff6b,#1fae2e);transition:width .5s ease;width:100%;}
+  .hp-bar-inner.low{background:linear-gradient(90deg,#ffb84d,#ff5c33);}
+  .hp-bar-inner.critical{background:linear-gradient(90deg,#ff5c5c,#a30000);}
+  .round-badge{background:var(--hud-bg);border-radius:10px;padding:6px 16px;font-weight:700;font-size:14px;color:var(--gold);border:1px solid rgba(255,255,255,0.15);}
+
+  .spacer-grow{flex:1;}
+
+  .question-panel{
+    z-index:5;width:100%;max-width:700px;background:var(--hud-bg);
+    border:2px solid rgba(255,255,255,0.15);border-radius:16px;
+    padding:16px 24px 22px;margin-bottom:18px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.5);
+    margin-top:auto;
+  }
+  .question-panel .prompt-label{font-size:13px;color:#c9b8ff;margin-bottom:4px;}
+  .question-panel .prompt-number{font-size:clamp(30px,6vw,48px);font-weight:900;color:var(--gold);text-shadow:2px 2px 0 rgba(0,0,0,0.5);margin-bottom:12px;}
+  .options{display:flex;flex-direction:column;gap:9px;}
+  .opt-btn{
+    background:rgba(34,20,54,0.9);border:2px solid #4a2d6b;color:#fff;
+    padding:12px 18px;border-radius:10px;font-size:16px;font-weight:600;
+    cursor:pointer;text-align:left;transition:all .15s ease;
+  }
+  .opt-btn:hover:not(:disabled){background:#33205a;border-color:var(--gold);}
+  .opt-btn:disabled{cursor:default;}
+  .opt-btn.correct{background:#1f7a34;border-color:#4dff88;}
+  .opt-btn.wrong{background:#7a1f1f;border-color:#ff6b6b;}
+
+  .feedback-stamp{
+    position:absolute;top:32%;left:50%;
+    transform:translate(-50%,-50%) scale(0) rotate(-8deg);
+    font-size:clamp(30px,7vw,64px);font-weight:900;
+    padding:6px 26px;border-radius:10px;z-index:20;pointer-events:none;
+  }
+  .feedback-stamp.show{animation:stampIn .5s cubic-bezier(.2,1.4,.4,1) forwards;}
+  @keyframes stampIn{
+    0%{transform:translate(-50%,-50%) scale(0) rotate(-8deg);opacity:0;}
+    60%{transform:translate(-50%,-50%) scale(1.15) rotate(-8deg);opacity:1;}
+    100%{transform:translate(-50%,-50%) scale(1) rotate(-8deg);opacity:1;}
+  }
+  .feedback-stamp.correct{color:#4dff88;border:5px solid #4dff88;background:rgba(10,40,15,0.75);}
+  .feedback-stamp.wrong{color:#ff6b6b;border:5px solid #ff6b6b;background:rgba(40,10,10,0.75);}
+
+  #screen-end h1{
+    font-size:clamp(46px,9vw,90px);font-family:'Arial Black',Impact,sans-serif;color:var(--gold);
+    -webkit-text-stroke:3px #7a1010;text-shadow:6px 6px 0 #7a1010;margin-bottom:6px;
+  }
+  #screen-end .result-msg{font-size:22px;margin-bottom:6px;}
+  #screen-end .result-sub{font-size:15px;color:#e9dcff;margin-bottom:24px;}
+
+  .top-controls{position:absolute;top:10px;right:10px;z-index:30;display:flex;gap:8px;}
+  .icon-btn{
+    width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,0.5);
+    border:1px solid rgba(255,255,255,0.25);color:#fff;font-size:18px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:100;}
+  .modal-overlay.active{display:flex;}
+  .modal-box{
+    background:#1b0f2e;border:2px solid #4a2d6b;border-radius:14px;
+    max-width:680px;width:92%;max-height:85vh;overflow-y:auto;
+    padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,0.6);text-align:left;
+  }
+  .modal-box h3{margin-top:0;color:var(--gold);}
+  .modal-box table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px;}
+  .modal-box th,.modal-box td{border:1px solid #4a2d6b;padding:6px 8px;text-align:left;}
+  .modal-box th{background:#2a1a48;}
+  .modal-box input[type=text]{width:100%;background:#120a1f;border:1px solid #4a2d6b;color:#fff;padding:4px 6px;border-radius:4px;font-size:13px;}
+  .modal-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:10px;}
+  .modal-box p{font-size:13px;line-height:1.5;color:#e9dcff;}
+  .row-del{background:#7a1f1f;border:none;color:#fff;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;}
+  .file-input-label{display:inline-block;background:#2f7fce;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;}
+  .file-input-label input{display:none;}
+  .table-wrap{max-height:320px;overflow-y:auto;border-radius:8px;}
+
+  .footer-note{position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,255,255,0.4);z-index:5;pointer-events:none;}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="loadingOverlay">
+    <div class="spinner"></div>
+    <div>Cargando arena 3D...</div>
+  </div>
+
+  <div class="top-controls">
+    <button class="icon-btn" id="muteBtn" title="Silenciar música">🔊</button>
+    <button class="icon-btn" id="editBtn" title="Editar / añadir preguntas">✏️</button>
+  </div>
+
+  <!-- ================= TITLE SCREEN ================= -->
+  <div class="screen" id="screen-title">
+    <h1>FIGHT!!!</h1>
+    <h2>English Numbers Battle · 3D</h2>
+    <div class="btn-row">
+      <button class="btn" id="startBtn">EMPEZAR PELEA</button>
+      <button class="btn ghost" id="addQuestionsBtnTitle">➕ Añadir / editar preguntas</button>
+    </div>
+    <div class="instructions">
+      Responde correctamente cómo se dice cada número en inglés para atacar a tu rival.
+      ¡Si te equivocas, el rival te golpeará a ti! Gana quien deje al otro fuera de combate.
+    </div>
+  </div>
+
+  <!-- ================= GAME SCREEN ================= -->
+  <div class="screen" id="screen-game">
+    <div class="hud">
+      <div class="hp-block">
+        <div class="hp-name">TÚ</div>
+        <div class="hp-bar-outer"><div class="hp-bar-inner" id="playerHpBar"></div></div>
+      </div>
+      <div class="round-badge" id="roundBadge">Pregunta 1/6</div>
+      <div class="hp-block right">
+        <div class="hp-name">RIVAL</div>
+        <div class="hp-bar-outer"><div class="hp-bar-inner" id="rivalHpBar"></div></div>
+      </div>
+    </div>
+    <div class="spacer-grow"></div>
+    <div class="feedback-stamp" id="feedbackStamp"></div>
+    <div class="question-panel">
+      <div class="prompt-label">HOW DO WE SAY...?</div>
+      <div class="prompt-number" id="promptNumber">320</div>
+      <div class="options" id="optionsBox"></div>
+    </div>
+  </div>
+
+  <!-- ================= END SCREEN ================= -->
+  <div class="screen" id="screen-end">
+    <h1 id="endTitle">FIN</h1>
+    <div class="result-msg" id="resultMsg"></div>
+    <div class="result-sub" id="resultSub"></div>
+    <div class="btn-row">
+      <button class="btn" id="restartBtn">REGRESAR</button>
+      <button class="btn secondary" id="exitBtn">SALIR</button>
+    </div>
+  </div>
+
+  <div class="footer-note">Mr. Núñez · Fight! English Numbers 3D</div>
+</div>
+
+<!-- ================= EDIT QUESTIONS MODAL ================= -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-box">
+    <h3>Editar / añadir preguntas</h3>
+    <p>Agrega tantas preguntas como quieras, edítalas directo en la tabla, o importa/exporta un Excel para editar más cómodo.</p>
+    <div class="btn-row" style="justify-content:flex-start;margin-bottom:14px;">
+      <label class="file-input-label">📥 Importar Excel
+        <input type="file" id="importExcel" accept=".xlsx,.xls">
+      </label>
+      <button class="btn small secondary" id="exportExcel">📤 Exportar Excel</button>
+      <button class="btn small" id="addRowBtn">➕ Agregar pregunta</button>
+    </div>
+    <div class="table-wrap">
+    <table id="editTable">
+      <thead>
+        <tr><th>Número</th><th>Correcta</th><th>Incorrecta 1</th><th>Incorrecta 2</th><th></th></tr>
+      </thead>
+      <tbody id="editTableBody"></tbody>
+    </table>
+    </div>
+    <div class="modal-actions">
+      <button class="btn small secondary" id="closeEditBtn">Cancelar</button>
+      <button class="btn small" id="saveEditBtn">Guardar y jugar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= CONFIRM MODAL ================= -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box" style="max-width:380px;text-align:center;">
+    <h3 id="confirmTitle">¿Confirmar?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions" style="justify-content:center;">
+      <button class="btn small secondary" id="confirmNo">Cancelar</button>
+      <button class="btn small" id="confirmYes">Sí</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   FIGHT!!! 3D - English Numbers Battle
+   Single-file HTML educational game (Three.js r128)
+   ============================================================ */
+
+/* ---------- Default question bank ---------- */
+let questionBank = [
+  {number:"320", correct:"Three hundred and twenty", wrong:["Three hundred and twelve","Thirty-two zero"]},
+  {number:"580", correct:"Five hundred and eighty", wrong:["Five hundred and eighteen","Eighty-five hundred"]},
+  {number:"999", correct:"Nine hundred and ninety-nine", wrong:["Nine hundred and nineteen","Ninety-nine hundred"]},
+  {number:"210", correct:"Two hundred and ten", wrong:["Two hundred and thirteen","Twenty-one zero"]},
+  {number:"689", correct:"Six hundred and eighty-nine", wrong:["Six hundred and nineteen","Six hundred and ninety-eight"]},
+  {number:"737", correct:"Seven hundred and thirty-seven", wrong:["Seven hundred and seventeen","Seventy-three seven"]}
+];
+
+let roundQuestions = [];
+let currentRound = 0;
+let playerHP = 100, rivalHP = 100;
+const DAMAGE = 34;
+let musicOn = true;
+let audioCtx = null;
+
+/* ============================================================
+   THREE.JS 3D SCENE
+   ============================================================ */
+let scene, camera, renderer, clock;
+let playerRig, rivalRig;
+let cameraShake = 0;
+let roundSprite, roundTexture, roundCanvas, roundCtx;
+
+function initThree(){
+  const canvas = document.getElementById('gameCanvas');
+  renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  if(renderer.outputEncoding !== undefined) renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x140a22);
+  scene.fog = new THREE.Fog(0x140a22, 9, 24);
+
+  camera = new THREE.PerspectiveCamera(42, window.innerWidth/window.innerHeight, 0.1, 100);
+  camera.position.set(0, 2.3, 6.6);
+  camera.lookAt(0, 1.05, 0);
+
+  /* lights */
+  const hemi = new THREE.HemisphereLight(0x9fb8ff, 0x2a1030, 0.65);
+  scene.add(hemi);
+  const dir = new THREE.DirectionalLight(0xffe3b0, 1.2);
+  dir.position.set(5,10,6);
+  dir.castShadow = true;
+  dir.shadow.mapSize.set(2048,2048);
+  dir.shadow.camera.left=-8; dir.shadow.camera.right=8;
+  dir.shadow.camera.top=8; dir.shadow.camera.bottom=-8;
+  scene.add(dir);
+
+  const rimBlue = new THREE.PointLight(0x2f8fe0, 3, 9);
+  rimBlue.position.set(-3.2,2.2,2.2);
+  scene.add(rimBlue);
+  const rimRed = new THREE.PointLight(0xe03b3b, 3, 9);
+  rimRed.position.set(3.2,2.2,2.2);
+  scene.add(rimRed);
+  const moon = new THREE.PointLight(0xffe9b0, 1.4, 30);
+  moon.position.set(0,9,-8);
+  scene.add(moon);
+
+  /* arena floor */
+  const groundGeo = new THREE.CylinderGeometry(4.4,4.7,0.5,48);
+  const groundMat = new THREE.MeshStandardMaterial({color:0x241534, metalness:0.5, roughness:0.55});
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.position.y=-0.25;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  const ringGeo = new THREE.TorusGeometry(4.4,0.07,10,64);
+  const ringMat = new THREE.MeshStandardMaterial({color:0xffd23f, emissive:0xffd23f, emissiveIntensity:0.7, metalness:0.3, roughness:0.4});
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.rotation.x = Math.PI/2;
+  ring.position.y = 0.02;
+  scene.add(ring);
+
+  const innerRingGeo = new THREE.RingGeometry(2.3,2.4,48);
+  const innerRingMat = new THREE.MeshStandardMaterial({color:0xffd23f, emissive:0xffd23f, emissiveIntensity:0.35, side:THREE.DoubleSide, transparent:true, opacity:0.5});
+  const innerRing = new THREE.Mesh(innerRingGeo, innerRingMat);
+  innerRing.rotation.x = -Math.PI/2;
+  innerRing.position.y = 0.03;
+  scene.add(innerRing);
+
+  /* distant silhouettes for atmosphere */
+  for(let i=0;i<14;i++){
+    const h = 3+Math.random()*6;
+    const geo = new THREE.ConeGeometry(1+Math.random()*1.2, h, 5);
+    const mat = new THREE.MeshStandardMaterial({color:0x1c0f2c, roughness:1});
+    const m = new THREE.Mesh(geo,mat);
+    const ang = (i/14)*Math.PI*2 + Math.random()*0.3;
+    const rad = 13+Math.random()*7;
+    m.position.set(Math.cos(ang)*rad, h/2-0.3, Math.sin(ang)*rad-4);
+    scene.add(m);
+  }
+
+  /* moon sphere */
+  const moonGeo = new THREE.SphereGeometry(2.4,24,24);
+  const moonMat = new THREE.MeshStandardMaterial({color:0xffe9b0, emissive:0xffb85a, emissiveIntensity:0.9, roughness:0.9});
+  const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+  moonMesh.position.set(0,9,-16);
+  scene.add(moonMesh);
+
+  /* floating round indicator (billboard sprite) */
+  roundCanvas = document.createElement('canvas');
+  roundCanvas.width = 512; roundCanvas.height = 128;
+  roundCtx = roundCanvas.getContext('2d');
+  roundTexture = new THREE.CanvasTexture(roundCanvas);
+  const spriteMat = new THREE.SpriteMaterial({map:roundTexture, transparent:true, depthTest:false});
+  roundSprite = new THREE.Sprite(spriteMat);
+  roundSprite.scale.set(3.4,0.85,1);
+  roundSprite.position.set(0,3.6,0);
+  scene.add(roundSprite);
+  drawRoundSprite("Pregunta 1/6");
+
+  /* fighters */
+  playerRig = createFighter(0x2f8fe0, 0x123a5c);
+  playerRig.group.position.set(-1.3,0,0);
+  playerRig.group.rotation.y = Math.PI/2;
+  playerRig.baseX = -1.3;
+  scene.add(playerRig.group);
+
+  rivalRig = createFighter(0xe03b3b, 0x5c1212);
+  rivalRig.group.position.set(1.3,0,0);
+  rivalRig.group.rotation.y = -Math.PI/2;
+  rivalRig.baseX = 1.3;
+  scene.add(rivalRig.group);
+
+  window.addEventListener('resize', onResize);
+  clock = new THREE.Clock();
+  animate();
+
+  document.getElementById('loadingOverlay').style.display='none';
+  showScreen('screen-title');
+}
+
+function onResize(){
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function drawRoundSprite(text){
+  roundCtx.clearRect(0,0,roundCanvas.width, roundCanvas.height);
+  roundCtx.font = "bold 56px Arial";
+  roundCtx.textAlign = "center";
+  roundCtx.textBaseline = "middle";
+  roundCtx.fillStyle = "rgba(8,5,16,0.75)";
+  roundRect(roundCtx, 20, 20, roundCanvas.width-40, roundCanvas.height-40, 24);
+  roundCtx.fill();
+  roundCtx.strokeStyle = "#ffd23f";
+  roundCtx.lineWidth = 4;
+  roundRect(roundCtx, 20, 20, roundCanvas.width-40, roundCanvas.height-40, 24);
+  roundCtx.stroke();
+  roundCtx.fillStyle = "#ffd23f";
+  roundCtx.fillText(text, roundCanvas.width/2, roundCanvas.height/2+4);
+  roundTexture.needsUpdate = true;
+}
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+/* ---------- Fighter rig builder (original robot-gladiator design) ---------- */
+function createFighter(colorMain, colorDark){
+  const group = new THREE.Group();
+  const metal = new THREE.MeshStandardMaterial({color:0x262832, metalness:0.75, roughness:0.32});
+  const accent = new THREE.MeshStandardMaterial({color:colorMain, metalness:0.55, roughness:0.3, emissive:colorDark, emissiveIntensity:0.4});
+  const glow = new THREE.MeshStandardMaterial({color:colorMain, emissive:colorMain, emissiveIntensity:1.3});
+
+  const hips = new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.34,0.35,12), metal);
+  hips.position.y=0.9; hips.castShadow=true;
+  group.add(hips);
+
+  const torsoPivot = new THREE.Group();
+  torsoPivot.position.y = 1.05;
+  group.add(torsoPivot);
+
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.33,0.31,0.72,12), metal);
+  torso.position.y=0.38; torso.castShadow=true;
+  torsoPivot.add(torso);
+
+  const chestPlate = new THREE.Mesh(new THREE.BoxGeometry(0.32,0.34,0.1), accent);
+  chestPlate.position.set(0,0.5,0.24);
+  torsoPivot.add(chestPlate);
+
+  const chestCore = new THREE.Mesh(new THREE.SphereGeometry(0.075,12,12), glow);
+  chestCore.position.set(0,0.5,0.3);
+  torsoPivot.add(chestCore);
+
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.11,0.14,10), metal);
+  neck.position.y=0.8;
+  torsoPivot.add(neck);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.22,16,16), metal);
+  head.position.y=0.98; head.castShadow=true;
+  torsoPivot.add(head);
+
+  const visor = new THREE.Mesh(new THREE.BoxGeometry(0.26,0.06,0.05), glow);
+  visor.position.set(0,1.0,0.19);
+  torsoPivot.add(visor);
+
+  const crest = new THREE.Mesh(new THREE.ConeGeometry(0.06,0.16,6), accent);
+  crest.position.set(0,1.22,0);
+  torsoPivot.add(crest);
+
+  function makeArm(sign){
+    const shoulderPad = new THREE.Mesh(new THREE.SphereGeometry(0.135,10,10), accent);
+    const shoulderPivot = new THREE.Group();
+    shoulderPivot.position.set(0.4*sign, 0.66, 0);
+    torsoPivot.add(shoulderPivot);
+    shoulderPivot.add(shoulderPad);
+
+    const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.095,0.38,10), metal);
+    upperArm.position.y=-0.2;
+    upperArm.castShadow=true;
+    shoulderPivot.add(upperArm);
+
+    const elbowPivot = new THREE.Group();
+    elbowPivot.position.y=-0.4;
+    shoulderPivot.add(elbowPivot);
+
+    const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.085,0.075,0.36,10), metal);
+    forearm.position.y=-0.19;
+    forearm.castShadow=true;
+    elbowPivot.add(forearm);
+
+    const glove = new THREE.Mesh(new THREE.SphereGeometry(0.12,10,10), accent);
+    glove.position.y=-0.4;
+    elbowPivot.add(glove);
+
+    return {shoulderPivot, elbowPivot};
+  }
+  const armR = makeArm(1);
+  const armL = makeArm(-1);
+
+  function makeLeg(sign){
+    const upperLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.135,0.125,0.48,10), metal);
+    upperLeg.position.set(0.15*sign,0.56,0);
+    upperLeg.castShadow=true;
+    group.add(upperLeg);
+    const lowerLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.1,0.46,10), metal);
+    lowerLeg.position.set(0.15*sign,0.16,0.02);
+    lowerLeg.castShadow=true;
+    group.add(lowerLeg);
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.17,0.08,0.28), metal);
+    foot.position.set(0.15*sign,-0.08,0.05);
+    foot.castShadow=true;
+    group.add(foot);
+  }
+  makeLeg(1); makeLeg(-1);
+
+  return {group, torsoPivot, armR, armL, baseY:0, koFallen:false};
+}
+
+/* ---------- Tween helper ---------- */
+function tween(duration, onUpdate, onComplete){
+  const start = performance.now();
+  function step(now){
+    const t = Math.min((now-start)/duration,1);
+    onUpdate(t);
+    if(t<1) requestAnimationFrame(step); else if(onComplete) onComplete();
+  }
+  requestAnimationFrame(step);
+}
+
+function punchAnim(attacker, defender, impactCallback){
+  const arm = attacker.armR;
+  const startX = attacker.group.position.x;
+  const defenderX = defender.group.position.x;
+  const dir = defenderX > startX ? 1 : -1;
+  const contactGap = 0.62; // distance kept between body centers at moment of contact
+  const targetX = defenderX - dir*contactGap;
+  let fired = false;
+  tween(320, (t)=>{
+    const k = t<0.4 ? t/0.4 : 1-(t-0.4)/0.6;
+    arm.shoulderPivot.rotation.x = -1.7*k;
+    arm.elbowPivot.rotation.x = -1.0*(1-k*0.85);
+    attacker.torsoPivot.position.z = 0.18*k;
+    attacker.torsoPivot.rotation.y = 0.1*k;
+    attacker.group.position.x = startX + (targetX-startX)*k;
+    if(t>=0.4 && !fired){ fired = true; if(impactCallback) impactCallback(); }
+  }, ()=>{
+    arm.shoulderPivot.rotation.x = 0;
+    arm.elbowPivot.rotation.x = 0;
+    attacker.torsoPivot.position.z = 0;
+    attacker.torsoPivot.rotation.y = 0;
+    attacker.group.position.x = startX;
+  });
+}
+
+function hurtAnim(rig){
+  const origX = rig.group.position.x;
+  tween(380, (t)=>{
+    const s = Math.sin(t*Math.PI*7)*(1-t)*0.14;
+    rig.group.position.x = origX + s;
+  }, ()=>{ rig.group.position.x = origX; });
+  cameraShake = 0.18;
+}
+
+function koAnim(rig){
+  if(rig.koFallen) return;
+  rig.koFallen = true;
+  tween(750, (t)=>{
+    rig.group.rotation.z = (rig===playerRig ? -1 : 1) * 1.35 * easeOutCubic(t);
+    rig.group.position.y = -0.15*easeOutCubic(t);
+  });
+}
+function easeOutCubic(t){ return 1-Math.pow(1-t,3); }
+
+/* impact burst particle */
+function spawnBurst3D(rig){
+  const pos = new THREE.Vector3();
+  rig.torsoPivot.getWorldPosition(pos);
+  pos.y += 0.1;
+  const geo = new THREE.SphereGeometry(0.12,12,12);
+  const mat = new THREE.MeshBasicMaterial({color:0xffe27a, transparent:true, opacity:1, blending:THREE.AdditiveBlending});
+  const burst = new THREE.Mesh(geo, mat);
+  burst.position.copy(pos);
+  scene.add(burst);
+  tween(420, (t)=>{
+    const s = 0.3 + t*3.2;
+    burst.scale.set(s,s,s);
+    mat.opacity = 1-t;
+  }, ()=>{ scene.remove(burst); geo.dispose(); mat.dispose(); });
+
+  // extra spark shards
+  for(let i=0;i<6;i++){
+    const shardGeo = new THREE.BoxGeometry(0.04,0.04,0.14);
+    const shardMat = new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:1});
+    const shard = new THREE.Mesh(shardGeo, shardMat);
+    shard.position.copy(pos);
+    const ang = Math.random()*Math.PI*2;
+    const dist = 0.4+Math.random()*0.5;
+    const target = pos.clone().add(new THREE.Vector3(Math.cos(ang)*dist, (Math.random()-0.3)*0.5, Math.sin(ang)*dist));
+    scene.add(shard);
+    tween(400+Math.random()*150, (t)=>{
+      shard.position.lerpVectors(pos, target, t);
+      shardMat.opacity = 1-t;
+    }, ()=>{ scene.remove(shard); shardGeo.dispose(); shardMat.dispose(); });
+  }
+}
+
+/* ---------- Animate loop ---------- */
+function animate(){
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  if(playerRig && !playerRig.koFallen){
+    playerRig.group.position.y = Math.sin(t*2)*0.025;
+    playerRig.torsoPivot.rotation.z = Math.sin(t*1.5)*0.015;
+  }
+  if(rivalRig && !rivalRig.koFallen){
+    rivalRig.group.position.y = Math.sin(t*2+1)*0.025;
+    rivalRig.torsoPivot.rotation.z = Math.sin(t*1.5+1)*0.015;
+  }
+  if(roundSprite){
+    roundSprite.position.y = 3.6 + Math.sin(t*1.2)*0.08;
+  }
+
+  let camX = 0, camY = 2.3;
+  if(cameraShake > 0.001){
+    camX += (Math.random()-0.5)*cameraShake;
+    camY += (Math.random()-0.5)*cameraShake;
+    cameraShake *= 0.85;
+  } else { cameraShake = 0; }
+  camera.position.x = camX;
+  camera.position.y = camY;
+  camera.lookAt(0,1.1,0);
+
+  renderer.render(scene, camera);
+}
+
+/* ============================================================
+   AUDIO (procedural, Web Audio API)
+   ============================================================ */
+function getCtx(){
+  if(!audioCtx){ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }
+  return audioCtx;
+}
+function tone(freq, start, dur, type='sine', gain=0.2){
+  const ctx = getCtx();
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, ctx.currentTime+start);
+  g.gain.setValueAtTime(gain, ctx.currentTime+start);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+start+dur);
+  osc.connect(g); g.connect(ctx.destination);
+  osc.start(ctx.currentTime+start);
+  osc.stop(ctx.currentTime+start+dur+0.02);
+}
+function playCorrect(){ tone(523,0,0.12,'triangle',0.25); tone(784,0.1,0.18,'triangle',0.25); tone(1046,0.2,0.25,'triangle',0.25); }
+function playWrong(){ tone(220,0,0.18,'sawtooth',0.22); tone(160,0.15,0.25,'sawtooth',0.22); }
+function playHit(){
+  const ctx = getCtx();
+  const bufferSize = ctx.sampleRate * 0.15;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++){ data[i] = (Math.random()*2-1) * (1-i/bufferSize); }
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.5, ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.15);
+  noise.connect(g); g.connect(ctx.destination);
+  noise.start();
+  tone(90,0,0.15,'square',0.3);
+}
+function playVictory(){ [523,659,784,1046].forEach((f,i)=>tone(f,i*0.14,0.3,'triangle',0.25)); }
+function playDefeat(){ [400,340,280,220].forEach((f,i)=>tone(f,i*0.18,0.35,'sawtooth',0.2)); }
+
+let musicTimer=null;
+const musicNotes=[392,440,494,392,523,494,440,392];
+let musicStep=0;
+function startMusic(){
+  if(musicTimer) return;
+  musicTimer = setInterval(()=>{
+    if(!musicOn) return;
+    tone(musicNotes[musicStep%musicNotes.length],0,0.35,'triangle',0.05);
+    tone(musicNotes[musicStep%musicNotes.length]/2,0,0.4,'sine',0.04);
+    musicStep++;
+  },420);
+}
+document.getElementById('muteBtn').addEventListener('click', ()=>{
+  musicOn = !musicOn;
+  document.getElementById('muteBtn').textContent = musicOn ? '🔊' : '🔇';
+});
+
+/* ============================================================
+   SCREEN NAVIGATION & GAME FLOW
+   ============================================================ */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function startGame(){
+  if(questionBank.length===0){
+    openConfirm("Sin preguntas","Necesitas al menos una pregunta para jugar. Se abrirá el editor.", ()=>openEditModal());
+    return;
+  }
+  roundQuestions = shuffle(questionBank);
+  currentRound = 0;
+  playerHP = 100; rivalHP = 100;
+  updateHpBars();
+
+  [playerRig, rivalRig].forEach(rig=>{
+    rig.koFallen = false;
+    rig.group.rotation.z = 0;
+    rig.group.position.y = 0;
+  });
+
+  showScreen('screen-game');
+  startMusic();
+  loadRound();
+}
+
+function loadRound(){
+  const q = roundQuestions[currentRound];
+  document.getElementById('roundBadge').textContent = `Pregunta ${currentRound+1}/${roundQuestions.length}`;
+  drawRoundSprite(`Pregunta ${currentRound+1}/${roundQuestions.length}`);
+  document.getElementById('promptNumber').textContent = q.number;
+  const opts = shuffle([
+    {text:q.correct, correct:true},
+    {text:q.wrong[0], correct:false},
+    {text:q.wrong[1], correct:false}
+  ]);
+  const box = document.getElementById('optionsBox');
+  box.innerHTML='';
+  opts.forEach(o=>{
+    const b = document.createElement('button');
+    b.className='opt-btn';
+    b.textContent=o.text;
+    b.addEventListener('click', ()=>answerRound(o.correct,b));
+    box.appendChild(b);
+  });
+}
+
+function updateHpBars(){
+  const pBar = document.getElementById('playerHpBar');
+  const rBar = document.getElementById('rivalHpBar');
+  pBar.style.width = Math.max(playerHP,0)+'%';
+  rBar.style.width = Math.max(rivalHP,0)+'%';
+  [pBar,rBar].forEach((bar,i)=>{
+    const hp = i===0?playerHP:rivalHP;
+    bar.classList.remove('low','critical');
+    if(hp<=30) bar.classList.add('critical');
+    else if(hp<=60) bar.classList.add('low');
+  });
+}
+
+function answerRound(isCorrect, btnEl){
+  document.querySelectorAll('.opt-btn').forEach(b=>b.disabled=true);
+  const stamp = document.getElementById('feedbackStamp');
+
+  if(isCorrect){
+    btnEl.classList.add('correct');
+    playCorrect();
+    stamp.textContent='¡CORRECTO!';
+    stamp.className='feedback-stamp correct show';
+    punchAnim(playerRig, rivalRig, ()=>{
+      playHit();
+      spawnBurst3D(rivalRig);
+      hurtAnim(rivalRig);
+      rivalHP -= DAMAGE;
+      updateHpBars();
+    });
+  } else {
+    btnEl.classList.add('wrong');
+    document.querySelectorAll('.opt-btn').forEach(b=>{
+      if(b.textContent === roundQuestions[currentRound].correct) b.classList.add('correct');
+    });
+    playWrong();
+    stamp.textContent='¡INCORRECTO!';
+    stamp.className='feedback-stamp wrong show';
+    punchAnim(rivalRig, playerRig, ()=>{
+      playHit();
+      spawnBurst3D(playerRig);
+      hurtAnim(playerRig);
+      playerHP -= DAMAGE;
+      updateHpBars();
+    });
+  }
+
+  setTimeout(()=>{
+    stamp.classList.remove('show');
+    checkRoundEnd();
+  },1450);
+}
+
+function checkRoundEnd(){
+  if(rivalHP<=0){ endGame(true, "ko"); return; }
+  if(playerHP<=0){ endGame(false, "ko"); return; }
+  currentRound++;
+  if(currentRound >= roundQuestions.length){
+    endGame(playerHP >= rivalHP, "rounds");
+    return;
+  }
+  loadRound();
+}
+
+function endGame(playerWon, reason){
+  if(playerWon){ koAnim(rivalRig); playVictory(); }
+  else { koAnim(playerRig); playDefeat(); }
+  showScreen('screen-end');
+  document.getElementById('resultMsg').textContent = playerWon ? '¡GANASTE LA PELEA! 🏆' : 'Perdiste la pelea... 💥';
+  document.getElementById('resultSub').textContent = reason==='ko'
+    ? (playerWon ? 'Dejaste al rival fuera de combate.' : 'El rival te dejó fuera de combate.')
+    : `Terminaron las preguntas. Tu vida: ${Math.max(playerHP,0)} · Rival: ${Math.max(rivalHP,0)}`;
+}
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('restartBtn').addEventListener('click', ()=>{ showScreen('screen-title'); });
+document.getElementById('exitBtn').addEventListener('click', ()=>{
+  openConfirm('Salir', '¿Seguro que quieres salir del juego?', ()=>{
+    window.close();
+    showScreen('screen-title');
+  });
+});
+
+/* ---------- Confirm modal ---------- */
+let confirmCallback = null;
+function openConfirm(title, msg, cb){
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg;
+  confirmCallback = cb;
+  document.getElementById('confirmModal').classList.add('active');
+}
+document.getElementById('confirmYes').addEventListener('click', ()=>{
+  document.getElementById('confirmModal').classList.remove('active');
+  if(confirmCallback) confirmCallback();
+});
+document.getElementById('confirmNo').addEventListener('click', ()=>{
+  document.getElementById('confirmModal').classList.remove('active');
+});
+
+/* ---------- Edit / add questions modal ---------- */
+function openEditModal(){
+  renderEditTable();
+  document.getElementById('editModal').classList.add('active');
+}
+function renderEditTable(){
+  const body = document.getElementById('editTableBody');
+  body.innerHTML='';
+  questionBank.forEach((q,idx)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" data-idx="${idx}" data-field="number" value="${q.number}"></td>
+      <td><input type="text" data-idx="${idx}" data-field="correct" value="${q.correct}"></td>
+      <td><input type="text" data-idx="${idx}" data-field="wrong0" value="${q.wrong[0]}"></td>
+      <td><input type="text" data-idx="${idx}" data-field="wrong1" value="${q.wrong[1]}"></td>
+      <td><button class="row-del" data-idx="${idx}">✕</button></td>
+    `;
+    body.appendChild(tr);
+  });
+  body.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', (e)=>{
+      const idx = +e.target.dataset.idx;
+      const field = e.target.dataset.field;
+      if(field==='number') questionBank[idx].number = e.target.value;
+      else if(field==='correct') questionBank[idx].correct = e.target.value;
+      else if(field==='wrong0') questionBank[idx].wrong[0] = e.target.value;
+      else if(field==='wrong1') questionBank[idx].wrong[1] = e.target.value;
+    });
+  });
+  body.querySelectorAll('.row-del').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const idx = +e.target.dataset.idx;
+      questionBank.splice(idx,1);
+      renderEditTable();
+    });
+  });
+}
+document.getElementById('editBtn').addEventListener('click', openEditModal);
+document.getElementById('addQuestionsBtnTitle').addEventListener('click', openEditModal);
+document.getElementById('closeEditBtn').addEventListener('click', ()=>{
+  document.getElementById('editModal').classList.remove('active');
+});
+document.getElementById('saveEditBtn').addEventListener('click', ()=>{
+  document.getElementById('editModal').classList.remove('active');
+});
+document.getElementById('addRowBtn').addEventListener('click', ()=>{
+  questionBank.push({number:"", correct:"", wrong:["",""]});
+  renderEditTable();
+  const rows = document.querySelectorAll('#editTableBody tr');
+  const lastRow = rows[rows.length-1];
+  if(lastRow){ lastRow.scrollIntoView({behavior:'smooth', block:'center'}); const firstInput = lastRow.querySelector('input'); if(firstInput) firstInput.focus(); }
+});
+
+/* ---------- Excel import/export via SheetJS ---------- */
+document.getElementById('exportExcel').addEventListener('click', ()=>{
+  const data = [["Numero","Correcta","Incorrecta1","Incorrecta2"]];
+  questionBank.forEach(q=> data.push([q.number,q.correct,q.wrong[0],q.wrong[1]]));
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Preguntas");
+  XLSX.writeFile(wb, "fight_preguntas.xlsx");
+});
+
+document.getElementById('importExcel').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const wb = XLSX.read(ev.target.result, {type:'binary'});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, {header:1});
+      const newBank = [];
+      rows.slice(1).forEach(r=>{
+        if(!r[0]) return;
+        newBank.push({
+          number:String(r[0]||"").trim(),
+          correct:String(r[1]||"").trim(),
+          wrong:[String(r[2]||"").trim(), String(r[3]||"").trim()]
+        });
+      });
+      if(newBank.length===0){
+        openConfirm("Archivo vacío","No se encontraron preguntas válidas en el Excel.", ()=>{});
+        return;
+      }
+      questionBank = newBank;
+      renderEditTable();
+    }catch(err){
+      openConfirm("Error","No se pudo leer el archivo Excel. Verifica el formato.", ()=>{});
+    }
+  };
+  reader.readAsBinaryString(file);
+});
+
+/* ---------- Boot ---------- */
+window.addEventListener('load', initThree);
+</script>
+</body>
+</html>

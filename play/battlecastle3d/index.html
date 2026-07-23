@@ -1,0 +1,3474 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BATTLE CASTLE - Irregular Verbs 3D Game</title>
+    <!-- Tailwind CSS para diseño rápido y responsivo -->
+    <!-- Silencia el aviso informativo de Tailwind CDN (no es un error, es solo una nota de Tailwind) -->
+    <script>
+        (function() {
+            const originalWarn = console.warn;
+            console.warn = function(...args) {
+                if (args.some(a => typeof a === 'string' && a.includes('cdn.tailwindcss.com'))) return;
+                originalWarn.apply(console, args);
+            };
+        })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Medievales -->
+    <link href="https://fonts.googleapis.com/css2?family=Almendra:ital,wght@0,400;0,700;1,400&family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400;700;900&family=MedievalSharp&display=swap" rel="stylesheet">
+
+    <!-- Three.js: motor de renderizado 3D real (geometría, cámara, luces y sombras verdaderas) -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <!-- SheetJS: importar y exportar preguntas en formato Excel (.xlsx) -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <!-- PeerJS: WebRTC P2P para que cada equipo controle su castillo desde el celular -->
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <!-- QRCode.js: genera QR codes sin servidor -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    
+    <style>
+        .font-medieval {
+            font-family: 'MedievalSharp', cursive, serif;
+        }
+        .font-cinzel {
+            font-family: 'Cinzel', serif;
+        }
+        .font-decorative {
+            font-family: 'Cinzel Decorative', serif;
+        }
+        
+        body {
+            font-family: 'Almendra', serif;
+            background-color: #0c0813;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* FONDO PANORÁMICO 3D CON MONTAÑAS Y NEBLINA */
+        .mountain-bg {
+            background: linear-gradient(to bottom, #110925 0%, #1c0a35 40%, #2e114d 70%, #120524 100%);
+        }
+
+        /* ANIMACIONES EN PERSPECTIVA 3D PARA LAS CARTAS */
+        .premium-card-container {
+            perspective: 1200px;
+        }
+        .premium-card {
+            transform-style: preserve-3d;
+            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+        }
+        .premium-card:hover:not(.grayscale) {
+            transform: translateY(-8px) rotateX(4deg) rotateY(-4deg);
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.9), 0 0 20px rgba(245, 158, 11, 0.25);
+        }
+
+        /* Animación del Rey en 3D (Flotando con volumen) */
+        @keyframes breathing {
+            0%, 100% { transform: translateY(0px) scale(1) rotate(0deg); filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
+            50% { transform: translateY(-4px) scale(1.02) rotate(1deg); filter: drop-shadow(0 10px 12px rgba(0,0,0,0.4)); }
+        }
+        .king-idle {
+            animation: breathing 3s ease-in-out infinite;
+        }
+
+        @keyframes celebration {
+            0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); }
+            25% { transform: translateY(-12px) rotate(-8deg) scale(1.05); }
+            50% { transform: translateY(0px) rotate(8deg) scale(1); }
+            75% { transform: translateY(-12px) rotate(-8deg) scale(1.05); }
+        }
+        .king-correct {
+            animation: celebration 0.7s ease-in-out infinite;
+        }
+
+        @keyframes defeated {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(6px) rotate(12deg) scale(0.95); }
+        }
+        .king-incorrect {
+            animation: defeated 1.3s ease-in-out infinite;
+        }
+
+        @keyframes panicked {
+            0%, 100% { transform: translate(0px, 0px) rotate(0deg); }
+            20% { transform: translate(-5px, -3px) rotate(-2deg); }
+            40% { transform: translate(5px, -5px) rotate(3deg); }
+            60% { transform: translate(-4px, 2px) rotate(-1deg); }
+            80% { transform: translate(4px, -1px) rotate(2deg); }
+        }
+        .king-hit {
+            animation: panicked 0.15s linear infinite;
+        }
+
+        @keyframes run-away {
+            0% { transform: translateX(0) scaleX(1); opacity: 1; }
+            50% { transform: translateX(40px) scaleX(1); opacity: 0.8; }
+            51% { transform: translateX(40px) scaleX(-1); opacity: 0.8; }
+            100% { transform: translateX(-150px) scaleX(-1); opacity: 0; }
+        }
+        .king-destroyed {
+            animation: run-away 2.2s ease-in-out forwards;
+        }
+
+        /* Ondulación realista de banderas */
+        @keyframes flag-wave {
+            0%, 100% { transform: skewY(0deg) scaleX(1) rotate(0deg); }
+            50% { transform: skewY(6deg) scaleX(0.93) rotate(-2deg); }
+        }
+        .flag-wave-element {
+            animation: flag-wave 1.4s ease-in-out infinite;
+            transform-origin: left center;
+        }
+
+        /* Pergamino clásico */
+        .parchment {
+            background: radial-gradient(circle, #fbf3d8 60%, #dfbf7c 100%);
+            border: 8px double #5a3a16;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.85), inset 0 0 50px rgba(90, 58, 22, 0.45);
+        }
+
+        /* Botón de Estilo RPG con relieve e iluminación */
+        .rpg-btn {
+            background: linear-gradient(180deg, #c3942d, #835c0d);
+            border: 2.5px solid #ffe855;
+            box-shadow: 0 5px 8px rgba(0,0,0,0.65), inset 0 2px 3px rgba(255,255,255,0.3);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
+            transition: all 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .rpg-btn:hover:not(:disabled) {
+            transform: scale(1.05) translateY(-2px);
+            background: linear-gradient(180deg, #ffe855, #a37515);
+            box-shadow: 0 8px 15px rgba(255, 232, 85, 0.45);
+        }
+        .rpg-btn:active:not(:disabled) {
+            transform: scale(0.97) translateY(1px);
+        }
+
+        /* Sacudida de Pantalla */
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0); }
+            10% { transform: translate(-7px, -5px) rotate(-1deg); }
+            30% { transform: translate(6px, 4px) rotate(1deg); }
+            50% { transform: translate(-5px, 7px) rotate(-1deg); }
+            70% { transform: translate(7px, -3px) rotate(1deg); }
+            90% { transform: translate(-3px, 3px) rotate(0deg); }
+        }
+        .screen-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        /* Relieve 3D de cofres */
+        .chest-card {
+            perspective: 800px;
+        }
+        .chest-inner {
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+        .chest-card.flipped .chest-inner {
+            transform: rotateY(180deg);
+        }
+        .chest-front, .chest-back {
+            backface-visibility: hidden;
+        }
+        .chest-back {
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-amber-50 selection:bg-amber-800 selection:text-white flex flex-col justify-between relative mountain-bg">
+
+    <!-- CAPAS DEL PAISAJE MEDIEVAL EN 3D DE FONDO -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        
+        <!-- Cielo estrellado y Neblina lejana -->
+        <div class="absolute inset-x-0 top-0 h-2/3 opacity-30 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px]"></div>
+        
+        <!-- Sol/Luna de Fantasía en el Horizonte -->
+        <div class="absolute top-20 right-1/4 w-40 h-40 rounded-full bg-gradient-to-tr from-purple-800 to-amber-500 blur-[40px] opacity-25"></div>
+        <div class="absolute top-24 right-1/4 w-32 h-32 rounded-full bg-amber-100 opacity-20 filter drop-shadow-[0_0_30px_rgba(251,191,36,0.3)]"></div>
+
+        <!-- Capa de Montañas traseras (Silueta 3D profunda) -->
+        <svg class="absolute bottom-[20%] left-0 w-full h-[40vh] opacity-20" viewBox="0 0 1440 320" preserveAspectRatio="none">
+            <path d="M0,224 L120,160 L240,240 L360,110 L480,260 L600,180 L720,250 L840,120 L960,240 L1080,150 L1200,210 L1320,90 L1440,240 L1440,320 L0,320 Z" fill="#2d164d"></path>
+        </svg>
+
+        <!-- Capa de Montañas medias (Con sombreado de arista para volumen) -->
+        <svg class="absolute bottom-[10%] left-0 w-full h-[35vh] opacity-35" viewBox="0 0 1440 320" preserveAspectRatio="none">
+            <!-- Lado de sombra de montañas -->
+            <path d="M0,240 L200,120 L450,220 L700,90 L1000,230 L1200,130 L1440,220 L1440,320 L0,320 Z" fill="#1b0b2e"></path>
+            <!-- Lado de luz de montañas (Crea el efecto 3D) -->
+            <path d="M200,120 L450,220 L700,90 L700,320 L200,320 Z" fill="#2d154c" opacity="0.3"></path>
+            <path d="M1200,130 L1440,220 L1440,320 L1200,320 Z" fill="#2d154c" opacity="0.3"></path>
+        </svg>
+
+        <!-- Capa de Bosque / Pinos Lejanos (Base del mapa) -->
+        <svg class="absolute bottom-0 left-0 w-full h-[20vh] opacity-45" viewBox="0 0 1440 150" preserveAspectRatio="none">
+            <path d="M0,120 Q120,90 240,110 Q360,130 480,105 Q600,80 720,110 Q840,140 960,115 Q1080,90 1200,110 Q1320,130 1440,120 L1440,150 L0,150 Z" fill="#080312"></path>
+            <!-- Pequeños Pinos triangulares en 3D -->
+            <polygon points="150,110 160,80 170,110" fill="#080312"></polygon>
+            <polygon points="320,120 335,85 350,120" fill="#0c051a"></polygon>
+            <polygon points="680,105 690,75 700,105" fill="#080312"></polygon>
+            <polygon points="900,125 915,90 930,125" fill="#0c051a"></polygon>
+            <polygon points="1150,108 1162,78 1174,108" fill="#080312"></polygon>
+        </svg>
+    </div>
+
+    <!-- CANVAS PARA DISPAROS, PARTÍCULAS, EXPLOSIONES, CONFETI Y FUEGOS ARTIFICIALES -->
+    <canvas id="battle-canvas" class="fixed inset-0 w-full h-full pointer-events-none z-50"></canvas>
+
+    <!-- ENCABEZADO DEL JUEGO CON CONTROLES -->
+    <header class="z-10 w-full bg-gradient-to-b from-stone-950 via-stone-950/75 to-transparent p-4 flex flex-wrap justify-between items-center gap-4 border-b border-purple-900/40">
+        <div class="flex items-center gap-3">
+            <span class="text-4xl filter drop-shadow-[0_2px_8px_rgba(251,191,36,0.5)]">🏰</span>
+            <div>
+                <h1 class="text-2xl md:text-3xl font-cinzel font-black tracking-widest text-amber-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">BATTLE CASTLE</h1>
+                <p class="text-[10px] md:text-xs tracking-wider text-purple-300 font-medieval uppercase">Guerra de Verbos Irregulares • Versión 3D Premium</p>
+            </div>
+        </div>
+
+        <!-- CONTROLES ADICIONALES -->
+        <div class="flex items-center gap-3 bg-stone-950/90 p-2 rounded-xl border border-purple-900/30 backdrop-blur-md shadow-2xl">
+            <!-- Música -->
+            <button id="music-btn" onclick="toggleMusic()" class="p-2 hover:bg-stone-800 rounded-lg text-lg" title="Música Medieval">
+                🎵 <span class="text-xs" id="music-status">OFF</span>
+            </button>
+            <div class="flex items-center gap-1">
+                <span class="text-xs text-stone-400">Vol:</span>
+                <input id="volume-slider" type="range" min="0" max="1" step="0.1" value="0.5" onchange="updateVolume(this.value)" class="w-16 h-1 bg-purple-950 rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <!-- QR Codes (celulares) -->
+            <button onclick="activateAndOpenQR()" class="p-2 hover:bg-stone-800 rounded-lg text-sm font-medieval text-amber-300 flex items-center gap-1" title="QR para celulares">
+                📱 <span class="text-xs hidden sm:inline">QR</span>
+            </button>
+            <div id="connected-players-badge" class="text-[10px] font-medieval text-stone-500 hidden sm:block"></div>
+
+            <div class="h-5 w-[1px] bg-purple-900/50"></div>
+
+            <!-- Pantalla Completa -->
+            <button onclick="toggleFullscreen()" class="p-2 hover:bg-stone-800 rounded-lg text-sm" title="Pantalla Completa">
+                📺
+            </button>
+            
+            <!-- Reiniciar -->
+            <button onclick="triggerResetConfirm()" class="p-2 hover:bg-red-950 hover:text-red-300 rounded-lg text-sm text-red-400" title="Reiniciar Partida">
+                🔄
+            </button>
+        </div>
+    </header>
+
+    <!-- CONTENEDOR PRINCIPAL DEL JUEGO -->
+    <main id="game-container" class="z-10 flex-grow w-full max-w-7xl mx-auto p-4 flex flex-col justify-center">
+        
+        <!-- ================= PANTALLA 1: CONFIGURACIÓN ================= -->
+        <section id="screen-setup" class="page-transition w-full max-w-2xl mx-auto p-6 md:p-8 rounded-2xl shadow-2xl parchment text-stone-900">
+            <h2 class="text-3xl md:text-4xl font-decorative text-center text-amber-950 mb-1 font-bold">⚔️ ALZAD VUESTROS CASTILLOS 3D ⚔️</h2>
+            <p class="text-center text-sm text-amber-900 mb-6 font-medieval">Estableced los nombres de las 5 fortalezas reales para comenzar la batalla de la gramática inglesa.</p>
+            
+            <div class="space-y-4 mb-6" id="setup-castles-list">
+                <!-- Se autogeneran los inputs de reinos -->
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-between items-center bg-amber-950/10 p-4 rounded-xl border border-amber-900/30">
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" id="timer-toggle" checked class="w-5 h-5 accent-amber-800">
+                    <label for="timer-toggle" class="text-sm font-semibold text-amber-950 cursor-pointer font-medieval">
+                        Activar temporizador de asedio (15 Segundos) ⏱️
+                    </label>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="rpg-btn w-full mt-6 py-4 px-8 text-xl md:text-2xl font-medieval text-white font-bold rounded-xl tracking-wider flex justify-center items-center gap-3 shadow-2xl">
+                ⚔️ COMENZAR BATALLA ⚔️
+            </button>
+
+            <button onclick="openQuestionEditor()" class="w-full mt-3 py-3 px-6 bg-stone-800/80 hover:bg-stone-700 border-2 border-stone-600 hover:border-amber-600 text-stone-300 hover:text-amber-300 rounded-xl font-medieval text-sm tracking-wider flex justify-center items-center gap-2 transition-all duration-200 shadow-lg">
+                📝 EDITAR PREGUNTAS · IMPORTAR / EXPORTAR EXCEL
+            </button>
+            <button onclick="activateAndOpenQR()" class="w-full mt-2 py-3 px-6 bg-stone-900/80 hover:bg-stone-800 border-2 border-stone-700 hover:border-violet-600 text-stone-400 hover:text-violet-300 rounded-xl font-medieval text-sm tracking-wider flex justify-center items-center gap-2 transition-all duration-200 shadow-lg">
+                📱 VER QR CODES · CONTROL DESDE CELULAR
+            </button>
+            <div class="flex items-center justify-between mt-2 px-1">
+                <span id="active-questions-badge" class="text-xs font-medieval text-stone-400"></span>
+                <span id="network-status-badge" class="text-[10px] font-medieval text-stone-600"></span>
+            </div>
+        </section>
+
+        <!-- ================= PANTALLA 2: JUEGO ACTIVO ================= -->
+        <section id="screen-game" class="page-transition hidden grid grid-cols-1 lg:grid-cols-4 gap-6">
+            
+            <!-- ARENA CENTRAL (3 columnas) -->
+            <div class="lg:col-span-3 flex flex-col gap-6">
+                
+                <!-- Turno Actual y Acciones -->
+                <div id="turn-banner" class="bg-gradient-to-r from-stone-950/95 to-slate-900/90 border-2 border-amber-500 rounded-2xl p-5 shadow-2xl relative overflow-hidden backdrop-blur-md">
+                    <!-- Detalle dorado superior de la carta de turno -->
+                    <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500"></div>
+                    
+                    <div class="relative z-10 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div class="text-left">
+                            <span class="text-xs uppercase tracking-widest text-amber-400 font-bold block mb-1">🎮 Comandando Turno</span>
+                            <h3 id="active-player-name" class="text-2xl md:text-3xl font-medieval text-white tracking-wide">Castillo de Prueba</h3>
+                        </div>
+
+                        <!-- Botones de Acción Directa -->
+                        <div class="flex items-center gap-3">
+                            <button id="bonus-btn" onclick="openBonusChestSelection()" class="px-4 py-3.5 bg-gradient-to-r from-purple-800 to-indigo-950 hover:from-purple-700 hover:to-indigo-900 border-2 border-purple-400 text-white rounded-xl text-sm md:text-base font-medieval tracking-wider shadow-xl flex items-center gap-2 transition duration-200">
+                                🎁 COFRE DE RECURSOS
+                            </button>
+                            <button onclick="promptQuestionSelection()" class="rpg-btn px-6 py-4 text-base md:text-lg font-medieval text-white font-bold rounded-xl flex items-center gap-2 shadow-lg">
+                                📜 RESPONDER PREGUNTA
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CAMPO DE BATALLA 3D REAL (Three.js: geometría, cámara orbitable, luces y sombras verdaderas) -->
+                <div id="battle-arena" class="relative rounded-2xl border-4 border-amber-700/50 overflow-hidden shadow-2xl" style="aspect-ratio: 16/10.5; min-height: 480px; background: radial-gradient(ellipse at 50% 45%, #14606e 0%, #0c4956 45%, #07303c 75%, #041d26 100%);">
+                    <!-- Marco interior dorado estilo pergamino de mapa -->
+                    <div class="absolute inset-2 rounded-xl border-2 border-amber-500/25 pointer-events-none z-30"></div>
+
+                    <!-- Lienzo WebGL donde Three.js renderiza la escena 3D -->
+                    <canvas id="three-canvas" class="absolute inset-0 w-full h-full"></canvas>
+
+                    <!-- Capa de etiquetas HTML ancladas a objetos 3D (nombre, HP, recursos) vía CSS2DRenderer -->
+                    <div id="css2d-container" class="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-20"></div>
+
+                    <!-- Indicador de carga del motor 3D -->
+                    <div id="three-loading" class="absolute inset-0 z-40 flex items-center justify-center bg-stone-950/70 text-amber-300 font-medieval text-sm gap-2">
+                        <span class="animate-spin">⚙️</span> Cargando motor 3D...
+                    </div>
+
+                    <!-- Brújula decorativa -->
+                    <div class="absolute top-3 left-3 z-20 opacity-70 pointer-events-none select-none">
+                        <svg viewBox="0 0 60 60" class="w-10 h-10 md:w-12 md:h-12 drop-shadow-lg">
+                            <circle cx="30" cy="30" r="27" fill="none" stroke="#fbbf24" stroke-width="1.5" opacity="0.7"/>
+                            <path d="M30 6 L34 30 L30 54 L26 30 Z" fill="#fbbf24" opacity="0.85"/>
+                            <path d="M6 30 L30 26 L54 30 L30 34 Z" fill="#fde68a" opacity="0.65"/>
+                            <text x="30" y="14" text-anchor="middle" fill="#fef3c7" font-size="8" font-weight="bold">N</text>
+                        </svg>
+                    </div>
+
+                    <!-- Pista de control de cámara -->
+                    <div class="absolute bottom-2 right-3 z-20 text-[9px] text-amber-200/60 font-medieval pointer-events-none select-none">
+                        🖱️ Arrastra para girar · Rueda para zoom
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEL LATERAL DE INFORMACIÓN (1 columna) -->
+            <div class="bg-stone-950/95 border-2 border-purple-900/30 rounded-2xl p-4 shadow-2xl flex flex-col justify-between gap-6 backdrop-blur-md">
+                
+                <!-- Tabla de Clasificación / Estatus -->
+                <div>
+                    <h3 class="text-lg font-medieval text-amber-400 border-b border-purple-900/30 pb-2 mb-3 flex items-center justify-between">
+                        <span>📊 REINOS</span>
+                        <span class="text-xs text-stone-500">HP / RECURSOS</span>
+                    </h3>
+                    <div id="sidebar-leaderboard" class="space-y-3">
+                        <!-- Ránking dinámico -->
+                    </div>
+                </div>
+
+                <!-- Historial de Combate -->
+                <div class="flex-grow flex flex-col min-h-[140px]">
+                    <h3 class="text-base font-medieval text-stone-300 border-b border-purple-900/30 pb-2 mb-2">
+                        <span>📜 CRÓNICA DE GUERRA</span>
+                    </h3>
+                    <div id="battle-log" class="flex-grow overflow-y-auto max-h-[160px] text-[11px] space-y-2 text-stone-400 pr-1">
+                        <!-- Entradas dinámicas del log -->
+                    </div>
+                </div>
+
+                <!-- Cuadrícula de Preguntas Usadas -->
+                <div>
+                    <h4 class="text-xs font-medieval text-amber-500/80 uppercase tracking-widest mb-2">Pergaminos Utilizados</h4>
+                    <div id="questions-used-grid" class="grid grid-cols-6 gap-1 text-[10px] text-center">
+                        <!-- 1 al 30 de forma reducida -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= PANTALLA 3: VICTORIA (overlay sobre la arena 3D) ================= -->
+        <section id="screen-victory" class="page-transition hidden fixed inset-0 z-40 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
+            <div class="w-full max-w-xl bg-stone-950/95 p-8 rounded-3xl border-4 border-yellow-500 text-center shadow-2xl relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-b from-yellow-500/10 via-transparent to-transparent pointer-events-none"></div>
+
+                <div class="text-6xl mb-4 animate-bounce">👑</div>
+                <h2 class="text-4xl font-decorative text-yellow-400 mb-1 font-black tracking-widest">VICTORIA ABSOLUTA</h2>
+                <p class="text-stone-400 font-medieval uppercase tracking-wider mb-6">El soberano supremo es:</p>
+
+                <div class="bg-gradient-to-r from-amber-950/60 via-amber-900/40 to-amber-950/60 p-5 rounded-2xl border border-yellow-500/30 mb-2">
+                    <h3 id="victory-castle-name" class="text-3xl font-medieval text-yellow-300 tracking-wide font-bold">Castillo Ganador</h3>
+                    <p class="text-xs text-amber-400 mt-2 font-medieval">¡Todos los reinos se rinden ante su gloriosa sabiduría!</p>
+                </div>
+                <p class="text-[10px] text-stone-500 font-medieval mb-6">👁️ Su majestad celebra en vivo dentro del campo de batalla 3D</p>
+
+                <button onclick="triggerResetGame()" class="rpg-btn w-full py-4 px-8 text-xl font-medieval text-white font-bold rounded-xl tracking-wider flex justify-center items-center gap-2 shadow-lg">
+                    🏆 NUEVA CAMPAÑA 🏆
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="z-10 w-full text-center p-3 bg-stone-950/60 text-stone-500 text-[10px] font-medieval border-t border-purple-950/40 backdrop-blur-md">
+        <p>Battle Castle • Desarrollado con HTML5, Canvas y Web Audio API • 100% Sin Servidor</p>
+    </footer>
+
+    <!-- ================= MODAL: SELECCIÓN DE NÚMERO DE PREGUNTA ================= -->
+    <div id="modal-pergaminos" class="fixed inset-0 bg-black/80 z-50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-stone-950/95 border-4 border-amber-800 rounded-3xl p-5 max-w-2xl w-full parchment text-stone-900 relative shadow-2xl">
+            <button onclick="closeModal('modal-pergaminos')" class="absolute top-4 right-4 text-stone-700 hover:text-stone-900 text-2xl font-bold">✕</button>
+            
+            <h3 class="text-2xl font-medieval text-center text-amber-950 mb-1 font-bold">📜 SELECCIONAD UN PERGAMINO</h3>
+            <p class="text-center text-xs text-amber-900 mb-5 font-medieval">Cada pergamino esconde una pregunta única. Elegid uno.</p>
+
+            <div class="grid grid-cols-5 sm:grid-cols-6 gap-2" id="pergaminos-grid-selection">
+                <!-- Generado por JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: HOJA DE PREGUNTA ACTIVADA ================= -->
+    <div id="modal-pregunta" class="fixed inset-0 bg-black/90 z-50 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-gradient-to-b from-stone-900 to-slate-950 border-4 border-amber-600 rounded-3xl p-6 max-w-xl w-full relative overflow-hidden shadow-2xl">
+            <!-- Barra del temporizador -->
+            <div id="timer-bar-container" class="absolute top-0 left-0 right-0 h-2 bg-stone-800">
+                <div id="timer-bar" class="h-full bg-gradient-to-r from-amber-500 to-red-650 transition-all duration-1000" style="width: 100%;"></div>
+            </div>
+
+            <!-- Marcador superior de tiempo -->
+            <div class="flex justify-between items-center mb-6 mt-2">
+                <span class="text-xs uppercase tracking-widest text-amber-400 font-bold font-medieval" id="question-index-label">Pergamino #XX</span>
+                <span class="text-base font-medieval text-red-400 font-bold" id="countdown-label">⏱️ 15s</span>
+            </div>
+
+            <div class="text-center mb-8">
+                <span id="question-instruction" class="text-stone-400 text-sm block mb-1 font-medieval">Seleccioná la alternativa correcta:</span>
+                <h4 id="question-verb" class="text-4xl md:text-5xl font-cinzel font-black tracking-widest text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.15)]">WENT</h4>
+            </div>
+
+            <!-- Opciones -->
+            <div class="space-y-4" id="alternatives-container">
+                <!-- Se inyectan las alternativas de respuesta -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: BONO - COFRES DE LA FORTUNA ================= -->
+    <div id="modal-bonus" class="fixed inset-0 bg-black/90 z-50 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-stone-950/95 border-4 border-purple-800 rounded-3xl p-6 max-w-4xl w-full parchment text-stone-900 relative shadow-2xl">
+            <button onclick="closeModal('modal-bonus')" class="absolute top-4 right-4 text-stone-700 hover:text-stone-900 text-2xl font-bold">✕</button>
+            
+            <h3 class="text-2xl font-medieval text-center text-purple-950 mb-1 font-bold">🎁 COFRES DE LA FORTUNA 3D</h3>
+            <p class="text-center text-xs text-purple-900 mb-5 font-medieval">Abrid uno de los 10 cofres misteriosos en perspectiva para recibir recursos tácticos.</p>
+
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 my-4" id="chests-container">
+                <!-- 10 Cofres en 3D interactivos -->
+            </div>
+
+            <div class="text-center text-[10px] text-purple-950 font-medieval border-t border-purple-950/10 pt-4 mt-5">
+                Contenido General: 4 Escudos (🛡️) | 2 Martillos (🔨) | 1 Súper Bomba (💣) | 3 Vacíos (💨)
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: EDITOR DE PREGUNTAS + IMPORTAR/EXPORTAR EXCEL ================= -->
+    <div id="modal-editor" class="fixed inset-0 bg-black/90 z-[90] backdrop-blur-md hidden flex items-center justify-center p-3">
+        <div class="bg-stone-950 border-4 border-amber-700 rounded-3xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+
+            <!-- Cabecera del editor -->
+            <div class="flex items-center justify-between p-4 border-b border-amber-900/40 bg-gradient-to-r from-amber-950/60 to-stone-950 shrink-0">
+                <div>
+                    <h3 class="text-xl font-medieval text-amber-400 font-bold">📝 EDITOR DE PREGUNTAS</h3>
+                    <p class="text-[10px] text-stone-400 font-medieval mt-0.5">Edita verbos, importa desde Excel o exporta la tabla actual. Los cambios se aplican de inmediato.</p>
+                </div>
+                <button onclick="closeEditorSafe()" class="text-stone-500 hover:text-stone-200 text-2xl font-bold px-2">✕</button>
+            </div>
+
+            <!-- Barra de herramientas Excel -->
+            <div class="flex flex-wrap gap-2 p-3 border-b border-stone-800 bg-stone-900/60 shrink-0">
+                <!-- Importar Excel -->
+                <label class="cursor-pointer px-4 py-2 bg-emerald-900 hover:bg-emerald-800 border border-emerald-600 text-emerald-200 rounded-xl text-xs font-medieval flex items-center gap-2 transition-all shadow-md">
+                    📥 IMPORTAR EXCEL
+                    <input type="file" id="excel-import-input" accept=".xlsx,.xls" class="hidden" onchange="importFromExcel(event)" />
+                </label>
+                <button onclick="exportToExcel()" class="px-4 py-2 bg-sky-900 hover:bg-sky-800 border border-sky-600 text-sky-200 rounded-xl text-xs font-medieval flex items-center gap-2 transition-all shadow-md">
+                    📤 EXPORTAR EXCEL
+                </button>
+                <button onclick="downloadTemplate()" class="px-4 py-2 bg-violet-900 hover:bg-violet-800 border border-violet-600 text-violet-200 rounded-xl text-xs font-medieval flex items-center gap-2 transition-all shadow-md">
+                    📋 DESCARGAR PLANTILLA
+                </button>
+                <button onclick="resetToDefaultQuestions()" class="px-4 py-2 bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded-xl text-xs font-medieval flex items-center gap-2 transition-all shadow-md">
+                    🔄 RESTAURAR ORIGINALES
+                </button>
+                <div class="ml-auto flex items-center gap-2 text-[10px] text-stone-500 font-medieval self-center">
+                    <span id="editor-question-count" class="text-amber-400 font-bold">30</span> preguntas cargadas
+                </div>
+            </div>
+
+            <!-- Formato esperado del Excel -->
+            <div class="px-4 py-2 bg-amber-950/30 border-b border-amber-900/20 shrink-0">
+                <p class="text-[10px] text-amber-400 font-medieval">
+                    📐 <strong>Formato Excel:</strong> Columnas: 
+                    <span class="bg-stone-800 px-1.5 py-0.5 rounded text-amber-300 mx-0.5">Pregunta</span>
+                    <span class="bg-stone-800 px-1.5 py-0.5 rounded text-amber-300 mx-0.5">Correcta</span>
+                    <span class="bg-stone-800 px-1.5 py-0.5 rounded text-amber-300 mx-0.5">Falsa 1</span>
+                    <span class="bg-stone-800 px-1.5 py-0.5 rounded text-amber-300 mx-0.5">Falsa 2</span>
+                    — La primera fila es el encabezado (se ignora). Mínimo 5, máximo 60 preguntas.
+                </p>
+            </div>
+
+            <!-- Tabla de edición -->
+            <div class="flex-1 overflow-y-auto p-3">
+                <table class="w-full text-xs">
+                    <thead class="sticky top-0 z-10">
+                        <tr class="bg-stone-900 border-b border-amber-900/40">
+                            <th class="py-2 px-2 text-left text-stone-400 font-medieval w-8">#</th>
+                            <th class="py-2 px-2 text-left text-amber-400 font-medieval">Pregunta<br><span class="text-stone-500 font-normal text-[9px]">(lo que se muestra)</span></th>
+                            <th class="py-2 px-2 text-left text-emerald-400 font-medieval">Correcta<br><span class="text-stone-500 font-normal text-[9px]">(respuesta correcta)</span></th>
+                            <th class="py-2 px-2 text-left text-stone-300 font-medieval">Opción 2</th>
+                            <th class="py-2 px-2 text-left text-stone-300 font-medieval">Opción 3</th>
+                            <th class="py-2 px-2 w-8"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="editor-tbody">
+                        <!-- Filas generadas dinámicamente -->
+                    </tbody>
+                </table>
+                <!-- Botón agregar fila -->
+                <button onclick="addEditorRow()" class="mt-3 w-full py-2 border-2 border-dashed border-stone-700 hover:border-amber-700 text-stone-500 hover:text-amber-400 rounded-xl text-xs font-medieval transition-all">
+                    + AGREGAR PREGUNTA
+                </button>
+            </div>
+
+            <!-- Pie del modal: guardar -->
+            <div class="p-4 border-t border-stone-800 bg-stone-900/50 flex justify-end gap-3 shrink-0">
+                <button onclick="closeEditorSafe()" class="px-5 py-2 bg-stone-800 hover:bg-stone-700 border border-stone-600 text-stone-300 rounded-xl text-sm font-medieval transition-all">
+                    Cancelar
+                </button>
+                <button onclick="saveEditorChanges()" class="rpg-btn px-6 py-2.5 text-sm font-medieval text-white font-bold rounded-xl shadow-lg">
+                    ✅ GUARDAR CAMBIOS
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: QR ÚNICO PARA UNIRSE (opcional) ================= -->
+    <div id="modal-qr" class="fixed inset-0 bg-black/90 z-[90] backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-stone-950 border-4 border-violet-700 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div class="flex items-center justify-between p-4 border-b border-violet-900/40 bg-gradient-to-r from-violet-950/60 to-stone-950">
+                <h3 class="text-lg font-medieval text-violet-300 font-bold">📱 ÚNETE A LA BATALLA</h3>
+                <button onclick="closeModal('modal-qr')" class="text-stone-500 hover:text-stone-200 text-2xl font-bold px-2">✕</button>
+            </div>
+
+            <!-- Aviso si es file:// -->
+            <div id="qr-file-warning" class="hidden px-4 py-2 bg-rose-950/60 border-b border-rose-800/40 text-[10px] text-rose-300 font-medieval">
+                ⚠️ El archivo se abrió como <code>file://</code>. Para conectar celulares, aloja el juego en un servidor web (GitHub Pages, etc.).
+            </div>
+
+            <div class="p-6 flex flex-col items-center gap-4">
+                <!-- QR único grande -->
+                <div id="qr-single-box" class="bg-white p-3 rounded-2xl shadow-xl"></div>
+                <p class="text-xs text-stone-400 font-medieval text-center">
+                    Todos los equipos escanean <strong class="text-amber-300">este mismo QR</strong><br>
+                    y eligen su castillo en su celular
+                </p>
+                <div class="w-full text-center bg-stone-900 border border-amber-700/40 rounded-xl py-2 px-4">
+                    <p class="text-[10px] font-medieval text-stone-500 uppercase tracking-widest">Sala</p>
+                    <p id="qr-room-code" class="text-2xl font-black text-amber-400 tracking-widest font-cinzel">------</p>
+                </div>
+                <div class="w-full bg-stone-900/60 border border-stone-800 rounded-xl px-3 py-2 text-center">
+                    <p class="text-[9px] text-stone-500 font-medieval">Enlace directo:</p>
+                    <p id="qr-join-url" class="text-[9px] text-amber-300 font-medieval break-all mt-0.5"></p>
+                </div>
+            </div>
+
+            <div class="px-4 py-3 border-t border-stone-800 bg-stone-900/50 text-[10px] text-stone-500 font-medieval text-center">
+                Comunicación P2P via PeerJS (WebRTC) — sin servidor propio.
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PANTALLA DE UNIÓN PARA CELULARES ================= -->
+    <!-- Visible cuando el estudiante abre el juego para unirse (modo jugador) -->
+    <div id="mobile-controller" class="hidden fixed inset-0 z-[200] bg-stone-950 flex flex-col font-medieval overflow-hidden">
+        <!-- Renderizado dinámicamente: pantalla de código, selección de castillo o controlador -->
+        <div class="flex-1 flex items-center justify-center">
+            <div class="text-center">
+                <div class="text-4xl mb-3 animate-spin">⚙️</div>
+                <p class="text-stone-400 text-sm">Cargando...</p>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- ================= MODAL COMPLEMENTARIO: CONFIRMACIÓN Y DIÁLOGOS ================= -->
+    <div id="modal-feedback" class="fixed inset-0 bg-black/85 z-[100] backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-stone-950/95 border-4 border-amber-700 rounded-2xl p-6 max-w-md w-full text-center relative shadow-2xl">
+            <h4 id="feedback-title" class="text-xl md:text-2xl font-medieval text-amber-400 mb-2">Mensaje</h4>
+            <p id="feedback-message" class="text-stone-300 text-sm mb-6 leading-relaxed">Mensaje informativo.</p>
+            <div class="flex justify-center gap-4 flex-wrap" id="feedback-buttons-container">
+                <!-- Botones inyectados dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= DESARROLLO DEL JUEGO ================= -->
+    <script>
+        /*************************************************************
+         * A. MANEJADOR SEGURO DE ALMACENAMIENTO (SafeStorage)
+         * Previene bloqueos del hilo JS si el navegador bloquea cookies/almacenamiento en iframes
+         *************************************************************/
+        const SafeStorage = {
+            fallback: {},
+            getItem(key) {
+                try {
+                    return localStorage.getItem(key);
+                } catch (e) {
+                    return this.fallback[key] || null;
+                }
+            },
+            setItem(key, value) {
+                try {
+                    localStorage.setItem(key, value);
+                } catch (e) {
+                    this.fallback[key] = value;
+                }
+            },
+            removeItem(key) {
+                try {
+                    localStorage.removeItem(key);
+                } catch (e) {
+                    delete this.fallback[key];
+                }
+            }
+        };
+
+        /*************************************************************
+         * B. MOTOR DE SONIDO (SINTETIZADO - Web Audio API NATIVO)
+         * Soporte 100% Offline y dinámico.
+         *************************************************************/
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = true;
+                this.volume = 0.5;
+                this.musicPlaying = false;
+                this.melodyTimer = null;
+                this.currentTempo = 115; // BPM medieval pausado
+                this.step = 0;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playClick() {
+                if (this.muted) return;
+                this.init();
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(650, this.ctx.currentTime + 0.08);
+                
+                gain.gain.setValueAtTime(this.volume * 0.25, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+
+            playCorrect() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    let osc = this.ctx.createOscillator();
+                    let gain = this.ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+                    gain.gain.setValueAtTime(0, now + idx * 0.07);
+                    gain.gain.linearRampToValueAtTime(this.volume * 0.35, now + idx * 0.07 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.07 + 0.25);
+                    
+                    osc.start(now + idx * 0.07);
+                    osc.stop(now + idx * 0.07 + 0.25);
+                });
+            }
+
+            playIncorrect() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(70, now + 0.35);
+                
+                gain.gain.setValueAtTime(this.volume * 0.35, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                
+                osc.start();
+                osc.stop(now + 0.35);
+            }
+
+            playExplosion(isSuper = false) {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                
+                const bufferSize = this.ctx.sampleRate * (isSuper ? 1.5 : 0.8);
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                
+                let noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                
+                let filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(isSuper ? 200 : 400, now);
+                filter.frequency.exponentialRampToValueAtTime(30, now + (isSuper ? 1.2 : 0.6));
+                
+                let gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(this.volume * 1.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + (isSuper ? 1.4 : 0.75));
+                
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                noise.start(now);
+                noise.stop(now + (isSuper ? 1.4 : 0.75));
+            }
+
+            playShield() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.linearRampToValueAtTime(1500, now + 0.25);
+                
+                gain.gain.setValueAtTime(this.volume * 0.45, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                
+                osc.start();
+                osc.stop(now + 0.25);
+            }
+
+            playRepair() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                for (let i = 0; i < 3; i++) {
+                    let osc = this.ctx.createOscillator();
+                    let gain = this.ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(280 + i * 110, now + i * 0.12);
+                    
+                    gain.gain.setValueAtTime(0, now + i * 0.12);
+                    gain.gain.linearRampToValueAtTime(this.volume * 0.35, now + i * 0.12 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.1);
+                    
+                    osc.start(now + i * 0.12);
+                    osc.stop(now + i * 0.12 + 0.1);
+                }
+            }
+
+            playFanfare() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const notes = [
+                    { f: 293.66, d: 0.15 },
+                    { f: 349.23, d: 0.15 },
+                    { f: 440.00, d: 0.15 },
+                    { f: 587.33, d: 0.5 }
+                ];
+                
+                notes.forEach((note, index) => {
+                    let osc = this.ctx.createOscillator();
+                    let gain = this.ctx.createGain();
+                    
+                    osc.type = 'sawtooth';
+                    let filter = this.ctx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(1000, now);
+                    
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    const startTime = now + index * 0.18;
+                    osc.frequency.setValueAtTime(note.f, startTime);
+                    gain.gain.setValueAtTime(0, startTime);
+                    gain.gain.linearRampToValueAtTime(this.volume * 0.35, startTime + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + note.d);
+                    
+                    osc.start(startTime);
+                    osc.stop(startTime + note.d);
+                });
+            }
+
+            startMusic() {
+                if (this.musicPlaying) return;
+                this.init();
+                this.musicPlaying = true;
+
+                // Escala A Dorian (modo medieval clásico): A B C D E F# G
+                const scale = [220.00, 246.94, 261.63, 293.66, 329.63, 369.99, 392.00, 440.00];
+                // Melodía con saltos modales y reposos, estilo cantiga/danza antigua
+                const melody = [
+                    0, 2, 3, 4, 3, 2, 0, 2,
+                    4, 6, 5, 4, 3, 2, 1, 0,
+                    0, 3, 5, 7, 5, 3, 2, 0,
+                    2, 4, 3, 2, 0, -1, 0, -1
+                ];
+
+                this.currentTempo = 86; // Más pausado y solemne
+                const stepDuration = 60 / this.currentTempo;
+
+                // Dron grave de "viola de rueda" sostenido bajo toda la melodía
+                const droneOsc1 = this.ctx.createOscillator();
+                const droneOsc2 = this.ctx.createOscillator();
+                const droneGain = this.ctx.createGain();
+                const droneFilter = this.ctx.createBiquadFilter();
+                droneFilter.type = 'lowpass';
+                droneFilter.frequency.value = 500;
+                droneOsc1.type = 'sawtooth';
+                droneOsc2.type = 'sawtooth';
+                droneOsc1.frequency.value = scale[0] / 2;
+                droneOsc2.frequency.value = (scale[0] / 2) * 1.005; // leve desafinación para textura de cuerda
+                droneOsc1.connect(droneFilter);
+                droneOsc2.connect(droneFilter);
+                droneFilter.connect(droneGain);
+                droneGain.connect(this.ctx.destination);
+                droneGain.gain.value = 0;
+                droneGain.gain.linearRampToValueAtTime(this.volume * 0.08, this.ctx.currentTime + 1.5);
+                droneOsc1.start();
+                droneOsc2.start();
+                this.droneOsc1 = droneOsc1;
+                this.droneOsc2 = droneOsc2;
+                this.droneGain = droneGain;
+
+                const playStep = () => {
+                    if (!this.musicPlaying || this.muted) return;
+
+                    const now = this.ctx.currentTime;
+                    const scaleIndex = melody[this.step % melody.length];
+
+                    // Nota tipo "pulsada" (laúd/arpa): sawtooth + filtro paso bajo con decaimiento rápido
+                    if (scaleIndex >= 0) {
+                        const freq = scaleIndex >= 7 ? scale[scaleIndex % 8] * 2 : scale[scaleIndex];
+
+                        let osc = this.ctx.createOscillator();
+                        let filt = this.ctx.createBiquadFilter();
+                        let gain = this.ctx.createGain();
+                        osc.connect(filt);
+                        filt.connect(gain);
+                        gain.connect(this.ctx.destination);
+
+                        osc.type = 'sawtooth';
+                        filt.type = 'lowpass';
+                        filt.frequency.setValueAtTime(2200, now);
+                        filt.frequency.exponentialRampToValueAtTime(500, now + stepDuration * 0.8);
+                        osc.frequency.setValueAtTime(freq, now);
+
+                        gain.gain.setValueAtTime(0, now);
+                        gain.gain.linearRampToValueAtTime(this.volume * 0.22, now + 0.015);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + stepDuration * 0.85);
+
+                        osc.start(now);
+                        osc.stop(now + stepDuration * 0.9);
+                    }
+
+                    // Tambor suave (ruido filtrado) marcando el pulso cada 2 pasos
+                    if (this.step % 2 === 0) {
+                        const bufferSize = this.ctx.sampleRate * 0.12;
+                        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                        const data = buffer.getChannelData(0);
+                        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+                        let noise = this.ctx.createBufferSource();
+                        noise.buffer = buffer;
+                        let noiseFilter = this.ctx.createBiquadFilter();
+                        noiseFilter.type = 'lowpass';
+                        noiseFilter.frequency.setValueAtTime(this.step % 8 === 0 ? 220 : 320, now);
+                        let noiseGain = this.ctx.createGain();
+                        noiseGain.gain.setValueAtTime(this.volume * (this.step % 8 === 0 ? 0.32 : 0.18), now);
+                        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+
+                        noise.connect(noiseFilter);
+                        noiseFilter.connect(noiseGain);
+                        noiseGain.connect(this.ctx.destination);
+                        noise.start(now);
+                        noise.stop(now + 0.12);
+                    }
+
+                    this.step++;
+                    this.melodyTimer = setTimeout(playStep, stepDuration * 1000);
+                };
+
+                playStep();
+            }
+
+            stopMusic() {
+                this.musicPlaying = false;
+                clearTimeout(this.melodyTimer);
+                if (this.droneGain) {
+                    const now = this.ctx.currentTime;
+                    this.droneGain.gain.cancelScheduledValues(now);
+                    this.droneGain.gain.linearRampToValueAtTime(0, now + 0.4);
+                    const o1 = this.droneOsc1, o2 = this.droneOsc2;
+                    setTimeout(() => { try { o1.stop(); o2.stop(); } catch(e) {} }, 450);
+                    this.droneOsc1 = null;
+                    this.droneOsc2 = null;
+                    this.droneGain = null;
+                }
+            }
+        }
+
+        const sound = new SoundEngine();
+
+        function toggleMusic() {
+            sound.init();
+            sound.muted = !sound.muted;
+            const btn = document.getElementById('music-btn');
+            const status = document.getElementById('music-status');
+            
+            if (sound.muted) {
+                status.innerText = "OFF";
+                btn.classList.remove('bg-purple-950', 'text-amber-300');
+                sound.stopMusic();
+            } else {
+                status.innerText = "ON";
+                btn.classList.add('bg-purple-950', 'text-amber-300');
+                sound.startMusic();
+            }
+            sound.playClick();
+        }
+
+        function updateVolume(val) {
+            sound.volume = parseFloat(val);
+            sound.playClick();
+        }
+
+        function toggleFullscreen() {
+            sound.playClick();
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log("Error de pantalla completa:", err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+
+        /*************************************************************
+         * C. BASE DE PREGUNTAS (30 VERBOS EN PASADO SIMPLE)
+         *************************************************************/
+        const VERBOS_PREGUNTAS = [
+            { id: 1, question: "ATE", correct: "EAT", options: ["EAT", "DRINK", "WRITE"] },
+            { id: 2, question: "SAW", correct: "SEE", options: ["SEE", "SAY", "SING"] },
+            { id: 3, question: "WENT", correct: "GO", options: ["GO", "WANT", "WALK"] },
+            { id: 4, question: "DRANK", correct: "DRINK", options: ["DRINK", "DRAW", "DRIVE"] },
+            { id: 5, question: "BOUGHT", correct: "BUY", options: ["BUY", "BRING", "BUILD"] },
+            { id: 6, question: "MADE", correct: "MAKE", options: ["MAKE", "MEET", "MEAN"] },
+            { id: 7, question: "TOOK", correct: "TAKE", options: ["TAKE", "TALK", "TELL"] },
+            { id: 8, question: "CAME", correct: "COME", options: ["COME", "CALL", "CATCH"] },
+            { id: 9, question: "WROTE", correct: "WRITE", options: ["WRITE", "WORK", "WIN"] },
+            { id: 10, question: "SANG", correct: "SING", options: ["SING", "SIT", "SLEEP"] },
+            { id: 11, question: "SPOKE", correct: "SPEAK", options: ["SPEAK", "SPEND", "STAND"] },
+            { id: 12, question: "RAN", correct: "RUN", options: ["RUN", "READ", "RIDE"] },
+            { id: 13, question: "SLEPT", correct: "SLEEP", options: ["SLEEP", "SELL", "SEND"] },
+            { id: 14, question: "SWAM", correct: "SWIM", options: ["SWIM", "SWEAR", "SWEEP"] },
+            { id: 15, question: "HAD", correct: "HAVE", options: ["HAVE", "HEAR", "HIDE"] },
+            { id: 16, question: "DID", correct: "DO", options: ["DO", "DIG", "DRAW"] },
+            { id: 17, question: "GAVE", correct: "GIVE", options: ["GIVE", "GROW", "GET"] },
+            { id: 18, question: "THOUGHT", correct: "THINK", options: ["THINK", "THROW", "TEACH"] },
+            { id: 19, question: "FELL", correct: "FALL", options: ["FALL", "FEEL", "FIND"] },
+            { id: 20, question: "FLEW", correct: "FLY", options: ["FLY", "FLOW", "FORGET"] },
+            { id: 21, question: "HEARD", correct: "HEAR", options: ["HEAR", "HELP", "HURT"] },
+            { id: 22, question: "KEPT", correct: "KEEP", options: ["KEEP", "KNOW", "KILL"] },
+            { id: 23, question: "LEFT", correct: "LEAVE", options: ["LEAVE", "LOSE", "LAUGH"] },
+            { id: 24, question: "MET", correct: "MEET", options: ["MEET", "MIND", "MOVE"] },
+            { id: 25, question: "PAID", correct: "PAY", options: ["PAY", "PLAY", "PUT"] },
+            { id: 26, question: "READ", correct: "READ", options: ["READ", "RIDE", "RING"] },
+            { id: 27, question: "SOLD", correct: "SELL", options: ["SELL", "SEND", "SHAKE"] },
+            { id: 28, question: "TOLD", correct: "TELL", options: ["TELL", "THINK", "TEAR"] },
+            { id: 29, question: "STOOD", correct: "STAND", options: ["STAND", "SPEAK", "STEAL"] },
+            { id: 30, question: "WON", correct: "WIN", options: ["WIN", "WRITE", "WEAR"] }
+        ];
+
+        const EMERALD = "emerald";
+        const AMBER = "amber";
+        const RED = "rose";
+        const BLUE = "sky";
+        const VIOLET = "violet";
+
+        const CASTLE_COLORS = [EMERALD, AMBER, RED, BLUE, VIOLET];
+        const CASTLE_TAILWIND_COLORS = {
+            emerald: { border: "border-emerald-500", bg: "bg-emerald-950/70", bgDark: "bg-emerald-950/90", shadow: "shadow-emerald-900/30", accent: "text-emerald-400", hex: "#10b981", name: "Estandarte Esmeralda" },
+            amber: { border: "border-amber-500", bg: "bg-amber-950/70", bgDark: "bg-amber-950/90", shadow: "shadow-amber-900/30", accent: "text-amber-400", hex: "#f59e0b", name: "Estandarte Dorado" },
+            rose: { border: "border-rose-500", bg: "bg-rose-950/70", bgDark: "bg-rose-950/90", shadow: "shadow-rose-900/30", accent: "text-rose-400", hex: "#f43f5e", name: "Estandarte Carmesí" },
+            sky: { border: "border-sky-500", bg: "bg-sky-950/70", bgDark: "bg-sky-950/90", shadow: "shadow-sky-900/30", accent: "text-sky-400", hex: "#0ea5e9", name: "Estandarte Azur" },
+            violet: { border: "border-violet-500", bg: "bg-violet-950/70", bgDark: "bg-violet-950/90", shadow: "shadow-violet-900/30", accent: "text-violet-400", hex: "#8b5cf6", name: "Estandarte Amatista" }
+        };
+
+        const DEFAULT_NAMES = [
+            "Castillo de Esmeralda",
+            "Baluarte de Oro",
+            "Ciudadela Carmesí",
+            "Fuerte del Océano",
+            "Templo Amatista"
+        ];
+
+        // Coordenadas (en % del lienzo del mapa) de cada reino, inspiradas en el "Mapa de los Reinos"
+        const MAP_POSITIONS = {
+            emerald: { x: 35, y: 26, terrain: "forest" },
+            amber:   { x: 70, y: 31, terrain: "mountain" },
+            rose:    { x: 15, y: 53, terrain: "crimson" },
+            sky:     { x: 81, y: 65, terrain: "ice" },
+            violet:  { x: 49, y: 81, terrain: "crystal" }
+        };
+
+        // Estos datos los necesita el motor 3D (módulo ES Arena3D, con su propio scope aislado)
+        window.MAP_POSITIONS = MAP_POSITIONS;
+        window.CASTLE_TAILWIND_COLORS = CASTLE_TAILWIND_COLORS;
+        window.CASTLE_COLORS = CASTLE_COLORS;
+
+
+        /*************************************************************
+         * D. ESTADO DE LA PARTIDA (GAME STATE)
+         *************************************************************/
+        let gameState = {
+            castles: [],
+            currentTurn: 0,
+            usedQuestions: [],
+            timerEnabled: true,
+            timerRemaining: 15,
+            timerInterval: null,
+            activeQuestion: null,
+            selectedQuestionNum: null,
+            status: "setup", 
+            log: [],
+            kingMoods: [ "idle", "idle", "idle", "idle", "idle" ],
+            superBombActive: false,
+        };
+
+        const LOCAL_STORAGE_KEY = "battle_castle_3d_save";
+
+
+        /*************************************************************
+         * E. SISTEMA DE CANVAS, PROYECTILES Y PARTÍCULAS
+         *************************************************************/
+        const canvas = document.getElementById("battle-canvas");
+        const ctx = canvas.getContext("2d");
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
+
+        // Partículas overlay 2D: se usan SOLO para confeti/fuegos artificiales de la pantalla
+        // de victoria. Las explosiones, catapultas y daño del campo de batalla ahora ocurren
+        // en el motor 3D real (Three.js) — ver Arena3D más abajo.
+        class Particle {
+            constructor(x, y, color, type = 'smoke') {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.type = type;
+                this.vx = (Math.random() - 0.5) * (type === 'fireworks' ? 14 : 5);
+                this.vy = (Math.random() - 0.5) * (type === 'fireworks' ? 14 : 5) - (type === 'smoke' || type === 'fire' ? 2.5 : 0);
+                this.alpha = 1;
+                this.size = Math.random() * (type === 'smoke' ? 22 : type === 'fire' ? 16 : type === 'fireworks' ? 6 : 4) + 2;
+                this.decay = Math.random() * 0.018 + 0.012;
+                this.gravity = type === 'confetti' || type === 'fireworks' ? 0.15 : 0;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += this.gravity;
+                this.alpha -= this.decay;
+                if (this.alpha < 0) this.alpha = 0;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                if (this.type === 'confetti') {
+                    ctx.fillRect(this.x, this.y, this.size, this.size * 1.5);
+                } else {
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particles = particles.filter(p => {
+                p.update();
+                p.draw();
+                return p.alpha > 0;
+            });
+
+            requestAnimationFrame(gameLoop);
+        }
+        gameLoop();
+
+        function createFireworks() {
+            if (gameState.status !== 'victory') return;
+            const colors = ['#fbbf24', '#f43f5e', '#3b82f6', '#10b981', '#c084fc'];
+            
+            const run = () => {
+                if (gameState.status !== 'victory') return;
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * (canvas.height * 0.5);
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                sound.playCorrect();
+                for (let i = 0; i < 35; i++) {
+                    particles.push(new Particle(x, y, color, 'fireworks'));
+                }
+                setTimeout(run, Math.random() * 600 + 400);
+            };
+            run();
+        }
+
+        function triggerConfetti() {
+            for (let i = 0; i < 120; i++) {
+                setTimeout(() => {
+                    if (gameState.status !== 'victory') return;
+                    const x = Math.random() * canvas.width;
+                    const y = -10;
+                    const color = `hsl(${Math.random() * 360}, 100%, 55%)`;
+                    particles.push(new Particle(x, y, color, 'confetti'));
+                }, i * 35);
+            }
+        }
+
+
+        /*************************************************************
+         * G. RENDERIZADO 3D DEL CAMPO DE BATALLA
+         * (delegado por completo al motor real Three.js -> objeto Arena3D,
+         *  definido en el <script type="module"> al final del documento)
+         *************************************************************/
+
+
+        /*************************************************************
+         * H. INTERFAZ Y ACTUALIZACIONES DE RÁNKING
+         *************************************************************/
+        function updateUI() {
+            const activeCastle = gameState.castles[gameState.currentTurn];
+            const pName = document.getElementById("active-player-name");
+            pName.innerText = activeCastle.name;
+            pName.className = `text-2xl md:text-3xl font-medieval tracking-wide ${CASTLE_TAILWIND_COLORS[activeCastle.color].accent}`;
+
+            const bonusBtn = document.getElementById("bonus-btn");
+            if (activeCastle.bonusCooldown > 0) {
+                bonusBtn.disabled = true;
+                bonusBtn.classList.add("opacity-40", "cursor-not-allowed");
+                bonusBtn.classList.remove("opacity-25");
+                bonusBtn.innerHTML = `🎁 EN ${activeCastle.bonusCooldown} TURNO${activeCastle.bonusCooldown > 1 ? 'S' : ''}`;
+            } else {
+                bonusBtn.disabled = false;
+                bonusBtn.classList.remove("opacity-25", "opacity-40", "cursor-not-allowed");
+                bonusBtn.innerHTML = "🎁 COFRE DE RECURSOS";
+            }
+
+            // Actualizar Ránking Lateral
+            const sidebar = document.getElementById("sidebar-leaderboard");
+            sidebar.innerHTML = "";
+
+            const sorted = [...gameState.castles].sort((a, b) => b.hp - a.hp);
+            const highestHp = sorted[0].hp;
+
+            sorted.forEach((castle, index) => {
+                const colorConfig = CASTLE_TAILWIND_COLORS[castle.color];
+                const isLeader = castle.hp === highestHp && castle.hp > 0;
+                
+                const item = document.createElement("div");
+                item.className = `flex items-center justify-between p-2 rounded-lg border bg-stone-900/60 ${castle.destroyed ? 'border-red-950/20 opacity-35' : 'border-purple-950/20'}`;
+                item.innerHTML = `
+                    <div class="flex items-center gap-2 truncate">
+                        <span class="text-xs font-bold text-stone-500">#${index + 1}</span>
+                        <div class="w-2.5 h-2.5 rounded-full" style="background-color: ${colorConfig.hex}"></div>
+                        <span class="text-xs font-semibold text-stone-200 truncate ${castle.destroyed ? 'line-through text-stone-500' : ''}">
+                            ${castle.name}
+                        </span>
+                        ${isLeader && !castle.destroyed ? '<span class="text-[9px] text-yellow-500 font-bold animate-pulse">LÍDER</span>' : ''}
+                    </div>
+                    <div class="flex items-center gap-1.5 text-xs text-stone-400 font-medieval">
+                        <span>❤️ ${castle.hp}</span>
+                        <span>🛡️ ${castle.shield}</span>
+                    </div>
+                `;
+                sidebar.appendChild(item);
+            });
+
+            // Cuadrícula de preguntas
+            const qGrid = document.getElementById("questions-used-grid");
+            qGrid.innerHTML = "";
+            const totalQ = getActiveQuestions().length;
+            for (let i = 1; i <= totalQ; i++) {
+                const isUsed = gameState.usedQuestions.includes(i);
+                const cell = document.createElement("div");
+                cell.className = `p-0.5 rounded text-[9px] font-bold ${isUsed ? 'bg-rose-950/70 text-rose-500 border border-rose-900/20' : 'bg-purple-950/70 text-purple-400 border border-purple-900/20'}`;
+                cell.innerText = i;
+                qGrid.appendChild(cell);
+            }
+
+            // Refresca la escena 3D real (Three.js): castillos, reyes, HP, daños, turno activo, objetivos
+            if (window.Arena3D) window.Arena3D.refresh(gameState);
+            // Sincroniza los celulares con el estado actual del juego
+            if (window.broadcastStateToPlayers) window.broadcastStateToPlayers();
+        }
+
+        function logAction(msg, type = 'info') {
+            const container = document.getElementById("battle-log");
+            const entry = document.createElement("div");
+            
+            let color = "text-stone-400";
+            if (type === 'success') color = "text-emerald-400";
+            if (type === 'danger') color = "text-rose-400";
+            if (type === 'warning') color = "text-amber-400";
+            if (type === 'bonus') color = "text-purple-400";
+
+            entry.className = `${color} border-b border-stone-900/40 pb-1`;
+            entry.innerHTML = `<span class="text-stone-600 font-bold">[${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}]</span> ${msg}`;
+            
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+            
+            gameState.log.push({ msg, type, time: Date.now() });
+            saveGameState();
+        }
+
+
+        /*************************************************************
+         * I. FLUJO DE JUEGO & ALMACENAMIENTO DINÁMICO
+         *************************************************************/
+        window.onload = function() {
+            // Configurar modo red (host vs celular) y lanzar PeerJS
+            detectNetworkMode();
+
+            // Mostrar badge con cantidad de preguntas activas
+            updateQuestionCountBadge();
+
+            // Generación de inputs
+            const container = document.getElementById("setup-castles-list");
+            container.innerHTML = "";
+            for (let i = 0; i < 5; i++) {
+                const colorConfig = CASTLE_TAILWIND_COLORS[CASTLE_COLORS[i]];
+                container.innerHTML += `
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">🏰</span>
+                        <div class="w-full">
+                            <label class="text-[10px] uppercase tracking-widest font-bold ${colorConfig.accent}">${colorConfig.name}</label>
+                            <input id="input-castle-${i}" type="text" value="${DEFAULT_NAMES[i]}" maxlength="20" 
+                                class="w-full bg-amber-50/95 border-2 border-amber-950/30 rounded-lg px-3 py-1.5 text-stone-900 font-semibold focus:border-amber-700 outline-none text-sm">
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Intento de recuperación seguro
+            const loaded = SafeStorage.getItem(LOCAL_STORAGE_KEY);
+            if (loaded) {
+                try {
+                    const parsed = JSON.parse(loaded);
+                    if (parsed && parsed.castles && parsed.castles.length > 0) {
+                        showFeedbackModal(
+                            "💾 PARTIDA PREVIA DETECTADA", 
+                            "Existe una batalla activa en los registros medievales de vuestro navegador. ¿Deseáis reanudar la campaña?",
+                            [
+                                { label: "REANUDAR CAMPANÑA", action: () => { loadSavedGame(); closeModal('modal-feedback'); } },
+                                { label: "NUEVA PARTIDA", action: () => { SafeStorage.removeItem(LOCAL_STORAGE_KEY); closeModal('modal-feedback'); } }
+                            ]
+                        );
+                    }
+                } catch(e) {
+                    SafeStorage.removeItem(LOCAL_STORAGE_KEY);
+                }
+            }
+        };
+
+        function startGame() {
+            sound.init(); 
+            sound.playClick();
+            
+            gameState.castles = [];
+            for (let i = 0; i < 5; i++) {
+                const nameInput = document.getElementById(`input-castle-${i}`).value.trim();
+                gameState.castles.push({
+                    name: nameInput || DEFAULT_NAMES[i],
+                    color: CASTLE_COLORS[i],
+                    hp: 5,
+                    shield: 0,
+                    hammer: 0,
+                    superbomb: false,
+                    destroyed: false,
+                    bonusCooldown: 0
+                });
+            }
+
+            gameState.timerEnabled = document.getElementById("timer-toggle").checked;
+            gameState.currentTurn = 0;
+            gameState.usedQuestions = [];
+            gameState.status = "playing";
+            gameState.log = [];
+            gameState.kingMoods = ["idle", "idle", "idle", "idle", "idle"];
+
+            document.getElementById("screen-setup").classList.add("hidden");
+            document.getElementById("screen-game").classList.remove("hidden");
+            
+            logAction("⚔️ ¡Ha iniciado el asedio de los reinos! Demostrad vuestro conocimiento.", "warning");
+            updateUI();
+            saveGameState();
+        }
+
+        function nextTurn() {
+            if (checkVictory()) return;
+
+            let attempts = 0;
+            do {
+                gameState.currentTurn = (gameState.currentTurn + 1) % 5;
+                attempts++;
+            } while (gameState.castles[gameState.currentTurn].destroyed && attempts < 6);
+
+            const upcomingCastle = gameState.castles[gameState.currentTurn];
+
+            // El cofre de recursos se vuelve a habilitar tras 3 turnos propios desde su último uso
+            if (upcomingCastle.bonusCooldown > 0) {
+                upcomingCastle.bonusCooldown--;
+                if (upcomingCastle.bonusCooldown === 0) {
+                    logAction(`🎁 ¡El cofre de recursos de <strong class="text-white">${upcomingCastle.name}</strong> está disponible de nuevo!`, "bonus");
+                }
+            }
+
+            gameState.kingMoods[gameState.currentTurn] = "idle";
+            gameState.superBombActive = false; 
+
+            logAction(`Siguiente turno: <strong class="text-white">${upcomingCastle.name}</strong>`, "info");
+            updateUI();
+            saveGameState();
+        }
+
+        function checkVictory() {
+            const alive = gameState.castles.filter(c => !c.destroyed);
+            if (alive.length === 1) {
+                gameState.status = "victory";
+                const winner = alive[0];
+                const winnerIndex = gameState.castles.findIndex(c => c.name === winner.name);
+
+                gameState.kingMoods[winnerIndex] = "victory";
+
+                // La arena 3D permanece visible: la cámara vuela hacia el rey vencedor
+                document.getElementById("screen-victory").classList.remove("hidden");
+                document.getElementById("victory-castle-name").innerText = winner.name;
+
+                if (window.Arena3D) {
+                    window.Arena3D.refresh(gameState);
+                    window.Arena3D.playVictory(winnerIndex);
+                }
+
+                sound.playFanfare();
+                triggerConfetti();
+                createFireworks();
+                
+                logAction(`👑 ¡${winner.name} HA CONQUISTADO EL TRONO ABSOLUTO!`, "success");
+                SafeStorage.removeItem(LOCAL_STORAGE_KEY);
+                return true;
+            }
+            return false;
+        }
+
+        function saveGameState() {
+            SafeStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(gameState));
+        }
+
+        function loadSavedGame() {
+            const data = JSON.parse(SafeStorage.getItem(LOCAL_STORAGE_KEY));
+            if (data) {
+                gameState = data;
+                document.getElementById("screen-setup").classList.add("hidden");
+                document.getElementById("screen-game").classList.remove("hidden");
+                document.getElementById("screen-victory").classList.add("hidden");
+                
+                if (!sound.muted) {
+                    sound.startMusic();
+                }
+
+                logAction("💾 Campaña recuperada correctamente.", "success");
+                updateUI();
+            }
+        }
+
+        function triggerResetConfirm() {
+            sound.playClick();
+            showFeedbackModal(
+                "⚔️ ¿ABANDONAR?",
+                "¿Deseáis abandonar las fortalezas activas? La campaña actual se perderá en las arenas del tiempo.",
+                [
+                    { label: "SÍ, REINICIAR", action: () => { SafeStorage.removeItem(LOCAL_STORAGE_KEY); triggerResetGame(); } },
+                    { label: "SEGUIR JUGANDO", action: () => closeModal('modal-feedback') }
+                ]
+            );
+        }
+
+        function triggerResetGame() {
+            location.reload();
+        }
+
+
+        /*************************************************************
+         * J. SISTEMA GRAMATICAL DE PREGUNTAS Y TEMPORIZADORES
+         *************************************************************/
+        function promptQuestionSelection() {
+            sound.playClick();
+            
+            const questions = getActiveQuestions();
+            const total = questions.length;
+            const grid = document.getElementById("pergaminos-grid-selection");
+            grid.innerHTML = "";
+
+            for (let i = 1; i <= total; i++) {
+                const isUsed = gameState.usedQuestions.includes(i);
+                const btn = document.createElement("button");
+                
+                if (isUsed) {
+                    btn.className = "p-3 bg-stone-900 border border-stone-850 text-stone-600 rounded-xl cursor-not-allowed text-xs font-bold font-medieval flex flex-col items-center justify-center shadow-inner";
+                    btn.innerHTML = `<span>📜</span><span class="text-[9px]">X</span>`;
+                    btn.disabled = true;
+                } else {
+                    btn.className = "rpg-btn p-3 rounded-xl text-sm font-bold font-medieval flex flex-col items-center justify-center text-white shadow-md";
+                    btn.innerHTML = `<span>📜</span><span>${i}</span>`;
+                    btn.setAttribute("onclick", `selectQuestion(${i})`);
+                }
+                grid.appendChild(btn);
+            }
+
+            openModal('modal-pergaminos');
+        }
+
+        function selectQuestion(num) {
+            sound.playClick();
+            closeModal('modal-pergaminos');
+
+            if (gameState.usedQuestions.includes(num)) {
+                showFeedbackModal("❌ PERGAMINO AGOTADO", "Este manuscrito ya ha sido descifrado.", [
+                    { label: "ENTENDIDO", action: () => { closeModal('modal-feedback'); promptQuestionSelection(); } }
+                ]);
+                return;
+            }
+
+            gameState.selectedQuestionNum = num;
+            
+            const q = getActiveQuestions().find(item => item.id === num);
+            if (!q) return;
+
+            gameState.activeQuestion = q;
+            
+            document.getElementById("question-index-label").innerText = `PREGUNTA #${num}`;
+            document.getElementById("question-verb").innerText = q.question;
+
+            const mixedOptions = [...q.options].sort(() => Math.random() - 0.5);
+            const container = document.getElementById("alternatives-container");
+            container.innerHTML = "";
+
+            mixedOptions.forEach(opt => {
+                const optBtn = document.createElement("button");
+                optBtn.className = "w-full py-3.5 px-5 bg-stone-900 hover:bg-stone-850 border-2 border-stone-700 hover:border-amber-500 rounded-xl text-left text-base font-medieval text-stone-200 flex justify-between items-center transition duration-150 active:scale-95 shadow-md";
+                optBtn.innerHTML = `<span>${opt}</span> <span class="opacity-30">🛡️</span>`;
+                optBtn.setAttribute("onclick", `submitAnswer('${opt}')`);
+                container.appendChild(optBtn);
+            });
+
+            openModal('modal-pregunta');
+
+            if (gameState.timerEnabled) {
+                startTimer();
+            } else {
+                document.getElementById("timer-bar-container").classList.add("hidden");
+                document.getElementById("countdown-label").innerText = "Sin límite";
+            }
+        }
+
+        function startTimer() {
+            document.getElementById("timer-bar-container").classList.remove("hidden");
+            gameState.timerRemaining = 15;
+            const bar = document.getElementById("timer-bar");
+            const label = document.getElementById("countdown-label");
+
+            bar.style.width = "100%";
+            label.innerText = `⏱️ ${gameState.timerRemaining}s`;
+
+            clearInterval(gameState.timerInterval);
+            gameState.timerInterval = setInterval(() => {
+                gameState.timerRemaining--;
+                label.innerText = `⏱️ ${gameState.timerRemaining}s`;
+                bar.style.width = `${(gameState.timerRemaining / 15) * 100}%`;
+
+                if (gameState.timerRemaining <= 0) {
+                    clearInterval(gameState.timerInterval);
+                    handleTimeout();
+                }
+            }, 1000);
+        }
+
+        function handleTimeout() {
+            sound.playIncorrect();
+            closeModal('modal-pregunta');
+            
+            const activeCastle = gameState.castles[gameState.currentTurn];
+            gameState.kingMoods[gameState.currentTurn] = "incorrect"; 
+            gameState.usedQuestions.push(gameState.selectedQuestionNum);
+
+            logAction(`⏳ ¡Tiempo agotado para <strong class="text-white">${activeCastle.name}</strong>! Se le escapó la oportunidad.`, "danger");
+
+            showFeedbackModal("⏳ TIEMPO AGOTADO", "El tiempo de asedio se ha consumido. Vuestras tropas pierden la iniciativa.", [
+                { label: "Pasar Turno", action: () => { closeModal('modal-feedback'); nextTurn(); } }
+            ]);
+        }
+
+        function submitAnswer(selected) {
+            clearInterval(gameState.timerInterval);
+            closeModal('modal-pregunta');
+
+            const q = gameState.activeQuestion;
+            const activeCastle = gameState.castles[gameState.currentTurn];
+            gameState.usedQuestions.push(gameState.selectedQuestionNum);
+
+            if (selected === q.correct) {
+                sound.playCorrect();
+                gameState.kingMoods[gameState.currentTurn] = "correct"; 
+                logAction(`✅ <strong class="text-white">${activeCastle.name}</strong> respondió correctamente la pregunta #${gameState.selectedQuestionNum} (${q.question} → ${q.correct}).`, "success");
+                
+                if (activeCastle.superbomb) {
+                    gameState.superBombActive = true;
+                    activeCastle.superbomb = false; 
+                }
+
+                gameState.status = "target_selection";
+                updateUI();
+
+                // Notificar al celular del equipo activo: respuesta correcta + objetivos disponibles
+                if (window.sendToPlayer) {
+                    const targets = gameState.castles
+                        .map((c, i) => ({ index: i, name: c.name, color: c.color, hp: c.hp, destroyed: c.destroyed }))
+                        .filter((c, i) => i !== gameState.currentTurn && !c.destroyed);
+                    window.sendToPlayer(gameState.currentTurn, {
+                        type: 'questionResult', correct: true,
+                        correctAnswer: q.correct, targetCastles: targets
+                    });
+                }
+                
+                showFeedbackModal(
+                    "🔥 ¡PREPARAD CATAPULTA!",
+                    "¡Respuesta correcta! Haced clic sobre el reino enemigo que deseáis bombardear en el mapa.",
+                    [{ label: "ELEGIR OBJETIVO EN EL MAPA", action: () => closeModal('modal-feedback') }]
+                );
+
+            } else {
+                sound.playIncorrect();
+                gameState.kingMoods[gameState.currentTurn] = "incorrect"; 
+                logAction(`❌ <strong class="text-white">${activeCastle.name}</strong> erró la pregunta #${gameState.selectedQuestionNum} (eligió ${selected}). La correcta era ${q.correct}.`, "danger");
+
+                // Notificar al celular: respuesta incorrecta
+                if (window.sendToPlayer) {
+                    window.sendToPlayer(gameState.currentTurn, {
+                        type: 'questionResult', correct: false, correctAnswer: q.correct
+                    });
+                }
+
+                showFeedbackModal("❌ RESPUESTA INCORRECTA", `La alternativa correcta era <strong>${q.correct}</strong>. Vuestros soldados pierden la iniciativa.`, [
+                    { label: "Siguiente Turno", action: () => { closeModal('modal-feedback'); nextTurn(); } }
+                ]);
+            }
+        }
+
+
+        /*************************************************************
+         * K. LANZAMIENTO, COLISIONES Y RESOLUCIÓN DE DAÑOS
+         *************************************************************/
+        function executeCatapultAttack(targetIndex) {
+            sound.playClick();
+            gameState.status = "playing"; 
+
+            const attackerIndex = gameState.currentTurn;
+            const attacker = gameState.castles[attackerIndex];
+            const target = gameState.castles[targetIndex];
+            const isSuper = gameState.superBombActive;
+
+            logAction(`☄️ <strong class="text-white">${attacker.name}</strong> lanza asalto de catapulta hacia <strong class="text-white">${target.name}</strong>.`, "warning");
+
+            // El motor 3D anima el proyectil real en el espacio y dispara explosión al impactar
+            if (window.Arena3D) {
+                window.Arena3D.fireCatapult(attackerIndex, targetIndex, isSuper, () => {
+                    sound.playExplosion(isSuper);
+                    applyAttackDamage(targetIndex, isSuper);
+                    gameState.superBombActive = false;
+                });
+            } else {
+                // Respaldo por si el motor 3D aún no cargó
+                sound.playExplosion(isSuper);
+                applyAttackDamage(targetIndex, isSuper);
+                gameState.superBombActive = false;
+            }
+
+            updateUI();
+        }
+
+        function applyAttackDamage(targetIndex, isSuper = false) {
+            const target = gameState.castles[targetIndex];
+            const damageToDeal = isSuper ? 2 : 1;
+
+            gameState.kingMoods[targetIndex] = "hit";
+
+            setTimeout(() => {
+                if (target.shield > 0) {
+                    target.shield--;
+                    sound.playShield();
+                    gameState.kingMoods[targetIndex] = "shield"; 
+                    logAction(`🛡️ ¡El Escudo rúnico de <strong class="text-white">${target.name}</strong> neutralizó el impacto!`, "success");
+                    
+                    showFeedbackModal("🛡️ IMPACTO ABSORBIDO", `El escudo protector de <strong>${target.name}</strong> bloqueó la bomba con éxito.`, [
+                        { label: "Continuar", action: () => { closeModal('modal-feedback'); nextTurn(); } }
+                    ]);
+                } else {
+                    target.hp -= damageToDeal;
+                    if (target.hp < 0) target.hp = 0;
+
+                    logAction(`💥 ¡Brecha lograda! <strong class="text-white">${target.name}</strong> sufre ${damageToDeal} de daño estructural.`, "danger");
+
+                    if (target.hp <= 0) {
+                        target.destroyed = true;
+                        gameState.kingMoods[targetIndex] = "destroyed"; 
+                        logAction(`🏰☠️ ¡LA CIUDADELA DE <strong class="text-white">${target.name}</strong> HA SIDO ASOLADA!`, "danger");
+                        
+                        showFeedbackModal("💥 ¡REINO ASOLADO!", `El castillo de <strong>${target.name}</strong> ha quedado reducido a escombros 3D. Sus tropas huyen.`, [
+                            { label: "Continuar", action: () => { closeModal('modal-feedback'); nextTurn(); } }
+                        ]);
+                    } else {
+                        setTimeout(() => {
+                            if (!target.destroyed) gameState.kingMoods[targetIndex] = "idle";
+                            updateUI();
+                        }, 1800);
+
+                        showFeedbackModal("💥 IMPACTO DIRECTO", `La fortaleza de <strong>${target.name}</strong> sufre graves averías estructurales (-${damageToDeal} HP).`, [
+                            { label: "Continuar", action: () => { closeModal('modal-feedback'); nextTurn(); } }
+                        ]);
+                    }
+                }
+                updateUI();
+                saveGameState();
+            }, 500);
+        }
+
+
+        /*************************************************************
+         * L. APERTURA DE COFRES DE BONIFICACIÓN 3D
+         *************************************************************/
+        function openBonusChestSelection() {
+            sound.playClick();
+            
+            const rewardsPool = [
+                { type: 'shield', icon: '🛡️', title: 'Escudo Rúnico', desc: 'Anula por completo el próximo impacto enemigo.' },
+                { type: 'shield', icon: '🛡️', title: 'Escudo Rúnico', desc: 'Anula por completo el próximo impacto enemigo.' },
+                { type: 'shield', icon: '🛡️', title: 'Escudo Rúnico', desc: 'Anula por completo el próximo impacto enemigo.' },
+                { type: 'shield', icon: '🛡️', title: 'Escudo Rúnico', desc: 'Anula por completo el próximo impacto enemigo.' },
+                { type: 'hammer', icon: '🔨', title: 'Martillo Constructor', desc: 'Restaura 1 punto de vida a vuestro bastión.' },
+                { type: 'hammer', icon: '🔨', title: 'Martillo Constructor', desc: 'Restaura 1 punto de vida a vuestro bastión.' },
+                { type: 'superbomb', icon: '💣', title: 'Super Bomba', desc: 'Vuestro próximo disparo correcto infligirá daño doble.' },
+                { type: 'empty', icon: '💨', title: 'Viento Vacío', desc: 'Este cofre solo contenía aire húmedo de las mazmorras.' },
+                { type: 'empty', icon: '💨', title: 'Viento Vacío', desc: 'Este cofre solo contenía aire húmedo de las mazmorras.' },
+                { type: 'empty', icon: '💨', title: 'Viento Vacío', desc: 'Este cofre solo contenía aire húmedo de las mazmorras.' }
+            ];
+
+            gameState.chestRewards = rewardsPool.sort(() => Math.random() - 0.5);
+
+            const container = document.getElementById("chests-container");
+            container.innerHTML = "";
+
+            for (let i = 0; i < 10; i++) {
+                const card = document.createElement("div");
+                card.className = "chest-card h-28 cursor-pointer relative";
+                card.setAttribute("onclick", `flipChest(${i})`);
+                
+                card.innerHTML = `
+                    <div class="chest-inner w-full h-full relative" id="chest-inner-${i}">
+                        <!-- Cara Frontal (Cerrado 3D) -->
+                        <div class="chest-front absolute inset-0 bg-gradient-to-b from-amber-900 to-amber-950 border-2 border-amber-600 rounded-xl flex flex-col items-center justify-center text-white p-2 shadow-2xl hover:border-yellow-400 transition-all">
+                            <!-- Cofre dibujado en perspectiva -->
+                            <span class="text-4xl filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]">📦</span>
+                            <span class="text-[10px] font-medieval mt-1 text-amber-300">TESORO ${i+1}</span>
+                        </div>
+                        <!-- Cara Trasera (Revelado) -->
+                        <div class="chest-back absolute inset-0 bg-gradient-to-b from-stone-900 to-stone-950 border-2 border-purple-500 rounded-xl flex flex-col items-center justify-center text-white p-1 text-center shadow-inner">
+                            <span class="text-3xl filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" id="chest-back-icon-${i}">❓</span>
+                            <span class="text-[9px] font-bold text-purple-300 truncate w-full mt-1" id="chest-back-title-${i}">Item</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+
+            openModal('modal-bonus');
+        }
+
+        function flipChest(index) {
+            sound.playClick();
+            
+            const activeCastle = gameState.castles[gameState.currentTurn];
+            activeCastle.bonusCooldown = 3;
+
+            const allChests = document.querySelectorAll(".chest-card");
+            allChests.forEach(card => card.removeAttribute("onclick"));
+
+            const reward = gameState.chestRewards[index];
+            
+            document.getElementById(`chest-back-icon-${index}`).innerText = reward.icon;
+            document.getElementById(`chest-back-title-${index}`).innerText = reward.title;
+            document.getElementById(`chest-inner-${index}`).parentElement.classList.add("flipped");
+
+            setTimeout(() => {
+                applyBonusReward(reward);
+                closeModal('modal-bonus');
+            }, 1400);
+        }
+
+        function applyBonusReward(reward) {
+            const activeCastle = gameState.castles[gameState.currentTurn];
+
+            switch (reward.type) {
+                case 'shield':
+                    activeCastle.shield++;
+                    sound.playShield();
+                    logAction(`🎁 ¡<strong class="text-white">${activeCastle.name}</strong> obtuvo un 🛡️ ${reward.title}!`, "bonus");
+                    showFeedbackModal("🛡️ PROTECCIÓN OBTENIDA", "Se ha erigido un escudo mágico sobre vuestra torre para bloquear el próximo disparo.", [
+                        { label: "Excelente", action: () => { closeModal('modal-feedback'); updateUI(); } }
+                    ]);
+                    break;
+
+                case 'hammer':
+                    sound.playRepair();
+                    if (activeCastle.hp < 5) {
+                        activeCastle.hp++;
+                        logAction(`🎁 ¡<strong class="text-white">${activeCastle.name}</strong> reparó sus murallas con un 🔨 ${reward.title}! Restaura 1 HP.`, "bonus");
+                        showFeedbackModal("🔨 RECONSTRUCCIÓN 3D", "Constructores del imperio han reparado 1 punto de daño real en vuestros muros.", [
+                            { label: "Estupendo", action: () => { closeModal('modal-feedback'); updateUI(); } }
+                        ]);
+                    } else {
+                        logAction(`🎁 <strong class="text-white">${activeCastle.name}</strong> encontró un 🔨 ${reward.title}, pero sus defensas estaban completas. No tuvo efecto.`, "warning");
+                        showFeedbackModal("🔨 MARTILLO SIN EFECTO", "Vuestras murallas se encuentran en estado óptimo. El martillo no ha surtido efecto.", [
+                            { label: "De acuerdo", action: () => { closeModal('modal-feedback'); updateUI(); } }
+                        ]);
+                    }
+                    break;
+
+                case 'superbomb':
+                    activeCastle.superbomb = true;
+                    sound.playClick();
+                    logAction(`🎁 ¡<strong class="text-white">${activeCastle.name}</strong> armó una 💣 Súper Bomba de asedio!`, "bonus");
+                    showFeedbackModal("💣 ARMAMENTO PESADO", "¡Letal! Vuestro siguiente asalto correcto causará daño doble (2 HP) e impacto masivo.", [
+                        { label: "¡A Disparar!", action: () => { closeModal('modal-feedback'); updateUI(); } }
+                    ]);
+                    break;
+
+                case 'empty':
+                    sound.playIncorrect();
+                    logAction(`💨 <strong class="text-white">${activeCastle.name}</strong> abrió un cofre vacío.`, "info");
+                    showFeedbackModal("💨 COFRE VACÍO", "La fortuna os ha ignorado esta vez. No habéis encontrado nada de valor en la caja.", [
+                        { label: "Continuar", action: () => { closeModal('modal-feedback'); updateUI(); } }
+                    ]);
+                    break;
+            }
+        }
+
+
+        /*************************************************************
+         * M. CONTROL DE VENTANAS MODALES DINÁMICAS
+         *************************************************************/
+        function openModal(id) {
+            document.getElementById(id).classList.remove("hidden");
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add("hidden");
+        }
+
+        function showFeedbackModal(title, message, buttons = []) {
+            document.getElementById("feedback-title").innerHTML = title;
+            document.getElementById("feedback-message").innerHTML = message;
+
+            const btnContainer = document.getElementById("feedback-buttons-container");
+            btnContainer.innerHTML = "";
+
+            if (buttons.length === 0) {
+                buttons.push({ label: "ENTENDIDO", action: () => closeModal('modal-feedback') });
+            }
+
+            buttons.forEach(btnConfig => {
+                const btn = document.createElement("button");
+                btn.className = "rpg-btn py-2.5 px-5 text-xs font-medieval text-white font-bold rounded-lg tracking-wider shadow-md";
+                btn.innerText = btnConfig.label;
+                btn.onclick = btnConfig.action;
+                btnContainer.appendChild(btn);
+            });
+
+            openModal('modal-feedback');
+        }
+
+
+        /*************************************************************
+         * N. EDITOR DE PREGUNTAS + IMPORTAR / EXPORTAR EXCEL
+         *************************************************************/
+
+        // Las preguntas personalizadas se guardan en localStorage para persistir entre sesiones
+        const QUESTIONS_STORAGE_KEY = "battle_castle_custom_questions";
+
+        let customQuestions = (function () {
+            try {
+                const saved = localStorage.getItem(QUESTIONS_STORAGE_KEY);
+                return saved ? JSON.parse(saved) : null;
+            } catch (e) { return null; }
+        })();
+
+        function getActiveQuestions() {
+            return customQuestions || VERBOS_PREGUNTAS;
+        }
+
+        function saveCustomQuestions(questions) {
+            customQuestions = questions;
+            try {
+                if (questions) {
+                    localStorage.setItem(QUESTIONS_STORAGE_KEY, JSON.stringify(questions));
+                } else {
+                    localStorage.removeItem(QUESTIONS_STORAGE_KEY);
+                }
+            } catch (e) { /* sin localStorage */ }
+            updateQuestionCountBadge();
+        }
+
+        // Muestra el badge de "N preguntas activas" en la pantalla de configuración
+        function updateQuestionCountBadge() {
+            const badge = document.getElementById('active-questions-badge');
+            if (!badge) return;
+            const q = getActiveQuestions();
+            const isCustom = !!customQuestions;
+            badge.textContent = `${q.length} preguntas ${isCustom ? '(personalizadas)' : '(predeterminadas)'}`;
+            badge.className = `text-xs font-medieval font-bold px-2 py-0.5 rounded-lg ${isCustom ? 'text-amber-400 bg-amber-950/60 border border-amber-700/40' : 'text-stone-400 bg-stone-800/40 border border-stone-700/30'}`;
+        }
+
+        function openQuestionEditor() {
+            sound.playClick();
+            renderEditorTable(getActiveQuestions());
+            openModal('modal-editor');
+        }
+
+        function closeEditorSafe() {
+            // Cuenta las filas en la tabla del editor
+            const tbody = document.getElementById('editor-tbody');
+            const rowCount = tbody ? tbody.querySelectorAll('tr').length : 0;
+            const activeCount = getActiveQuestions().length;
+
+            // Si el número de filas en la tabla difiere de las preguntas activas guardadas,
+            // probablemente hay cambios sin guardar → avisamos al usuario
+            if (rowCount !== activeCount) {
+                showFeedbackModal(
+                    '⚠️ CAMBIOS SIN GUARDAR',
+                    `Tienes ${rowCount} preguntas en el editor pero solo ${activeCount} guardadas. ¿Guardar cambios antes de cerrar?`,
+                    [
+                        { label: '✅ GUARDAR Y CERRAR', action: () => { closeModal('modal-feedback'); saveEditorChanges(); } },
+                        { label: 'Cerrar sin guardar',  action: () => { closeModal('modal-feedback'); closeModal('modal-editor'); } }
+                    ]
+                );
+            } else {
+                closeModal('modal-editor');
+            }
+        }
+
+        function renderEditorTable(questions) {
+            const tbody = document.getElementById('editor-tbody');
+            tbody.innerHTML = '';
+            questions.forEach((q, i) => {
+                tbody.appendChild(buildEditorRow(i + 1, q));
+            });
+            document.getElementById('editor-question-count').textContent = questions.length;
+        }
+
+        function buildEditorRow(num, q) {
+            const tr = document.createElement('tr');
+            tr.className = 'border-b border-stone-800/60 hover:bg-stone-900/40 transition-colors';
+            tr.dataset.id = num;
+
+            const opt2 = q.options.filter(o => o !== q.correct)[0] || '';
+            const opt3 = q.options.filter(o => o !== q.correct)[1] || '';
+
+            tr.innerHTML = `
+                <td class="py-1.5 px-2 text-stone-500 font-bold">${num}</td>
+                <td class="py-1.5 px-2">
+                    <input data-field="question" value="${q.question}" maxlength="20"
+                        class="w-full bg-stone-800 border border-stone-700 focus:border-amber-500 rounded-lg px-2 py-1.5 text-amber-300 font-bold uppercase outline-none text-xs transition-colors"/>
+                </td>
+                <td class="py-1.5 px-2">
+                    <input data-field="correct" value="${q.correct}" maxlength="20"
+                        class="w-full bg-stone-800 border border-emerald-900 focus:border-emerald-500 rounded-lg px-2 py-1.5 text-emerald-400 font-bold uppercase outline-none text-xs transition-colors"/>
+                </td>
+                <td class="py-1.5 px-2">
+                    <input data-field="opt2" value="${opt2}" maxlength="20"
+                        class="w-full bg-stone-800 border border-stone-700 focus:border-sky-500 rounded-lg px-2 py-1.5 text-stone-300 uppercase outline-none text-xs transition-colors"/>
+                </td>
+                <td class="py-1.5 px-2">
+                    <input data-field="opt3" value="${opt3}" maxlength="20"
+                        class="w-full bg-stone-800 border border-stone-700 focus:border-sky-500 rounded-lg px-2 py-1.5 text-stone-300 uppercase outline-none text-xs transition-colors"/>
+                </td>
+                <td class="py-1.5 px-2">
+                    <button onclick="removeEditorRow(this)" class="text-rose-700 hover:text-rose-400 text-lg leading-none transition-colors" title="Eliminar pregunta">✕</button>
+                </td>
+            `;
+            // Auto-uppercase on input
+            tr.querySelectorAll('input').forEach(inp => {
+                inp.addEventListener('input', () => { inp.value = inp.value.toUpperCase(); });
+            });
+            return tr;
+        }
+
+        function addEditorRow() {
+            const tbody = document.getElementById('editor-tbody');
+            const num = tbody.querySelectorAll('tr').length + 1;
+            const emptyQ = { past: '', correct: '', options: ['', '', ''] };
+            tbody.appendChild(buildEditorRow(num, emptyQ));
+            document.getElementById('editor-question-count').textContent = num;
+            // Scroll al final
+            tbody.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function removeEditorRow(btn) {
+            const tr = btn.closest('tr');
+            tr.remove();
+            // Renumerar
+            const tbody = document.getElementById('editor-tbody');
+            tbody.querySelectorAll('tr').forEach((row, i) => {
+                row.dataset.id = i + 1;
+                row.querySelector('td').textContent = i + 1;
+            });
+            document.getElementById('editor-question-count').textContent = tbody.querySelectorAll('tr').length;
+        }
+
+        function saveEditorChanges() {
+            const tbody = document.getElementById('editor-tbody');
+            const rows = tbody.querySelectorAll('tr');
+            if (rows.length < 5) {
+                showFeedbackModal('⚠️ MUY POCAS PREGUNTAS', 'Se necesitan al menos 5 preguntas para jugar.', [
+                    { label: 'Entendido', action: () => closeModal('modal-feedback') }
+                ]);
+                return;
+            }
+            if (rows.length > 60) {
+                showFeedbackModal('⚠️ DEMASIADAS PREGUNTAS', 'El máximo permitido es 60 preguntas.', [
+                    { label: 'Entendido', action: () => closeModal('modal-feedback') }
+                ]);
+                return;
+            }
+
+            const newQuestions = [];
+            let errors = 0;
+            rows.forEach((tr, i) => {
+                const question = tr.querySelector('[data-field="question"]').value.trim().toUpperCase();
+                const correct = tr.querySelector('[data-field="correct"]').value.trim().toUpperCase();
+                const opt2    = tr.querySelector('[data-field="opt2"]').value.trim().toUpperCase();
+                const opt3    = tr.querySelector('[data-field="opt3"]').value.trim().toUpperCase();
+                if (!question || !correct) { errors++; return; }
+                const opts = [correct];
+                if (opt2 && opt2 !== correct) opts.push(opt2);
+                if (opt3 && opt3 !== correct && opt3 !== opt2) opts.push(opt3);
+                while (opts.length < 3) opts.push('???');
+                newQuestions.push({ id: i + 1, question, correct, options: opts });
+            });
+
+            if (errors > 0) {
+                showFeedbackModal('⚠️ FILAS INCOMPLETAS', `${errors} fila(s) no tienen el verbo en pasado o la respuesta correcta y fueron ignoradas.`, [
+                    { label: 'Entendido', action: () => closeModal('modal-feedback') }
+                ]);
+            }
+
+            saveCustomQuestions(newQuestions);
+            closeModal('modal-editor');
+            showFeedbackModal('✅ CAMBIOS GUARDADOS', `${newQuestions.length} preguntas listas para la batalla.`, [
+                { label: '¡A la guerra!', action: () => closeModal('modal-feedback') }
+            ]);
+        }
+
+        function resetToDefaultQuestions() {
+            saveCustomQuestions(null);
+            renderEditorTable(VERBOS_PREGUNTAS);
+        }
+
+        // -------- EXPORTAR A EXCEL --------
+        function exportToExcel() {
+            if (typeof XLSX === 'undefined') {
+                showFeedbackModal('❌ ERROR', 'La librería de Excel (SheetJS) no cargó. Verifica tu conexión.', [
+                    { label: 'Cerrar', action: () => closeModal('modal-feedback') }
+                ]);
+                return;
+            }
+            const questions = getActiveQuestions();
+            const wsData = [
+                ['Pregunta', 'Correcta', 'Falsa 1', 'Falsa 2']
+            ];
+            questions.forEach(q => {
+                const others = q.options.filter(o => o !== q.correct);
+                wsData.push([q.question, q.correct, others[0] || '', others[1] || '']);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+            // Estilos de ancho de columna
+            ws['!cols'] = [{ wch: 18 }, { wch: 18 }, { wch: 14 }, { wch: 14 }];
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Preguntas Battle Castle');
+            XLSX.writeFile(wb, 'BattleCastle_Preguntas.xlsx');
+        }
+
+        // -------- DESCARGAR PLANTILLA EN BLANCO --------
+        function downloadTemplate() {
+            if (typeof XLSX === 'undefined') return;
+            const wsData = [
+                ['Pregunta', 'Correcta', 'Falsa 1', 'Falsa 2'],
+                ['¿Capital de Francia?', 'París', 'Roma', 'Madrid'],
+                ['¿Cuánto es 7×8?', '56', '48', '54'],
+                ['Símbolo del oxígeno', 'O', 'Ox', 'Og'],
+                ['', '', '', ''],
+                ['', '', '', ''],
+            ];
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            ws['!cols'] = [{ wch: 18 }, { wch: 18 }, { wch: 14 }, { wch: 14 }];
+            XLSX.utils.book_append_sheet(wb, ws, 'Plantilla');
+            XLSX.writeFile(wb, 'BattleCastle_Plantilla.xlsx');
+        }
+
+        // -------- IMPORTAR DESDE EXCEL --------
+        function importFromExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (typeof XLSX === 'undefined') {
+                showFeedbackModal('❌ ERROR', 'La librería de Excel no cargó. Verifica tu conexión.', [
+                    { label: 'Cerrar', action: () => closeModal('modal-feedback') }
+                ]);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const wb   = XLSX.read(data, { type: 'array' });
+                    const ws   = wb.Sheets[wb.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+                    // Saltamos la primera fila (encabezado)
+                    const imported = [];
+                    rows.slice(1).forEach((row, i) => {
+                        const question = String(row[0] || '').trim().toUpperCase();
+                        const correct = String(row[1] || '').trim().toUpperCase();
+                        const opt2    = String(row[2] || '').trim().toUpperCase();
+                        const opt3    = String(row[3] || '').trim().toUpperCase();
+                        if (!question || !correct) return;
+                        const opts = [correct];
+                        if (opt2 && opt2 !== correct) opts.push(opt2);
+                        if (opt3 && opt3 !== correct && opt3 !== opt2) opts.push(opt3);
+                        while (opts.length < 3) opts.push('???');
+                        imported.push({ id: i + 1, question, correct, options: opts });
+                    });
+
+                    if (imported.length < 5) {
+                        showFeedbackModal('⚠️ POCAS PREGUNTAS', `Solo se encontraron ${imported.length} preguntas válidas. Se necesitan al menos 5.`, [
+                            { label: 'Cerrar', action: () => closeModal('modal-feedback') }
+                        ]);
+                        return;
+                    }
+                    if (imported.length > 60) {
+                        showFeedbackModal('⚠️ DEMASIADAS', `El archivo tiene ${imported.length} preguntas. El máximo permitido es 60.`, [
+                            { label: 'Cerrar', action: () => closeModal('modal-feedback') }
+                        ]);
+                        return;
+                    }
+
+                    renderEditorTable(imported);
+                    showFeedbackModal(
+                        '📥 IMPORTACIÓN EXITOSA',
+                        `Se cargaron ${imported.length} preguntas desde el archivo. Revísalas y guarda los cambios.`,
+                        [{ label: 'Revisar', action: () => closeModal('modal-feedback') }]
+                    );
+                } catch (err) {
+                    showFeedbackModal('❌ ERROR AL LEER', 'El archivo no pudo ser leído. Asegúrate de que sea un .xlsx válido y use el formato correcto.', [
+                        { label: 'Cerrar', action: () => closeModal('modal-feedback') }
+                    ]);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            // Limpiar input para permitir reimportar el mismo archivo
+            event.target.value = '';
+        }
+
+
+        /*************************************************************
+         * O. MULTIJUGADOR EN RED — QR CODES + CONTROL DESDE CELULAR
+         *
+         *  • HOST (proyector): genera Room Code → 5 QR codes (uno por castillo)
+         *  • PLAYER (celular): escanea QR → abre controlador móvil en el mismo HTML
+         *  Comunicación P2P en tiempo real via PeerJS (WebRTC). Sin servidor propio.
+         *************************************************************/
+
+        const ROOM_STORAGE_KEY = 'bc_multiplayer_room_v1';
+        let bcPeer        = null;
+        let isHostDevice  = true;
+        let myTeamIndex   = -1;
+        let hostDataConn  = null;
+        const teamConns   = {};
+        let mobileLastState = null;
+        let currentRoomCode = null;
+        let qrModeActive  = false; // el profesor activa el modo QR explícitamente
+
+        // Código de sala: 6 dígitos numéricos
+        function getOrCreateRoomCode() {
+            let code = SafeStorage.getItem(ROOM_STORAGE_KEY);
+            if (!code || !/^\d{6}$/.test(code)) {
+                code = String(Math.floor(100000 + Math.random() * 900000));
+                SafeStorage.setItem(ROOM_STORAGE_KEY, code);
+            }
+            return code;
+        }
+
+        // Detección de modo al cargar la página
+        function detectNetworkMode() {
+            const params = new URLSearchParams(window.location.search);
+            const room   = params.get('room');
+            if (room) {
+                // MODO CELULAR: llegó por el QR único → elige su castillo en su dispositivo
+                isHostDevice = false;
+                currentRoomCode = room;
+                document.getElementById('mobile-controller')?.classList.remove('hidden');
+                document.getElementById('three-canvas')?.style.setProperty('display','none');
+                document.getElementById('three-loading')?.style.setProperty('display','none');
+                document.getElementById('battle-arena')?.style.setProperty('display','none');
+                showMobileScreen('castleSelect', null);
+            } else {
+                // MODO HOST: pantalla principal
+                isHostDevice = true;
+                currentRoomCode = getOrCreateRoomCode();
+                // PeerJS se inicia SOLO cuando el profesor abre el modal QR
+            }
+        }
+
+        // Activa PeerJS + abre el modal QR (llamado por el botón 📱)
+        function activateAndOpenQR() {
+            if (!qrModeActive) {
+                qrModeActive = true;
+                initAsHost();
+            }
+            openQRModal();
+        }
+
+        // ══════════════ MODO HOST ══════════════════════════════════════════════
+        function initAsHost() {
+            if (!window.Peer) { updateNetBadge('offline'); return; }
+            try {
+                bcPeer = new Peer('bcgame-' + currentRoomCode, {
+                    host: '0.peerjs.com', port: 443, path: '/', secure: true, debug: 0
+                });
+                bcPeer.on('open', () => updateNetBadge('online'));
+                bcPeer.on('connection', conn => {
+                    conn.on('open', () => {
+                        const ci = parseInt(conn.metadata?.ci);
+                        if (isNaN(ci) || ci < 0 || ci > 4) return;
+                        if (!teamConns[ci]) teamConns[ci] = [];
+                        teamConns[ci].push(conn);
+                        updateConnBadge();
+                        sendToConn(conn, { type: 'state', ...buildSnap() });
+                    });
+                    conn.on('data', data => {
+                        const ci = parseInt(conn.metadata?.ci);
+                        if (!isNaN(ci)) handlePlayerAction(data, ci);
+                    });
+                    conn.on('close', () => {
+                        Object.keys(teamConns).forEach(k => {
+                            teamConns[k] = (teamConns[k]||[]).filter(x => x !== conn);
+                            if (!teamConns[k].length) delete teamConns[k];
+                        });
+                        updateConnBadge();
+                    });
+                });
+                bcPeer.on('error', e => {
+                    if (e.type === 'unavailable-id') {
+                        SafeStorage.removeItem(ROOM_STORAGE_KEY);
+                        currentRoomCode = getOrCreateRoomCode();
+                        setTimeout(() => { bcPeer?.destroy(); initAsHost(); }, 800);
+                    } else { updateNetBadge('offline'); }
+                });
+            } catch(e) { updateNetBadge('offline'); }
+        }
+
+        function buildSnap() {
+            return {
+                currentTurn: gameState.currentTurn,
+                status: gameState.status || 'setup',
+                castles: (gameState.castles||[]).map(c => ({
+                    name: c.name, color: c.color, hp: c.hp,
+                    shield: c.shield, hammer: c.hammer, superbomb: c.superbomb,
+                    destroyed: c.destroyed, bonusCooldown: c.bonusCooldown||0
+                }))
+            };
+        }
+
+        function sendToConn(conn, data) {
+            if (conn?.open) { try { conn.send(data); } catch(e) {} }
+        }
+
+        window.sendToPlayer = function(ci, data) {
+            (teamConns[ci]||[]).forEach(conn => sendToConn(conn, data));
+        };
+
+        window.broadcastStateToPlayers = function() {
+            if (!isHostDevice || !qrModeActive) return;
+            const snap = { type: 'state', ...buildSnap() };
+            Object.keys(teamConns).forEach(k =>
+                (teamConns[k]||[]).forEach(conn => sendToConn(conn, snap)));
+        };
+
+        function handlePlayerAction(data, ci) {
+            if (!gameState.castles?.length) return;
+            if (gameState.status === 'setup' || gameState.status === 'victory') return;
+            switch(data.action) {
+                case 'openChest':
+                    if (ci === gameState.currentTurn && !(gameState.castles[ci]?.bonusCooldown > 0))
+                        openBonusChestSelection();
+                    break;
+                case 'requestQuestions':
+                    if (ci === gameState.currentTurn) {
+                        const qs = getActiveQuestions();
+                        window.sendToPlayer(ci, { type: 'questionList', total: qs.length, used: gameState.usedQuestions });
+                    }
+                    break;
+                case 'selectQuestion':
+                    if (ci === gameState.currentTurn && !gameState.usedQuestions.includes(data.num)) {
+                        const q = getActiveQuestions().find(x => x.id === data.num);
+                        if (!q) return;
+                        selectQuestion(data.num);
+                        window.sendToPlayer(ci, {
+                            type: 'questionData', num: data.num, question: q.question,
+                            options: [...q.options].sort(() => Math.random() - 0.5)
+                        });
+                    }
+                    break;
+                case 'submitAnswer':
+                    if (ci === gameState.currentTurn && gameState.activeQuestion)
+                        submitAnswer(data.answer);
+                    break;
+                case 'attackTarget':
+                    if (gameState.status === 'target_selection' && ci === gameState.currentTurn)
+                        executeCatapultAttack(data.targetIndex);
+                    break;
+            }
+        }
+
+        function updateNetBadge(status) {
+            const b = document.getElementById('network-status-badge');
+            if (!b) return;
+            b.innerHTML = status === 'online'
+                ? `🟢 <span class="text-emerald-400">QR activo</span> · Sala <strong class="text-amber-400">${currentRoomCode}</strong>`
+                : `<span class="text-stone-600">⚫ Sin conexión de red</span>`;
+        }
+
+        function updateConnBadge() {
+            const b = document.getElementById('connected-players-badge');
+            if (!b) return;
+            const n = Object.keys(teamConns).length;
+            b.textContent = n > 0 ? `📱 ${n} equipo${n>1?'s':''} conectado${n>1?'s':''}` : '';
+            b.className = n > 0
+                ? 'text-[10px] font-medieval text-emerald-400'
+                : 'text-[10px] font-medieval text-stone-500 hidden sm:block';
+        }
+
+        // ══════════════ MODO CELULAR ═══════════════════════════════════════════
+        // El estudiante toca su castillo → se conecta al host con ese índice
+        function selectCastleAndConnect(castleIndex) {
+            myTeamIndex = castleIndex;
+            initAsPlayer(currentRoomCode, castleIndex);
+        }
+
+        function initAsPlayer(roomCode, castleIndex) {
+            showMobileScreen('waiting', '🔌 Conectando...');
+            if (!window.Peer) { showMobileScreen('waiting', '❌ PeerJS no cargó. ¿Hay internet?'); return; }
+            try {
+                bcPeer = new Peer({ host: '0.peerjs.com', port: 443, path: '/', secure: true, debug: 0 });
+                bcPeer.on('open', () => {
+                    hostDataConn = bcPeer.connect('bcgame-' + roomCode, {
+                        metadata: { ci: castleIndex }, reliable: true
+                    });
+                    hostDataConn.on('open',  () => showMobileScreen('waiting', '⏳ Esperando que el juego inicie...'));
+                    hostDataConn.on('data',  msg => handleMobileMsg(msg));
+                    hostDataConn.on('close', () => showMobileScreen('waiting', '⚠️ Conexión perdida. Recarga la página.'));
+                    hostDataConn.on('error', () => showMobileScreen('waiting', '⚠️ Error de conexión.'));
+                });
+                bcPeer.on('error', () => showMobileScreen('waiting', '❌ No se pudo conectar al host.'));
+            } catch(e) { showMobileScreen('waiting', '❌ Error inesperado.'); }
+        }
+
+        function handleMobileMsg(msg) {
+            switch(msg.type) {
+                case 'state':          mobileLastState = msg; showMobileScreen('controller', msg); break;
+                case 'questionList':   showMobileScreen('questionList', msg); break;
+                case 'questionData':   showMobileScreen('question', msg); break;
+                case 'questionResult': showMobileScreen('result', msg); break;
+            }
+        }
+
+        function mobileAction(action, param) {
+            if (!hostDataConn?.open) return;
+            const msg = { action };
+            if (action === 'selectQuestion') msg.num = parseInt(param);
+            if (action === 'submitAnswer')   msg.answer = String(param);
+            if (action === 'attackTarget')   msg.targetIndex = parseInt(param);
+            if (action === 'cancel') { showMobileScreen('controller', mobileLastState); return; }
+            try { hostDataConn.send(msg); } catch(e) {}
+        }
+
+        function showMobileScreen(view, data) {
+            const ctrl = document.getElementById('mobile-controller');
+            if (!ctrl) return;
+            const CC = window.CASTLE_TAILWIND_COLORS || {};
+            const CI = window.CASTLE_COLORS || [];
+
+            // ── SELECCIÓN DE CASTILLO (primera pantalla al escanear el QR) ──
+            if (view === 'castleSelect') {
+                const cards = CI.map((colorKey, i) => {
+                    const cc   = CC[colorKey] || {};
+                    const name = data?.castles?.[i]?.name || DEFAULT_NAMES[i] || ('Equipo ' + (i+1));
+                    const destroyed = data?.castles?.[i]?.destroyed;
+                    return '<button onclick="selectCastleAndConnect('+i+')" '+(destroyed?'disabled':'')+
+                        ' class="flex items-center gap-3 w-full p-4 rounded-2xl border-2 active:scale-95 transition-transform text-left '+(destroyed?'opacity-30':'')+'"'+
+                        ' style="background:'+(cc.hex||'#888')+'18;border-color:'+(cc.hex||'#888')+'88;">'+
+                        '<span class="text-3xl">🏰</span>'+
+                        '<div><p class="font-bold text-white text-base">'+name+'</p>'+
+                        '<p class="text-xs" style="color:'+(cc.hex||'#888')+'">'+(cc.name||colorKey)+(destroyed?' · 💀 Destruido':'')+'</p></div>'+
+                        '</button>';
+                }).join('');
+                ctrl.innerHTML = `
+                <div class="flex-1 flex flex-col p-5 gap-4 overflow-y-auto font-medieval"
+                     style="background:radial-gradient(ellipse at top,#2e114d,#0c0813 70%)">
+                    <div class="text-center pt-4 pb-1">
+                        <span class="text-3xl">🏰</span>
+                        <h1 class="text-xl font-black text-amber-400 mt-1">BATTLE CASTLE</h1>
+                        <p class="text-stone-400 text-sm mt-1">¿A qué castillo perteneces?</p>
+                        <p class="text-[10px] text-stone-600 mt-0.5">Sala: <strong class="text-amber-400">${currentRoomCode}</strong></p>
+                    </div>
+                    <div class="flex flex-col gap-3">${cards}</div>
+                </div>`;
+                return;
+            }
+
+            if (view === 'waiting') {
+                const cc = myTeamIndex >= 0 ? (CC[CI[myTeamIndex]]||{}) : {};
+                ctrl.innerHTML = `
+                <div class="flex-1 flex flex-col items-center justify-center gap-4 p-8 font-medieval"
+                     style="background:radial-gradient(ellipse at top,${cc.hex||'#2e114d'}22,#0c0813 70%)">
+                    <span class="text-4xl animate-pulse">🏰</span>
+                    <p class="text-stone-300 text-center text-sm">${data}</p>
+                </div>`;
+                return;
+            }
+
+            if (view === 'controller') {
+                const state  = data;
+                const castle = state.castles?.[myTeamIndex];
+                if (!castle) { showMobileScreen('waiting', '⏳ Esperando datos...'); return; }
+                const cc = CC[castle.color]||{};
+                const isMyTurn = state.currentTurn === myTeamIndex && state.status === 'playing' && !castle.destroyed;
+                const hpPct = Math.max(0,(castle.hp/5)*100);
+                const hpCol = castle.hp>3?'#10b981':castle.hp>1?'#f59e0b':'#e11d48';
+                ctrl.style.background = `radial-gradient(ellipse at top,${cc.hex||'#888'}1a,#0c0813 65%)`;
+                ctrl.innerHTML = `
+                <div class="flex-1 flex flex-col p-4 gap-4 overflow-y-auto font-medieval">
+                    <div class="text-center pt-2 pb-2 border-b border-stone-800">
+                        <span class="text-3xl">🏰</span>
+                        <h1 class="text-lg font-bold text-white mt-0.5">${castle.name}</h1>
+                        <p class="text-xs" style="color:${cc.hex}">${cc.name||''}</p>
+                        <div class="flex justify-center gap-4 mt-2 text-xs">
+                            <span class="${castle.shield>0?'text-sky-400':'text-stone-600'}">🛡️${castle.shield}</span>
+                            <span class="${castle.hammer>0?'text-amber-400':'text-stone-600'}">🔨${castle.hammer}</span>
+                            <span class="${castle.superbomb?'text-rose-400':'text-stone-600'}">💣${castle.superbomb?1:0}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs text-stone-500 mb-1"><span>FORTALEZA</span><span>${castle.hp}/5 HP</span></div>
+                        <div class="w-full h-3 bg-stone-900 rounded-full overflow-hidden border border-stone-800">
+                            <div class="h-full rounded-full transition-all" style="width:${hpPct}%;background:${hpCol}"></div>
+                        </div>
+                    </div>
+                    <div class="rounded-2xl border-2 py-3 px-4 text-center ${isMyTurn?'border-amber-500 bg-amber-950/30':'border-stone-700 bg-stone-900/30'}">
+                        ${castle.destroyed
+                            ? '<p class="text-rose-400 font-bold">💀 Castillo destruido</p>'
+                            : isMyTurn
+                                ? '<p class="text-amber-400 font-bold text-xl">⚔️ ¡ES TU TURNO!</p>'
+                                : `<p class="text-stone-500 text-xs mb-1">Turno de:</p><p class="text-white font-bold text-sm">${state.castles?.[state.currentTurn]?.name||'...'}</p>`}
+                    </div>
+                    ${isMyTurn && !castle.destroyed ? `
+                    <div class="flex flex-col gap-3">
+                        ${castle.bonusCooldown>0
+                            ? `<div class="py-4 text-center bg-stone-900/60 border border-stone-700 rounded-2xl text-stone-500 text-sm">🎁 Cofre en ${castle.bonusCooldown} turno${castle.bonusCooldown>1?'s':''}</div>`
+                            : `<button onclick="mobileAction('openChest')" class="py-4 bg-gradient-to-r from-purple-900 to-indigo-950 border-2 border-purple-500 text-white rounded-2xl font-bold text-base shadow-xl active:scale-95 transition-transform">🎁 ABRIR COFRE</button>`}
+                        <button onclick="mobileAction('requestQuestions')" style="background:linear-gradient(180deg,#c3942d,#835c0d);border:2.5px solid #ffe855;"
+                            class="py-4 text-white rounded-2xl font-bold text-base shadow-xl active:scale-95 transition-transform">📜 RESPONDER PREGUNTA</button>
+                    </div>` : ''}
+                    <div class="mt-auto pt-3 border-t border-stone-800">
+                        <p class="text-[10px] text-stone-600 uppercase tracking-widest mb-2">Estado de los reinos</p>
+                        <div class="space-y-1.5">
+                            ${(state.castles||[]).map((c,i)=>{
+                                const ccc=CC[c.color]||{};
+                                return '<div class="flex items-center gap-2 text-xs '+(c.destroyed?'opacity-30':'')+'">'+
+                                    '<div class="w-2 h-2 rounded-full shrink-0" style="background:'+(ccc.hex||'#888')+'"></div>'+
+                                    '<span class="text-stone-300 truncate flex-1">'+c.name+'</span>'+
+                                    '<span class="text-stone-500">❤️'+c.hp+'</span>'+
+                                    (state.currentTurn===i&&!c.destroyed?'<span class="text-amber-400 text-[9px] font-bold">▶</span>':'')+
+                                    (i===myTeamIndex?'<span class="text-[9px] font-bold" style="color:'+(ccc.hex||'#888')+'">TÚ</span>':'')+
+                                '</div>';
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+                <div class="shrink-0 flex items-center justify-between px-4 py-2 bg-stone-950/80 border-t border-stone-800">
+                    <button onclick="showMobileScreen('castleSelect', mobileLastState)" class="text-[10px] text-stone-600 underline font-medieval">Cambiar castillo</button>
+                    <span class="text-[10px] text-emerald-500 font-medieval">🟢 Conectado</span>
+                </div>`;
+                return;
+            }
+
+            if (view === 'questionList') {
+                const { total, used } = data;
+                let grid = '';
+                for (let i=1; i<=total; i++) {
+                    grid += used.includes(i)
+                        ? '<div class="p-3 bg-stone-900 border border-stone-800 rounded-xl text-stone-600 text-xs font-bold text-center">📜<br>'+i+'</div>'
+                        : '<button onclick="mobileAction(\'selectQuestion\','+i+')" class="p-3 rounded-xl text-white text-xs font-bold text-center active:scale-95 transition-transform shadow-md" style="background:linear-gradient(180deg,#c3942d,#835c0d);border:2px solid #ffe855;">📜<br>'+i+'</button>';
+                }
+                ctrl.innerHTML = `
+                <div class="flex-1 flex flex-col p-4 gap-3 overflow-y-auto font-medieval" style="background:#0c0813">
+                    <h2 class="text-lg font-bold text-amber-400 text-center">📜 ELIGE UN PERGAMINO</h2>
+                    <div class="grid grid-cols-5 gap-2">${grid}</div>
+                </div>
+                <div class="shrink-0 px-4 py-2 border-t border-stone-800 bg-stone-950">
+                    <button onclick="mobileAction('cancel')" class="w-full py-2 bg-stone-800 border border-stone-700 text-stone-400 rounded-xl text-sm font-medieval">✕ Cancelar</button>
+                </div>`;
+                return;
+            }
+
+            if (view === 'question') {
+                const { question, options, num } = data;
+                const opts = (options||[]).map(o =>
+                    '<button onclick="mobileAction(\'submitAnswer\',\''+o.replace(/'/g,"\\'")+'\')" class="w-full py-4 px-4 bg-stone-900 border-2 border-stone-700 active:border-amber-500 rounded-2xl text-stone-200 text-sm flex justify-between items-center active:scale-95 transition-all shadow-md font-medieval"><span>'+o+'</span><span class="text-stone-600 text-xs">🛡️</span></button>'
+                ).join('');
+                ctrl.innerHTML = `
+                <div class="flex-1 flex flex-col justify-center p-5 gap-6 font-medieval" style="background:#0c0813">
+                    <div class="text-center">
+                        <span class="text-xs text-amber-400 uppercase tracking-widest">Pregunta #${num}</span>
+                        <div class="text-4xl font-black text-white mt-3 leading-tight">${question}</div>
+                        <p class="text-stone-500 text-xs mt-2">Selecciona la alternativa correcta</p>
+                    </div>
+                    <div class="flex flex-col gap-3">${opts}</div>
+                </div>`;
+                return;
+            }
+
+            if (view === 'result') {
+                const { correct, correctAnswer, targetCastles } = data;
+                if (correct && targetCastles) {
+                    const targets = (targetCastles||[]).map(t =>
+                        '<button onclick="mobileAction(\'attackTarget\','+t.index+')" class="py-4 px-5 border-2 rounded-2xl font-bold text-white text-base active:scale-95 transition-transform shadow-xl font-medieval" style="background:'+(CC[t.color]?.hex||'#888')+'22;border-color:'+(CC[t.color]?.hex||'#888')+'">🎯 '+t.name+' <span class="font-normal text-sm">❤️'+t.hp+'</span></button>'
+                    ).join('');
+                    ctrl.innerHTML = `
+                    <div class="flex-1 flex flex-col justify-center p-5 gap-5 font-medieval" style="background:#0c0813">
+                        <div class="text-center"><span class="text-5xl">✅</span>
+                            <h2 class="text-2xl font-bold text-emerald-400 mt-2">¡CORRECTO!</h2>
+                            <p class="text-stone-400 text-sm mt-1">Elige el reino que quieres atacar</p>
+                        </div>
+                        <div class="flex flex-col gap-3">${targets}</div>
+                    </div>`;
+                } else {
+                    ctrl.innerHTML = `
+                    <div class="flex-1 flex flex-col justify-center items-center p-5 gap-4 font-medieval" style="background:#0c0813">
+                        <span class="text-5xl">❌</span>
+                        <h2 class="text-2xl font-bold text-rose-400 text-center">¡INCORRECTO!</h2>
+                        <p class="text-stone-400 text-center text-sm">La respuesta correcta era<br><strong class="text-white text-xl">${correctAnswer}</strong></p>
+                        <p class="text-stone-600 text-xs">Esperando el siguiente turno...</p>
+                    </div>`;
+                    setTimeout(() => { if (mobileLastState) showMobileScreen('controller', mobileLastState); }, 3000);
+                }
+                return;
+            }
+        }
+
+        // ══════════════ MODAL DE QR (5 códigos, uno por castillo) ═════════════
+        function openQRModal() {
+            sound.playClick();
+            const baseUrl = window.location.href.split('?')[0];
+            const joinUrl = baseUrl + '?room=' + currentRoomCode;
+
+            const roomEl = document.getElementById('qr-room-code');
+            const urlEl  = document.getElementById('qr-join-url');
+            const qrBox  = document.getElementById('qr-single-box');
+            const warnEl = document.getElementById('qr-file-warning');
+
+            if (roomEl) roomEl.textContent = currentRoomCode;
+            if (urlEl)  urlEl.textContent  = joinUrl;
+            if (warnEl) warnEl.classList.toggle('hidden', window.location.protocol !== 'file:');
+
+            if (qrBox) {
+                qrBox.innerHTML = '';
+                if (window.QRCode) {
+                    new QRCode(qrBox, {
+                        text: joinUrl, width: 190, height: 190,
+                        colorDark: '#1c1917', colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
+                } else {
+                    const img = document.createElement('img');
+                    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=190x190&data=' + encodeURIComponent(joinUrl);
+                    img.alt = 'QR Battle Castle';
+                    img.className = 'w-48 h-48';
+                    qrBox.appendChild(img);
+                }
+            }
+            openModal('modal-qr');
+        }
+
+    </script>
+
+
+    <!-- ================= MOTOR 3D REAL (Three.js) ================= -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+        const CASTLE_TAILWIND_COLORS = window.CASTLE_TAILWIND_COLORS;
+        const MAP_POSITIONS = window.MAP_POSITIONS;
+
+        let scene, camera, renderer, labelRenderer, controls, clock;
+        let raycaster, mouse;
+        let castleEntries = [];           // un objeto por castillo, indexado por posición de turno
+        let liveGameState = null;
+        let initialized = false;
+        let cameraFlightTarget = null;    // {pos:Vector3, look:Vector3, t:0} para vuelos de cámara suaves
+        let autoOrbit = false;
+
+        const canvasEl = document.getElementById('three-canvas');
+        const css2dContainer = document.getElementById('css2d-container');
+        const loadingEl = document.getElementById('three-loading');
+        const containerEl = document.getElementById('battle-arena');
+
+        // ---------- Utilidades ----------
+        function seededNoise(seed) {
+            const x = Math.sin(seed * 12.9898) * 43758.5453;
+            return x - Math.floor(x);
+        }
+
+        function worldPosFor(colorKey) {
+            const pos = MAP_POSITIONS[colorKey];
+            return {
+                x: (pos.x - 50) / 100 * 46,
+                z: (pos.y - 50) / 100 * 30,
+                terrain: pos.terrain
+            };
+        }
+
+        // ---------- Inicialización de la escena ----------
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a2e38);
+            scene.fog = new THREE.FogExp2(0x0a2e38, 0.014);
+
+            const w = canvasEl.clientWidth || 800;
+            const h = canvasEl.clientHeight || 500;
+            camera = new THREE.PerspectiveCamera(45, w / h, 0.5, 400);
+            camera.position.set(2, 30, 40);
+
+            renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            if ('outputColorSpace' in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+            labelRenderer = new CSS2DRenderer();
+            labelRenderer.domElement.style.position = 'absolute';
+            labelRenderer.domElement.style.top = '0';
+            labelRenderer.domElement.style.left = '0';
+            labelRenderer.domElement.style.width = '100%';
+            labelRenderer.domElement.style.height = '100%';
+            labelRenderer.domElement.style.pointerEvents = 'none';
+            css2dContainer.appendChild(labelRenderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.target.set(0, 2, 0);
+            controls.minDistance = 16;
+            controls.maxDistance = 65;
+            controls.maxPolarAngle = Math.PI * 0.48;
+            controls.enablePan = false;
+            controls.update();
+
+            // ---------- Iluminación realista con sombras reales ----------
+            scene.add(new THREE.HemisphereLight(0xaee4f2, 0x14323a, 0.75));
+            const sun = new THREE.DirectionalLight(0xfff0cf, 1.25);
+            sun.position.set(28, 42, 18);
+            sun.castShadow = true;
+            sun.shadow.mapSize.set(2048, 2048);
+            sun.shadow.camera.left = -45;
+            sun.shadow.camera.right = 45;
+            sun.shadow.camera.top = 45;
+            sun.shadow.camera.bottom = -45;
+            sun.shadow.camera.far = 140;
+            sun.shadow.bias = -0.0017;
+            scene.add(sun);
+            const fillLight = new THREE.DirectionalLight(0x6fb6e0, 0.35);
+            fillLight.position.set(-22, 14, -18);
+            scene.add(fillLight);
+
+            buildOcean();
+            buildIslands();
+
+            clock = new THREE.Clock();
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            renderer.domElement.style.cursor = 'grab';
+            let pointerDownPos = null;
+            renderer.domElement.addEventListener('pointerdown', (e) => {
+                renderer.domElement.style.cursor = 'grabbing';
+                pointerDownPos = { x: e.clientX, y: e.clientY };
+            });
+            renderer.domElement.addEventListener('pointerup', (e) => {
+                renderer.domElement.style.cursor = 'grab';
+                if (pointerDownPos) {
+                    const dx = e.clientX - pointerDownPos.x;
+                    const dy = e.clientY - pointerDownPos.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < 6) onCanvasClick(e);
+                }
+                pointerDownPos = null;
+            });
+
+            const ro = new ResizeObserver(onResize);
+            ro.observe(containerEl);
+            onResize();
+
+            if (loadingEl) loadingEl.style.display = 'none';
+            initialized = true;
+            animate();
+        }
+
+        function onResize() {
+            const w = containerEl.clientWidth || 800;
+            const h = containerEl.clientHeight || 500;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h, false);
+            labelRenderer.setSize(w, h);
+        }
+
+        // ---------- Océano con oleaje animado real (desplazamiento de vértices) ----------
+        let oceanMesh, oceanGeoBase;
+        function buildOcean() {
+            const geo = new THREE.PlaneGeometry(220, 160, 90, 70);
+            geo.rotateX(-Math.PI / 2);
+            oceanGeoBase = geo.attributes.position.array.slice();
+            const mat = new THREE.MeshStandardMaterial({ color: 0x0e5c6e, roughness: 0.35, metalness: 0.15, transparent: true, opacity: 0.92 });
+            oceanMesh = new THREE.Mesh(geo, mat);
+            oceanMesh.receiveShadow = true;
+            oceanMesh.position.y = -0.4;
+            scene.add(oceanMesh);
+
+            const floorGeo = new THREE.PlaneGeometry(220, 160);
+            floorGeo.rotateX(-Math.PI / 2);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x031b22 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.position.y = -3.5;
+            scene.add(floor);
+        }
+
+        // ---------- Construcción de las 5 islas con detalle por bioma ----------
+        const ISLAND_RADIUS = { forest: 9.5, mountain: 10.2, crimson: 9, ice: 8.6, crystal: 9 };
+        const ISLAND_COLOR = {
+            forest: 0x2f7a3e, mountain: 0xa8793a, crimson: 0x76241f, ice: 0x7fb3d6, crystal: 0x7a429e
+        };
+        const islandHeights = {}; // colorKey -> altura de la isla (para apoyar el castillo encima)
+
+        function buildIslands() {
+            Object.keys(MAP_POSITIONS).forEach((colorKey, idx) => {
+                const wp = worldPosFor(colorKey);
+                const r = ISLAND_RADIUS[wp.terrain];
+                const islandHeight = 2.6;
+                islandHeights[colorKey] = islandHeight;
+
+                // Montículo de la isla (geometría baja-poli irregular para look orgánico)
+                const islandGeo = new THREE.CylinderGeometry(r * 0.74, r, islandHeight, 9, 1);
+                const posAttr = islandGeo.attributes.position;
+                for (let i = 0; i < posAttr.count; i++) {
+                    const vx = posAttr.getX(i), vy = posAttr.getY(i), vz = posAttr.getZ(i);
+                    if (vy > islandHeight * 0.3) {
+                        const n = (seededNoise(i + idx * 99) - 0.5) * 1.4;
+                        posAttr.setX(i, vx + n);
+                        posAttr.setZ(i, vz + n * 0.8);
+                    }
+                }
+                islandGeo.computeVertexNormals();
+                const islandMat = new THREE.MeshStandardMaterial({ color: ISLAND_COLOR[wp.terrain], roughness: 0.95, flatShading: true });
+                const islandMesh = new THREE.Mesh(islandGeo, islandMat);
+                islandMesh.position.set(wp.x, islandHeight / 2, wp.z);
+                islandMesh.castShadow = true;
+                islandMesh.receiveShadow = true;
+                scene.add(islandMesh);
+
+                // Anillo de costa (arena) en la base
+                const coastGeo = new THREE.CylinderGeometry(r + 1.3, r + 2.2, 0.5, 24);
+                const coastMat = new THREE.MeshStandardMaterial({ color: 0xe8d9a8, roughness: 1 });
+                const coast = new THREE.Mesh(coastGeo, coastMat);
+                coast.position.set(wp.x, 0.1, wp.z);
+                coast.receiveShadow = true;
+                scene.add(coast);
+
+                decorateIsland(wp, r, islandHeight, idx);
+            });
+        }
+
+        function decorateIsland(wp, r, islandHeight, idx) {
+            const baseY = islandHeight;
+            if (wp.terrain === 'forest') {
+                for (let i = 0; i < 16; i++) {
+                    const a = seededNoise(i * 4.4 + idx) * Math.PI * 2;
+                    const rad = 1.5 + seededNoise(i * 8.8 + idx) * (r * 0.65);
+                    const tx = wp.x + Math.cos(a) * rad;
+                    const tz = wp.z + Math.sin(a) * rad;
+                    buildTree(tx, baseY, tz, 0.7 + seededNoise(i * 6.1) * 0.6);
+                }
+            }
+            if (wp.terrain === 'mountain') {
+                const peaks = [{ dx: -3.2, dz: 0.5, h: 6.5 }, { dx: -0.4, dz: -1, h: 8.2 }, { dx: 3, dz: 1, h: 6.8 }];
+                peaks.forEach(pk => buildPeak(wp.x + pk.dx, baseY, wp.z + pk.dz, pk.h, true));
+            }
+            if (wp.terrain === 'crimson') {
+                const peaks = [{ dx: -2.6, dz: 0.6, h: 5.2 }, { dx: 1, dz: -0.6, h: 6.6 }, { dx: 3.6, dz: 1, h: 4.4 }];
+                peaks.forEach(pk => buildPeak(wp.x + pk.dx, baseY, wp.z + pk.dz, pk.h, false, 0x6b241f));
+                for (let i = 0; i < 5; i++) {
+                    const a = seededNoise(i * 5.5 + 9) * Math.PI * 2;
+                    const rad = 3 + seededNoise(i * 2.2) * (r * 0.5);
+                    buildDeadTree(wp.x + Math.cos(a) * rad, baseY, wp.z + Math.sin(a) * rad);
+                }
+            }
+            if (wp.terrain === 'ice') {
+                for (let i = 0; i < 9; i++) {
+                    const a = seededNoise(i * 6.6 + 3) * Math.PI * 2;
+                    const rad = 1.5 + seededNoise(i * 3.3) * (r * 0.6);
+                    buildIceShard(wp.x + Math.cos(a) * rad, baseY, wp.z + Math.sin(a) * rad, 1.4 + seededNoise(i * 7) * 1.6);
+                }
+            }
+            if (wp.terrain === 'crystal') {
+                const glowGeo = new THREE.SphereGeometry(r * 0.9, 16, 12);
+                const glowMat = new THREE.MeshBasicMaterial({ color: 0xc084fc, transparent: true, opacity: 0.12 });
+                const glow = new THREE.Mesh(glowGeo, glowMat);
+                glow.position.set(wp.x, baseY + 2, wp.z);
+                scene.add(glow);
+                const pLight = new THREE.PointLight(0xc084fc, 1.2, 16);
+                pLight.position.set(wp.x, baseY + 3, wp.z);
+                scene.add(pLight);
+                for (let i = 0; i < 9; i++) {
+                    const a = seededNoise(i * 8.8 + 5) * Math.PI * 2;
+                    const rad = 1.5 + seededNoise(i * 4.4) * (r * 0.6);
+                    buildCrystal(wp.x + Math.cos(a) * rad, baseY, wp.z + Math.sin(a) * rad, 1.2 + seededNoise(i * 9.9) * 1.8);
+                }
+            }
+        }
+
+        function buildTree(x, y, z, scale) {
+            const trunkGeo = new THREE.CylinderGeometry(0.08 * scale, 0.12 * scale, 0.7 * scale, 6);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3017, flatShading: true });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.set(x, y + 0.35 * scale, z);
+            trunk.castShadow = true;
+            scene.add(trunk);
+
+            const foliageMat = new THREE.MeshStandardMaterial({ color: 0x2f8a3e, flatShading: true });
+            [0, 1, 2].forEach(i => {
+                const s = (1.3 - i * 0.28) * scale;
+                const cone = new THREE.Mesh(new THREE.ConeGeometry(s * 0.62, s, 7), foliageMat);
+                cone.position.set(x, y + (0.75 + i * 0.55) * scale, z);
+                cone.castShadow = true;
+                scene.add(cone);
+            });
+        }
+
+        function buildDeadTree(x, y, z) {
+            const mat = new THREE.MeshStandardMaterial({ color: 0x1c1410, flatShading: true });
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 1.2, 5), mat);
+            trunk.position.set(x, y + 0.6, z);
+            trunk.castShadow = true;
+            scene.add(trunk);
+            [[-0.3, 0.9, -0.2], [0.3, 1.0, 0.15]].forEach(([dx, dy, rz]) => {
+                const branch = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.05, 0.5, 4), mat);
+                branch.position.set(x + dx, y + dy, z);
+                branch.rotation.z = rz;
+                scene.add(branch);
+            });
+        }
+
+        function buildPeak(x, y, z, h, snow, color = 0x857c74) {
+            const mat = new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 1 });
+            const cone = new THREE.Mesh(new THREE.ConeGeometry(h * 0.42, h, 6), mat);
+            cone.position.set(x, y + h / 2, z);
+            cone.castShadow = true;
+            cone.receiveShadow = true;
+            scene.add(cone);
+            if (snow) {
+                const snowMat = new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true });
+                const cap = new THREE.Mesh(new THREE.ConeGeometry(h * 0.18, h * 0.32, 6), snowMat);
+                cap.position.set(x, y + h * 0.92, z);
+                scene.add(cap);
+            }
+        }
+
+        function buildIceShard(x, y, z, h) {
+            const mat = new THREE.MeshPhysicalMaterial({ color: 0xbfe6f7, transparent: true, opacity: 0.75, roughness: 0.05, transmission: 0.4, thickness: 1 });
+            const shard = new THREE.Mesh(new THREE.OctahedronGeometry(h * 0.32, 0), mat);
+            shard.scale.set(1, h, 1);
+            shard.position.set(x, y + h * 0.4, z);
+            shard.rotation.y = Math.random() * Math.PI;
+            shard.castShadow = true;
+            scene.add(shard);
+        }
+
+        function buildCrystal(x, y, z, h) {
+            const mat = new THREE.MeshStandardMaterial({ color: 0x9d5fe0, emissive: 0x6b21a8, emissiveIntensity: 0.5, flatShading: true });
+            const shard = new THREE.Mesh(new THREE.OctahedronGeometry(h * 0.3, 0), mat);
+            shard.scale.set(1, h, 1);
+            shard.position.set(x, y + h * 0.4, z);
+            shard.rotation.y = Math.random() * Math.PI;
+            shard.castShadow = true;
+            scene.add(shard);
+        }
+
+        // ---------- Construcción de un castillo (geometría real, no sprites) ----------
+        function buildCastle(colorKey) {
+            const colorConfig = CASTLE_TAILWIND_COLORS[colorKey];
+            const hex = new THREE.Color(colorConfig.hex);
+            const group = new THREE.Group();
+
+            const stoneMat = new THREE.MeshStandardMaterial({ color: 0x8a838a, roughness: 0.9, flatShading: true });
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0xc5481f, roughness: 0.7, flatShading: true });
+            const doorMat = new THREE.MeshStandardMaterial({ color: 0x2a1a0c, roughness: 1 });
+
+            function makeTower(height, radius) {
+                const t = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius * 1.05, height, 8), stoneMat);
+                body.position.y = height / 2;
+                body.castShadow = true;
+                body.receiveShadow = true;
+                t.add(body);
+                const roof = new THREE.Mesh(new THREE.ConeGeometry(radius * 1.25, height * 0.55, 8), roofMat);
+                roof.position.y = height + (height * 0.55) / 2;
+                roof.castShadow = true;
+                t.add(roof);
+                const tip = new THREE.Mesh(new THREE.SphereGeometry(radius * 0.14, 6, 6), new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0x7a5a0a }));
+                tip.position.y = height + height * 0.55 + radius * 0.14;
+                t.add(tip);
+                return t;
+            }
+
+            const central = makeTower(3.2, 1.05);
+            central.position.set(0, 0, 0);
+            group.add(central);
+
+            const left = makeTower(2.2, 0.78);
+            left.position.set(-1.9, 0, -1.5);
+            group.add(left);
+
+            const right = makeTower(2.2, 0.78);
+            right.position.set(1.9, 0, -1.5);
+            group.add(right);
+
+            const wall = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.6, 1.6), stoneMat);
+            wall.position.set(0, 0.8, -0.9);
+            wall.castShadow = true;
+            wall.receiveShadow = true;
+            group.add(wall);
+
+            const door = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1, 0.3), doorMat);
+            door.position.set(0, 0.5, -0.05);
+            group.add(door);
+
+            // Estandarte con el color del reino
+            const bannerGeo = new THREE.PlaneGeometry(0.9, 0.55);
+            const bannerMat = new THREE.MeshStandardMaterial({ color: hex, side: THREE.DoubleSide });
+            const banner = new THREE.Mesh(bannerGeo, bannerMat);
+            banner.position.set(0.5, 3.85, 0);
+            group.add(banner);
+
+            // Fuego/humo de daño (ocultos por defecto)
+            const fireMat = new THREE.MeshBasicMaterial({ color: 0xff7a1f, transparent: true, opacity: 0.85 });
+            const fire = new THREE.Mesh(new THREE.ConeGeometry(0.35, 1, 6), fireMat);
+            fire.position.set(-0.6, 1.4, -0.6);
+            fire.visible = false;
+            group.add(fire);
+            const smokeMat = new THREE.MeshBasicMaterial({ color: 0x222222, transparent: true, opacity: 0.55 });
+            const smoke = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 6), smokeMat);
+            smoke.position.set(-0.6, 2.6, -0.6);
+            smoke.visible = false;
+            group.add(smoke);
+
+            return { group, left, right, central, wall, door, banner, fire, smoke };
+        }
+
+        // ---------- Construcción de un rey 3D (geometría real, "rey robusto") ----------
+        function buildKing(colorKey) {
+            const colorConfig = CASTLE_TAILWIND_COLORS[colorKey];
+            const hex = new THREE.Color(colorConfig.hex);
+            const group = new THREE.Group();
+
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0xfbcb96, flatShading: true });
+            const robeMat = new THREE.MeshStandardMaterial({ color: hex, flatShading: true });
+            const beardMat = new THREE.MeshStandardMaterial({ color: 0x2c2622, flatShading: true });
+            const goldMat = new THREE.MeshStandardMaterial({ color: 0xf6c453, metalness: 0.6, roughness: 0.35, flatShading: true });
+
+            const body = new THREE.Mesh(new THREE.ConeGeometry(0.62, 1.15, 8), robeMat);
+            body.position.y = 0.7;
+            body.castShadow = true;
+            group.add(body);
+
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 14, 12), skinMat);
+            head.position.y = 1.55;
+            head.castShadow = true;
+            group.add(head);
+
+            const beard = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.5, 8), beardMat);
+            beard.position.set(0, 1.28, 0.12);
+            beard.rotation.x = Math.PI;
+            group.add(beard);
+
+            // Ojos simples
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1c1917 });
+            const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 6), eyeMat);
+            eyeL.position.set(-0.15, 1.62, 0.37);
+            const eyeR = eyeL.clone();
+            eyeR.position.x = 0.15;
+            group.add(eyeL, eyeR);
+
+            // Corona
+            const crownBase = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.34, 0.16, 8), goldMat);
+            crownBase.position.y = 1.95;
+            group.add(crownBase);
+            for (let i = 0; i < 5; i++) {
+                const a = (i / 5) * Math.PI * 2;
+                const spike = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.22, 5), goldMat);
+                spike.position.set(Math.cos(a) * 0.28, 2.12, Math.sin(a) * 0.28);
+                group.add(spike);
+            }
+            const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.08, 0), new THREE.MeshStandardMaterial({ color: hex, emissive: hex, emissiveIntensity: 0.6 }));
+            gem.position.y = 2.0;
+            group.add(gem);
+
+            // Brazos
+            const armMat = robeMat;
+            const armL = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), armMat);
+            armL.position.set(-0.55, 1.05, 0);
+            const armR = armL.clone();
+            armR.position.x = 0.55;
+            group.add(armL, armR);
+
+            // Espada
+            const sword = new THREE.Group();
+            const blade = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.7, 0.03), new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.7, roughness: 0.3 }));
+            blade.position.y = 0.45;
+            const hilt = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.06, 0.06), goldMat);
+            sword.add(blade, hilt);
+            sword.position.set(0.7, 1.1, 0);
+            sword.rotation.z = 0.4;
+            group.add(sword);
+
+            group.scale.set(0.62, 0.62, 0.62);
+
+            return { group, head, body, armL, armR, sword, beard, eyeL, eyeR };
+        }
+
+        // ---------- Etiquetas CSS2D (nombre, HP, recursos) ----------
+        function buildLabel(castle) {
+            const wrap = document.createElement('div');
+            wrap.style.pointerEvents = 'none';
+            wrap.style.display = 'flex';
+            wrap.style.flexDirection = 'column';
+            wrap.style.alignItems = 'center';
+            wrap.style.gap = '2px';
+            wrap.style.transform = 'translateY(-6px)';
+
+            const colorConfig = CASTLE_TAILWIND_COLORS[castle.color];
+            const nameTag = document.createElement('div');
+            nameTag.className = 'font-medieval font-bold text-white text-[11px] px-2 py-0.5 rounded-md shadow-lg whitespace-nowrap';
+            nameTag.style.background = 'rgba(10,10,15,0.78)';
+            nameTag.style.border = `1px solid ${colorConfig.hex}`;
+            nameTag.textContent = castle.name;
+
+            const hpOuter = document.createElement('div');
+            hpOuter.style.width = '64px';
+            hpOuter.style.height = '6px';
+            hpOuter.style.background = '#1c1917';
+            hpOuter.style.borderRadius = '4px';
+            hpOuter.style.overflow = 'hidden';
+            hpOuter.style.border = '1px solid rgba(124,58,237,0.4)';
+            const hpFill = document.createElement('div');
+            hpFill.style.height = '100%';
+            hpFill.style.width = '100%';
+            hpFill.style.background = '#10b981';
+            hpFill.style.transition = 'width .3s ease, background .3s ease';
+            hpOuter.appendChild(hpFill);
+
+            const resRow = document.createElement('div');
+            resRow.className = 'flex gap-1.5 text-[9px] font-bold';
+            resRow.style.textShadow = '0 1px 2px rgba(0,0,0,0.9)';
+
+            wrap.appendChild(nameTag);
+            wrap.appendChild(hpOuter);
+            wrap.appendChild(resRow);
+
+            const obj = new CSS2DObject(wrap);
+            return { obj, nameTag, hpFill, resRow };
+        }
+
+        // ---------- API pública: construir todos los castillos para una nueva partida ----------
+        function buildAllCastles(castlesData) {
+            // Limpia castillos previos si existían (nueva partida tras reload no debería tenerlos, pero por seguridad)
+            castleEntries.forEach(e => scene.remove(e.root));
+            castleEntries = [];
+
+            castlesData.forEach((castle, index) => {
+                const wp = worldPosFor(castle.color);
+                const baseY = islandHeights[castle.color] || 2.6;
+
+                const root = new THREE.Group();
+                root.position.set(wp.x, baseY, wp.z);
+                scene.add(root);
+
+                const castleParts = buildCastle(castle.color);
+                root.add(castleParts.group);
+
+                const kingParts = buildKing(castle.color);
+                kingParts.group.position.set(0, 4.3, 0);
+                root.add(kingParts.group);
+
+                // Anillo de turno activo
+                const turnRing = new THREE.Mesh(
+                    new THREE.RingGeometry(2.6, 2.9, 32),
+                    new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0, side: THREE.DoubleSide })
+                );
+                turnRing.rotation.x = -Math.PI / 2;
+                turnRing.position.y = 0.05;
+                root.add(turnRing);
+
+                // Anillo de objetivo (rojo, parpadeante durante selección de ataque)
+                const targetRing = new THREE.Mesh(
+                    new THREE.RingGeometry(2.9, 3.3, 32),
+                    new THREE.MeshBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0, side: THREE.DoubleSide })
+                );
+                targetRing.rotation.x = -Math.PI / 2;
+                targetRing.position.y = 0.06;
+                root.add(targetRing);
+
+                // Flecha flotante que señala al castillo cuyo turno está activo
+                const turnArrow = buildTurnArrow(castle.color);
+                turnArrow.position.set(0, 7.6, 0);
+                turnArrow.visible = false;
+                root.add(turnArrow);
+
+                const label = buildLabel(castle);
+                label.obj.position.set(0, 5.6, 0);
+                root.add(label.obj);
+
+                castleEntries.push({
+                    index, root, ...castleParts, king: kingParts,
+                    turnRing, targetRing, turnArrow, label,
+                    mood: 'idle', moodStart: performance.now(),
+                    destroyed: false, hpVisualStage: 5
+                });
+            });
+        }
+
+        // ---------- Flecha 3D indicadora de turno (cono apuntando hacia abajo + asta dorada) ----------
+        function buildTurnArrow(colorKey) {
+            const colorConfig = CASTLE_TAILWIND_COLORS[colorKey];
+            const group = new THREE.Group();
+
+            const tipMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xb45309, emissiveIntensity: 0.7, flatShading: true });
+            const tip = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.9, 8), tipMat);
+            tip.rotation.x = Math.PI; // apunta hacia abajo
+            tip.position.y = 0;
+            group.add(tip);
+
+            const shaftMat = new THREE.MeshStandardMaterial({ color: colorConfig.hex, emissive: new THREE.Color(colorConfig.hex), emissiveIntensity: 0.35, flatShading: true });
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.9, 8), shaftMat);
+            shaft.position.y = 0.8;
+            group.add(shaft);
+
+            // Pequeña luz puntual para que la flecha se note incluso en sombra
+            const glow = new THREE.PointLight(0xfbbf24, 0.6, 4);
+            glow.position.y = 0.2;
+            group.add(glow);
+
+            return group;
+        }
+
+        // ---------- Refresco visual completo según el estado del juego ----------
+        function refresh(gameState) {
+            liveGameState = gameState;
+            if (!initialized) return;
+
+            if (castleEntries.length === 0 && gameState.castles && gameState.castles.length) {
+                buildAllCastles(gameState.castles);
+            }
+            if (castleEntries.length === 0) return;
+
+            gameState.castles.forEach((castle, i) => {
+                const entry = castleEntries[i];
+                if (!entry) return;
+
+                // Nombre / HP / recursos
+                entry.label.nameTag.textContent = castle.name;
+                const hpPct = Math.max(0, (castle.hp / 5) * 100);
+                entry.label.hpFill.style.width = hpPct + '%';
+                entry.label.hpFill.style.background = castle.hp > 3 ? '#10b981' : castle.hp > 1 ? '#f59e0b' : '#e11d48';
+                entry.label.resRow.innerHTML = `
+                    <span style="color:${castle.shield > 0 ? '#38bdf8' : '#57534e'}">🛡️${castle.shield}</span>
+                    <span style="color:${castle.hammer > 0 ? '#fbbf24' : '#57534e'}">🔨${castle.hammer}</span>
+                    <span style="color:${castle.superbomb ? '#fb7185' : '#57534e'}">💣${castle.superbomb ? 1 : 0}</span>
+                `;
+
+                // Daño estructural progresivo (igual de criterio que la versión anterior)
+                entry.left.visible = castle.hp > 1 && !castle.destroyed;
+                entry.right.visible = castle.hp > 2 && !castle.destroyed;
+                entry.fire.visible = castle.hp <= 2 && castle.hp > 0 && !castle.destroyed;
+                entry.smoke.visible = castle.hp <= 3 && castle.hp > 0 && !castle.destroyed;
+
+                // Turno activo (anillo dorado + flecha flotante)
+                const isActiveTurn = gameState.currentTurn === i && gameState.status === 'playing' && !castle.destroyed;
+                entry.turnRing.material.opacity = isActiveTurn ? 0.85 : THREE.MathUtils.lerp(entry.turnRing.material.opacity, 0, 0.2);
+                entry.turnRing.userData.pulsing = isActiveTurn;
+                entry.turnArrow.visible = isActiveTurn;
+
+                // Objetivo elegible (anillo rojo)
+                const isEligibleTarget = gameState.status === 'target_selection' && i !== gameState.currentTurn && !castle.destroyed;
+                entry.targetRing.material.opacity = isEligibleTarget ? 0.9 : 0;
+                entry.targetRing.userData.pulsing = isEligibleTarget;
+                entry.isEligibleTarget = isEligibleTarget;
+
+                // Estado de ánimo del rey -> dispara animación si cambió
+                const mood = gameState.kingMoods ? gameState.kingMoods[i] : 'idle';
+                if (mood !== entry.mood) {
+                    entry.mood = mood;
+                    entry.moodStart = performance.now();
+                    if (mood === 'destroyed') playDestroyAnimation(i);
+                }
+
+                if (castle.destroyed) entry.destroyed = true;
+            });
+        }
+
+        // ---------- Animación de destrucción de un castillo ----------
+        function playDestroyAnimation(index) {
+            const entry = castleEntries[index];
+            if (!entry) return;
+            const startRot = entry.root.rotation.z;
+            const duration = 1400;
+            const startTime = performance.now();
+            function step() {
+                const t = Math.min(1, (performance.now() - startTime) / duration);
+                entry.root.rotation.z = startRot + t * 0.45;
+                entry.root.position.y = (islandHeights[liveGameState.castles[index].color] || 2.6) - t * 1.1;
+                entry.king.group.traverse(o => { if (o.material) { o.material.transparent = true; o.material.opacity = 1 - t; } });
+                if (t < 1) requestAnimationFrame(step);
+            }
+            step();
+        }
+
+        // ---------- Catapulta y explosión real en 3D ----------
+        const activeProjectiles = [];
+        const activeBursts = [];
+
+        function fireCatapult(attackerIndex, targetIndex, isSuper, onImpact) {
+            const from = castleEntries[attackerIndex];
+            const to = castleEntries[targetIndex];
+            if (!from || !to) { onImpact(); return; }
+
+            const start = new THREE.Vector3();
+            from.root.getWorldPosition(start);
+            start.y += 4.6;
+            const end = new THREE.Vector3();
+            to.root.getWorldPosition(end);
+            end.y += 2.2;
+
+            const mid = start.clone().add(end).multiplyScalar(0.5);
+            mid.y += 9 + (isSuper ? 4 : 0);
+            const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+
+            const geo = new THREE.SphereGeometry(isSuper ? 0.55 : 0.38, 10, 8);
+            const mat = new THREE.MeshStandardMaterial({ color: 0x2b2622, roughness: 0.8 });
+            const ball = new THREE.Mesh(geo, mat);
+            ball.castShadow = true;
+            scene.add(ball);
+
+            activeProjectiles.push({ ball, curve, t: 0, speed: isSuper ? 0.55 : 0.65, onImpact, isSuper, target: to });
+        }
+
+        function spawnBurst(position, isSuper) {
+            const count = isSuper ? 46 : 26;
+            const colors = [0xf43f5e, 0xff781f, 0xfcd34d, 0x57534e];
+            for (let i = 0; i < count; i++) {
+                const mat = new THREE.MeshBasicMaterial({ color: colors[i % colors.length], transparent: true, opacity: 1 });
+                const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.18), mat);
+                mesh.position.copy(position);
+                scene.add(mesh);
+                const vel = new THREE.Vector3((Math.random() - 0.5) * 8, Math.random() * 7 + 2, (Math.random() - 0.5) * 8);
+                activeBursts.push({ mesh, vel, life: 1 });
+            }
+
+            const flashMat = new THREE.MeshBasicMaterial({ color: 0xfff3b0, transparent: true, opacity: 0.9 });
+            const flash = new THREE.Mesh(new THREE.SphereGeometry(isSuper ? 2.4 : 1.5, 10, 8), flashMat);
+            flash.position.copy(position);
+            scene.add(flash);
+            activeBursts.push({ mesh: flash, vel: new THREE.Vector3(0, 0, 0), life: 0.4, isFlash: true });
+
+            containerEl.classList.add('screen-shake');
+            setTimeout(() => containerEl.classList.remove('screen-shake'), 400);
+        }
+
+        // ---------- Vuelo de cámara hacia el rey ganador ----------
+        function playVictory(winnerIndex) {
+            const entry = castleEntries[winnerIndex];
+            if (!entry) return;
+            const target = new THREE.Vector3();
+            entry.root.getWorldPosition(target);
+            cameraFlightTarget = {
+                pos: target.clone().add(new THREE.Vector3(8, 7, 10)),
+                look: target.clone().add(new THREE.Vector3(0, 3, 0)),
+                t: 0
+            };
+            autoOrbit = true;
+        }
+
+        // ---------- Selección de objetivo vía raycasting real sobre la escena 3D ----------
+        function onCanvasClick(event) {
+            if (!liveGameState || liveGameState.status !== 'target_selection') return;
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+
+            for (let i = 0; i < castleEntries.length; i++) {
+                const entry = castleEntries[i];
+                if (!entry.isEligibleTarget) continue;
+                const hits = raycaster.intersectObject(entry.root, true);
+                if (hits.length > 0) {
+                    if (window.executeCatapultAttack) window.executeCatapultAttack(i);
+                    return;
+                }
+            }
+        }
+
+        // ---------- Bucle de animación principal ----------
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.05);
+            const elapsed = clock.elapsedTime;
+
+            // Oleaje del océano
+            const posAttr = oceanMesh.geometry.attributes.position;
+            for (let i = 0; i < posAttr.count; i++) {
+                const bx = oceanGeoBase[i * 3], bz = oceanGeoBase[i * 3 + 2];
+                posAttr.setY(i, Math.sin(bx * 0.18 + elapsed * 1.1) * 0.12 + Math.cos(bz * 0.22 + elapsed * 0.9) * 0.1);
+            }
+            posAttr.needsUpdate = true;
+
+            // Anillos pulsantes
+            castleEntries.forEach(entry => {
+                if (entry.turnRing.userData.pulsing) {
+                    entry.turnRing.material.opacity = 0.55 + Math.sin(elapsed * 4) * 0.3;
+                    entry.turnRing.rotation.z += dt * 0.6;
+                }
+                if (entry.targetRing.userData.pulsing) {
+                    entry.targetRing.material.opacity = 0.6 + Math.sin(elapsed * 6) * 0.35;
+                    entry.targetRing.scale.setScalar(1 + Math.sin(elapsed * 5) * 0.04);
+                }
+                if (entry.turnArrow.visible) {
+                    entry.turnArrow.position.y = 7.6 + Math.sin(elapsed * 4.5) * 0.4;
+                    entry.turnArrow.rotation.y += dt * 2.2;
+                }
+
+                // Animación del rey según su estado de ánimo
+                const t = (performance.now() - entry.moodStart) / 1000;
+                const k = entry.king;
+                if (!entry.destroyed) {
+                    switch (entry.mood) {
+                        case 'correct':
+                        case 'victory':
+                            k.group.position.y = 4.3 + Math.abs(Math.sin(t * 6)) * 0.5;
+                            k.group.rotation.y = Math.sin(t * 5) * 0.4;
+                            k.sword.rotation.z = 0.4 + Math.sin(t * 8) * 0.6;
+                            break;
+                        case 'incorrect':
+                            k.group.position.y = 4.3 - Math.min(t, 1) * 0.15;
+                            k.group.rotation.x = Math.min(t, 1) * 0.25;
+                            break;
+                        case 'hit':
+                            k.group.position.x = Math.sin(t * 40) * 0.08;
+                            k.group.position.y = 4.3;
+                            break;
+                        case 'shield':
+                            k.group.position.y = 4.3 + Math.sin(elapsed * 2) * 0.06;
+                            k.group.rotation.y = 0;
+                            break;
+                        default: // idle
+                            k.group.position.x = 0;
+                            k.group.rotation.x = 0;
+                            k.group.position.y = 4.3 + Math.sin(elapsed * 1.6 + entry.index) * 0.08;
+                            k.group.rotation.y = Math.sin(elapsed * 0.6 + entry.index) * 0.15;
+                            k.sword.rotation.z = 0.4;
+                    }
+                }
+                // Banderín ondeando
+                if (entry.banner) entry.banner.rotation.y = Math.sin(elapsed * 3 + entry.index) * 0.3;
+            });
+
+            // Proyectiles de catapulta
+            for (let i = activeProjectiles.length - 1; i >= 0; i--) {
+                const p = activeProjectiles[i];
+                p.t += dt * p.speed;
+                if (p.t >= 1) {
+                    const endPos = p.curve.getPoint(1);
+                    scene.remove(p.ball);
+                    spawnBurst(endPos, p.isSuper);
+                    activeProjectiles.splice(i, 1);
+                    p.onImpact();
+                } else {
+                    const pos = p.curve.getPoint(p.t);
+                    p.ball.position.copy(pos);
+                    p.ball.rotation.x += dt * 8;
+                }
+            }
+
+            // Partículas de explosión
+            for (let i = activeBursts.length - 1; i >= 0; i--) {
+                const b = activeBursts[i];
+                b.life -= dt * (b.isFlash ? 2.4 : 1.1);
+                if (b.life <= 0) {
+                    scene.remove(b.mesh);
+                    activeBursts.splice(i, 1);
+                    continue;
+                }
+                if (!b.isFlash) {
+                    b.vel.y -= dt * 9;
+                    b.mesh.position.addScaledVector(b.vel, dt);
+                    b.mesh.rotation.x += dt * 5;
+                    b.mesh.rotation.y += dt * 5;
+                }
+                b.mesh.material.opacity = Math.max(0, b.life);
+                if (b.isFlash) b.mesh.scale.setScalar(1 + (1 - b.life) * 1.5);
+            }
+
+            // Vuelo de cámara (usado en victoria)
+            if (cameraFlightTarget) {
+                cameraFlightTarget.t = Math.min(1, cameraFlightTarget.t + dt * 0.6);
+                camera.position.lerp(cameraFlightTarget.pos, 0.04);
+                controls.target.lerp(cameraFlightTarget.look, 0.05);
+                if (cameraFlightTarget.t >= 1) cameraFlightTarget = null;
+            }
+            if (autoOrbit) {
+                controls.autoRotate = true;
+                controls.autoRotateSpeed = 1.1;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+
+        // ---------- API expuesta al script clásico del juego ----------
+        window.Arena3D = {
+            refresh,
+            fireCatapult,
+            playVictory
+        };
+
+        // En modo celular (URL con ?room=&castle=) no inicializamos el motor 3D
+        // para ahorrar memoria y CPU en dispositivos móviles.
+        const _urlP = new URLSearchParams(window.location.search);
+        if (!_urlP.get('room')) {
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                init();
+            } else {
+                window.addEventListener('DOMContentLoaded', init);
+            }
+        }
+    </script>
+</body>
+</html>

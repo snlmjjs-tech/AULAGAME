@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>¿Quién Es El Impostor? — Juego de Clase Editable</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg-deep: #05060f;
+    --bg-mid: #0b0e21;
+    --panel: rgba(20, 24, 48, 0.85);
+    --panel-light: rgba(255,255,255,0.06);
+    --border: rgba(255,255,255,0.12);
+    --accent: #ff5a4e;
+    --accent2: #22d3ee;
+    --good: #3fd670;
+    --bad: #e63946;
+    --gold: #ffd166;
+    --text: #eef1fb;
+    --text-dim: #9aa3c7;
+    --radius: 16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family: 'Segoe UI', Verdana, Trebuchet MS, Arial, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(90,60,180,.25), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(34,211,238,.15), transparent 55%),
+      linear-gradient(180deg, var(--bg-deep), var(--bg-mid) 60%, var(--bg-deep));
+    min-height:100vh;
+    overflow-x:hidden;
+    position:relative;
+  }
+  #stars{position:fixed; inset:0; z-index:0; pointer-events:none;}
+  .star{position:absolute; background:#fff; border-radius:50%; opacity:.6; animation: twinkle 3s ease-in-out infinite;}
+  @keyframes twinkle{0%,100%{opacity:.2;}50%{opacity:.9;}}
+
+  #app{position:relative; z-index:1; max-width:1100px; margin:0 auto; padding:18px 16px 60px;}
+
+  header.top{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:18px;}
+  header.top h1{
+    font-size: clamp(22px, 4vw, 34px);
+    margin:0;
+    letter-spacing: .5px;
+    text-shadow: 0 0 18px rgba(255,90,78,.5), 0 0 40px rgba(34,211,238,.2);
+  }
+  header.top h1 span.accent{color:var(--accent);}
+  header.top h1 span.accent2{color:var(--accent2);}
+
+  .tabs{display:flex; gap:8px; background:var(--panel-light); padding:6px; border-radius:999px; border:1px solid var(--border);}
+  .tab-btn{
+    border:none; background:transparent; color:var(--text-dim); font-weight:700; font-size:14px;
+    padding:10px 18px; border-radius:999px; cursor:pointer; transition: all .2s;
+  }
+  .tab-btn.active{background:linear-gradient(135deg, var(--accent), #ff8a5c); color:#1a0b08; box-shadow:0 4px 14px rgba(255,90,78,.4);}
+  .tab-btn:not(.active):hover{color:var(--text); background:rgba(255,255,255,.06);}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:20px;
+    margin-bottom:16px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  }
+  .card h2{margin-top:0; font-size:18px; display:flex; align-items:center; gap:8px;}
+  .muted{color:var(--text-dim); font-size:13.5px; line-height:1.5;}
+
+  button{font-family:inherit;}
+  .btn{
+    border:none; cursor:pointer; font-weight:700; border-radius:12px; padding:11px 18px; font-size:14px;
+    transition: transform .15s, box-shadow .15s, filter .15s;
+    color:#0d0f1e;
+  }
+  .btn:hover{transform:translateY(-2px);}
+  .btn:active{transform:translateY(0);}
+  .btn-primary{background:linear-gradient(135deg, var(--accent2), #4fe0c8); box-shadow:0 6px 16px rgba(34,211,238,.3);}
+  .btn-danger{background:linear-gradient(135deg,#ff6b6b,#e63946); color:#fff; box-shadow:0 6px 16px rgba(230,57,70,.3);}
+  .btn-gold{background:linear-gradient(135deg, var(--gold), #ffb703); box-shadow:0 6px 16px rgba(255,209,102,.3);}
+  .btn-ghost{background:rgba(255,255,255,.08); color:var(--text); border:1px solid var(--border);}
+  .btn-ghost:hover{background:rgba(255,255,255,.15);}
+  .btn-sm{padding:7px 12px; font-size:12.5px; border-radius:9px;}
+  .btn:disabled{opacity:.4; cursor:not-allowed; transform:none;}
+
+  input[type=text], input[type=number], textarea, select{
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+    background:rgba(255,255,255,.06); color:var(--text); font-size:14px; font-family:inherit;
+  }
+  input[type=text]:focus, textarea:focus{outline:2px solid var(--accent2); outline-offset:1px;}
+  textarea{resize:vertical; min-height:70px;}
+  label.field-label{font-size:12.5px; color:var(--text-dim); font-weight:700; text-transform:uppercase; letter-spacing:.4px; display:block; margin-bottom:5px;}
+
+  /* ---- Setup: round list ---- */
+  .round-list{display:flex; flex-direction:column; gap:8px;}
+  .round-row{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px;
+    background:rgba(255,255,255,.04); border:1px solid var(--border); cursor:pointer; transition: background .15s;
+  }
+  .round-row:hover{background:rgba(255,255,255,.08);}
+  .round-row.active{border-color:var(--accent2); background:rgba(34,211,238,.1);}
+  .round-row .idx{
+    width:28px; height:28px; border-radius:50%; background:var(--accent); color:#1a0b08; font-weight:800;
+    display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0;
+  }
+  .round-row .title{flex:1; font-weight:600; font-size:14.5px;}
+  .round-row .count-badge{font-size:11.5px; color:var(--text-dim); background:rgba(255,255,255,.08); padding:3px 9px; border-radius:999px;}
+  .round-row .row-actions{display:flex; gap:4px;}
+  .icon-btn{
+    background:rgba(255,255,255,.08); border:1px solid var(--border); color:var(--text); border-radius:8px;
+    width:28px; height:28px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px;
+  }
+  .icon-btn:hover{background:rgba(255,255,255,.18);}
+
+  .word-grid{display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:12px; margin-top:10px;}
+  .word-item{display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.04); padding:8px 10px; border-radius:10px; border:1px solid var(--border);}
+  .swatch{width:26px; height:26px; border-radius:8px; flex-shrink:0; border:2px solid rgba(0,0,0,.4);}
+
+  .setup-grid{display:grid; grid-template-columns: 280px 1fr; gap:16px;}
+  @media (max-width:800px){.setup-grid{grid-template-columns:1fr;}}
+
+  .impostor-toggle{display:flex; gap:8px;}
+  .impostor-toggle button{flex:1;}
+  .impostor-toggle button.selected{background:linear-gradient(135deg, var(--bad), #ff6b6b); color:#fff;}
+
+  .manual-picker{display:flex; flex-wrap:wrap; gap:8px;}
+  .pick-swatch{
+    display:flex; align-items:center; gap:7px; padding:8px 13px; border-radius:10px;
+    background:rgba(255,255,255,.05); border:1px solid var(--border); color:var(--text);
+    font-size:13px; font-weight:600; cursor:pointer; transition: all .15s;
+  }
+  .pick-swatch:hover{background:rgba(255,255,255,.1);}
+  .pick-swatch .dot{width:16px; height:16px; border-radius:5px; background:var(--c); border:2px solid rgba(0,0,0,.4); flex-shrink:0;}
+  .pick-swatch.picked{background:linear-gradient(135deg, rgba(230,57,70,.28), rgba(230,57,70,.14)); border-color:rgba(230,57,70,.6); color:#ff9d9d;}
+  .pick-swatch.picked::after{content:'✓'; margin-left:2px; font-weight:800;}
+
+  .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;}
+
+  /* ---- Crewmate character ---- */
+  /* ---- Personaje: astronauta humano (casco + torso + brazos + piernas + mochila) ----
+     Diseño original propio, sin relación con ningún personaje con derechos de autor. */
+  .crewmate{
+    position:relative; width:64px; height:86px; margin:0 auto;
+  }
+  .crewmate .backpack{
+    position:absolute; left:33%; top:30%; width:34%; height:46%; z-index:1;
+    background-color:#d8dee8;
+    background-image: linear-gradient(160deg, rgba(255,255,255,.5), rgba(0,0,0,.15) 80%);
+    border:3px solid rgba(0,0,0,.55); border-radius:7px;
+  }
+  .crewmate .torso{
+    position:absolute; left:15%; top:40%; width:70%; height:42%; z-index:2;
+    background-color:var(--c, #999);
+    background-image:
+      radial-gradient(circle at 30% 15%, rgba(255,255,255,.6), rgba(255,255,255,0) 50%),
+      radial-gradient(circle at 78% 92%, rgba(0,0,0,.4), rgba(0,0,0,0) 55%);
+    background-blend-mode: screen, multiply;
+    border:3px solid rgba(0,0,0,.6);
+    border-radius: 34% 34% 26% 26% / 30% 30% 20% 20%;
+    box-shadow: inset -6px -8px 10px rgba(0,0,0,.25), inset 4px 5px 8px rgba(255,255,255,.2);
+  }
+  .crewmate .panel{
+    position:absolute; left:36%; top:50%; width:28%; height:16%; z-index:3;
+    background:#1c2338; border:2px solid rgba(0,0,0,.55); border-radius:3px;
+    display:flex; align-items:center; justify-content:center; gap:3px;
+  }
+  .crewmate .panel::before, .crewmate .panel::after{
+    content:''; width:22%; height:38%; border-radius:50%;
+  }
+  .crewmate .panel::before{ background:#ffd166; box-shadow:0 0 3px #ffd166; }
+  .crewmate .panel::after{ background:#3fd670; box-shadow:0 0 3px #3fd670; }
+  .crewmate .arm{
+    position:absolute; top:42%; width:15%; height:32%; z-index:0;
+    background-color:var(--c, #999);
+    background-image: linear-gradient(160deg, rgba(255,255,255,.2), rgba(0,0,0,.4) 80%);
+    border:3px solid rgba(0,0,0,.6); border-radius:40%/20%;
+  }
+  .crewmate .arm::after{
+    content:''; position:absolute; left:50%; bottom:-7px; width:150%; height:34%;
+    transform:translateX(-50%); background:#e9edf3; border:2px solid rgba(0,0,0,.55); border-radius:50%;
+  }
+  .crewmate .arm.arm-l{ left:1%; transform:rotate(-14deg); transform-origin:top center; }
+  .crewmate .arm.arm-r{ right:1%; transform:rotate(14deg); transform-origin:top center; }
+  .crewmate .legs{position:absolute; bottom:0; left:18%; width:64%; height:26%; display:flex; justify-content:space-between; z-index:1;}
+  .crewmate .legs span{
+    position:relative; width:34%; height:100%;
+    background-color:var(--c,#999);
+    background-image: linear-gradient(180deg, rgba(255,255,255,.15), rgba(0,0,0,.45));
+    border:3px solid rgba(0,0,0,.6); border-radius:20% 20% 10% 10%;
+  }
+  .crewmate .legs span::after{
+    content:''; position:absolute; left:50%; bottom:-7px; width:120%; height:34%;
+    transform:translateX(-50%); background:#e9edf3; border:2px solid rgba(0,0,0,.55); border-radius:5px;
+  }
+  .crewmate .helmet{
+    position:absolute; left:20%; top:0; width:60%; height:47%; z-index:4;
+    background-color:var(--c, #999);
+    border:3px solid rgba(0,0,0,.6); border-radius:50%;
+    box-shadow: inset -6px -8px 10px rgba(0,0,0,.3), inset 4px 5px 8px rgba(255,255,255,.25);
+  }
+  .crewmate .visor{
+    position:absolute; left:12%; top:16%; width:76%; height:68%;
+    background: radial-gradient(120% 130% at 30% 24%, #ffffff 0%, #e8f7ff 20%, #a9d8f0 52%, #5f9fc9 90%);
+    border:2px solid rgba(0,0,0,.5); border-radius:50%;
+    box-shadow: inset -4px -4px 6px rgba(0,80,120,.3), inset 3px 3px 4px rgba(255,255,255,.5);
+  }
+  .crewmate .visor::after{
+    content:''; position:absolute; top:16%; left:18%; width:26%; height:20%;
+    background:rgba(255,255,255,.9); border-radius:50%; filter:blur(1px);
+  }
+  .crewmate.dead{opacity:.35; filter:grayscale(.6) drop-shadow(0 6px 8px rgba(0,0,0,.3));}
+  .crewmate.big{width:120px; height:161px;}
+
+  .eject-track{position:relative; width:100%; max-width:640px; height:190px;}
+
+  /* ---- Cuerpo "3D" para la animación de expulsión: en vez de rotación 3D real
+     (que en varios navegadores puede aplanarse de forma impredecible al girar),
+     usamos volumen simulado con squash & stretch + sombreado sincronizado.
+     Esto SIEMPRE mantiene un cuerpo sólido y redondeado, nunca una línea plana. ---- */
+  .crew3d{
+    position:absolute; top:10px; left:50%; margin-left:-50px;
+    width:100px; height:134px;
+    filter: drop-shadow(0 14px 18px rgba(0,0,0,.55));
+  }
+  .crew3d .shine{
+    position:absolute; inset:6% 8%; border-radius:44% 44% 30% 30% / 50% 50% 24% 24%; pointer-events:none; z-index:5;
+    background: linear-gradient(100deg, transparent 22%, rgba(255,255,255,.55) 42%, transparent 64%);
+    mix-blend-mode: screen;
+  }
+  .crew3d .backpack3d{
+    position:absolute; left:33%; top:28%; width:34%; height:48%; z-index:1;
+    background-color:#d8dee8;
+    background-image: linear-gradient(160deg, rgba(255,255,255,.5), rgba(0,0,0,.15) 80%);
+    border:3px solid rgba(0,0,0,.55); border-radius:8px;
+  }
+  .crew3d .torso3d{
+    position:absolute; left:15%; top:39%; width:70%; height:44%; z-index:2;
+    background-color:var(--c,#999);
+    background-image:
+      radial-gradient(circle at 30% 15%, rgba(255,255,255,.65), rgba(255,255,255,0) 50%),
+      radial-gradient(circle at 78% 92%, rgba(0,0,0,.4), rgba(0,0,0,0) 55%);
+    background-blend-mode: screen, multiply;
+    border:3px solid rgba(0,0,0,.6);
+    border-radius: 34% 34% 26% 26% / 30% 30% 20% 20%;
+    box-shadow: inset -8px -10px 14px rgba(0,0,0,.28), inset 6px 7px 10px rgba(255,255,255,.2);
+  }
+  .crew3d .panel3d{
+    position:absolute; left:36%; top:49%; width:28%; height:16%; z-index:3;
+    background:#1c2338; border:2px solid rgba(0,0,0,.55); border-radius:3px;
+    display:flex; align-items:center; justify-content:center; gap:4px;
+  }
+  .crew3d .panel3d::before, .crew3d .panel3d::after{ content:''; width:20%; height:36%; border-radius:50%; }
+  .crew3d .panel3d::before{ background:#ffd166; box-shadow:0 0 3px #ffd166; }
+  .crew3d .panel3d::after{ background:#3fd670; box-shadow:0 0 3px #3fd670; }
+  .crew3d .arm3d{
+    position:absolute; top:41%; width:15%; height:34%; z-index:0;
+    background-color:var(--c,#999);
+    background-image: linear-gradient(160deg, rgba(255,255,255,.2), rgba(0,0,0,.4) 80%);
+    border:3px solid rgba(0,0,0,.6); border-radius:40%/20%;
+  }
+  .crew3d .arm3d::after{
+    content:''; position:absolute; left:50%; bottom:-7px; width:150%; height:32%;
+    transform:translateX(-50%); background:#e9edf3; border:2px solid rgba(0,0,0,.55); border-radius:50%;
+  }
+  .crew3d .arm3d.l{ left:1%; transform:rotate(-14deg); transform-origin:top center; }
+  .crew3d .arm3d.r{ right:1%; transform:rotate(14deg); transform-origin:top center; }
+  .crew3d .helmet3d{
+    position:absolute; left:20%; top:0; width:60%; height:48%; z-index:4;
+    background-color:var(--c,#999);
+    border:3px solid rgba(0,0,0,.6); border-radius:50%;
+    box-shadow: inset -8px -10px 14px rgba(0,0,0,.3), inset 5px 6px 10px rgba(255,255,255,.25);
+  }
+  .crew3d .visor3d{
+    position:absolute; left:12%; top:15%; width:76%; height:68%;
+    background: radial-gradient(120% 130% at 30% 24%, #ffffff 0%, #e8f7ff 20%, #a9d8f0 52%, #5f9fc9 90%);
+    border:2px solid rgba(0,0,0,.5); border-radius:50%;
+    box-shadow: inset -4px -4px 6px rgba(0,80,120,.3), inset 3px 3px 4px rgba(255,255,255,.5);
+  }
+  .crew3d .visor3d::after{
+    content:''; position:absolute; top:16%; left:18%; width:26%; height:20%;
+    background:rgba(255,255,255,.9); border-radius:50%; filter:blur(1px);
+  }
+  .crew3d .legs3d{ position:absolute; bottom:0; left:18%; width:64%; height:24%; display:flex; justify-content:space-between; z-index:1; }
+  .crew3d .legs3d span{
+    position:relative; width:34%; height:100%;
+    background-color:var(--c,#999);
+    background-image: linear-gradient(180deg, rgba(255,255,255,.15), rgba(0,0,0,.45));
+    border:3px solid rgba(0,0,0,.6); border-radius:20% 20% 10% 10%;
+  }
+  .crew3d .legs3d span::after{
+    content:''; position:absolute; left:50%; bottom:-7px; width:120%; height:32%;
+    transform:translateX(-50%); background:#e9edf3; border:2px solid rgba(0,0,0,.55); border-radius:5px;
+  }
+
+  .crew3d.eject{ animation: ejectTumble 2.3s cubic-bezier(.3,.55,.35,1) forwards; }
+  @keyframes ejectTumble{
+    0%   { transform: translate(-42vw,10px)  rotateZ(-6deg) scaleX(1)    scaleY(1);    filter: brightness(1.05); }
+    12%  { transform: translate(-34vw,-8px)  rotateZ(9deg)  scaleX(0.5)  scaleY(1.14); filter: brightness(0.78); }
+    25%  { transform: translate(-24vw,-18px) rotateZ(-8deg) scaleX(1)    scaleY(1);    filter: brightness(1.1); }
+    37%  { transform: translate(-14vw,-22px) rotateZ(8deg)  scaleX(0.5)  scaleY(1.14); filter: brightness(0.78); }
+    50%  { transform: translate(-2vw,-15px)  rotateZ(-7deg) scaleX(1)    scaleY(1);    filter: brightness(1.1); }
+    62%  { transform: translate(10vw,6px)    rotateZ(8deg)  scaleX(0.5)  scaleY(1.14); filter: brightness(0.78); }
+    75%  { transform: translate(22vw,18px)   rotateZ(-6deg) scaleX(1)    scaleY(1);    filter: brightness(1.1); }
+    87%  { transform: translate(32vw,4px)    rotateZ(5deg)  scaleX(0.65) scaleY(1.08); filter: brightness(0.85); }
+    100% { transform: translate(40vw,0px)    rotateZ(0deg)  scaleX(1)    scaleY(1);    filter: brightness(1); }
+  }
+  .crew3d.eject-idle{ animation: ejectIdle 3.2s ease-in-out infinite; animation-delay: 2.3s; }
+  @keyframes ejectIdle{
+    0%,100%{ transform: translate(40vw,0px) rotateZ(0deg)  scaleX(1)    scaleY(1);    filter: brightness(1); }
+    50%{     transform: translate(38vw,-11px) rotateZ(-4deg) scaleX(0.88) scaleY(1.03); filter: brightness(0.95); }
+  }
+
+  /* ---- Play view ---- */
+  .play-header{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;}
+  .round-pill{background:rgba(255,255,255,.08); padding:8px 16px; border-radius:999px; font-weight:700; font-size:14px; border:1px solid var(--border);}
+  .impostor-counter{
+    background:linear-gradient(135deg, rgba(230,57,70,.25), rgba(230,57,70,.1)); border:1px solid rgba(230,57,70,.5);
+    padding:8px 16px; border-radius:999px; font-weight:800; font-size:14px; color:#ff9d9d;
+  }
+
+  .board{display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; margin:20px 0;}
+  @media (max-width:700px){.board{grid-template-columns: repeat(2, 1fr);}}
+  .crew-card{
+    background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:14px; padding:16px 10px 14px;
+    text-align:center; cursor:pointer; transition: transform .15s, background .15s;
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+  }
+  .crew-card:hover:not(.revealed){transform:translateY(-4px); background:rgba(255,255,255,.09);}
+  .crew-card.revealed{cursor:default;}
+  .crew-card .label{font-size:13.5px; font-weight:700; min-height:34px; display:flex; align-items:center; justify-content:center; text-align:center;}
+  .crew-card .status{font-size:11.5px; font-weight:800; padding:3px 10px; border-radius:999px; letter-spacing:.3px;}
+  .status.safe{background:rgba(63,214,112,.18); color:var(--good);}
+  .status.impostor{background:rgba(230,57,70,.22); color:#ff8b8b;}
+
+  .intro-board{display:grid; grid-template-columns: repeat(4,1fr); gap:16px; margin: 18px 0;}
+  @media (max-width:700px){.intro-board{grid-template-columns: repeat(2,1fr);}}
+  .intro-item{background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:14px; padding:14px 8px; text-align:center; display:flex; flex-direction:column; gap:8px; align-items:center;}
+  .intro-item .label{font-weight:700; font-size:13.5px;}
+
+  .center-col{display:flex; flex-direction:column; align-items:center; text-align:center; gap:14px; padding:20px 0;}
+
+  /* ---- Reveal overlay ---- */
+  #revealOverlay{
+    position:fixed; inset:0;
+    background-color:#05060a;
+    background-image:
+      radial-gradient(1.5px 1.5px at 10% 20%, #fff, transparent 100%),
+      radial-gradient(1.5px 1.5px at 80% 10%, #fff, transparent 100%),
+      radial-gradient(1px 1px at 30% 55%, #fff, transparent 100%),
+      radial-gradient(1.5px 1.5px at 65% 40%, #fff, transparent 100%),
+      radial-gradient(1px 1px at 90% 65%, #fff, transparent 100%),
+      radial-gradient(1.5px 1.5px at 15% 80%, #fff, transparent 100%),
+      radial-gradient(1px 1px at 45% 90%, #fff, transparent 100%),
+      radial-gradient(1.5px 1.5px at 55% 15%, #fff, transparent 100%),
+      radial-gradient(1px 1px at 75% 85%, #fff, transparent 100%),
+      radial-gradient(1px 1px at 25% 35%, #fff, transparent 100%);
+    background-repeat: repeat;
+    background-size: 340px 340px;
+    display:none; align-items:center; justify-content:center; z-index:1000; flex-direction:column; gap:18px;
+    text-align:center; padding:20px; overflow:hidden;
+  }
+  #revealOverlay.show{display:flex;}
+  .reveal-text{font-size: clamp(20px, 4vw, 30px); font-weight:800; opacity:0; animation: fadeUp .5s ease forwards; animation-delay:1.9s;}
+  .reveal-text.safe{color:var(--good); text-shadow:0 0 20px rgba(63,214,112,.5);}
+  .reveal-text.bad{color:#ff6b6b; text-shadow:0 0 24px rgba(230,57,70,.6);}
+  .reveal-sub{color:var(--text-dim); font-size:14px; opacity:0; animation: fadeUp .5s ease forwards; animation-delay:2.1s;}
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  /* ---- Modal ---- */
+  #modalRoot{position:fixed; inset:0; background:rgba(2,3,10,.75); display:none; align-items:center; justify-content:center; z-index:2000; padding:20px;}
+  #modalRoot.show{display:flex;}
+  .modal-box{
+    background: linear-gradient(180deg, #171b36, #10132a); border:1px solid var(--border); border-radius:18px;
+    padding:24px; max-width:420px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  .modal-box h3{margin-top:0;}
+  .modal-actions{display:flex; gap:10px; justify-content:flex-end; margin-top:18px;}
+
+  /* confetti */
+  .confetti-piece{position:fixed; top:-20px; width:9px; height:14px; opacity:.9; z-index:1500; pointer-events:none; animation: fall linear forwards;}
+  @keyframes fall{ to { transform: translateY(110vh) rotate(600deg); opacity:0.2; } }
+
+  footer.hint{margin-top:24px; text-align:center; color:var(--text-dim); font-size:12.5px;}
+
+  .sound-toggle{position:fixed; bottom:16px; right:16px; z-index:900;}
+  .sound-toggle button{
+    width:46px; height:46px; border-radius:50%; border:1px solid var(--border); background:var(--panel);
+    color:var(--text); font-size:18px; cursor:pointer; box-shadow:0 6px 20px rgba(0,0,0,.4);
+  }
+
+  .final-activity{background: linear-gradient(135deg, rgba(255,209,102,.12), rgba(34,211,238,.08)); border:1px solid rgba(255,209,102,.35);}
+  .adj-hint{white-space:pre-wrap; font-size:13.5px; color:var(--text-dim); line-height:1.7; margin-top:10px;}
+
+  .empty-state{text-align:center; padding:40px 20px; color:var(--text-dim);}
+</style>
+</head>
+<body>
+
+<div id="stars"></div>
+
+<div id="app">
+  <header class="top">
+    <h1>🚀 ¿QUIÉN ES EL <span class="accent">IMPOSTOR</span>? <span class="accent2">·</span> Juego de Clase</h1>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="setup">⚙️ Configurar</button>
+      <button class="tab-btn" data-tab="play">▶️ Jugar</button>
+    </div>
+  </header>
+
+  <!-- ===================== SETUP VIEW ===================== -->
+  <div id="setupView">
+    <div class="card">
+      <h2>📋 Cómo funciona</h2>
+      <p class="muted">
+        Este juego es <b>100% editable</b>: sirve para cualquier asignatura (inglés, historia, matemáticas, ciencias, etc.).
+        Crea "rondas" y asigna un concepto (palabra, fecha, fórmula, lo que quieras) a cada uno de los 8 colores.
+        Elige cuántos "impostores" habrá en la ronda, revisa el contenido con el curso, y luego haz clic en cada personaje
+        para descubrir quién era el impostor — perfecto para repasar vocabulario o contenidos de forma entretenida.
+      </p>
+      <p class="muted">
+        💡 <b>La forma más práctica de editar el contenido es en Excel:</b> exporta tu configuración a una planilla,
+        edítala cómodamente ahí (copiar/pegar, columnas, corrección ortográfica) y luego impórtala de vuelta aquí.
+      </p>
+      <div class="toolbar">
+        <button class="btn btn-gold btn-sm" id="loadExampleBtn">📥 Cargar ejemplo (Inglés)</button>
+        <button class="btn btn-primary btn-sm" id="exportExcelBtn">📊 Exportar a Excel</button>
+        <button class="btn btn-ghost btn-sm" id="importExcelBtn">📤 Importar desde Excel</button>
+        <input type="file" id="importExcelFile" accept=".xlsx,.xls" style="display:none;">
+        <button class="btn btn-danger btn-sm" id="resetAllBtn">🗑️ Borrar todo</button>
+      </div>
+    </div>
+
+    <div class="setup-grid">
+      <div class="card">
+        <h2>🎯 Rondas <span class="count-badge" id="roundCountBadge" style="margin-left:auto;"></span></h2>
+        <div class="round-list" id="roundList"></div>
+        <div class="toolbar">
+          <button class="btn btn-primary btn-sm" id="addRoundBtn">➕ Nueva ronda</button>
+        </div>
+      </div>
+
+      <div class="card" id="roundEditorCard">
+        <!-- filled dynamically -->
+      </div>
+    </div>
+
+    <div class="card final-activity">
+      <h2>🏁 Actividad final (opcional)</h2>
+      <p class="muted">Se muestra al terminar todas las rondas — ideal para cerrar la clase con una tarea escrita u oral.</p>
+      <label class="field-label">Título</label>
+      <input type="text" id="closingTitle">
+      <div style="height:10px;"></div>
+      <label class="field-label">Instrucciones</label>
+      <textarea id="closingBody" rows="4"></textarea>
+      <div style="height:10px;"></div>
+      <label class="field-label">Notas / ayuda extra (opcional)</label>
+      <textarea id="closingExtra" rows="4"></textarea>
+    </div>
+  </div>
+
+  <!-- ===================== PLAY VIEW ===================== -->
+  <div id="playView" style="display:none;">
+    <div id="playContent"></div>
+  </div>
+
+  <footer class="hint">Hecho para Mr. Núñez 🎓 — archivo HTML único, sin dependencias, editable para cualquier profesor y asignatura.</footer>
+</div>
+
+<div id="revealOverlay">
+  <div class="eject-track">
+    <div class="crew3d" id="revealCrewmate" style="--c:#999;">
+      <div class="backpack3d"></div>
+      <div class="arm3d l"></div><div class="arm3d r"></div>
+      <div class="torso3d"></div>
+      <div class="panel3d"></div>
+      <div class="helmet3d"><div class="visor3d"></div></div>
+      <div class="legs3d"><span></span><span></span></div>
+      <div class="shine"></div>
+    </div>
+  </div>
+  <div class="reveal-text" id="revealText">—</div>
+  <div class="reveal-sub" id="revealSub"></div>
+  <button class="btn btn-primary" id="revealContinueBtn" style="display:none;">Continuar</button>
+</div>
+
+<div id="modalRoot">
+  <div class="modal-box">
+    <h3 id="modalTitle">Título</h3>
+    <p class="muted" id="modalBody"></p>
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<div class="sound-toggle"><button id="soundBtn" title="Sonido">🔊</button></div>
+
+<script>
+/* ===================================================================
+   ESTADO Y DATOS
+=================================================================== */
+const COLORS = [
+  {key:'green',  hex:'#3fd670', name:'Verde'},
+  {key:'red',    hex:'#e63946', name:'Rojo'},
+  {key:'blue',   hex:'#3b82f6', name:'Azul'},
+  {key:'lime',   hex:'#c6f24a', name:'Lima'},
+  {key:'white',  hex:'#eef2f7', name:'Blanco'},
+  {key:'pink',   hex:'#f472b6', name:'Rosado'},
+  {key:'cyan',   hex:'#22d3ee', name:'Celeste'},
+  {key:'orange', hex:'#fb923c', name:'Naranjo'}
+];
+
+function blankWords(){
+  const w = {};
+  COLORS.forEach(c => w[c.key] = '');
+  return w;
+}
+
+function uid(){ return 'r' + Math.random().toString(36).slice(2,10); }
+
+let state = {
+  rounds: [],
+  closing: { title:'', body:'', extra:'' }
+};
+
+let ui = {
+  activeTab: 'setup',
+  activeRoundId: null,
+};
+
+let play = {
+  roundIndex: 0,
+  phase: 'intro',       // intro | voting | victory | closing
+  impostors: [],        // array of color keys that are impostors this playthrough
+  revealed: {},         // color key -> true
+  remaining: 0,
+};
+
+let soundOn = true;
+let audioCtx = null;
+
+/* ===================================================================
+   EJEMPLO PRECARGADO (extraído del PPT original de Among Us)
+=================================================================== */
+function exampleData(){
+  const rounds = [
+    {
+      id: uid(), title: 'Ronda 1 · Profesiones', impostorCount: 1,
+      words: {green:'Actor', red:'Waiter', blue:'Teacher', lime:'Doctor', white:'Mechanic', pink:'Bus Driver', cyan:'Farmer', orange:'Musician'}
+    },
+    {
+      id: uid(), title: 'Ronda 2 · Verbo TO BE', impostorCount: 1,
+      words: {green:'SHE IS', red:'HE IS', blue:'YOU ARE', lime:'YOU ARE (pl.)', white:'THEY ARE', pink:'I AM', cyan:'IT IS', orange:'WE ARE'}
+    },
+    {
+      id: uid(), title: 'Ronda 3 · Profesiones (Nivel 2)', impostorCount: 2,
+      words: {green:'Butcher', red:'Postman', blue:'Attorney', lime:'Farmer', white:'Businessman', pink:'Officer', cyan:'Baker', orange:'Cashier'}
+    },
+    {
+      id: uid(), title: 'Ronda 4 · Profesiones (Nivel 3)', impostorCount: 1,
+      words: {green:'Firefighter', red:'Teacher', blue:'Detective', lime:'Nurse', white:'Mechanic', pink:'Baker', cyan:'Bus Driver', orange:'Dentist'}
+    },
+    {
+      id: uid(), title: 'Ronda 5 · Oraciones con TO BE', impostorCount: 1,
+      words: {
+        green:'YOU ARE MY FRIENDS', red:"RED'S FRIEND IS GOOD", blue:'WE ARE A FAMILY', lime:'THEY ARE HAPPY',
+        white:'I AM ALONE', pink:'I AM PINK', cyan:'THIS GAME IS EASY', orange:'ORANGE IS MY FRIEND'
+      }
+    }
+  ];
+  rounds.forEach(r=>{ r.impostorMode = 'random'; r.manualImpostors = []; });
+  return {
+    rounds,
+    closing: {
+      title: 'ACTIVIDAD FINAL',
+      body: 'Elige un JOB (trabajo) y crea CINCO oraciones usando el verbo TO BE (am / is / are).',
+      extra: 'Ejemplos:\nThe teachers ARE friendly!\nThe actor IS very good!\nThe doctor IS smart!\nI AM a student.\n\nAdjetivos útiles: smart, old, cool, cute, good, bad, funny, sad, generous, young, pretty, ugly, reliable, hard-working.'
+    }
+  };
+}
+
+/* ===================================================================
+   AUDIO PROCEDURAL (Web Audio API — sin archivos externos)
+=================================================================== */
+function ensureAudio(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ soundOn=false; }
+  }
+  if(audioCtx && audioCtx.state === 'suspended'){ audioCtx.resume(); }
+}
+function tone(freq, start, dur, type='sine', gainPeak=0.18){
+  if(!soundOn || !audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type; osc.frequency.value = freq;
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  const t0 = audioCtx.currentTime + start;
+  gain.gain.setValueAtTime(0, t0);
+  gain.gain.linearRampToValueAtTime(gainPeak, t0 + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  osc.start(t0); osc.stop(t0 + dur + 0.05);
+}
+function playClick(){ ensureAudio(); tone(520, 0, 0.08, 'square', 0.08); }
+function playSafe(){ ensureAudio(); tone(440,0,.14,'sine',0.15); tone(660,0.1,.18,'sine',0.15); tone(880,0.2,.22,'sine',0.14); }
+function playImpostor(){ ensureAudio(); tone(220,0,.25,'sawtooth',0.16); tone(180,0.15,.3,'sawtooth',0.16); tone(140,0.3,.5,'sawtooth',0.16); }
+function playVictory(){
+  ensureAudio();
+  const notes=[523,659,784,1046];
+  notes.forEach((f,i)=>tone(f, i*0.14, 0.3, 'triangle', 0.16));
+}
+
+/* ===================================================================
+   UTILIDADES DE UI: MODAL
+=================================================================== */
+function showModal({title, body, actions}){
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').textContent = body;
+  const actWrap = document.getElementById('modalActions');
+  actWrap.innerHTML = '';
+  actions.forEach(a=>{
+    const btn = document.createElement('button');
+    btn.className = 'btn ' + (a.cls || 'btn-ghost') + ' btn-sm';
+    btn.textContent = a.label;
+    btn.onclick = ()=>{ closeModal(); if(a.onClick) a.onClick(); };
+    actWrap.appendChild(btn);
+  });
+  document.getElementById('modalRoot').classList.add('show');
+}
+function closeModal(){ document.getElementById('modalRoot').classList.remove('show'); }
+document.getElementById('modalRoot').addEventListener('click', (e)=>{ if(e.target.id==='modalRoot') closeModal(); });
+
+function confirmAction(title, body, onConfirm){
+  showModal({
+    title, body,
+    actions: [
+      {label:'Cancelar', cls:'btn-ghost'},
+      {label:'Confirmar', cls:'btn-danger', onClick:onConfirm}
+    ]
+  });
+}
+function alertMsg(title, body){
+  showModal({ title, body, actions:[{label:'Entendido', cls:'btn-primary'}] });
+}
+
+/* ===================================================================
+   CONFETI
+=================================================================== */
+function launchConfetti(){
+  const colors = ['#ff5a4e','#22d3ee','#ffd166','#3fd670','#f472b6','#c6f24a'];
+  for(let i=0;i<60;i++){
+    const el = document.createElement('div');
+    el.className='confetti-piece';
+    el.style.left = Math.random()*100+'vw';
+    el.style.background = colors[Math.floor(Math.random()*colors.length)];
+    el.style.animationDuration = (2.2+Math.random()*1.6)+'s';
+    el.style.transform = `rotate(${Math.random()*360}deg)`;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), 4200);
+  }
+}
+
+/* ===================================================================
+   CREWMATE HTML HELPER
+=================================================================== */
+function crewmateHTML(hex, extraClass=''){
+  return `<div class="crewmate ${extraClass}" style="--c:${hex};">
+    <div class="backpack"></div>
+    <div class="arm arm-l"></div><div class="arm arm-r"></div>
+    <div class="torso"></div>
+    <div class="panel"></div>
+    <div class="helmet"><div class="visor"></div></div>
+    <div class="legs"><span></span><span></span></div>
+  </div>`;
+}
+
+/* ===================================================================
+   RENDER: TABS
+=================================================================== */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    playClick();
+    ui.activeTab = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b===btn));
+    document.getElementById('setupView').style.display = ui.activeTab==='setup' ? '' : 'none';
+    document.getElementById('playView').style.display = ui.activeTab==='play' ? '' : 'none';
+    if(ui.activeTab==='play') renderPlay();
+  });
+});
+
+/* ===================================================================
+   RENDER: SETUP — LISTA DE RONDAS
+=================================================================== */
+function renderRoundList(){
+  const list = document.getElementById('roundList');
+  document.getElementById('roundCountBadge').textContent = state.rounds.length + ' ronda(s)';
+  if(state.rounds.length === 0){
+    list.innerHTML = `<div class="empty-state">Aún no hay rondas.<br>Crea una nueva o carga el ejemplo.</div>`;
+    renderRoundEditor(null);
+    return;
+  }
+  if(!ui.activeRoundId || !state.rounds.find(r=>r.id===ui.activeRoundId)){
+    ui.activeRoundId = state.rounds[0].id;
+  }
+  list.innerHTML = state.rounds.map((r,i)=>`
+    <div class="round-row ${r.id===ui.activeRoundId?'active':''}" data-id="${r.id}">
+      <div class="idx">${i+1}</div>
+      <div class="title">${escapeHTML(r.title || 'Sin título')}</div>
+      <div class="count-badge">👤 impostor: ${r.impostorCount}</div>
+      <div class="row-actions">
+        <button class="icon-btn" data-act="up" title="Subir">↑</button>
+        <button class="icon-btn" data-act="down" title="Bajar">↓</button>
+        <button class="icon-btn" data-act="dup" title="Duplicar">⧉</button>
+        <button class="icon-btn" data-act="del" title="Eliminar">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.round-row').forEach(row=>{
+    const id = row.dataset.id;
+    row.addEventListener('click', (e)=>{
+      if(e.target.closest('.icon-btn')) return;
+      ui.activeRoundId = id; playClick(); renderRoundList(); renderRoundEditor(id);
+    });
+    row.querySelectorAll('.icon-btn').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation(); playClick();
+        const act = btn.dataset.act;
+        const idx = state.rounds.findIndex(r=>r.id===id);
+        if(act==='up' && idx>0){ [state.rounds[idx-1],state.rounds[idx]]=[state.rounds[idx],state.rounds[idx-1]]; renderRoundList(); }
+        if(act==='down' && idx<state.rounds.length-1){ [state.rounds[idx+1],state.rounds[idx]]=[state.rounds[idx],state.rounds[idx+1]]; renderRoundList(); }
+        if(act==='dup'){
+          const copy = JSON.parse(JSON.stringify(state.rounds[idx]));
+          copy.id = uid(); copy.title = copy.title + ' (copia)';
+          state.rounds.splice(idx+1,0,copy);
+          renderRoundList();
+        }
+        if(act==='del'){
+          confirmAction('¿Eliminar ronda?', `Se eliminará "${state.rounds[idx].title}". Esta acción no se puede deshacer.`, ()=>{
+            state.rounds.splice(idx,1);
+            if(ui.activeRoundId===id) ui.activeRoundId = null;
+            renderRoundList();
+          });
+        }
+      });
+    });
+  });
+  renderRoundEditor(ui.activeRoundId);
+}
+
+function escapeHTML(str){
+  const d = document.createElement('div'); d.textContent = str ?? ''; return d.innerHTML;
+}
+
+/* ===================================================================
+   RENDER: SETUP — EDITOR DE RONDA
+=================================================================== */
+function renderRoundEditor(id){
+  const card = document.getElementById('roundEditorCard');
+  const round = state.rounds.find(r=>r.id===id);
+  if(!round){
+    card.innerHTML = `<div class="empty-state">Selecciona o crea una ronda para editarla.</div>`;
+    return;
+  }
+  if(!round.impostorMode) round.impostorMode = 'random';
+  if(!Array.isArray(round.manualImpostors)) round.manualImpostors = [];
+  const mode = round.impostorMode;
+  card.innerHTML = `
+    <h2>✏️ Editando ronda</h2>
+    <label class="field-label">Título de la ronda</label>
+    <input type="text" id="editTitle" value="${escapeHTML(round.title)}" placeholder="Ej: Vocabulario Unidad 3">
+    <div style="height:14px;"></div>
+    <label class="field-label">Cantidad de impostores</label>
+    <div class="impostor-toggle">
+      <button class="btn btn-ghost btn-sm ${round.impostorCount===1?'selected':''}" data-count="1">1 impostor</button>
+      <button class="btn btn-ghost btn-sm ${round.impostorCount===2?'selected':''}" data-count="2">2 impostores</button>
+    </div>
+    <div style="height:16px;"></div>
+    <label class="field-label">¿Quién será el impostor?</label>
+    <div class="impostor-toggle">
+      <button class="btn btn-ghost btn-sm ${mode==='random'?'selected':''}" data-mode="random">🎲 Sortear al azar</button>
+      <button class="btn btn-ghost btn-sm ${mode==='manual'?'selected':''}" data-mode="manual">🎯 Elegir yo</button>
+    </div>
+    <div style="height:10px;"></div>
+    ${mode==='manual' ? `
+      <div class="manual-picker">
+        ${COLORS.map(c=>`
+          <button class="pick-swatch ${round.manualImpostors.includes(c.key)?'picked':''}" data-pick="${c.key}" style="--c:${c.hex}">
+            <span class="dot"></span>${c.name}
+          </button>
+        `).join('')}
+      </div>
+      <p class="muted" style="margin-top:8px;">Selecciona exactamente <b>${round.impostorCount}</b> color${round.impostorCount>1?'es':''}. Elegidos: <b>${round.manualImpostors.length}/${round.impostorCount}</b></p>
+    ` : `
+      <p class="muted" style="margin-top:2px;">Se sorteará al azar entre los 8 colores cada vez que juegues esta ronda.</p>
+    `}
+    <div style="height:16px;"></div>
+    <label class="field-label">Contenido asignado a cada color (editable — cualquier asignatura)</label>
+    <div class="word-grid" id="wordGrid">
+      ${COLORS.map(c=>`
+        <div class="word-item">
+          <div class="swatch" style="background:${c.hex};"></div>
+          <input type="text" data-color="${c.key}" placeholder="${c.name}" value="${escapeHTML(round.words[c.key]||'')}">
+        </div>
+      `).join('')}
+    </div>
+  `;
+  document.getElementById('editTitle').addEventListener('input', (e)=>{
+    round.title = e.target.value; renderRoundListTitlesOnly();
+  });
+  card.querySelectorAll('[data-count]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      playClick();
+      round.impostorCount = parseInt(btn.dataset.count,10);
+      round.manualImpostors = round.manualImpostors.slice(0, round.impostorCount);
+      renderRoundEditor(id); renderRoundListTitlesOnly();
+    });
+  });
+  card.querySelectorAll('[data-mode]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      playClick();
+      round.impostorMode = btn.dataset.mode;
+      renderRoundEditor(id);
+    });
+  });
+  card.querySelectorAll('[data-pick]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      playClick();
+      const key = btn.dataset.pick;
+      const arr = round.manualImpostors;
+      const i = arr.indexOf(key);
+      if(i>=0){ arr.splice(i,1); }
+      else{
+        if(arr.length >= round.impostorCount) arr.shift();
+        arr.push(key);
+      }
+      renderRoundEditor(id);
+    });
+  });
+  card.querySelectorAll('[data-color]').forEach(inp=>{
+    inp.addEventListener('input', (e)=>{
+      round.words[e.target.dataset.color] = e.target.value;
+    });
+  });
+}
+
+function renderRoundListTitlesOnly(){
+  // lightweight refresh to reflect title/impostor count changes without losing focus
+  const list = document.getElementById('roundList');
+  state.rounds.forEach((r,i)=>{
+    const row = list.querySelector(`.round-row[data-id="${r.id}"]`);
+    if(row){
+      row.querySelector('.title').textContent = r.title || 'Sin título';
+      row.querySelector('.count-badge').textContent = '👤 impostor: ' + r.impostorCount;
+    }
+  });
+}
+
+/* ===================================================================
+   CIERRE / ACTIVIDAD FINAL — bind inputs
+=================================================================== */
+function bindClosingInputs(){
+  const t = document.getElementById('closingTitle');
+  const b = document.getElementById('closingBody');
+  const e = document.getElementById('closingExtra');
+  t.value = state.closing.title; b.value = state.closing.body; e.value = state.closing.extra;
+  t.addEventListener('input', ()=> state.closing.title = t.value);
+  b.addEventListener('input', ()=> state.closing.body = b.value);
+  e.addEventListener('input', ()=> state.closing.extra = e.value);
+}
+
+/* ===================================================================
+   BOTONES SETUP: agregar, ejemplo, exportar, importar, reset
+=================================================================== */
+document.getElementById('addRoundBtn').addEventListener('click', ()=>{
+  playClick();
+  const r = { id: uid(), title: 'Nueva ronda', impostorCount: 1, impostorMode:'random', manualImpostors: [], words: blankWords() };
+  state.rounds.push(r);
+  ui.activeRoundId = r.id;
+  renderRoundList();
+});
+
+document.getElementById('loadExampleBtn').addEventListener('click', ()=>{
+  confirmAction('¿Cargar ejemplo?', 'Esto reemplazará las rondas actuales por el ejemplo de vocabulario en inglés (profesiones y verbo TO BE). ¿Continuar?', ()=>{
+    const ex = exampleData();
+    state.rounds = ex.rounds;
+    state.closing = ex.closing;
+    ui.activeRoundId = state.rounds[0].id;
+    renderRoundList();
+    bindClosingInputs();
+  });
+});
+
+document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
+  playClick();
+  if(typeof XLSX === 'undefined'){
+    alertMsg('Sin conexión', 'No se pudo cargar la librería de Excel. Verifica tu conexión a internet e intenta de nuevo.');
+    return;
+  }
+  const wb = XLSX.utils.book_new();
+  const headers = ['Ronda','Titulo','Impostores','ModoImpostor','ImpostorManual', ...COLORS.map(c=>c.name)];
+  const rows = [headers];
+  state.rounds.forEach((r,i)=>{
+    const manualNames = (Array.isArray(r.manualImpostors) ? r.manualImpostors : [])
+      .map(k => COLORS.find(c=>c.key===k)?.name).filter(Boolean).join(', ');
+    rows.push([
+      i+1, r.title, r.impostorCount,
+      r.impostorMode==='manual' ? 'Manual' : 'Aleatorio',
+      manualNames,
+      ...COLORS.map(c=>r.words[c.key]||'')
+    ]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:7},{wch:30},{wch:12},{wch:14},{wch:22}, ...COLORS.map(()=>({wch:22}))];
+  XLSX.utils.book_append_sheet(wb, ws, 'Rondas');
+
+  const closingRows = [['Titulo','Instrucciones','Notas'], [state.closing.title||'', state.closing.body||'', state.closing.extra||'']];
+  const ws2 = XLSX.utils.aoa_to_sheet(closingRows);
+  ws2['!cols'] = [{wch:24},{wch:50},{wch:50}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Actividad Final');
+
+  XLSX.writeFile(wb, 'juego-impostor-config.xlsx');
+});
+
+document.getElementById('importExcelBtn').addEventListener('click', ()=>{
+  playClick();
+  if(typeof XLSX === 'undefined'){
+    alertMsg('Sin conexión', 'No se pudo cargar la librería de Excel. Verifica tu conexión a internet e intenta de nuevo.');
+    return;
+  }
+  document.getElementById('importExcelFile').click();
+});
+document.getElementById('importExcelFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = new Uint8Array(reader.result);
+      const wb = XLSX.read(data, {type:'array'});
+      const sheetName = wb.SheetNames.includes('Rondas') ? 'Rondas' : wb.SheetNames[0];
+      const ws = wb.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(ws, {defval:''});
+      if(!json.length) throw new Error('vacío');
+
+      const newRounds = [];
+      json.forEach((row, idx)=>{
+        const words = blankWords();
+        COLORS.forEach(c=>{ words[c.key] = String(row[c.name] ?? '').trim(); });
+        const rawTitle = String(row['Titulo'] ?? '').trim();
+        const hasContent = rawTitle !== '' || Object.values(words).some(w=>w!=='');
+        if(!hasContent) return; // fila vacía, se ignora
+        let impostorCount = parseInt(row['Impostores'], 10);
+        if(impostorCount!==1 && impostorCount!==2) impostorCount = 1;
+
+        const modoRaw = String(row['ModoImpostor'] ?? '').trim().toLowerCase();
+        const impostorMode = modoRaw === 'manual' ? 'manual' : 'random';
+        const manualNamesRaw = String(row['ImpostorManual'] ?? '').trim();
+        let manualImpostors = [];
+        if(manualNamesRaw){
+          manualImpostors = manualNamesRaw.split(',').map(n=>n.trim().toLowerCase())
+            .map(name => COLORS.find(c=>c.name.toLowerCase()===name)?.key)
+            .filter(Boolean)
+            .slice(0, impostorCount);
+        }
+        newRounds.push({ id: uid(), title: rawTitle || `Ronda ${idx+1}`, impostorCount, impostorMode, manualImpostors, words });
+      });
+      if(!newRounds.length) throw new Error('sin filas válidas');
+      state.rounds = newRounds;
+
+      if(wb.SheetNames.includes('Actividad Final')){
+        const json2 = XLSX.utils.sheet_to_json(wb.Sheets['Actividad Final'], {defval:''});
+        if(json2.length){
+          state.closing = {
+            title: String(json2[0]['Titulo'] ?? ''),
+            body: String(json2[0]['Instrucciones'] ?? ''),
+            extra: String(json2[0]['Notas'] ?? '')
+          };
+        }
+      }
+      ui.activeRoundId = state.rounds[0].id;
+      renderRoundList();
+      bindClosingInputs();
+      alertMsg('Importado con éxito', `Se cargaron ${state.rounds.length} ronda(s) desde el archivo Excel.`);
+    }catch(err){
+      alertMsg('Error al importar', 'No se pudo leer el archivo. Verifica que sea el Excel exportado desde este juego (hoja "Rondas" con columnas Titulo, Impostores y los 8 colores).');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = '';
+});
+
+document.getElementById('resetAllBtn').addEventListener('click', ()=>{
+  confirmAction('¿Borrar toda la configuración?', 'Se eliminarán todas las rondas y la actividad final. Esta acción no se puede deshacer.', ()=>{
+    state.rounds = [];
+    state.closing = {title:'',body:'',extra:''};
+    ui.activeRoundId = null;
+    renderRoundList();
+    bindClosingInputs();
+  });
+});
+
+/* ===================================================================
+   PLAY: RENDER PRINCIPAL
+=================================================================== */
+function renderPlay(){
+  const wrap = document.getElementById('playContent');
+  if(state.rounds.length === 0){
+    wrap.innerHTML = `<div class="card"><div class="empty-state">No hay rondas configuradas todavía.<br>Ve a la pestaña <b>Configurar</b> para crear una ronda o cargar el ejemplo.</div></div>`;
+    return;
+  }
+  if(play.roundIndex >= state.rounds.length){
+    renderClosingScreen();
+    return;
+  }
+  if(play.phase === 'intro') renderIntroScreen();
+  else if(play.phase === 'voting') renderVotingScreen();
+  else if(play.phase === 'victory') renderVictoryScreen();
+}
+
+function currentRound(){ return state.rounds[play.roundIndex]; }
+
+function renderIntroScreen(){
+  const round = currentRound();
+  const wrap = document.getElementById('playContent');
+  wrap.innerHTML = `
+    <div class="card">
+      <div class="play-header">
+        <div class="round-pill">Ronda ${play.roundIndex+1} de ${state.rounds.length}</div>
+        <div class="round-pill">${escapeHTML(round.title)}</div>
+      </div>
+      <p class="muted">Repasa este contenido con el curso. Cuando estén listos, comiencen la votación para descubrir al impostor.</p>
+      ${round.impostorMode==='manual' && Array.isArray(round.manualImpostors) && round.manualImpostors.length===round.impostorCount
+        ? `<p class="muted">🎯 Modo manual: tú elegiste quién será el impostor en esta ronda.</p>`
+        : `<p class="muted">🎲 Modo aleatorio: se sorteará quién es el impostor al iniciar la votación.</p>`}
+      <div class="intro-board">
+        ${COLORS.map(c=>`
+          <div class="intro-item">
+            ${crewmateHTML(c.hex)}
+            <div class="label">${escapeHTML(round.words[c.key] || '—')}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="center-col">
+        <button class="btn btn-primary" id="startVotingBtn">🗳️ Iniciar Votación (${round.impostorCount} impostor${round.impostorCount>1?'es':''})</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('startVotingBtn').addEventListener('click', ()=>{
+    playClick();
+    startVoting();
+  });
+}
+
+function startVoting(){
+  const round = currentRound();
+  const manual = Array.isArray(round.manualImpostors) ? round.manualImpostors.filter(k=>COLORS.some(c=>c.key===k)) : [];
+  if(round.impostorMode === 'manual' && manual.length === round.impostorCount){
+    play.impostors = manual.slice();
+  } else {
+    // sortear impostores al azar
+    const keys = COLORS.map(c=>c.key);
+    shuffle(keys);
+    play.impostors = keys.slice(0, round.impostorCount);
+  }
+  play.revealed = {};
+  play.remaining = round.impostorCount;
+  play.phase = 'voting';
+  renderPlay();
+}
+
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function renderVotingScreen(){
+  const round = currentRound();
+  const wrap = document.getElementById('playContent');
+  wrap.innerHTML = `
+    <div class="card">
+      <div class="play-header">
+        <div class="round-pill">Ronda ${play.roundIndex+1} de ${state.rounds.length}</div>
+        <div class="impostor-counter" id="impostorCounter">Impostores restantes: ${play.remaining}</div>
+      </div>
+      <p class="muted">Hagan clic sobre un personaje para expulsarlo y revelar si era el impostor.</p>
+      <div class="board" id="votingBoard">
+        ${COLORS.map(c=>{
+          const revealed = play.revealed[c.key];
+          const isImpostor = play.impostors.includes(c.key);
+          return `
+          <div class="crew-card ${revealed?'revealed':''}" data-color="${c.key}">
+            ${crewmateHTML(c.hex, revealed?'dead':'')}
+            <div class="label">${escapeHTML(round.words[c.key]||'—')}</div>
+            ${revealed ? `<div class="status ${isImpostor?'impostor':'safe'}">${isImpostor?'IMPOSTOR':'INOCENTE'}</div>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+  wrap.querySelectorAll('.crew-card:not(.revealed)').forEach(card=>{
+    card.addEventListener('click', ()=> handleReveal(card.dataset.color));
+  });
+}
+
+function handleReveal(colorKey){
+  if(play.revealed[colorKey]) return;
+  const round = currentRound();
+  const isImpostor = play.impostors.includes(colorKey);
+  play.revealed[colorKey] = true;
+  if(isImpostor) play.remaining--;
+
+  const colorObj = COLORS.find(c=>c.key===colorKey);
+  const overlay = document.getElementById('revealOverlay');
+  const crewEl = document.getElementById('revealCrewmate');
+  const textEl = document.getElementById('revealText');
+  const subEl = document.getElementById('revealSub');
+  const contBtn = document.getElementById('revealContinueBtn');
+
+  crewEl.style.setProperty('--c', colorObj.hex);
+  crewEl.classList.remove('eject','eject-idle'); void crewEl.offsetWidth; crewEl.classList.add('eject');
+  textEl.textContent = `${escapeHTML(round.words[colorKey]||colorObj.name)}`;
+  textEl.className = 'reveal-text ' + (isImpostor ? 'bad' : 'safe');
+  subEl.textContent = isImpostor ? '¡ERA EL IMPOSTOR!' : 'No era el impostor';
+  contBtn.style.display = 'none';
+  overlay.classList.add('show');
+
+  setTimeout(()=>{ if(isImpostor) playImpostor(); else playSafe(); }, 1700);
+  setTimeout(()=>{ crewEl.classList.add('eject-idle'); }, 2300);
+
+  setTimeout(()=>{
+    contBtn.style.display = 'inline-block';
+  }, 2500);
+
+  contBtn.onclick = ()=>{
+    overlay.classList.remove('show');
+    if(play.remaining <= 0){
+      play.phase = 'victory';
+      renderPlay();
+      setTimeout(()=>{ launchConfetti(); playVictory(); }, 150);
+    } else {
+      renderVotingScreen();
+    }
+  };
+}
+
+function renderVictoryScreen(){
+  const round = currentRound();
+  const wrap = document.getElementById('playContent');
+  const isLast = play.roundIndex >= state.rounds.length - 1;
+  const impostorNames = play.impostors.map(k => round.words[k] || COLORS.find(c=>c.key===k).name).join(' y ');
+  wrap.innerHTML = `
+    <div class="card">
+      <div class="center-col">
+        <div style="font-size:40px;">🎉</div>
+        <h2 style="margin:0;">¡Impostor${play.impostors.length>1?'es':''} encontrado${play.impostors.length>1?'s':''}!</h2>
+        <p class="muted">${escapeHTML(impostorNames)} ${play.impostors.length>1?'eran':'era'} el impostor.</p>
+        <div class="toolbar" style="justify-content:center;">
+          <button class="btn btn-ghost" id="replayRoundBtn">🔄 Repetir esta ronda</button>
+          <button class="btn btn-primary" id="nextRoundBtn">${isLast ? 'Ir a la actividad final →' : 'Siguiente ronda →'}</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('replayRoundBtn').addEventListener('click', ()=>{
+    playClick();
+    play.phase = 'intro';
+    renderPlay();
+  });
+  document.getElementById('nextRoundBtn').addEventListener('click', ()=>{
+    playClick();
+    play.roundIndex++;
+    play.phase = 'intro';
+    renderPlay();
+  });
+}
+
+function renderClosingScreen(){
+  const wrap = document.getElementById('playContent');
+  wrap.innerHTML = `
+    <div class="card final-activity">
+      <div class="center-col">
+        <div style="font-size:36px;">🏁</div>
+        <h2 style="margin:0;">${escapeHTML(state.closing.title || 'Actividad final')}</h2>
+        <p style="max-width:600px;">${escapeHTML(state.closing.body || '')}</p>
+        ${state.closing.extra ? `<div class="adj-hint">${escapeHTML(state.closing.extra)}</div>` : ''}
+        <div class="toolbar" style="justify-content:center;">
+          <button class="btn btn-ghost" id="restartGameBtn">🔁 Reiniciar juego completo</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('restartGameBtn').addEventListener('click', ()=>{
+    playClick();
+    play.roundIndex = 0; play.phase = 'intro';
+    renderPlay();
+  });
+}
+
+/* ===================================================================
+   SONIDO ON/OFF
+=================================================================== */
+document.getElementById('soundBtn').addEventListener('click', (e)=>{
+  soundOn = !soundOn;
+  e.target.textContent = soundOn ? '🔊' : '🔇';
+  if(soundOn) ensureAudio();
+});
+
+/* ===================================================================
+   ESTRELLAS DE FONDO
+=================================================================== */
+(function initStars(){
+  const container = document.getElementById('stars');
+  const frag = document.createDocumentFragment();
+  for(let i=0;i<80;i++){
+    const s = document.createElement('div');
+    s.className='star';
+    const size = Math.random()*2+1;
+    s.style.width = size+'px'; s.style.height = size+'px';
+    s.style.left = Math.random()*100+'vw';
+    s.style.top = Math.random()*100+'vh';
+    s.style.animationDelay = (Math.random()*3)+'s';
+    frag.appendChild(s);
+  }
+  container.appendChild(frag);
+})();
+
+/* ===================================================================
+   INICIALIZACIÓN
+=================================================================== */
+function init(){
+  // Precarga el ejemplo la primera vez para que el profesor vea el juego funcionando de inmediato.
+  const ex = exampleData();
+  state.rounds = ex.rounds;
+  state.closing = ex.closing;
+  ui.activeRoundId = state.rounds[0].id;
+  renderRoundList();
+  bindClosingInputs();
+}
+init();
+</script>
+</body>
+</html>

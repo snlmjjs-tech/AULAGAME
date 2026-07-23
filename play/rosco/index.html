@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rosco de Palabras - Mr. Núñez</title>
+<style>
+  :root{
+    --blue-light:#7f9bd6;
+    --blue-mid:#3f5fa9;
+    --blue-dark:#1c2850;
+    --orange:#f2963f;
+    --orange-dark:#dd7f28;
+    --blue-accent:#3f6fd6;
+    --blue-accent-dark:#28499e;
+    --grey-light:#cfcfcf;
+    --grey-dark:#8a8a8a;
+    --green:#2ecc71;
+    --green-dark:#1f9e57;
+    --red:#e6483c;
+    --red-dark:#b7362d;
+    --panel:#15203f;
+    --panel-light:#22315c;
+    --cream:#fff7ea;
+    --team0:#3f9fd6;
+    --team0-dark:#256fa3;
+    --team1:#d6543f;
+    --team1-dark:#a33c25;
+    --team2:#4fbf72;
+    --team2-dark:#2f8a4d;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    font-family:'Segoe UI', 'Trebuchet MS', Arial, sans-serif;
+    background:radial-gradient(ellipse at 30% 20%, var(--blue-light) 0%, var(--blue-mid) 45%, var(--blue-dark) 100%);
+    overflow:hidden;
+    color:#fff;
+  }
+  .screen{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column;
+    transition:opacity .4s ease;
+  }
+  .hidden{ display:none !important; }
+
+  /* ---------- TITLE SCREEN ---------- */
+  #title-screen .credit-row{
+    position:absolute; top:4vh; left:4vw;
+    display:flex; align-items:center; gap:12px;
+  }
+  .info-icon{
+    width:44px;height:44px;border-radius:10px;
+    background:#111; color:#fff; border:2px solid #fff;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:bold; font-style:italic; font-size:20px;
+    box-shadow:0 3px 0 rgba(0,0,0,.4);
+    flex-shrink:0;
+  }
+  .credit-box{
+    background:#e9e9e9; color:#111; border:3px solid #111;
+    border-radius:12px; padding:8px 18px;
+    font-weight:800; font-size:14px; line-height:1.35;
+    text-align:center; letter-spacing:.5px;
+    box-shadow:4px 4px 0 rgba(0,0,0,.35);
+  }
+
+  .logo-card{
+    width:min(46vw,520px); height:min(30vw,340px);
+    border-radius:22px; overflow:hidden; position:relative;
+    box-shadow:0 20px 40px rgba(0,0,0,.4);
+    background:var(--blue-accent);
+  }
+  .logo-card::before{
+    content:"";
+    position:absolute; inset:0;
+    background:linear-gradient(135deg, var(--orange) 0%, var(--orange) 49.5%, var(--blue-accent) 50.5%, var(--blue-accent) 100%);
+  }
+  .logo-card::after{
+    content:"";
+    position:absolute; inset:0;
+    background-image: radial-gradient(rgba(255,255,255,.18) 1.5px, transparent 1.5px);
+    background-size: 22px 22px;
+    opacity:.5;
+  }
+  .logo-ring{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:66%; aspect-ratio:1/1; border-radius:50%;
+    border:6px dashed rgba(46,204,113,.85);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .logo-word{
+    font-size:clamp(18px,2.7vw,28px); font-weight:900; color:#fff;
+    text-shadow:0 3px 6px rgba(0,0,0,.35);
+    letter-spacing:.5px; position:relative; z-index:2;
+    text-align:center; line-height:1.15;
+  }
+  .logo-word .line1{ display:block; }
+  .logo-word .line2{opacity:.92; font-weight:600; display:block; font-size:.72em;}
+
+  .teams-setup{
+    margin-top:22px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center;
+    max-width:90vw;
+  }
+  .team-input{
+    width:150px; text-align:center; font-weight:800; letter-spacing:1px;
+    font-size:14px; padding:10px 10px; border-radius:10px;
+    border:3px solid #0c1430; color:#fff;
+    background:rgba(12,20,48,.55);
+    outline:none;
+  }
+  .team-input.t0{ box-shadow: 0 0 0 2px var(--team0) inset; }
+  .team-input.t1{ box-shadow: 0 0 0 2px var(--team1) inset; }
+  .team-input.t2{ box-shadow: 0 0 0 2px var(--team2) inset; }
+  .team-input::placeholder{ color:#c8d3ee; }
+  .vs-label{ font-weight:900; font-size:16px; opacity:.8; letter-spacing:1px; }
+
+  .play-btn{
+    margin-top:22px;
+    background:linear-gradient(180deg, var(--blue-accent), var(--blue-accent-dark));
+    border:3px solid #0c1430; color:#fff; font-weight:800;
+    font-size:22px; letter-spacing:2px;
+    padding:14px 70px; border-radius:10px; cursor:pointer;
+    box-shadow:0 6px 0 #0c1430;
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .play-btn:active{ transform:translateY(6px); box-shadow:0 0 0 #0c1430; }
+  .edit-btn{
+    margin-top:14px; background:rgba(255,255,255,.08); color:#fff;
+    border:2px solid rgba(255,255,255,.6); font-weight:700; font-size:13px;
+    letter-spacing:1px; padding:9px 22px; border-radius:8px; cursor:pointer;
+    transition:background .15s ease, transform .08s ease;
+  }
+  .edit-btn:hover{ background:rgba(255,255,255,.18); }
+  .edit-btn:active{ transform:translateY(2px); }
+  .subtitle{
+    margin-top:14px; font-size:13px; color:#dbe3f7; opacity:.85;
+    letter-spacing:.5px; text-align:center; max-width:460px;
+  }
+
+  /* ---------- GAME SCREEN ---------- */
+  #game-screen{ width:100%; height:100%; position:relative; }
+
+  .avatar-box{
+    position:absolute; top:3vh; left:3vw;
+    width:82px; height:82px; border-radius:14px;
+    background:#0c1226; border:3px solid #fff;
+    box-shadow:4px 4px 0 rgba(0,0,0,.35);
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+    z-index:6;
+  }
+
+  /* ---------- TEAMS BAR ---------- */
+  .teams-bar{
+    position:absolute; top:2.5vh; left:50%; transform:translateX(-50%);
+    display:flex; align-items:center; gap:8px;
+    z-index:6; flex-wrap:wrap; justify-content:center;
+    width:min(96vw,920px);
+  }
+  .team-chip{
+    background:#0c1226; border:3px solid #445; border-radius:14px;
+    padding:8px 14px; min-width:130px; text-align:center;
+    cursor:pointer; user-select:none;
+    box-shadow:3px 3px 0 rgba(0,0,0,.35);
+    transition:transform .1s ease, border-color .2s ease, box-shadow .2s ease;
+    opacity:.75;
+  }
+  .team-chip:hover{ transform:translateY(-2px); }
+  .team-chip.active{
+    opacity:1; border-color:#fff;
+    box-shadow:0 0 0 3px rgba(255,255,255,.35), 3px 3px 0 rgba(0,0,0,.35);
+  }
+  .team-chip.t0.active{ border-color:var(--team0); box-shadow:0 0 0 3px rgba(63,159,214,.5), 3px 3px 0 rgba(0,0,0,.35); }
+  .team-chip.t1.active{ border-color:var(--team1); box-shadow:0 0 0 3px rgba(214,84,63,.5), 3px 3px 0 rgba(0,0,0,.35); }
+  .team-chip.t2.active{ border-color:var(--team2); box-shadow:0 0 0 3px rgba(79,191,114,.5), 3px 3px 0 rgba(0,0,0,.35); }
+  .team-chip.finished{ opacity:.4; }
+  .team-name{
+    font-weight:900; font-size:12.5px; letter-spacing:.5px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    border-bottom:1px dashed transparent;
+  }
+  .team-name:hover{ border-bottom-color:rgba(255,255,255,.5); }
+  .team-stats{ font-size:11.5px; font-weight:700; margin-top:3px; opacity:.9; display:flex; gap:9px; justify-content:center; }
+  .team-stats .ok{ color:#6ff0a0; }
+  .team-stats .bad{ color:#ff8f85; }
+  .team-timer{ font-size:14px; font-weight:800; margin-top:4px; letter-spacing:.5px; }
+  .team-timer.low{ color:#ff6b5e; }
+  .switch-btn{
+    width:46px; height:46px; border-radius:50%;
+    background:linear-gradient(180deg,#ffd76a,#e8a730);
+    border:3px solid #7a5410; color:#3a2600; font-weight:900; font-size:20px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    box-shadow:0 4px 0 #7a5410;
+    transition:transform .08s ease, box-shadow .08s ease;
+    flex-shrink:0;
+  }
+  .switch-btn:active{ transform:translateY(4px); box-shadow:0 0 0 #7a5410; }
+  .switch-label{ font-size:9px; font-weight:800; text-align:center; margin-top:2px; opacity:.85; letter-spacing:.5px;}
+  .switch-col{ display:flex; flex-direction:column; align-items:center; }
+
+  .pasa-btn-wrap{
+    position:absolute; left:3vw; top:50%; transform:translateY(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+  }
+  .pasa-btn{
+    width:min(9vw,86px); height:min(9vw,86px); border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #ff8a7c, var(--red) 55%, var(--red-dark) 100%);
+    border:3px solid #7a1f18;
+    box-shadow:0 6px 0 #7a1f18, inset 0 -6px 10px rgba(0,0,0,.25);
+    cursor:pointer;
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .pasa-btn:active{ transform:translateY(6px); box-shadow:0 0 0 #7a1f18, inset 0 -6px 10px rgba(0,0,0,.25); }
+  .pasa-label{ font-size:12px; font-weight:800; letter-spacing:1px; color:#ffd9d5; }
+
+  .mute-btn{
+    position:absolute; left:3vw; bottom:3vh;
+    width:50px; height:50px; border-radius:10px;
+    background:#0c1226; border:2px solid #fff; color:#fff;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    font-size:20px;
+    box-shadow:3px 3px 0 rgba(0,0,0,.35);
+  }
+
+  .util-btns{
+    position:absolute; top:3vh; right:3vw; z-index:6;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .util-btn{
+    width:50px; height:50px; border-radius:10px;
+    background:#0c1226; border:2px solid #fff; color:#fff;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    font-size:20px;
+    box-shadow:3px 3px 0 rgba(0,0,0,.35);
+    transition:background .15s ease;
+  }
+  .util-btn:hover{ background:#1c2b52; }
+  .util-btn.paused-state{ background:#5a3d10; border-color:#ffd76a; }
+
+  .rosco-wrap{
+    position:relative;
+    width:min(64vh,86vw); height:min(64vh,86vw);
+    margin:0 auto;
+  }
+  .letter-node{
+    position:absolute; width:8.4%; aspect-ratio:1/1;
+    transform:translate(-50%,-50%);
+    border-radius:50%;
+    background:radial-gradient(circle at 32% 28%, var(--grey-light), var(--grey-dark) 75%);
+    border:2px solid #4d4d4d;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:clamp(11px,1.7vw,20px); color:#222;
+    cursor:pointer; user-select:none;
+    box-shadow:0 3px 0 rgba(0,0,0,.35);
+    transition:transform .15s ease, background .2s ease, box-shadow .2s ease;
+  }
+  .letter-node .badge{
+    position:absolute; top:-16%; right:-16%;
+    width:46%; height:46%; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #6f97ea, var(--blue-accent-dark));
+    border:2px solid #1a2c5c;
+    display:flex;align-items:center;justify-content:center;
+    font-size:.5em; font-weight:900; color:#fff;
+  }
+  .letter-node .mark{
+    position:absolute; bottom:-14%; right:-6%;
+    width:44%; height:44%; border-radius:50%;
+    background:#fff; display:none;
+    align-items:center; justify-content:center;
+    font-size:.62em; font-weight:900;
+    border:2px solid rgba(0,0,0,.15);
+  }
+  .letter-node.current{
+    transform:translate(-50%,-50%) scale(1.18);
+    background:radial-gradient(circle at 32% 28%, #ffe7b8, var(--orange-dark) 85%);
+    border-color:#fff;
+    box-shadow:0 0 0 4px rgba(255,255,255,.55), 0 4px 10px rgba(0,0,0,.4);
+    z-index:5;
+  }
+  .letter-node.correct{ background:radial-gradient(circle at 32% 28%, #8ff0b4, var(--green-dark) 85%); }
+  .letter-node.correct .mark{ display:flex; color:var(--green-dark); }
+  .letter-node.wrong{ background:radial-gradient(circle at 32% 28%, #ffb0a8, var(--red-dark) 85%); }
+  .letter-node.wrong .mark{ display:flex; color:var(--red-dark); }
+  .letter-node.passed:not(.current){ box-shadow:0 0 0 3px rgba(255,255,255,.5), 0 3px 0 rgba(0,0,0,.35); }
+
+  .center-box{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:58%; height:60%;
+    background:linear-gradient(180deg, var(--orange), var(--orange-dark));
+    border-radius:26px; border:3px solid #b3611c;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:3%; text-align:center;
+    box-shadow:inset 0 0 0 3px rgba(255,255,255,.15), 0 10px 20px rgba(0,0,0,.3);
+  }
+  .turn-label{
+    font-size:clamp(11px,1.5vw,14px); font-weight:900; letter-spacing:1px;
+    background:rgba(0,0,0,.22); color:#fff; padding:4px 14px; border-radius:20px;
+    margin-bottom:6px;
+  }
+  .center-logo{ font-weight:900; font-size:clamp(12px,1.5vw,18px); color:#fff; opacity:.85; margin-bottom:4px; letter-spacing:.5px;}
+  .center-letter{
+    font-size:clamp(28px,4.6vw,50px); font-weight:900; color:#1c1c1c;
+    text-shadow:0 2px 0 rgba(255,255,255,.25);
+    line-height:1;
+  }
+  .center-clue{
+    margin-top:6px; font-size:clamp(13px,1.9vw,22px); font-weight:800; color:#1c1c1c;
+    line-height:1.25; max-width:92%;
+  }
+  .center-controls{
+    margin-top:14px; display:flex; gap:14px;
+  }
+  .ctrl-btn{
+    width:54px;height:54px;border-radius:50%; border:3px solid rgba(0,0,0,.25);
+    cursor:pointer; font-size:22px; display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 0 rgba(0,0,0,.3);
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .ctrl-btn:active{ transform:translateY(4px); box-shadow:0 0 0 rgba(0,0,0,.3);}
+  .ctrl-btn.correct-btn{ background:#fff; color:var(--green-dark);}
+  .ctrl-btn.wrong-btn{ background:#fff; color:var(--red-dark);}
+
+  /* ---------- END MODAL ---------- */
+  .modal-overlay{
+    position:absolute; inset:0; background:rgba(6,10,25,.72);
+    display:flex; align-items:center; justify-content:center; z-index:50;
+  }
+  .modal{
+    background:var(--panel); border:3px solid #fff; border-radius:20px;
+    padding:30px 40px; text-align:center; max-width:560px;
+    box-shadow:0 20px 50px rgba(0,0,0,.5);
+  }
+  .modal h2{ margin:0 0 14px; font-size:24px; letter-spacing:1px; }
+  .score-compare{ display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; }
+  .score-side{ min-width:100px; padding:8px 10px; border-radius:12px; }
+  .score-side.winner{ background:rgba(255,215,106,.12); box-shadow:0 0 0 2px rgba(255,215,106,.7); }
+  .score-num{ font-size:40px; font-weight:900; }
+  .score-team-name{ font-size:12.5px; font-weight:800; opacity:.85; margin-top:2px; letter-spacing:.5px;}
+  .score-time{ font-size:11.5px; opacity:.75; margin-top:2px; }
+  .score-vs{ font-size:20px; font-weight:900; opacity:.6; }
+  .winner-label{ margin-top:14px; font-size:19px; font-weight:900; color:#ffd76a; letter-spacing:.5px;}
+  .modal p{ opacity:.8; font-size:13px; line-height:1.5; margin-top:12px;}
+  .modal-again{
+    margin-top:18px; background:linear-gradient(180deg, var(--blue-accent), var(--blue-accent-dark));
+    border:3px solid #0c1430; color:#fff; font-weight:800; font-size:16px;
+    padding:10px 30px; border-radius:10px; cursor:pointer; letter-spacing:1px;
+    box-shadow:0 5px 0 #0c1430;
+  }
+  .modal-again:active{ transform:translateY(5px); box-shadow:0 0 0 #0c1430; }
+
+  /* ---------- PASAPALABRA TRANSITION OVERLAY ---------- */
+  .pass-modal{ max-width:420px; }
+  .pass-icon{ font-size:48px; margin-bottom:6px; }
+  .pass-modal h2{ color:#ff8f7c; font-size:28px; margin-bottom:4px; }
+  .pass-sub{ font-size:13px; opacity:.8; margin:0; }
+  .pass-team-name{
+    font-size:26px; font-weight:900; letter-spacing:1px; margin:8px 0 4px;
+    color:#fff;
+  }
+  .pass-hint{ font-size:12.5px; opacity:.75; margin-top:10px; line-height:1.5; }
+
+  /* ---------- EDIT QUESTIONS MODAL ---------- */
+  .edit-modal{ max-width:640px; width:92vw; text-align:left; padding:26px 28px; }
+  .edit-modal h2{ text-align:center; }
+  .edit-intro{ text-align:center; font-size:12.5px; opacity:.75; margin:0 0 14px; line-height:1.5; }
+  .edit-tabs{ display:flex; gap:6px; margin-bottom:12px; justify-content:center; flex-wrap:wrap; }
+  .edit-tab{
+    flex:1 1 30%; max-width:190px; padding:9px 8px; border-radius:8px 8px 0 0;
+    border:2px solid #2c3a63; border-bottom:none; background:#0c1226; color:#b9c4e6;
+    font-weight:800; font-size:12px; letter-spacing:.5px; cursor:pointer;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .edit-tab.active{ background:var(--blue-accent-dark); color:#fff; border-color:var(--blue-accent); }
+  .edit-list{
+    max-height:44vh; overflow-y:auto; display:flex; flex-direction:column; gap:8px;
+    padding-right:6px; margin-bottom:14px;
+  }
+  .edit-row{ display:flex; align-items:center; gap:10px; }
+  .edit-letter{
+    width:32px; height:32px; flex-shrink:0; border-radius:50%;
+    background:var(--orange-dark); color:#fff; font-weight:900; font-size:14px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .edit-input{
+    flex:1; padding:8px 10px; border-radius:8px; border:2px solid #2c3a63;
+    background:#0c1226; color:#fff; font-size:13px; font-weight:600;
+    outline:none;
+  }
+  .edit-input:focus{ border-color:var(--blue-accent); }
+  .edit-actions{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:6px; }
+  .edit-action-btn{
+    border-radius:8px; padding:8px 14px; font-size:12px; font-weight:800;
+    letter-spacing:.5px; cursor:pointer; border:2px solid rgba(255,255,255,.5);
+    background:rgba(255,255,255,.06); color:#fff; text-align:center;
+  }
+  .edit-action-btn:hover{ background:rgba(255,255,255,.16); }
+  .edit-footer{ display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:8px; }
+  .edit-cancel-btn{
+    background:none; border:none; color:#b9c4e6; font-size:12px;
+    text-decoration:underline; cursor:pointer; letter-spacing:.5px;
+  }
+
+  @media (max-width: 700px){
+    .avatar-box{ width:56px;height:56px; }
+    .pasa-btn{ width:60px;height:60px; }
+    .credit-box{ font-size:11px; padding:6px 10px;}
+    .info-icon{ width:34px;height:34px; font-size:16px;}
+    .team-chip{ min-width:100px; padding:6px 8px;}
+    .team-input{ width:110px; font-size:12px; }
+    .teams-bar{ top:1.5vh; }
+    .rosco-wrap{ margin-top:16vh; }
+    .util-btns{ flex-direction:row; top:auto; bottom:3vh; right:3vw; }
+    .util-btn{ width:40px; height:40px; font-size:16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== TITLE SCREEN ===================== -->
+<div id="title-screen" class="screen">
+  <div class="credit-row">
+    <div class="info-icon">i</div>
+    <div class="credit-box">CREATED AND<br>DEVELOPED BY<br>MR. NUÑEZ</div>
+  </div>
+
+  <div class="logo-card">
+    <div class="logo-ring"></div>
+    <div class="logo-word"><span class="line1">ROSCO</span><span class="line2">DE PALABRAS</span></div>
+  </div>
+
+  <div class="teams-setup" id="teamsSetup"><!-- filled by JS --></div>
+
+  <button class="play-btn" id="playBtn">PLAY</button>
+  <button class="edit-btn" id="editBtn">✏️ MODIFICAR PREGUNTAS</button>
+  <div class="subtitle">Cada equipo tiene su propio rosco. Usa ✓ / ✗ para responder, y PASO cuando no sepan: pasa el turno al siguiente equipo y detiene el tiempo hasta que confirmen que están listos. Gana quien complete el rosco en menos tiempo.</div>
+</div>
+
+<!-- ===================== GAME SCREEN ===================== -->
+<div id="game-screen" class="screen hidden">
+
+  <div class="avatar-box">
+    <svg viewBox="0 0 100 100" width="100%" height="100%">
+      <rect width="100" height="100" fill="#16305c"/>
+      <circle cx="50" cy="42" r="26" fill="#e8b183"/>
+      <path d="M24 40 Q50 10 76 40 L76 30 Q50 16 24 30 Z" fill="#2b2b2b"/>
+      <rect x="26" y="40" width="48" height="12" rx="6" fill="#111"/>
+      <circle cx="38" cy="46" r="5" fill="#111"/>
+      <circle cx="62" cy="46" r="5" fill="#111"/>
+      <path d="M40 66 Q50 72 60 66" stroke="#7a4a2a" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M20 100 Q50 66 80 100 Z" fill="#2ecc71"/>
+    </svg>
+  </div>
+
+  <div class="teams-bar" id="teamsBar"><!-- filled by JS --></div>
+
+  <div class="util-btns">
+    <div class="util-btn" id="pauseBtn" title="Pausar el tiempo (emergencia)">⏸</div>
+    <div class="util-btn" id="exitBtn" title="Salir al menú principal">🚪</div>
+  </div>
+
+  <div class="pasa-btn-wrap">
+    <div class="pasa-btn" id="pasaBtn" title="Pasapalabra: salta esta letra y pasa el turno al siguiente equipo"></div>
+    <div class="pasa-label">PASO</div>
+  </div>
+
+  <div class="mute-btn" id="muteBtn">🔊</div>
+
+  <div class="rosco-wrap" id="roscoWrap">
+    <div class="center-box">
+      <div class="turn-label" id="turnLabel">TURNO: EQUIPO 1</div>
+      <div class="center-logo">ROSCO DE PALABRAS</div>
+      <div class="center-letter" id="centerLetter">A</div>
+      <div class="center-clue" id="centerClue">Pulsa PLAY para comenzar</div>
+      <div class="center-controls">
+        <div class="ctrl-btn correct-btn" id="correctBtn">✓</div>
+        <div class="ctrl-btn wrong-btn" id="wrongBtn">✗</div>
+      </div>
+    </div>
+    <!-- letter nodes injected by JS -->
+  </div>
+</div>
+
+<!-- ===================== START-OF-GAME OVERLAY (elige equipo al azar) ===================== -->
+<div id="start-overlay" class="modal-overlay hidden">
+  <div class="modal pass-modal">
+    <div id="startPhase1">
+      <div class="pass-icon">🎲</div>
+      <h2>¿LISTOS?</h2>
+      <p class="pass-sub">Al presionar, elegiremos al azar por qué equipo comenzaremos.</p>
+      <button class="modal-again" id="startReadyBtn">¡EMPEZAMOS!</button>
+    </div>
+    <div id="startPhase2" class="hidden">
+      <div class="pass-icon">🎉</div>
+      <h2>¡A JUGAR!</h2>
+      <p class="pass-sub">Comienza:</p>
+      <div class="pass-team-name" id="startOverlayTeamName">EQUIPO 2</div>
+      <p class="pass-hint">El tiempo está detenido. Presiona el botón cuando el equipo esté listo para responder.</p>
+      <button class="modal-again" id="confirmStartBtn">✔ LISTO, EMPEZAR MI TURNO</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== END MODAL ===================== -->
+<div id="end-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <h2 id="modalTitle">¡JUEGO TERMINADO!</h2>
+    <div class="score-compare" id="scoreCompare"><!-- filled by JS --></div>
+    <div class="winner-label" id="modalWinner">¡EQUIPO 1 GANA!</div>
+    <p id="modalDetail">Detalle de la partida.</p>
+    <button class="modal-again" id="againBtn">JUGAR DE NUEVO</button>
+  </div>
+</div>
+
+<!-- ===================== PASAPALABRA TRANSITION OVERLAY ===================== -->
+<div id="pass-overlay" class="modal-overlay hidden">
+  <div class="modal pass-modal">
+    <div class="pass-icon">✋</div>
+    <h2>¡PASAPALABRA!</h2>
+    <p class="pass-sub">Turno para:</p>
+    <div class="pass-team-name" id="passOverlayTeamName">EQUIPO 2</div>
+    <p class="pass-hint">El tiempo está detenido. Presiona el botón cuando el equipo esté listo para responder.</p>
+    <button class="modal-again" id="confirmPassBtn">✔ LISTO, EMPEZAR MI TURNO</button>
+  </div>
+</div>
+
+<!-- ===================== EDIT QUESTIONS MODAL ===================== -->
+<div id="edit-modal" class="modal-overlay hidden">
+  <div class="modal edit-modal">
+    <h2>MODIFICAR PREGUNTAS</h2>
+    <p class="edit-intro">Cada equipo tiene su propio rosco: elige a cuál le quieres editar las preguntas. Puedes exportar tu set a un Excel para reutilizarlo en otra clase, o importar uno ya guardado.</p>
+    <div class="edit-tabs" id="editTabs"><!-- filled by JS --></div>
+    <div class="edit-list" id="editList"><!-- filled by JS --></div>
+    <div class="edit-actions">
+      <button class="edit-action-btn reset-btn" id="resetQuestionsBtn">RESTABLECER ESTE EQUIPO</button>
+      <button class="edit-action-btn export-btn" id="exportQuestionsBtn">⬇ EXPORTAR A EXCEL</button>
+      <label class="edit-action-btn import-btn" for="importQuestionsInput">⬆ IMPORTAR DE EXCEL</label>
+      <input type="file" id="importQuestionsInput" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" hidden>
+    </div>
+    <div class="edit-footer">
+      <button class="modal-again" id="saveQuestionsBtn">GUARDAR Y CERRAR</button>
+      <button class="edit-cancel-btn" id="cancelQuestionsBtn">CANCELAR</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* ================= DATA ================= */
+/* Vocabulario fácil de inglés. Cada respuesta empieza con la letra correspondiente. */
+const LETTERS = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
+const DEFAULT_CLUES = [
+  '"IMPRESIONANTE" IN ENGLISH',
+  'A PLACE WHERE YOU KEEP OR GET MONEY',
+  'MEANING OF "EAT" IN SPANISH',
+  'NAME OF THIS ANIMAL 🐴',
+  'MEANING OF "UNDERSTAND" IN SPANISH',
+  'OPPOSITE OF "NEAR"',
+  '"IR" IN ENGLISH IS...',
+  'OPPOSITE OF "COLD"',
+  'TO PICTURE SOMETHING IN YOUR MIND, YOU ___ IT',
+  '"CÁRCEL" IN ENGLISH',
+  '"SABER" IN ENGLISH',
+  'A FAMOUS BRAND OF CARS',
+  '"FLY" IN SPANISH',
+  'OPPOSITE OF "SOUTH"',
+  '"PULPO" IN ENGLISH',
+  '"VENENO" IN ENGLISH',
+  'YOU ASK BECAUSE YOU HAVE A ...',
+  '"STEAL" IN SPANISH',
+  '"TOAD" IN SPANISH',
+  'AN OBJECT THAT HAS THE LETTER T',
+  '"YOU" IN SPANISH (FORMAL)',
+  '"FAST" IN SPANISH',
+  '"OESTE" IN SPANISH',
+  'A BRAND THAT HAS THE LETTER X',
+  'FINISHES WITH Y — TO JOIN MANY THINGS INTO ONE',
+  'IT IS SIMILAR TO A PUMPKIN, BUT IN CHILE'
+];
+
+const TEAM_COUNT = 3;
+const TEAM_COLOR_CLASSES = ['t0','t1','t2'];
+const DEFAULT_TEAM_NAMES = Array.from({length:TEAM_COUNT}, (_,i)=>'EQUIPO '+(i+1));
+/* Cada equipo tiene su propio set de 26 preguntas, editable de forma independiente. */
+let TEAM_CLUES = Array.from({length:TEAM_COUNT}, ()=> DEFAULT_CLUES.slice());
+const TOTAL_TIME = 240; // seconds (4 min) per team
+
+/* ================= STATE ================= */
+function freshTeam(name){
+  return {
+    name: name,
+    status: LETTERS.map(()=> 'pending'),
+    queue: LETTERS.map((_,i)=>i),
+    timeLeft: TOTAL_TIME,
+    finished: false,
+    timeUp: false,
+    finishTime: null // seconds elapsed when they completed the whole rosco (null = not completed)
+  };
+}
+let teams = DEFAULT_TEAM_NAMES.map(n=>freshTeam(n));
+let activeTeam = 0;
+let timerInterval = null;
+let musicInterval = null;
+let musicStep = 0;
+let paused = true;
+let muted = false;
+let gameOver = false;
+
+/* ================= AUDIO (synth, no external files - all original, no copyrighted audio) ================= */
+let actx;
+function ac(){ if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)(); return actx; }
+function beep(freq, dur, type='sine', vol=.18){
+  if(muted) return;
+  try{
+    const ctx = ac();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.value = vol;
+    o.connect(g); g.connect(ctx.destination);
+    o.start();
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    o.stop(ctx.currentTime + dur);
+  }catch(e){}
+}
+function sndCorrect(){ beep(880,.12,'sine',.2); setTimeout(()=>beep(1320,.16,'sine',.2),90); }
+function sndWrong(){ beep(180,.28,'sawtooth',.18); }
+function sndPass(){ beep(440,.1,'triangle',.15); }
+function sndSwitch(){ beep(600,.08,'triangle',.15); setTimeout(()=>beep(760,.1,'triangle',.15),70); }
+function sndTick(){ beep(1000,.04,'square',.05); }
+function sndTimeUp(){ beep(220,.5,'sawtooth',.2); }
+function sndVictory(){
+  [660,880,1100,1320].forEach((f,idx)=> setTimeout(()=>beep(f,.22,'triangle',.16), idx*110));
+}
+
+/* Original background "trivia / game show" music loop (procedural, not copied audio).
+   Bouncy bass + arpeggio over a cheerful C - Am - F - G chord progression. */
+const MUSIC_CHORDS = [
+  {bass:130.81, arp:[261.63, 329.63, 392.00, 523.25]}, // C major
+  {bass:220.00, arp:[220.00, 261.63, 329.63, 440.00]}, // A minor
+  {bass:174.61, arp:[349.23, 440.00, 523.25, 698.46]}, // F major
+  {bass:196.00, arp:[392.00, 493.88, 587.33, 784.00]}  // G major
+];
+function startMusic(){
+  if(musicInterval) return;
+  musicStep = 0;
+  musicInterval = setInterval(()=>{
+    const chordIdx = Math.floor(musicStep/4) % MUSIC_CHORDS.length;
+    const stepInChord = musicStep % 4;
+    const chord = MUSIC_CHORDS[chordIdx];
+    if(stepInChord===0) beep(chord.bass, .55, 'triangle', .09);
+    beep(chord.arp[stepInChord], .22, 'sine', .055);
+    musicStep++;
+  }, 210);
+}
+function stopMusic(){ clearInterval(musicInterval); musicInterval = null; }
+
+/* ================= BUILD ROSCO ================= */
+const roscoWrap = document.getElementById('roscoWrap');
+const nodes = [];
+LETTERS.forEach((ch,i)=>{
+  const angle = (-90 + (360/LETTERS.length)*i) * Math.PI/180;
+  const rx = 46, ry = 46; // percent
+  const x = 50 + rx*Math.cos(angle);
+  const y = 50 + ry*Math.sin(angle);
+  const node = document.createElement('div');
+  node.className = 'letter-node';
+  node.style.left = x+'%';
+  node.style.top = y+'%';
+  node.innerHTML = `${ch}<div class="badge">P</div><div class="mark"></div>`;
+  node.addEventListener('click', ()=> selectLetter(i));
+  roscoWrap.appendChild(node);
+  nodes.push(node);
+});
+
+/* ================= BUILD TEAM UI (title inputs, team chips, edit tabs) ================= */
+const teamNameInputs = [];
+{
+  const setupEl = document.getElementById('teamsSetup');
+  for(let i=0;i<TEAM_COUNT;i++){
+    if(i>0){
+      const vs = document.createElement('div');
+      vs.className = 'vs-label';
+      vs.textContent = 'VS';
+      setupEl.appendChild(vs);
+    }
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.id = 'teamNameInput'+i;
+    inp.className = 'team-input ' + TEAM_COLOR_CLASSES[i];
+    inp.maxLength = 18;
+    inp.placeholder = DEFAULT_TEAM_NAMES[i];
+    inp.value = DEFAULT_TEAM_NAMES[i];
+    setupEl.appendChild(inp);
+    teamNameInputs.push(inp);
+  }
+}
+
+const teamChips = [], teamNameEls = [], teamTimerEls = [], teamCorrectEls = [], teamWrongEls = [];
+{
+  const barEl = document.getElementById('teamsBar');
+  for(let i=0;i<TEAM_COUNT;i++){
+    const chip = document.createElement('div');
+    chip.className = 'team-chip ' + TEAM_COLOR_CLASSES[i];
+    chip.id = 'teamChip'+i;
+    chip.dataset.team = i;
+    chip.innerHTML =
+      '<div class="team-name" id="teamName'+i+'" title="Clic para renombrar">'+DEFAULT_TEAM_NAMES[i]+'</div>' +
+      '<div class="team-stats"><span class="ok">✓ <span id="t'+i+'-correct">0</span></span><span class="bad">✗ <span id="t'+i+'-wrong">0</span></span></div>' +
+      '<div class="team-timer" id="t'+i+'-timer">04:00</div>';
+    barEl.appendChild(chip);
+    teamChips.push(chip);
+    teamNameEls.push(chip.querySelector('.team-name'));
+    teamTimerEls.push(chip.querySelector('.team-timer'));
+    teamCorrectEls.push(chip.querySelector('#t'+i+'-correct'));
+    teamWrongEls.push(chip.querySelector('#t'+i+'-wrong'));
+  }
+  const switchCol = document.createElement('div');
+  switchCol.className = 'switch-col';
+  switchCol.innerHTML = '<div class="switch-btn" id="switchTeamBtn" title="Pasar turno al siguiente equipo">⇄</div><div class="switch-label">CAMBIAR<br>EQUIPO</div>';
+  barEl.appendChild(switchCol);
+}
+
+const editTabButtons = [];
+{
+  const tabsEl = document.getElementById('editTabs');
+  for(let i=0;i<TEAM_COUNT;i++){
+    const btn = document.createElement('button');
+    btn.className = 'edit-tab' + (i===0 ? ' active' : '');
+    btn.id = 'editTab'+i;
+    btn.dataset.team = i;
+    btn.textContent = DEFAULT_TEAM_NAMES[i];
+    btn.addEventListener('click', ()=> switchEditTab(i));
+    tabsEl.appendChild(btn);
+    editTabButtons.push(btn);
+  }
+}
+
+/* ================= UI REFS ================= */
+const centerLetter = document.getElementById('centerLetter');
+const centerClue = document.getElementById('centerClue');
+const turnLabel = document.getElementById('turnLabel');
+const titleScreen = document.getElementById('title-screen');
+const gameScreen = document.getElementById('game-screen');
+const endModal = document.getElementById('end-modal');
+const editModal = document.getElementById('edit-modal');
+const editList = document.getElementById('editList');
+const scoreCompareEl = document.getElementById('scoreCompare');
+const passOverlay = document.getElementById('pass-overlay');
+const passOverlayTeamName = document.getElementById('passOverlayTeamName');
+const startOverlay = document.getElementById('start-overlay');
+const startPhase1 = document.getElementById('startPhase1');
+const startPhase2 = document.getElementById('startPhase2');
+const startOverlayTeamName = document.getElementById('startOverlayTeamName');
+const pauseBtn = document.getElementById('pauseBtn');
+
+/* ================= HELPERS ================= */
+function formatTime(s){
+  s = Math.max(0,s);
+  const m = Math.floor(s/60).toString().padStart(2,'0');
+  const sec = (s%60).toString().padStart(2,'0');
+  return m+':'+sec;
+}
+function countStatus(team, s){ return team.status.filter(x=>x===s).length; }
+
+/* ================= EDIT QUESTIONS (per team) ================= */
+let draftClues = null;   // working copy while the modal is open: [ [26 clues team0], [26 clues team1], ... ]
+let editingTeamIdx = 0;
+
+function buildEditList(teamIdx){
+  editList.innerHTML = '';
+  LETTERS.forEach((ch,i)=>{
+    const row = document.createElement('div');
+    row.className = 'edit-row';
+    row.innerHTML = `<div class="edit-letter">${ch}</div><input class="edit-input" data-idx="${i}" maxlength="120" value="">`;
+    editList.appendChild(row);
+    row.querySelector('.edit-input').value = draftClues[teamIdx][i];
+  });
+}
+function saveInputsToDraft(teamIdx){
+  const inputs = editList.querySelectorAll('.edit-input');
+  inputs.forEach(inp=>{
+    const idx = parseInt(inp.dataset.idx,10);
+    const val = inp.value.trim();
+    if(val) draftClues[teamIdx][idx] = val;
+  });
+}
+function switchEditTab(teamIdx){
+  if(teamIdx===editingTeamIdx) return;
+  saveInputsToDraft(editingTeamIdx);
+  editingTeamIdx = teamIdx;
+  editTabButtons.forEach((btn,i)=> btn.classList.toggle('active', i===teamIdx));
+  buildEditList(editingTeamIdx);
+}
+function openEditModal(){
+  draftClues = TEAM_CLUES.map(arr=>arr.slice());
+  editingTeamIdx = 0;
+  editTabButtons.forEach((btn,i)=>{
+    const nm = teamNameInputs[i].value.trim() || DEFAULT_TEAM_NAMES[i];
+    btn.textContent = nm.toUpperCase();
+    btn.classList.toggle('active', i===0);
+  });
+  buildEditList(0);
+  editModal.classList.remove('hidden');
+}
+function closeEditModal(){ editModal.classList.add('hidden'); draftClues = null; }
+function resetQuestionsToDefault(){
+  draftClues[editingTeamIdx] = DEFAULT_CLUES.slice();
+  buildEditList(editingTeamIdx);
+}
+function exportQuestions(){
+  if(typeof XLSX === 'undefined'){ alert('No se pudo cargar el componente de Excel. Revisa tu conexión a internet e inténtalo de nuevo.'); return; }
+  saveInputsToDraft(editingTeamIdx);
+  const data = LETTERS.map((ch,i)=>({ Letra: ch, Pista: draftClues[editingTeamIdx][i] }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [{wch:8},{wch:80}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Preguntas');
+  const teamLabel = (teamNameInputs[editingTeamIdx].value.trim() || DEFAULT_TEAM_NAMES[editingTeamIdx]).replace(/[^a-zA-Z0-9]+/g,'_');
+  XLSX.writeFile(wb, 'preguntas-rosco-' + teamLabel + '.xlsx');
+}
+function importQuestionsFromFile(file){
+  if(typeof XLSX === 'undefined'){ alert('No se pudo cargar el componente de Excel. Revisa tu conexión a internet e inténtalo de nuevo.'); return; }
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      if(!rows.length) throw new Error('archivo vacío');
+      rows.forEach(row=>{
+        const letraKey = Object.keys(row).find(k=> k.trim().toLowerCase()==='letra');
+        const pistaKey = Object.keys(row).find(k=> k.trim().toLowerCase()==='pista');
+        if(!letraKey || !pistaKey) return;
+        const letra = String(row[letraKey]).trim().toUpperCase();
+        const pista = String(row[pistaKey]).trim();
+        const idx = LETTERS.findIndex(ch=> ch === letra);
+        if(idx>-1 && pista) draftClues[editingTeamIdx][idx] = pista;
+      });
+      buildEditList(editingTeamIdx);
+    }catch(err){
+      alert('No se pudo leer el archivo. Asegúrate de que sea un Excel (.xlsx) exportado desde este juego, con columnas "Letra" y "Pista".');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ================= RENDER ================= */
+function renderTeamChips(){
+  teams.forEach((t,i)=>{
+    teamNameEls[i].textContent = t.name;
+    teamCorrectEls[i].textContent = countStatus(t,'correct');
+    teamWrongEls[i].textContent = countStatus(t,'wrong');
+    teamTimerEls[i].textContent = formatTime(t.timeLeft);
+    teamTimerEls[i].classList.toggle('low', t.timeLeft<=20 && t.timeLeft>0);
+    teamChips[i].classList.toggle('active', i===activeTeam && !gameOver);
+    teamChips[i].classList.toggle('finished', t.finished);
+  });
+}
+
+function renderRosco(){
+  const team = teams[activeTeam];
+  nodes.forEach((node,i)=>{
+    node.classList.remove('current','correct','wrong','passed');
+    if(team.status[i]==='correct') node.classList.add('correct');
+    if(team.status[i]==='wrong') node.classList.add('wrong');
+  });
+  if(!gameOver && !team.finished && team.queue.length){
+    const cur = team.queue[0];
+    nodes[cur].classList.add('current');
+    centerLetter.textContent = LETTERS[cur];
+    centerClue.textContent = paused ? '⏸ TIEMPO EN PAUSA' : TEAM_CLUES[activeTeam][cur];
+    team.queue.slice(1).forEach(i=> nodes[i].classList.add('passed'));
+  } else if(team.finished){
+    centerLetter.textContent = team.timeUp ? '⏱' : '✔';
+    centerClue.textContent = team.timeUp ? '¡Tiempo agotado para este equipo!' : '¡Rosco completado!';
+  }
+  turnLabel.textContent = 'TURNO: ' + team.name.toUpperCase();
+}
+
+function render(){
+  renderRosco();
+  renderTeamChips();
+}
+
+/* ================= GAMEPLAY ================= */
+function selectLetter(i){
+  const team = teams[activeTeam];
+  if(gameOver || paused || team.finished || team.status[i]!=='pending') return;
+  const idx = team.queue.indexOf(i);
+  if(idx>-1){ team.queue.splice(idx,1); team.queue.unshift(i); }
+  render();
+}
+
+function nextUnfinishedTeam(fromIdx){
+  for(let step=1; step<teams.length; step++){
+    const idx = (fromIdx+step) % teams.length;
+    if(!teams[idx].finished) return idx;
+  }
+  return -1;
+}
+
+function checkAllFinished(){
+  if(teams.every(t=>t.finished)) endGame();
+}
+
+function advance(mark){
+  const team = teams[activeTeam];
+  if(gameOver || paused || team.finished || !team.queue.length) return;
+  const i = team.queue[0];
+  if(mark==='correct'){ team.status[i]='correct'; team.queue.shift(); sndCorrect(); }
+  else if(mark==='wrong'){ team.status[i]='wrong'; team.queue.shift(); sndWrong(); }
+  if(team.queue.length===0){
+    team.finished = true;
+    team.finishTime = TOTAL_TIME - team.timeLeft; // completed the whole rosco - record elapsed time
+    const nxt = nextUnfinishedTeam(activeTeam);
+    if(nxt!==-1) switchTeam(nxt, true);
+  }
+  render();
+  checkAllFinished();
+}
+
+function switchTeam(target, silent){
+  if(gameOver || paused) return;
+  if(target===undefined){
+    target = nextUnfinishedTeam(activeTeam);
+    if(target===-1) return;
+  }
+  if(target===activeTeam) return;
+  if(teams[target].finished) return;
+  activeTeam = target;
+  if(!silent) sndSwitch();
+  render();
+}
+
+/* ================= PASO -> pasa el turno al siguiente equipo, con aviso y confirmación ================= */
+let pendingTeamIdx = null;
+
+function triggerPassToNextTeam(){
+  if(gameOver || paused || passOverlayOpen()) return;
+  const team = teams[activeTeam];
+  if(team.finished || !team.queue.length) return;
+  // la letra actual queda pendiente, se reordena al final de la cola de este equipo
+  if(team.queue.length>1){ team.queue.push(team.queue.shift()); }
+  sndPass();
+  const nxt = nextUnfinishedTeam(activeTeam);
+  if(nxt===-1){
+    // no hay otro equipo disponible al que pasarle el turno: solo se salta la letra
+    render();
+    return;
+  }
+  // se detiene el tiempo del equipo actual y se muestra el aviso de PASAPALABRA
+  paused = true;
+  clearInterval(timerInterval);
+  pendingTeamIdx = nxt;
+  passOverlayTeamName.textContent = teams[nxt].name.toUpperCase();
+  passOverlay.classList.remove('hidden');
+}
+function passOverlayOpen(){ return !passOverlay.classList.contains('hidden'); }
+function startOverlayOpen(){ return !startOverlay.classList.contains('hidden'); }
+function confirmPassContinue(){
+  if(pendingTeamIdx===null) return;
+  activeTeam = pendingTeamIdx;
+  pendingTeamIdx = null;
+  passOverlay.classList.add('hidden');
+  render();
+  startTimerLoop(); // reanuda el cronómetro para el equipo que ahora entra a jugar
+}
+
+/* ================= PAUSA DE EMERGENCIA / SALIR AL MENÚ ================= */
+function togglePause(){
+  if(gameOver || passOverlayOpen() || startOverlayOpen()) return;
+  if(paused){
+    startTimerLoop();
+    pauseBtn.textContent = '⏸';
+    pauseBtn.title = 'Pausar el tiempo (emergencia)';
+    pauseBtn.classList.remove('paused-state');
+  } else {
+    paused = true;
+    clearInterval(timerInterval);
+    stopMusic();
+    pauseBtn.textContent = '▶';
+    pauseBtn.title = 'Reanudar el tiempo';
+    pauseBtn.classList.add('paused-state');
+  }
+  render();
+}
+function exitToMenu(){
+  if(!confirm('¿Seguro que quieres salir al menú principal? Se perderá el progreso de la partida actual.')) return;
+  clearInterval(timerInterval);
+  stopMusic();
+  paused = true;
+  gameOver = false;
+  pendingTeamIdx = null;
+  passOverlay.classList.add('hidden');
+  startOverlay.classList.add('hidden');
+  endModal.classList.add('hidden');
+  pauseBtn.textContent = '⏸';
+  pauseBtn.title = 'Pausar el tiempo (emergencia)';
+  pauseBtn.classList.remove('paused-state');
+  gameScreen.classList.add('hidden');
+  titleScreen.classList.remove('hidden');
+}
+
+/* ================= TIMER ================= */
+function tick(){
+  if(paused || gameOver) return;
+  const team = teams[activeTeam];
+  if(team.finished) return;
+  team.timeLeft--;
+  if(team.timeLeft<=10 && team.timeLeft>0) sndTick();
+  if(team.timeLeft<=0){
+    team.timeLeft = 0;
+    team.timeUp = true;
+    team.finished = true; // did not complete in time -> finishTime stays null
+    sndTimeUp();
+    const nxt = nextUnfinishedTeam(activeTeam);
+    if(nxt!==-1) switchTeam(nxt, true);
+    render();
+    checkAllFinished();
+    return;
+  }
+  render();
+}
+
+/* ================= WINNER LOGIC ================= */
+/* Regla: gana quien completa el rosco entero en menos tiempo.
+   Si solo un equipo completa, ese equipo gana.
+   Si varios completan, gana el más rápido (y si empatan en tiempo, el de más correctas).
+   Si ninguno completa, gana quien tenga más respuestas correctas. */
+function determineWinner(){
+  const completedIdxs = teams.map((t,i)=>i).filter(i=> teams[i].finishTime !== null);
+  if(completedIdxs.length===1){
+    return {idxs:[completedIdxs[0]], reason:'complete'};
+  }
+  if(completedIdxs.length>1){
+    const minTime = Math.min(...completedIdxs.map(i=>teams[i].finishTime));
+    const pool = completedIdxs.filter(i=> teams[i].finishTime===minTime);
+    if(pool.length===1) return {idxs:pool, reason:'time'};
+    const maxCorrect = Math.max(...pool.map(i=>countStatus(teams[i],'correct')));
+    const pool2 = pool.filter(i=> countStatus(teams[i],'correct')===maxCorrect);
+    return {idxs:pool2, reason: pool2.length===1 ? 'correct' : 'tie'};
+  }
+  const maxCorrect = Math.max(...teams.map(t=>countStatus(t,'correct')));
+  const pool = teams.map((t,i)=>i).filter(i=> countStatus(teams[i],'correct')===maxCorrect);
+  return {idxs:pool, reason: pool.length===1 ? 'correct' : 'tie'};
+}
+
+/* ================= END GAME ================= */
+function endGame(){
+  if(gameOver) return;
+  gameOver = true;
+  paused = true;
+  clearInterval(timerInterval);
+  stopMusic();
+
+  const win = determineWinner();
+
+  scoreCompareEl.innerHTML = '';
+  teams.forEach((t,i)=>{
+    if(i>0){
+      const vs = document.createElement('div');
+      vs.className = 'score-vs';
+      vs.textContent = '·';
+      scoreCompareEl.appendChild(vs);
+    }
+    const side = document.createElement('div');
+    side.className = 'score-side' + (win.idxs.includes(i) ? ' winner' : '');
+    const c = countStatus(t,'correct');
+    side.innerHTML =
+      '<div class="score-num">'+c+'</div>' +
+      '<div class="score-team-name">'+t.name+'</div>' +
+      '<div class="score-time">'+ (t.finishTime!==null ? ('Terminó en '+formatTime(t.finishTime)) : 'No completó el rosco') +'</div>';
+    scoreCompareEl.appendChild(side);
+  });
+
+  let winnerText;
+  if(win.idxs.length>1){
+    const names = win.idxs.map(i=> teams[i].name.toUpperCase());
+    winnerText = '¡EMPATE ENTRE ' + names.join(' Y ') + '!';
+  } else {
+    const name = teams[win.idxs[0]].name.toUpperCase();
+    if(win.reason==='complete') winnerText = name + ' ¡GANA! (completó el rosco)';
+    else if(win.reason==='time') winnerText = name + ' ¡GANA! (lo completó en menos tiempo)';
+    else winnerText = name + ' ¡GANA! (más respuestas correctas)';
+    sndVictory();
+  }
+  document.getElementById('modalWinner').textContent = winnerText;
+  document.getElementById('modalDetail').textContent =
+    teams.map(t=> `${t.name}: ${countStatus(t,'correct')} correctas, ${countStatus(t,'wrong')} incorrectas`).join('  ·  ');
+  renderTeamChips();
+  endModal.classList.remove('hidden');
+}
+
+function resetGame(){
+  const names = teams.map(t=>t.name);
+  teams = names.map(n=>freshTeam(n));
+  activeTeam = 0;
+  paused = true;
+  gameOver = false;
+  endModal.classList.add('hidden');
+  render();
+}
+
+function startTimerLoop(){
+  paused = false;
+  clearInterval(timerInterval);
+  timerInterval = setInterval(tick, 1000);
+  startMusic();
+}
+
+/* ================= EVENTS ================= */
+document.getElementById('playBtn').addEventListener('click', ()=>{
+  const names = teamNameInputs.map((inp,i)=> inp.value.trim() || DEFAULT_TEAM_NAMES[i]);
+  teams = names.map(n=>freshTeam(n));
+  activeTeam = 0;
+  gameOver = false;
+  titleScreen.classList.add('hidden');
+  gameScreen.classList.remove('hidden');
+  render();
+  showStartOverlay();
+});
+
+function showStartOverlay(){
+  startPhase1.classList.remove('hidden');
+  startPhase2.classList.add('hidden');
+  startOverlay.classList.remove('hidden');
+}
+document.getElementById('startReadyBtn').addEventListener('click', ()=>{
+  const pick = Math.floor(Math.random()*teams.length);
+  pendingTeamIdx = pick;
+  startOverlayTeamName.textContent = teams[pick].name.toUpperCase();
+  startPhase1.classList.add('hidden');
+  startPhase2.classList.remove('hidden');
+  sndSwitch();
+});
+document.getElementById('confirmStartBtn').addEventListener('click', ()=>{
+  if(pendingTeamIdx===null) return;
+  activeTeam = pendingTeamIdx;
+  pendingTeamIdx = null;
+  startOverlay.classList.add('hidden');
+  render();
+  startTimerLoop();
+});
+document.getElementById('pauseBtn').addEventListener('click', togglePause);
+document.getElementById('exitBtn').addEventListener('click', exitToMenu);
+
+document.getElementById('correctBtn').addEventListener('click', ()=> advance('correct'));
+document.getElementById('wrongBtn').addEventListener('click', ()=> advance('wrong'));
+document.getElementById('pasaBtn').addEventListener('click', triggerPassToNextTeam);
+document.getElementById('switchTeamBtn').addEventListener('click', ()=> switchTeam());
+document.getElementById('confirmPassBtn').addEventListener('click', confirmPassContinue);
+
+document.getElementById('editBtn').addEventListener('click', openEditModal);
+document.getElementById('saveQuestionsBtn').addEventListener('click', ()=>{
+  saveInputsToDraft(editingTeamIdx);
+  TEAM_CLUES = draftClues.map(arr=>arr.slice());
+  closeEditModal();
+});
+document.getElementById('cancelQuestionsBtn').addEventListener('click', closeEditModal);
+document.getElementById('resetQuestionsBtn').addEventListener('click', ()=>{
+  if(confirm('¿Restablecer las preguntas de este equipo a los valores originales?')) resetQuestionsToDefault();
+});
+document.getElementById('exportQuestionsBtn').addEventListener('click', ()=>{
+  exportQuestions();
+});
+document.getElementById('importQuestionsInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(file) importQuestionsFromFile(file);
+  e.target.value = '';
+});
+
+teamChips.forEach((chip,i)=>{
+  chip.addEventListener('click', (e)=>{
+    if(e.target.classList.contains('team-name')) return;
+    switchTeam(i);
+  });
+});
+
+teamNameEls.forEach((el,i)=>{
+  el.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const newName = prompt('Nombre del equipo:', teams[i].name);
+    if(newName && newName.trim()){
+      teams[i].name = newName.trim().slice(0,18);
+      render();
+    }
+  });
+});
+
+document.getElementById('muteBtn').addEventListener('click', function(){
+  muted = !muted;
+  this.textContent = muted ? '🔇' : '🔊';
+});
+
+document.getElementById('againBtn').addEventListener('click', ()=>{
+  resetGame();
+  showStartOverlay();
+});
+
+/* keyboard shortcuts for the presenter */
+window.addEventListener('keydown', (e)=>{
+  if(gameScreen.classList.contains('hidden')) return;
+  if(startOverlayOpen()){
+    if(e.key==='Enter' || e.key===' '){
+      e.preventDefault();
+      if(!startPhase1.classList.contains('hidden')) document.getElementById('startReadyBtn').click();
+      else document.getElementById('confirmStartBtn').click();
+    }
+    return;
+  }
+  if(passOverlayOpen()){
+    if(e.key==='Enter' || e.key===' '){ e.preventDefault(); confirmPassContinue(); }
+    return;
+  }
+  if(paused) return;
+  if(e.key==='ArrowRight' || e.key==='Enter') advance('correct');
+  if(e.key==='ArrowLeft') advance('wrong');
+  if(e.key===' '){ e.preventDefault(); triggerPassToNextTeam(); }
+  if(e.key==='Tab'){ e.preventDefault(); switchTeam(); }
+});
+</script>
+</body>
+</html>
