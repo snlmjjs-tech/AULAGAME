@@ -6,7 +6,7 @@
   import { firebaseConfig } from "../../firebase-config.js";
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-  var app = initializeApp(firebaseConfig, "aulagame-gate");
+  var app = initializeApp(firebaseConfig);
   onAuthStateChanged(getAuth(app), function(user){
     if(user){ document.documentElement.style.visibility = ""; }
     else { location.replace("/"); }

@@ -9,7 +9,7 @@
       if(new URLSearchParams(location.search).get("room")){
         document.documentElement.style.visibility = "";
       } else {
-        var app = initializeApp(firebaseConfig, "aulagame-gate");
+        var app = initializeApp(firebaseConfig);
         onAuthStateChanged(getAuth(app), function(user){
           if(user){ document.documentElement.style.visibility = ""; }
           else { location.replace("/"); }
