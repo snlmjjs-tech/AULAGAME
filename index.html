@@ -267,6 +267,23 @@
   }
   .kard-actions{ display:flex; gap:9px; margin-top:4px; }
 
+  .contacto-caja{
+    background: var(--panel);
+    border: 2px solid var(--linea);
+    border-radius: 20px;
+    padding: 28px 30px;
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.35);
+  }
+  .contacto-texto{ margin:0; font-size:14.5px; color: var(--texto-suave); font-weight:600; line-height:1.6; max-width:560px; }
+  .btn-whatsapp{
+    background:#25D366; color:#08321c;
+    box-shadow: 0 5px 0 #1aa64d;
+    white-space:nowrap; flex-shrink:0;
+    padding: 13px 22px; font-size:14.5px;
+  }
+  .modal-acciones .btn-whatsapp{ flex:1; }
+
   .c-rosa{     --c: var(--rosa);     --c-dark: var(--rosa-dark);     --c-ink:#fff; }
   .c-amarillo{ --c: var(--amarillo); --c-dark: var(--amarillo-dark); --c-ink: var(--tinta); }
   .c-turquesa{ --c: var(--turquesa); --c-dark: var(--turquesa-dark); --c-ink: var(--tinta); }
@@ -590,6 +607,20 @@
     </div>
   </section>
 
+  <section aria-labelledby="contacto">
+    <div class="section-head">
+      <div>
+        <span class="sticker turq">Recién comenzando</span>
+        <h2 id="contacto">Contacto</h2>
+      </div>
+    </div>
+
+    <div class="contacto-caja">
+      <p class="contacto-texto">AulaGame es un proyecto que recién está comenzando. Si deseas crear más juegos o acceder a funciones premium, contáctame directamente por WhatsApp.</p>
+      <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20crear%20m%C3%A1s%20juegos%20en%20AulaGame." target="_blank" rel="noopener">💬 Hablar por WhatsApp</a>
+    </div>
+  </section>
+
 </main>
 
 <footer>AULAGAMES · Hecho por profes, para profes 🍎<br>Diseñada por Sebastián Núñez López</footer>
@@ -631,6 +662,19 @@
   </div>
 </div>
 
+<!-- ==================== MODAL LÍMITE DE JUEGOS ==================== -->
+<div class="modal-fondo oculto" id="modal-limite">
+  <div class="modal-caja" role="dialog" aria-modal="true" aria-labelledby="limite-titulo">
+    <div class="icono">🔒</div>
+    <h3 id="limite-titulo">Has alcanzado el límite de juegos gratuitos</h3>
+    <p>Elimina un juego para liberar espacio, o contáctame por WhatsApp si quieres crear más juegos o acceder a funciones premium.</p>
+    <div class="modal-acciones">
+      <button class="btn btn-cancelar" id="btn-limite-cerrar">Cerrar</button>
+      <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20crear%20m%C3%A1s%20juegos%20en%20AulaGame." target="_blank" rel="noopener">Quiero crear más juegos</a>
+    </div>
+  </div>
+</div>
+
 <div class="aviso-toast" id="aviso-toast" role="status" aria-live="polite"></div>
 
 <script type="module">
@@ -649,7 +693,7 @@
   var db = getFirestore(app);
 
   // ---------- Estado ----------
-  var TOTAL_CUPOS = 5;
+  var TOTAL_CUPOS = 3;
   var uidActual = null;
 
   // ---------- Modal de login ----------
@@ -892,7 +936,7 @@
   // editUrl: dónde se personaliza el contenido (el artifact original de Claude)
   function duplicarJuego(nombre, emoji, color, url, editUrl){
     if(misJuegos.length >= TOTAL_CUPOS){
-      mostrarAviso("Ya usaste tus " + TOTAL_CUPOS + " cupos gratis. Elimina un juego para liberar espacio.", true);
+      mostrarModalLimite();
       return;
     }
     misJuegos.push({
@@ -986,6 +1030,23 @@
       kard.remove();
       actualizarEstado();
     }, 250);
+  });
+
+  // ---------- Límite de juegos gratuitos alcanzado (modal) ----------
+  var modalLimite = document.getElementById("modal-limite");
+
+  function mostrarModalLimite(){
+    modalLimite.classList.remove("oculto");
+  }
+  function cerrarModalLimite(){
+    modalLimite.classList.add("oculto");
+  }
+  document.getElementById("btn-limite-cerrar").addEventListener("click", cerrarModalLimite);
+  modalLimite.addEventListener("click", function(e){
+    if(e.target === modalLimite) cerrarModalLimite();
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && !modalLimite.classList.contains("oculto")) cerrarModalLimite();
   });
 
   // Pinta el estado inicial (sin sesión) de inmediato, sin esperar a Firebase
