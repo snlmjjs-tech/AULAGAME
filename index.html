@@ -127,19 +127,27 @@
   }
   .banner h1 .hola{ color: var(--amarillo); }
   .banner p{ margin:8px 0 0; color: var(--texto-suave); font-size:15px; font-weight:600; }
+  .hero-texto{ width:100%; }
   .hero-botones{ display:flex; flex-wrap:wrap; gap:12px; margin-top:20px; }
   .hero-botones .btn{ flex: 0 0 auto; padding: 13px 22px; font-size:14.5px; }
   .mini-pasos{
-    display:flex; flex-wrap:wrap; align-items:center; gap:8px;
-    margin-top:16px;
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;
+    margin-top:24px; width:100%;
   }
   .mini-paso{
+    flex: 1 1 160px;
+    display:flex; align-items:center; justify-content:center; gap:8px;
     background: var(--tinta); border:2px solid var(--linea);
-    border-radius:20px; padding:6px 12px;
-    font-size:12px; font-weight:800; color: var(--texto-suave);
+    border-radius:16px; padding:14px 18px;
+    font-size:17px; font-weight:800; color: var(--texto);
     white-space:nowrap;
   }
-  .mini-flecha{ color: var(--texto-suave); font-size:13px; }
+  .mini-emoji{ font-size:22px; }
+  .mini-flecha{ color: var(--texto-suave); font-size:22px; flex: 0 0 auto; }
+  @media (max-width: 900px){
+    .mini-flecha{ display:none; }
+    .mini-paso{ flex: 1 1 45%; }
+  }
 
   .cupos{
     background: var(--tinta);
@@ -310,6 +318,15 @@
     display:flex; align-items:center; justify-content:space-between; gap:28px; flex-wrap:wrap;
     box-shadow: 0 10px 0 var(--naranja-dark);
   }
+  .anuncio-cerrar{
+    position:absolute; top:14px; right:16px;
+    background: rgba(0,0,0,0.15); border:none; color: var(--tinta);
+    width:28px; height:28px; border-radius:50%;
+    font-size:14px; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition: background .15s ease;
+  }
+  .anuncio-cerrar:hover{ background: rgba(0,0,0,0.28); }
   .anuncio-badge{
     position:absolute; top:20px; left:24px;
     font-family:'Space Mono', monospace; font-size:11px; font-weight:800;
@@ -539,20 +556,20 @@
     <span class="conf" style="top:14px; left:36%;" aria-hidden="true">🎉</span>
     <span class="conf" style="bottom:16px; left:52%; animation-delay:1.2s;" aria-hidden="true">⭐</span>
     <span class="conf" style="top:22px; right:30%; animation-delay:2.4s;" aria-hidden="true">🎲</span>
-    <div>
+    <div class="hero-texto">
       <h1><span class="hola">¡Hola!</span><br>¿Qué jugamos hoy?</h1>
       <p>Elige un juego guardado o duplica una plantilla nueva para tu próxima clase.</p>
       <div class="hero-botones">
         <button class="btn btn-jugar" id="btn-hero-crear" type="button">🎮 Crear mi primer juego</button>
       </div>
       <div class="mini-pasos">
-        <span class="mini-paso">1️⃣ 🎯 Elige</span>
+        <span class="mini-paso"><span class="mini-emoji">1️⃣ 🎯</span> Elige</span>
         <span class="mini-flecha">→</span>
-        <span class="mini-paso">2️⃣ ✏️ Personaliza</span>
+        <span class="mini-paso"><span class="mini-emoji">2️⃣ ✏️</span> Personaliza</span>
         <span class="mini-flecha">→</span>
-        <span class="mini-paso">3️⃣ 📱 Comparte</span>
+        <span class="mini-paso"><span class="mini-emoji">3️⃣ 📱</span> Comparte</span>
         <span class="mini-flecha">→</span>
-        <span class="mini-paso">4️⃣ 🏆 Juega</span>
+        <span class="mini-paso"><span class="mini-emoji">4️⃣ 🏆</span> Juega</span>
       </div>
     </div>
   </div>
@@ -585,8 +602,9 @@
     </div>
   </section>
 
-  <section aria-label="Aviso de lanzamiento y contacto por WhatsApp">
+  <section aria-label="Aviso de lanzamiento y contacto por WhatsApp" id="seccion-anuncio">
     <div class="anuncio">
+      <button type="button" class="anuncio-cerrar" id="btn-anuncio-cerrar" aria-label="Cerrar aviso">✕</button>
       <span class="conf" style="top:14px; right:26%;" aria-hidden="true">🎉</span>
       <span class="conf" style="bottom:14px; right:8%; animation-delay:1.6s;" aria-hidden="true">⭐</span>
       <span class="anuncio-badge">✨ Recién comenzando</span>
@@ -594,6 +612,25 @@
       <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20crear%20m%C3%A1s%20juegos%20en%20AulaGame." target="_blank" rel="noopener">💬 Hablar por WhatsApp</a>
     </div>
   </section>
+
+  <script>
+    (function(){
+      var STORAGE_KEY = "aviso_lanzamiento_cerrado";
+      var seccion = document.getElementById("seccion-anuncio");
+      if(!seccion) return;
+      if(sessionStorage.getItem(STORAGE_KEY) === "1"){
+        seccion.style.display = "none";
+        return;
+      }
+      var btnCerrar = document.getElementById("btn-anuncio-cerrar");
+      if(btnCerrar){
+        btnCerrar.addEventListener("click", function(){
+          sessionStorage.setItem(STORAGE_KEY, "1");
+          seccion.style.display = "none";
+        });
+      }
+    })();
+  </script>
 
   <section aria-labelledby="plantillas">
     <div class="section-head">
@@ -1162,6 +1199,13 @@
   var kardPendiente = null;
 
   document.getElementById("grid-mis-juegos").addEventListener("click", function(e){
+    var botonJugar = e.target.closest(".btn-jugar");
+    if(botonJugar && !uidActual){
+      e.preventDefault();
+      mostrarAviso("Debes iniciar sesión para jugar.", true);
+      abrirLoginModal();
+      return;
+    }
     var botonDup = e.target.closest(".btn-dup-mia");
     if(botonDup){
       var kardMia = botonDup.closest(".kard-mia");
