@@ -1199,10 +1199,11 @@
   var kardPendiente = null;
 
   document.getElementById("grid-mis-juegos").addEventListener("click", function(e){
-    var botonJugar = e.target.closest(".btn-jugar");
-    if(botonJugar && !uidActual){
+    var botonJugarEditar = e.target.closest(".btn-jugar, .btn-editar");
+    if(botonJugarEditar && !uidActual){
       e.preventDefault();
-      mostrarAviso("Debes iniciar sesión para jugar.", true);
+      var esEditar = botonJugarEditar.classList.contains("btn-editar");
+      mostrarAviso(esEditar ? "Debes iniciar sesión para editar." : "Debes iniciar sesión para jugar.", true);
       abrirLoginModal();
       return;
     }
