@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script>document.documentElement.style.visibility="hidden";</script>
+<script type="module">
+  import { firebaseConfig } from "../../firebase-config.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+  if(new URLSearchParams(location.search).get("pin")){
+    document.documentElement.style.visibility = "";
+  } else {
+    var app = initializeApp(firebaseConfig, "aulagame-gate");
+    onAuthStateChanged(getAuth(app), function(user){
+      if(user){ document.documentElement.style.visibility = ""; }
+      else { location.replace("/"); }
+    });
+  }
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>QuizLive · Teacher Seba</title>
