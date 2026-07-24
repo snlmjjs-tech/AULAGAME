@@ -617,6 +617,13 @@
                     <p class="text-[9px] text-stone-500 font-medieval">Enlace directo:</p>
                     <p id="qr-join-url" class="text-[9px] text-amber-300 font-medieval break-all mt-0.5"></p>
                 </div>
+                <div class="w-full bg-stone-900/60 border border-amber-700/40 rounded-xl px-3 py-2 flex items-center justify-center gap-3" id="qr-link-corto-box" style="display:none">
+                    <div class="text-center">
+                        <p class="text-[9px] text-stone-500 font-medieval">Link corto:</p>
+                        <p id="qr-link-corto" class="text-base text-amber-300 font-black font-cinzel tracking-wide"></p>
+                    </div>
+                    <button type="button" onclick="copiarLinkCortoBC()" class="text-stone-400 hover:text-amber-300 text-lg px-2" title="Copiar link">⧉</button>
+                </div>
             </div>
 
             <div class="px-4 py-3 border-t border-stone-800 bg-stone-900/50 text-[10px] text-stone-500 font-medieval text-center">
@@ -653,6 +660,7 @@
     <!-- ================= DESARROLLO DEL JUEGO ================= -->
     <script type="module">
         import { loadGameData, saveGameData, toast as syncToast } from "../shared/game-storage.js";
+        import { crearCodigoCorto } from "../shared/short-links.js";
 
         /*************************************************************
          * A. MANEJADOR SEGURO DE ALMACENAMIENTO (SafeStorage)
@@ -2685,6 +2693,21 @@
             if (urlEl)  urlEl.textContent  = joinUrl;
             if (warnEl) warnEl.classList.toggle('hidden', window.location.protocol !== 'file:');
 
+            const linkCortoBox = document.getElementById('qr-link-corto-box');
+            const linkCortoEl  = document.getElementById('qr-link-corto');
+            if (linkCortoBox) linkCortoBox.style.display = 'none';
+            crearCodigoCorto({
+                juego: 'battlecastle3d', destino: '/play/battlecastle3d/',
+                paramNombre: 'room', paramValor: currentRoomCode,
+                extraQuery: 'names=' + namesQuery
+            }).then(function(codigo){
+                if (!codigo || !linkCortoBox || !linkCortoEl) return;
+                const url = window.location.origin + '/' + codigo;
+                linkCortoEl.textContent = window.location.host + '/' + codigo;
+                linkCortoBox.dataset.url = url;
+                linkCortoBox.style.display = 'flex';
+            });
+
             if (qrBox) {
                 qrBox.innerHTML = '';
                 if (window.QRCode) {
@@ -2704,6 +2727,15 @@
             openModal('modal-qr');
         }
 
+        function copiarLinkCortoBC() {
+            const box = document.getElementById('qr-link-corto-box');
+            const url = box && box.dataset.url;
+            if (!url) return;
+            navigator.clipboard.writeText(url)
+                .then(() => syncToast('🔗 Link copiado'))
+                .catch(() => syncToast('No se pudo copiar el link'));
+        }
+
         // El script pasó a ser un módulo (type="module") para poder usar `await`
         // al cargar el banco de preguntas desde Firestore. Los módulos no exponen
         // sus funciones en el scope global, así que los atributos onclick/onchange
@@ -2711,7 +2743,7 @@
         // se re-expongan explícitamente en `window` para seguir funcionando.
         Object.assign(window, {
             activateAndOpenQR, addEditorRow, addSetupCastle, closeEditorSafe, closeModal,
-            downloadTemplate, exportToExcel, importFromExcel, mobileAction,
+            copiarLinkCortoBC, downloadTemplate, exportToExcel, importFromExcel, mobileAction,
             openBonusChestSelection, openQuestionEditor, promptQuestionSelection,
             removeEditorRow, removeSetupCastle, resetToDefaultQuestions, saveEditorChanges,
             selectCastleAndConnect, showMobileScreen, startGame, toggleFullscreen,

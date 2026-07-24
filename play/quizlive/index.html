@@ -228,6 +228,10 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
 .qr-hero{background:#fff;color:#22104f;border-radius:26px;padding:20px 22px 14px;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
 .qr-hero .lbl{font-weight:800;letter-spacing:2px;font-size:.85rem;color:#6b5aa8;text-transform:uppercase}
 .qr-hero img,.qr-hero canvas{border-radius:8px}
+.link-corto{display:flex;align-items:center;gap:8px;background:#f1edfb;border:2px solid #d8cdf5;border-radius:12px;padding:8px 12px;margin-top:2px}
+.link-corto span{font-family:'Baloo 2';font-weight:800;font-size:1.05rem;letter-spacing:1px;color:#22104f}
+.link-corto button{background:#22104f;color:#fff;border:none;border-radius:8px;width:30px;height:30px;font-size:14px;cursor:pointer;flex-shrink:0}
+.link-corto button:hover{filter:brightness(1.2)}
 @media(max-width:640px){
   .ans-grid{grid-template-columns:1fr}
   .ans{min-height:76px}
@@ -307,7 +311,12 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
     <p class="muted" style="font-weight:700">Entra en esta misma página, toca <b style="color:#fff">“Soy Estudiante”</b> y usa el PIN:</p>
     <div class="row" style="justify-content:center;align-items:stretch">
       <div class="pin-hero"><div class="lbl">PIN del juego</div><div class="pin" id="pinShow">000000</div></div>
-      <div class="qr-hero" id="qrHero"><div id="qrBox"></div><div class="lbl">📱 Escanea y entra</div></div>
+      <div class="qr-hero" id="qrHero"><div id="qrBox"></div><div class="lbl">📱 Escanea y entra</div>
+        <div class="link-corto" id="linkCortoBox" style="display:none">
+          <span id="linkCortoTexto"></span>
+          <button type="button" id="btnCopiarLinkCorto" title="Copiar link">⧉</button>
+        </div>
+      </div>
     </div>
     <h3 id="playerCount" class="display">0 jugadores conectados</h3>
     <div class="players-wrap" id="playersWrap"></div>
@@ -482,6 +491,7 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
 <div class="toast" id="toast"></div>
 <script type="module">
 import { loadGameData, saveGameData, saveGameDataDebounced } from "../shared/game-storage.js";
+import { crearCodigoCorto } from "../shared/short-links.js";
 
 const _isPinJoin = !!new URLSearchParams(location.search).get("pin");
 // Un alumno que entra con ?pin=... no tiene sesión de profesor: no se toca
@@ -519,6 +529,20 @@ function go(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.rem
 function openModal(id){ $('#'+id).classList.add('open'); }
 function closeModal(id){ $('#'+id).classList.remove('open'); }
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2800); }
+
+function mostrarLinkCorto(codigo){
+  const box=$('#linkCortoBox');
+  if(!codigo){ box.style.display='none'; return; }
+  const url=location.origin+'/'+codigo;
+  $('#linkCortoTexto').textContent=location.host+'/'+codigo;
+  box.dataset.url=url;
+  box.style.display='flex';
+}
+$('#btnCopiarLinkCorto').addEventListener('click', ()=>{
+  const url=$('#linkCortoBox').dataset.url;
+  if(!url) return;
+  navigator.clipboard.writeText(url).then(()=>toast('🔗 Link copiado')).catch(()=>toast('No se pudo copiar el link'));
+});
 function askConfirm(title,msg,fn){ $('#confirmTitle').textContent=title; $('#confirmMsg').textContent=msg;
   const b=$('#confirmBtn'); const nb=b.cloneNode(true); b.parentNode.replaceChild(nb,b);
   nb.addEventListener('click',()=>{ closeModal('modal-confirm'); fn(); }); openModal('modal-confirm'); }
@@ -905,6 +929,11 @@ function startLive(){
         new QRCode(qb,{text:url,width:170,height:170,colorDark:'#22104f',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
       } else { $('#qrHero').style.display='none'; }
     }catch(e){ $('#qrHero').style.display='none'; }
+    mostrarLinkCorto(null);
+    crearCodigoCorto({
+      juego:'quizlive', destino:'/play/quizlive/',
+      paramNombre:'pin', paramValor:state.pin
+    }).then(mostrarLinkCorto);
     listen(state.gameRef.child('players'),'value',snap=>{
       state.players=snap.val()||{};
       const arr=Object.values(state.players);

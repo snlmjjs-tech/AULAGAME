@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AULAGAMES — Entrando a tu juego…</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎲</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito+Sans:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --noche: #1A1040; --panel: #2B1E63; --tinta: #1C1240;
+    --texto: #F2ECFF; --texto-suave: #B8AEE0; --linea: rgba(242,236,255,0.12);
+    --rosa: #FF4D8D; --amarillo: #FFC933; --turquesa: #2EE6C8;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--noche);
+    background-image: radial-gradient(ellipse 70% 45% at 50% -10%, rgba(124,92,255,0.28), transparent 60%);
+    color: var(--texto);
+    font-family: 'Nunito Sans', sans-serif;
+    min-height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    padding:24px;
+  }
+  .caja{
+    background: var(--panel); border:2px solid var(--linea);
+    border-radius:22px; padding:40px 32px; max-width:400px; width:100%;
+    text-align:center; box-shadow:0 10px 0 rgba(0,0,0,0.4);
+  }
+  .wordmark{ font-family:'Baloo 2', cursive; font-weight:800; font-size:22px; margin-bottom:22px; color:var(--amarillo); }
+  .spinner{
+    width:44px; height:44px; margin:0 auto 18px;
+    border:4px solid var(--linea); border-top-color: var(--turquesa);
+    border-radius:50%; animation: girar .8s linear infinite;
+  }
+  @keyframes girar{ to{ transform:rotate(360deg); } }
+  h1{ font-family:'Baloo 2', cursive; font-weight:800; font-size:19px; margin:0 0 8px; }
+  p{ margin:0; color:var(--texto-suave); font-size:14px; font-weight:600; line-height:1.55; }
+  .icono{ font-size:38px; margin-bottom:12px; }
+  a.btn{
+    display:inline-block; margin-top:20px; text-decoration:none;
+    background: var(--amarillo); color:#1C1240; font-weight:800; font-size:14px;
+    padding:12px 22px; border-radius:12px; box-shadow:0 5px 0 #D19A00;
+  }
+  .oculto{ display:none; }
+</style>
+</head>
+<body>
+
+<div class="caja">
+  <div class="wordmark">AULAGAMES</div>
+
+  <div id="cargando">
+    <div class="spinner"></div>
+    <h1>Conectando a tu juego…</h1>
+    <p>Espera un segundo, te llevamos a la sala.</p>
+  </div>
+
+  <div id="no-encontrado" class="oculto">
+    <div class="icono">🔒</div>
+    <h1>Este link ya no está disponible</h1>
+    <p>Puede que la clase ya haya terminado o que el código esté mal escrito. Pídele a tu profe un link o código nuevo.</p>
+    <a class="btn" href="/">Ir a AulaGame</a>
+  </div>
+</div>
+
+<script type="module">
+  import { firebaseConfig } from "./firebase-config.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+  function mostrarNoEncontrado(){
+    document.getElementById("cargando").classList.add("oculto");
+    document.getElementById("no-encontrado").classList.remove("oculto");
+  }
+
+  var codigo = location.pathname.replace(/^\/+|\/+$/g, "").toUpperCase();
+
+  if(!/^[A-Z0-9]{3,10}$/.test(codigo)){
+    mostrarNoEncontrado();
+  } else {
+    var app = initializeApp(firebaseConfig);
+    var db = getFirestore(app);
+
+    getDoc(doc(db, "codigosCortos", codigo)).then(function(snap){
+      if(!snap.exists()){ mostrarNoEncontrado(); return; }
+      var d = snap.data();
+      if(!d.destino || !d.paramNombre || !d.paramValor){ mostrarNoEncontrado(); return; }
+      var url = d.destino + "?" + d.paramNombre + "=" + encodeURIComponent(d.paramValor);
+      if(d.extraQuery) url += "&" + d.extraQuery;
+      location.replace(url);
+    }).catch(function(){
+      mostrarNoEncontrado();
+    });
+  }
+</script>
+
+</body>
+</html>
