@@ -7,6 +7,7 @@
 <title>Kart Race: Repaso del Verbo To Be</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root{
     --red:#E52521;
@@ -334,6 +335,21 @@
   @keyframes fall{ to{ transform: translateY(110vh) rotate(400deg); opacity:0.4; } }
 
   footer{ text-align:center; font-size:12px; color:#666; padding:20px; }
+
+  /* ---------- MODO QR ---------- */
+  .qr-box-wrap{ background:#fff; padding:10px; border-radius:12px; display:inline-block; margin:12px 0; border:2px solid #eee; }
+  #student-app{ display:none; }
+  #student-app.show{ display:block; }
+  .student-wrap{ max-width:460px; margin:0 auto; padding:24px 16px 60px; text-align:center; }
+  .student-player-btn{
+    display:block; width:100%; padding:16px; margin-bottom:10px; border-radius:14px; border:3px solid var(--ink);
+    font-family:'Baloo 2', cursive; font-weight:800; font-size:16px; color:#fff; box-shadow:var(--shadow);
+  }
+  .student-roll-btn{
+    width:100%; padding:24px; border-radius:16px; border:none; background:var(--red); color:#fff;
+    font-family:'Baloo 2', cursive; font-weight:800; font-size:22px; box-shadow:0 6px 0 var(--red-dark);
+  }
+  .student-roll-btn:disabled{ opacity:.4; }
 </style>
 </head>
 <body>
@@ -419,6 +435,10 @@
       <div class="panel" style="padding:16px; display:flex; align-items:center;">
         <button class="btn-ghost small" id="resetGameBtn" style="width:100%;">🔁 Reiniciar / nuevos jugadores</button>
       </div>
+
+      <div class="panel" style="padding:16px; display:flex; align-items:center;">
+        <button class="btn-blue small" id="qrBtn" style="width:100%; background:var(--blue); box-shadow:0 4px 0 var(--blue-dark);">📱 Conectar celulares</button>
+      </div>
     </div>
 
     <!-- Leyenda, al final -->
@@ -431,6 +451,41 @@
 </main>
 
 <footer>Tablero digital inspirado en juegos de carreras tipo Mario Kart — creado para uso didáctico. No usa personajes con derechos de autor. Música generada digitalmente.</footer>
+
+<!-- ============ MODO QR ============ -->
+<div id="qrOverlay" class="overlay hidden">
+  <div class="modal">
+    <span class="cat-badge" style="background:var(--blue);">📱 Conecta a tus jugadores</span>
+    <div class="qr-box-wrap"><div id="qrBox"></div></div>
+    <p style="font-size:13px; color:#666;">Cada jugador escanea el mismo código y elige quién es en el celular</p>
+    <div id="qrSalaCode" style="font-family:'Baloo 2',cursive; font-weight:800; font-size:26px;">------</div>
+    <p id="qrLinkCorto" style="font-size:12.5px; color:#666;"></p>
+    <button class="btn-blue" id="qrCerrarBtn" style="background:var(--blue); box-shadow:0 4px 0 var(--blue-dark);">Cerrar</button>
+  </div>
+</div>
+
+<!-- ============ MODO QR: pantalla del alumno (celular) ============ -->
+<div id="student-app">
+  <div class="student-wrap">
+    <h1 class="title-font" style="font-size:26px;">🏁 KART RACE</h1>
+
+    <div id="studentSelect">
+      <p>¿Quién eres?</p>
+      <div id="studentPlayerButtons"></div>
+    </div>
+
+    <div id="studentPlay" style="display:none;">
+      <div id="studentEstado" style="font-weight:800; margin-bottom:12px;"></div>
+      <button class="student-roll-btn hidden" id="studentRollBtn">🎲 LANZAR DADO</button>
+      <div id="studentDadoResultado" style="font-size:15px; font-weight:700; margin-top:10px;"></div>
+      <div id="studentPreguntaZone" class="hidden panel" style="padding:16px; margin-top:14px; text-align:left;">
+        <span class="cat-badge" style="background:var(--blue);">❓ Pregunta</span>
+        <div id="studentQuestionText" class="question-text"></div>
+        <p style="font-size:12.5px; color:#666;">El profesor está evaluando tu respuesta oral…</p>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ============ QUESTION MODAL ============ -->
 <div id="questionOverlay" class="overlay hidden">
@@ -522,6 +577,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script type="module">
 import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
+import { crearSala, refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
 /* ================= CONFIG ================= */
 const TOTAL_TILES = 31;
 const KART_COLORS = [
@@ -581,11 +637,21 @@ const DEFAULT_QUESTIONS = [
   "¿AM, IS o ARE? — 'The dog ___ black'",
 ];
 
+/* ================= MODO QR: alumno vs. profesor ================= */
+const _paramsRace = new URLSearchParams(location.search);
+const SALA_ALUMNO = _paramsRace.get("room");
+const ES_ALUMNO = !!SALA_ALUMNO;
+
 /* ================= STATE ================= */
-/* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore. */
-const { saved: SAVED_RACE, uid: CURRENT_UID } = await new Promise(function(resolve){
-  initGameSync('raceboard', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
-});
+/* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore.
+   Un alumno que entra con ?room=... no tiene sesión de profesor: se salta el gate. */
+let SAVED_RACE = null, CURRENT_UID = null;
+if(!ES_ALUMNO){
+  const _r = await new Promise(function(resolve){
+    initGameSync('raceboard', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+  });
+  SAVED_RACE = _r.saved; CURRENT_UID = _r.uid;
+}
 
 let questions = (SAVED_RACE && Array.isArray(SAVED_RACE.questions) && SAVED_RACE.questions.length)
   ? SAVED_RACE.questions
@@ -598,6 +664,7 @@ let state = {
   mode: 'virtual',
   gameOver: false,
 };
+let salaActual = null; // código de sala en vivo (null = modo QR no activado)
 
 /* ================= QUESTION STORAGE ================= */
 function saveQuestions(){
@@ -1002,6 +1069,7 @@ function renderSidebar(){
   document.getElementById('shellCountLabel').textContent = `🐢 Caparazones: ${cp.shells || 0}`;
   const useShellBtn = document.getElementById('useShellBtn');
   useShellBtn.disabled = !(cp.shells > 0) || awaitingResolution || state.gameOver;
+  syncEstado();
 
   const physicalRow = document.getElementById('physicalRow');
   if(physicalRow.children.length === 0){
@@ -1057,6 +1125,7 @@ function handleRoll(steps){
 
   rollBtn.disabled = true;
   document.querySelectorAll('#physicalRow button').forEach(b=>b.disabled=true);
+  if(salaActual) escribir(refSala('raceboard', salaActual, 'estado/dado'), { valor: steps, tiradoEn: Date.now() });
 
   if(player.skipTurn){
     player.skipTurn = false;
@@ -1173,6 +1242,7 @@ function askQuestion(isShell){
   document.getElementById('qText').textContent = q;
   document.getElementById('qBonusBanner').classList.toggle('hidden', !isShellQuestion);
   document.getElementById('questionOverlay').classList.remove('hidden');
+  if(salaActual) escribir(refSala('raceboard', salaActual, 'estado/preguntaAsignada'), { texto: q, esCaparazon: !!isShellQuestion });
 }
 
 document.getElementById('qCorrectBtn').onclick = () => {
@@ -1184,12 +1254,14 @@ document.getElementById('qCorrectBtn').onclick = () => {
   } else {
     showToast('✅ ¡Correcto!');
   }
+  if(salaActual) escribir(refSala('raceboard', salaActual, 'estado/resultado'), { correcto: true });
   renderSidebar();
   finishResolution();
 };
 document.getElementById('qWrongBtn').onclick = () => {
   document.getElementById('questionOverlay').classList.add('hidden');
   const player = state.players[state.currentIndex];
+  if(salaActual) escribir(refSala('raceboard', salaActual, 'estado/resultado'), { correcto: false });
   if(player.shield){
     player.shield = false;
     showToast(`⭐ ${player.name} usó su escudo para evitar retroceder.`);
@@ -1217,6 +1289,12 @@ function finishResolution(){
 function nextTurn(){
   if(state.gameOver) return;
   state.currentIndex = (state.currentIndex + 1) % state.players.length;
+  if(salaActual){
+    escribir(refSala('raceboard', salaActual, 'estado/dado'), null);
+    escribir(refSala('raceboard', salaActual, 'estado/preguntaAsignada'), null);
+    escribir(refSala('raceboard', salaActual, 'estado/resultado'), null);
+    escribir(refSala('raceboard', salaActual, 'respuestas'), null);
+  }
   renderSidebar();
   rollBtn.disabled = false;
   document.querySelectorAll('#physicalRow button').forEach(b=>b.disabled=false);
@@ -1528,6 +1606,149 @@ function escapeHtml(str){
   const d = document.createElement('div');
   d.textContent = str;
   return d.innerHTML;
+}
+
+/* ================= MODO QR: sala en vivo para celulares ================= */
+function syncEstado(){
+  if(!salaActual || !state.players.length) return;
+  escribir(refSala('raceboard', salaActual, 'estado/turnoJugadorId'), state.players[state.currentIndex].id);
+  escribir(refSala('raceboard', salaActual, 'estado/roster'), state.players.map(function(p){
+    return { id: p.id, nombre: p.name, color: p.color, position: p.position };
+  }));
+}
+
+async function abrirModalQR(){
+  const overlay = document.getElementById('qrOverlay');
+  overlay.classList.remove('hidden');
+  if(salaActual) return;
+  const codeEl = document.getElementById('qrSalaCode');
+  codeEl.textContent = 'Creando sala…';
+  try{
+    const { sala, codigoCorto } = await crearSala('raceboard', '/play/raceboard/');
+    salaActual = sala;
+    codeEl.textContent = sala;
+    const joinUrl = location.origin + '/play/raceboard/?room=' + sala;
+    const qb = document.getElementById('qrBox');
+    qb.innerHTML = '';
+    if(window.QRCode){
+      new QRCode(qb, { text: joinUrl, width: 190, height: 190, colorDark: '#1a1a2e', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    }
+    document.getElementById('qrLinkCorto').textContent = codigoCorto ? ('🔗 ' + location.host + '/' + codigoCorto) : joinUrl;
+    syncEstado();
+    escuchar(refSala('raceboard', salaActual, 'respuestas'), function(datos){
+      if(!datos || awaitingResolution || state.gameOver) return;
+      const turnoId = state.players[state.currentIndex].id;
+      const peticion = datos[turnoId];
+      if(peticion && peticion.tipo === 'lanzar' && !rollBtn.disabled){
+        rollBtn.click();
+      }
+    });
+  }catch(e){
+    codeEl.textContent = 'Error al crear la sala';
+    toast('No se pudo crear la sala en vivo. Revisa tu conexión.');
+  }
+}
+document.getElementById('qrBtn').addEventListener('click', abrirModalQR);
+document.getElementById('qrCerrarBtn').addEventListener('click', function(){ document.getElementById('qrOverlay').classList.add('hidden'); });
+
+/* ---------------- Vista del alumno (celular) ---------------- */
+function initStudentView(){
+  document.querySelector('header').style.display = 'none';
+  document.querySelector('main').style.display = 'none';
+  document.querySelector('footer').style.display = 'none';
+  document.getElementById('student-app').classList.add('show');
+  document.documentElement.style.visibility = '';
+
+  const jugadorId = idJugador(SALA_ALUMNO);
+  const idKey = 'aulagame_race_id_' + SALA_ALUMNO;
+  let miId = sessionStorage.getItem(idKey);
+  let estado = null;
+  let yaLanzado = false;
+  let ultimoDado = undefined;
+
+  const selectEl = document.getElementById('studentSelect');
+  const playEl = document.getElementById('studentPlay');
+  const btnsWrap = document.getElementById('studentPlayerButtons');
+  const rollBtnStudent = document.getElementById('studentRollBtn');
+
+  function elegirJugador(id){
+    miId = String(id);
+    sessionStorage.setItem(idKey, miId);
+    escribir(refSala('raceboard', SALA_ALUMNO, 'jugadores/' + jugadorId), { equipoId: miId, unidoEn: marcaTiempo() });
+    selectEl.style.display = 'none';
+    playEl.style.display = 'block';
+    render();
+  }
+
+  function render(){
+    if(!estado || miId === null) return;
+    const roster = estado.roster || [];
+    const yo = roster.find(function(p){ return String(p.id) === String(miId); });
+    const soyYo = String(estado.turnoJugadorId) === String(miId);
+
+    if(estado.dado && estado.dado.tiradoEn !== ultimoDado){
+      ultimoDado = estado.dado.tiradoEn;
+      yaLanzado = true;
+    }
+    if(!estado.dado){ yaLanzado = false; ultimoDado = undefined; }
+
+    const estadoEl = document.getElementById('studentEstado');
+    const preguntaZone = document.getElementById('studentPreguntaZone');
+    const dadoEl = document.getElementById('studentDadoResultado');
+
+    if(estado.resultado){
+      preguntaZone.classList.add('hidden');
+      dadoEl.textContent = estado.resultado.correcto ? '✅ ¡Correcto!' : '❌ Incorrecto.';
+    } else if(estado.preguntaAsignada){
+      preguntaZone.classList.remove('hidden');
+      document.getElementById('studentQuestionText').textContent = estado.preguntaAsignada.texto;
+      dadoEl.textContent = '';
+    } else {
+      preguntaZone.classList.add('hidden');
+      dadoEl.textContent = estado.dado ? ('🎲 Salió ' + estado.dado.valor) : '';
+    }
+
+    if(soyYo && !yaLanzado && !estado.dado){
+      estadoEl.textContent = '¡Es tu turno, ' + (yo ? yo.nombre : '') + '!';
+      rollBtnStudent.classList.remove('hidden');
+      rollBtnStudent.disabled = false;
+    } else if(soyYo){
+      estadoEl.textContent = 'Tu turno — mira la pantalla grande';
+      rollBtnStudent.classList.add('hidden');
+    } else {
+      const turno = roster.find(function(p){ return String(p.id) === String(estado.turnoJugadorId); });
+      estadoEl.textContent = 'Turno de ' + (turno ? turno.nombre : '...') + ' — espera tu turno';
+      rollBtnStudent.classList.add('hidden');
+    }
+  }
+
+  rollBtnStudent.addEventListener('click', function(){
+    if(rollBtnStudent.disabled) return;
+    rollBtnStudent.disabled = true;
+    escribir(refSala('raceboard', SALA_ALUMNO, 'respuestas/' + miId), { tipo: 'lanzar', jugadorId: jugadorId, enviadaEn: marcaTiempo() });
+  });
+
+  escuchar(refSala('raceboard', SALA_ALUMNO, 'estado'), function(datos){
+    estado = datos;
+    if(!estado) return;
+    if(miId === null){
+      btnsWrap.innerHTML = '';
+      (estado.roster || []).forEach(function(p){
+        const btn = document.createElement('div');
+        btn.className = 'student-player-btn';
+        btn.style.background = p.color;
+        btn.textContent = p.nombre;
+        btn.addEventListener('click', function(){ elegirJugador(p.id); });
+        btnsWrap.appendChild(btn);
+      });
+    } else {
+      render();
+    }
+  });
+}
+
+if(ES_ALUMNO){
+  initStudentView();
 }
 </script>
 </body>
