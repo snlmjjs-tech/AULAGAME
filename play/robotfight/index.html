@@ -2,16 +2,6 @@
 <html lang="es">
 <head>
 <script>document.documentElement.style.visibility="hidden";</script>
-<script type="module">
-  import { firebaseConfig } from "../../firebase-config.js";
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-  var app = initializeApp(firebaseConfig);
-  onAuthStateChanged(getAuth(app), function(user){
-    if(user){ document.documentElement.style.visibility = ""; }
-    else { location.replace("/"); }
-  });
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FIGHT!!! 3D - English Numbers Battle</title>
@@ -289,14 +279,37 @@
   </div>
 </div>
 
-<script>
+<script type="module">
+import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 /* ============================================================
    FIGHT!!! 3D - English Numbers Battle
    Single-file HTML educational game (Three.js r128)
    ============================================================ */
 
+/* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore. */
+const { saved: SAVED_ROBOTFIGHT, uid: CURRENT_UID } = await new Promise(function(resolve){
+  initGameSync('robotfight', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+});
+
+/* questionBank es un array de objetos (cada uno con un campo "wrong" que es un
+   array de 2 elementos) — esto SÍ es válido en Firestore, no es un array anidado
+   directo, así que se guarda/carga tal cual, solo validando su forma. */
+function questionBankFromSaved(saved){
+  if(!saved || !Array.isArray(saved.questionBank)) return null;
+  const arr = saved.questionBank
+    .filter(function(q){ return q && typeof q === 'object' && Array.isArray(q.wrong) && q.wrong.length >= 2; })
+    .map(function(q){
+      return {
+        number: String(q.number != null ? q.number : ''),
+        correct: String(q.correct != null ? q.correct : ''),
+        wrong: [String(q.wrong[0] != null ? q.wrong[0] : ''), String(q.wrong[1] != null ? q.wrong[1] : '')]
+      };
+    });
+  return arr.length ? arr : null;
+}
+
 /* ---------- Default question bank ---------- */
-let questionBank = [
+let questionBank = questionBankFromSaved(SAVED_ROBOTFIGHT) || [
   {number:"320", correct:"Three hundred and twenty", wrong:["Three hundred and twelve","Thirty-two zero"]},
   {number:"580", correct:"Five hundred and eighty", wrong:["Five hundred and eighteen","Eighty-five hundred"]},
   {number:"999", correct:"Nine hundred and ninety-nine", wrong:["Nine hundred and nineteen","Ninety-nine hundred"]},
@@ -917,12 +930,20 @@ function renderEditTable(){
       else if(field==='wrong0') questionBank[idx].wrong[0] = e.target.value;
       else if(field==='wrong1') questionBank[idx].wrong[1] = e.target.value;
     });
+    inp.addEventListener('change', ()=>{
+      saveGameData('robotfight', CURRENT_UID, { questionBank: questionBank }).then(function(ok){
+        if(ok) toast('✓ Guardado y sincronizado');
+      });
+    });
   });
   body.querySelectorAll('.row-del').forEach(btn=>{
     btn.addEventListener('click', (e)=>{
       const idx = +e.target.dataset.idx;
       questionBank.splice(idx,1);
       renderEditTable();
+      saveGameData('robotfight', CURRENT_UID, { questionBank: questionBank }).then(function(ok){
+        if(ok) toast('✓ Guardado y sincronizado');
+      });
     });
   });
 }
@@ -933,6 +954,9 @@ document.getElementById('closeEditBtn').addEventListener('click', ()=>{
 });
 document.getElementById('saveEditBtn').addEventListener('click', ()=>{
   document.getElementById('editModal').classList.remove('active');
+  saveGameData('robotfight', CURRENT_UID, { questionBank: questionBank }).then(function(ok){
+    if(ok) toast('✓ Guardado y sincronizado');
+  });
 });
 document.getElementById('addRowBtn').addEventListener('click', ()=>{
   questionBank.push({number:"", correct:"", wrong:["",""]});
@@ -940,6 +964,9 @@ document.getElementById('addRowBtn').addEventListener('click', ()=>{
   const rows = document.querySelectorAll('#editTableBody tr');
   const lastRow = rows[rows.length-1];
   if(lastRow){ lastRow.scrollIntoView({behavior:'smooth', block:'center'}); const firstInput = lastRow.querySelector('input'); if(firstInput) firstInput.focus(); }
+  saveGameData('robotfight', CURRENT_UID, { questionBank: questionBank }).then(function(ok){
+    if(ok) toast('✓ Guardado y sincronizado');
+  });
 });
 
 /* ---------- Excel import/export via SheetJS ---------- */
@@ -976,6 +1003,9 @@ document.getElementById('importExcel').addEventListener('change', (e)=>{
       }
       questionBank = newBank;
       renderEditTable();
+      saveGameData('robotfight', CURRENT_UID, { questionBank: questionBank }).then(function(ok){
+        if(ok) toast('✓ Preguntas importadas y sincronizadas');
+      });
     }catch(err){
       openConfirm("Error","No se pudo leer el archivo Excel. Verifica el formato.", ()=>{});
     }
@@ -984,7 +1014,12 @@ document.getElementById('importExcel').addEventListener('change', (e)=>{
 });
 
 /* ---------- Boot ---------- */
-window.addEventListener('load', initThree);
+// El script ahora espera (await) la carga de Firestore antes de llegar acá, así
+// que el evento 'load' de la ventana puede haberse disparado ya para cuando se
+// ejecuta esta línea; si es así, hay que llamar initThree() directamente en vez
+// de esperar un evento que ya pasó.
+if(document.readyState === 'complete'){ initThree(); }
+else { window.addEventListener('load', initThree); }
 </script>
 </body>
 </html>

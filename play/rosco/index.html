@@ -2,16 +2,6 @@
 <html lang="es">
 <head>
 <script>document.documentElement.style.visibility="hidden";</script>
-<script type="module">
-  import { firebaseConfig } from "../../firebase-config.js";
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-  var app = initializeApp(firebaseConfig);
-  onAuthStateChanged(getAuth(app), function(user){
-    if(user){ document.documentElement.style.visibility = ""; }
-    else { location.replace("/"); }
-  });
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rosco de Palabras - Mr. Núñez</title>
@@ -557,7 +547,8 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script>
+<script type="module">
+import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 /* ================= DATA ================= */
 /* Vocabulario fácil de inglés. Cada respuesta empieza con la letra correspondiente. */
 const LETTERS = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
@@ -593,8 +584,34 @@ const DEFAULT_CLUES = [
 const TEAM_COUNT = 3;
 const TEAM_COLOR_CLASSES = ['t0','t1','t2'];
 const DEFAULT_TEAM_NAMES = Array.from({length:TEAM_COUNT}, (_,i)=>'EQUIPO '+(i+1));
+
+/* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore. */
+const { saved: SAVED_ROSCO, uid: CURRENT_UID } = await new Promise(function(resolve){
+  initGameSync('rosco', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+});
+
+/* Firestore no admite arrays anidados (array dentro de array), así que TEAM_CLUES
+   (array de equipos, cada uno con un array de 26 pistas) se guarda como un objeto
+   indexado por equipo ({0:[...], 1:[...], ...}) y se reconstruye a array acá. */
+function teamCluesFromSaved(saved){
+  if(!saved || !saved.teamClues) return null;
+  const src = saved.teamClues;
+  const out = [];
+  for(let t=0;t<TEAM_COUNT;t++){
+    const arr = src[t] || src[String(t)];
+    if(!Array.isArray(arr)) return null;
+    out.push(LETTERS.map(function(_,i){ return arr[i] || DEFAULT_CLUES[i]; }));
+  }
+  return out;
+}
+function teamCluesToSaveShape(teamClues){
+  const out = {};
+  teamClues.forEach(function(arr,i){ out[i] = arr.slice(); });
+  return out;
+}
+
 /* Cada equipo tiene su propio set de 26 preguntas, editable de forma independiente. */
-let TEAM_CLUES = Array.from({length:TEAM_COUNT}, ()=> DEFAULT_CLUES.slice());
+let TEAM_CLUES = teamCluesFromSaved(SAVED_ROSCO) || Array.from({length:TEAM_COUNT}, ()=> DEFAULT_CLUES.slice());
 const TOTAL_TIME = 240; // seconds (4 min) per team
 
 /* ================= STATE ================= */
@@ -1169,6 +1186,9 @@ document.getElementById('saveQuestionsBtn').addEventListener('click', ()=>{
   saveInputsToDraft(editingTeamIdx);
   TEAM_CLUES = draftClues.map(arr=>arr.slice());
   closeEditModal();
+  saveGameData('rosco', CURRENT_UID, { teamClues: teamCluesToSaveShape(TEAM_CLUES) }).then(function(ok){
+    if(ok) toast('✓ Preguntas guardadas y sincronizadas');
+  });
 });
 document.getElementById('cancelQuestionsBtn').addEventListener('click', closeEditModal);
 document.getElementById('resetQuestionsBtn').addEventListener('click', ()=>{

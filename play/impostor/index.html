@@ -2,16 +2,6 @@
 <html lang="es">
 <head>
 <script>document.documentElement.style.visibility="hidden";</script>
-<script type="module">
-  import { firebaseConfig } from "../../firebase-config.js";
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-  var app = initializeApp(firebaseConfig);
-  onAuthStateChanged(getAuth(app), function(user){
-    if(user){ document.documentElement.style.visibility = ""; }
-    else { location.replace("/"); }
-  });
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>¿Quién Es El Impostor? — Juego de Clase Editable</title>
@@ -507,7 +497,8 @@
 
 <div class="sound-toggle"><button id="soundBtn" title="Sonido">🔊</button></div>
 
-<script>
+<script type="module">
+import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 /* ===================================================================
    ESTADO Y DATOS
 =================================================================== */
@@ -530,10 +521,26 @@ function blankWords(){
 
 function uid(){ return 'r' + Math.random().toString(36).slice(2,10); }
 
+/* Espera la sesión y carga (si existen) las rondas/actividad final guardadas del profesor en Firestore. */
+const { saved: SAVED_IMPOSTOR, uid: CURRENT_UID } = await new Promise(function(resolve){
+  initGameSync('impostor', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+});
+
+const savedRounds = SAVED_IMPOSTOR && Array.isArray(SAVED_IMPOSTOR.rounds) ? SAVED_IMPOSTOR.rounds : null;
+const savedClosing = SAVED_IMPOSTOR && SAVED_IMPOSTOR.closing && typeof SAVED_IMPOSTOR.closing === 'object' ? SAVED_IMPOSTOR.closing : null;
+const fallbackData = (!savedRounds || !savedClosing) ? exampleData() : null;
+
 let state = {
-  rounds: [],
-  closing: { title:'', body:'', extra:'' }
+  rounds: savedRounds || fallbackData.rounds,
+  closing: savedClosing || fallbackData.closing
 };
+
+/* Guarda el contenido editable (rondas + actividad final) en Firestore, con respaldo local. */
+function persist(){
+  saveGameData('impostor', CURRENT_UID, { rounds: state.rounds, closing: state.closing }).then(function(ok){
+    if(ok) toast('✓ Guardado y sincronizado');
+  });
+}
 
 let ui = {
   activeTab: 'setup',
@@ -738,19 +745,21 @@ function renderRoundList(){
         e.stopPropagation(); playClick();
         const act = btn.dataset.act;
         const idx = state.rounds.findIndex(r=>r.id===id);
-        if(act==='up' && idx>0){ [state.rounds[idx-1],state.rounds[idx]]=[state.rounds[idx],state.rounds[idx-1]]; renderRoundList(); }
-        if(act==='down' && idx<state.rounds.length-1){ [state.rounds[idx+1],state.rounds[idx]]=[state.rounds[idx],state.rounds[idx+1]]; renderRoundList(); }
+        if(act==='up' && idx>0){ [state.rounds[idx-1],state.rounds[idx]]=[state.rounds[idx],state.rounds[idx-1]]; renderRoundList(); persist(); }
+        if(act==='down' && idx<state.rounds.length-1){ [state.rounds[idx+1],state.rounds[idx]]=[state.rounds[idx],state.rounds[idx+1]]; renderRoundList(); persist(); }
         if(act==='dup'){
           const copy = JSON.parse(JSON.stringify(state.rounds[idx]));
           copy.id = uid(); copy.title = copy.title + ' (copia)';
           state.rounds.splice(idx+1,0,copy);
           renderRoundList();
+          persist();
         }
         if(act==='del'){
           confirmAction('¿Eliminar ronda?', `Se eliminará "${state.rounds[idx].title}". Esta acción no se puede deshacer.`, ()=>{
             state.rounds.splice(idx,1);
             if(ui.activeRoundId===id) ui.activeRoundId = null;
             renderRoundList();
+            persist();
           });
         }
       });
@@ -817,14 +826,14 @@ function renderRoundEditor(id){
     </div>
   `;
   document.getElementById('editTitle').addEventListener('input', (e)=>{
-    round.title = e.target.value; renderRoundListTitlesOnly();
+    round.title = e.target.value; renderRoundListTitlesOnly(); persist();
   });
   card.querySelectorAll('[data-count]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       playClick();
       round.impostorCount = parseInt(btn.dataset.count,10);
       round.manualImpostors = round.manualImpostors.slice(0, round.impostorCount);
-      renderRoundEditor(id); renderRoundListTitlesOnly();
+      renderRoundEditor(id); renderRoundListTitlesOnly(); persist();
     });
   });
   card.querySelectorAll('[data-mode]').forEach(btn=>{
@@ -832,6 +841,7 @@ function renderRoundEditor(id){
       playClick();
       round.impostorMode = btn.dataset.mode;
       renderRoundEditor(id);
+      persist();
     });
   });
   card.querySelectorAll('[data-pick]').forEach(btn=>{
@@ -846,11 +856,13 @@ function renderRoundEditor(id){
         arr.push(key);
       }
       renderRoundEditor(id);
+      persist();
     });
   });
   card.querySelectorAll('[data-color]').forEach(inp=>{
     inp.addEventListener('input', (e)=>{
       round.words[e.target.dataset.color] = e.target.value;
+      persist();
     });
   });
 }
@@ -875,9 +887,9 @@ function bindClosingInputs(){
   const b = document.getElementById('closingBody');
   const e = document.getElementById('closingExtra');
   t.value = state.closing.title; b.value = state.closing.body; e.value = state.closing.extra;
-  t.addEventListener('input', ()=> state.closing.title = t.value);
-  b.addEventListener('input', ()=> state.closing.body = b.value);
-  e.addEventListener('input', ()=> state.closing.extra = e.value);
+  t.addEventListener('input', ()=>{ state.closing.title = t.value; persist(); });
+  b.addEventListener('input', ()=>{ state.closing.body = b.value; persist(); });
+  e.addEventListener('input', ()=>{ state.closing.extra = e.value; persist(); });
 }
 
 /* ===================================================================
@@ -889,6 +901,7 @@ document.getElementById('addRoundBtn').addEventListener('click', ()=>{
   state.rounds.push(r);
   ui.activeRoundId = r.id;
   renderRoundList();
+  persist();
 });
 
 document.getElementById('loadExampleBtn').addEventListener('click', ()=>{
@@ -899,6 +912,7 @@ document.getElementById('loadExampleBtn').addEventListener('click', ()=>{
     ui.activeRoundId = state.rounds[0].id;
     renderRoundList();
     bindClosingInputs();
+    persist();
   });
 });
 
@@ -992,6 +1006,7 @@ document.getElementById('importExcelFile').addEventListener('change', (e)=>{
       ui.activeRoundId = state.rounds[0].id;
       renderRoundList();
       bindClosingInputs();
+      persist();
       alertMsg('Importado con éxito', `Se cargaron ${state.rounds.length} ronda(s) desde el archivo Excel.`);
     }catch(err){
       alertMsg('Error al importar', 'No se pudo leer el archivo. Verifica que sea el Excel exportado desde este juego (hoja "Rondas" con columnas Titulo, Impostores y los 8 colores).');
@@ -1008,6 +1023,7 @@ document.getElementById('resetAllBtn').addEventListener('click', ()=>{
     ui.activeRoundId = null;
     renderRoundList();
     bindClosingInputs();
+    persist();
   });
 });
 
@@ -1243,11 +1259,9 @@ document.getElementById('soundBtn').addEventListener('click', (e)=>{
    INICIALIZACIÓN
 =================================================================== */
 function init(){
-  // Precarga el ejemplo la primera vez para que el profesor vea el juego funcionando de inmediato.
-  const ex = exampleData();
-  state.rounds = ex.rounds;
-  state.closing = ex.closing;
-  ui.activeRoundId = state.rounds[0].id;
+  // state.rounds/state.closing ya quedaron inicializados arriba (desde lo guardado en
+  // Firestore, o el ejemplo por defecto si el profesor nunca ha guardado nada todavía).
+  ui.activeRoundId = state.rounds.length ? state.rounds[0].id : null;
   renderRoundList();
   bindClosingInputs();
 }

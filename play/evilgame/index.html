@@ -2,16 +2,6 @@
 <html lang="es">
 <head>
 <script>document.documentElement.style.visibility="hidden";</script>
-<script type="module">
-  import { firebaseConfig } from "../../firebase-config.js";
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-  var app = initializeApp(firebaseConfig);
-  onAuthStateChanged(getAuth(app), function(user){
-    if(user){ document.documentElement.style.visibility = ""; }
-    else { location.replace("/"); }
-  });
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Evil Game - by Mr. Nuñez</title>
@@ -737,7 +727,8 @@
   </div>
 </div>
 
-<script>
+<script type="module">
+import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 /* ============ DATA: exact layout extracted from the original .pptm ============ */
 const CELLS = [
  {n:1, left:11.87, top:7.22, w:10, h:17.78, q:'WHAT', type:'question'},
@@ -776,36 +767,43 @@ const CELLS = [
 ];
 const FINAL = 33;
 
-/* ============ EDITABLE QUESTIONS (persist if the browser allows it) ============ */
-const store = {
-  get(k){ try{ return window.localStorage.getItem(k); }catch(e){ return null; } },
-  set(k,v){ try{ window.localStorage.setItem(k,v); return true; }catch(e){ return false; } },
-  del(k){ try{ window.localStorage.removeItem(k); }catch(e){} }
-};
+/* ============ EDITABLE QUESTIONS + TEAM NAMES (sincronizadas en Firestore, con respaldo local) ============ */
 const DEFAULT_QUESTIONS = {};
 CELLS.forEach(c=>{ if(c.q !== undefined) DEFAULT_QUESTIONS[c.n] = c.q; });
+
+/* Espera la sesión y carga (si existen) las preguntas/nombres de equipo guardados del profesor en Firestore. */
+const { saved: SAVED_EVIL, uid: CURRENT_UID } = await new Promise(function(resolve){
+  initGameSync('evilgame', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+});
+
+/* Construye el objeto {casilla: pregunta} / {equipoId: nombre} vigente, para guardarlo. */
+function questionsMap(){
+  const map = {};
+  CELLS.forEach(c=>{ if(c.type === 'question' || c.type === 'finish') map[c.n] = c.q; });
+  return map;
+}
+function teamNamesMap(){
+  const map = {};
+  TEAM_DEFS.forEach(t=>{ map[t.id] = t.name; });
+  return map;
+}
+
 (function loadSavedQuestions(){
-  const raw = store.get('evilgame_questions');
-  if(!raw) return;
-  try{
-    const m = JSON.parse(raw);
-    CELLS.forEach(c=>{
-      if((c.type==='question'||c.type==='finish') && typeof m[c.n]==='string' && m[c.n].trim()!==''){
-        c.q = m[c.n];
-      }
-    });
-  }catch(e){}
+  const m = SAVED_EVIL && SAVED_EVIL.questions;
+  if(!m || typeof m !== 'object') return;
+  CELLS.forEach(c=>{
+    if((c.type==='question'||c.type==='finish') && typeof m[c.n]==='string' && m[c.n].trim()!==''){
+      c.q = m[c.n];
+    }
+  });
 })();
 
 function loadSavedTeamNames(){
-  const raw = store.get('evilgame_teamnames');
-  if(!raw) return;
-  try{
-    const m = JSON.parse(raw);
-    TEAM_DEFS.forEach(t=>{
-      if(typeof m[t.id]==='string' && m[t.id].trim()!==''){ t.name = m[t.id].trim(); }
-    });
-  }catch(e){}
+  const m = SAVED_EVIL && SAVED_EVIL.teamNames;
+  if(!m || typeof m !== 'object') return;
+  TEAM_DEFS.forEach(t=>{
+    if(typeof m[t.id]==='string' && m[t.id].trim()!==''){ t.name = m[t.id].trim(); }
+  });
 }
 
 function openEditor(){
@@ -845,27 +843,29 @@ function buildEditor(){
 }
 
 function saveQuestions(){
-  const map = {};
   document.querySelectorAll('#editor-list input').forEach(inp=>{
     const n = parseInt(inp.dataset.n);
     const val = inp.value.trim();
     const c = CELLS.find(c=>c.n===n);
-    if(c){
-      c.q = val !== '' ? val : DEFAULT_QUESTIONS[n];
-      map[n] = c.q;
-    }
+    if(c) c.q = val !== '' ? val : DEFAULT_QUESTIONS[n];
   });
-  const persisted = store.set('evilgame_questions', JSON.stringify(map));
-  document.getElementById('editor-msg').textContent = persisted
-    ? '✅ Preguntas guardadas. Se conservarán aunque cierres el juego.'
-    : '✅ Preguntas aplicadas para esta sesión.';
+  document.getElementById('editor-msg').textContent = '✅ Preguntas aplicadas. Guardando y sincronizando...';
+  saveGameData('evilgame', CURRENT_UID, { questions: questionsMap(), teamNames: teamNamesMap() }).then(function(ok){
+    document.getElementById('editor-msg').textContent = ok
+      ? '✅ Preguntas guardadas y sincronizadas.'
+      : '✅ Preguntas aplicadas para esta sesión (no se pudo sincronizar con la nube).';
+    if(ok) toast('✓ Guardado y sincronizado');
+  });
 }
 
 function restoreQuestions(){
   CELLS.forEach(c=>{ if(DEFAULT_QUESTIONS[c.n]!==undefined) c.q = DEFAULT_QUESTIONS[c.n]; });
-  store.del('evilgame_questions');
   buildEditor();
-  document.getElementById('editor-msg').textContent = '↺ Preguntas originales restauradas.';
+  document.getElementById('editor-msg').textContent = '↺ Preguntas originales restauradas. Guardando...';
+  saveGameData('evilgame', CURRENT_UID, { questions: questionsMap(), teamNames: teamNamesMap() }).then(function(ok){
+    document.getElementById('editor-msg').textContent = '↺ Preguntas originales restauradas.';
+    if(ok) toast('✓ Guardado y sincronizado');
+  });
 }
 
 /* ============ EXCEL (.xlsx) EXPORT / IMPORT — sin librerías externas ============ */
@@ -1102,11 +1102,12 @@ async function importExcel(file){
       editorMsg('⚠️ No se encontraron preguntas válidas. Usa el Excel exportado por el juego (columnas CASILLA y PREGUNTA).', false);
       return;
     }
-    const map = {};
-    CELLS.forEach(c=>{ if(c.type === 'question' || c.type === 'finish') map[c.n] = c.q; });
-    store.set('evilgame_questions', JSON.stringify(map));
     buildEditor();
-    editorMsg(`✅ ${applied} preguntas importadas desde "${file.name}" y guardadas.`);
+    editorMsg(`✅ ${applied} preguntas importadas desde "${file.name}". Guardando y sincronizando...`);
+    saveGameData('evilgame', CURRENT_UID, { questions: questionsMap(), teamNames: teamNamesMap() }).then(function(ok){
+      editorMsg(`✅ ${applied} preguntas importadas desde "${file.name}"` + (ok ? ' y guardadas/sincronizadas.' : ' (no se pudo sincronizar con la nube).'));
+      if(ok) toast('✓ Guardado y sincronizado');
+    });
   }catch(e){
     editorMsg('⚠️ No se pudo leer el archivo. Verifica que sea un .xlsx (o .csv) válido.', false);
   }
@@ -1127,10 +1128,8 @@ function renameTeam(id, val){
   const t = TEAM_DEFS.find(t=>t.id===id);
   if(!t) return;
   t.name = val.trim() !== '' ? val.trim() : DEFAULT_TEAM_NAMES[id];
-  const map = {};
-  TEAM_DEFS.forEach(t=>{ map[t.id] = t.name; });
-  // persist silently if the browser allows it
-  try{ store.set('evilgame_teamnames', JSON.stringify(map)); }catch(e){}
+  // persist en Firestore (con respaldo local), en silencio
+  saveGameData('evilgame', CURRENT_UID, { questions: questionsMap(), teamNames: teamNamesMap() });
 }
 loadSavedTeamNames();
 
@@ -1710,6 +1709,25 @@ function launchConfetti(){
     setTimeout(()=>c.remove(), 6000);
   }
 }
+
+/* Este script ahora es un módulo (type="module"), así que sus funciones ya no
+   quedan en el scope global por defecto. El HTML todavía las invoca mediante
+   atributos onclick/onchange inline, así que se exponen explícitamente aquí
+   para no romper esos manejadores. */
+window.goTo = goTo;
+window.openEditor = openEditor;
+window.exportExcel = exportExcel;
+window.importExcel = importExcel;
+window.restoreQuestions = restoreQuestions;
+window.saveQuestions = saveQuestions;
+window.setDiceMode = setDiceMode;
+window.startGame = startGame;
+window.toggleMusic = toggleMusic;
+window.rollDice = rollDice;
+window.manualRoll = manualRoll;
+window.resetGame = resetGame;
+window.answerQuestion = answerQuestion;
+window.closeModal = closeModal;
 </script>
 </body>
 </html>

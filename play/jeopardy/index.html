@@ -2,16 +2,6 @@
 <html lang="es">
 <head>
 <script>document.documentElement.style.visibility="hidden";</script>
-<script type="module">
-  import { firebaseConfig } from "../../firebase-config.js";
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-  var app = initializeApp(firebaseConfig);
-  onAuthStateChanged(getAuth(app), function(user){
-    if(user){ document.documentElement.style.visibility = ""; }
-    else { location.replace("/"); }
-  });
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jeopardy de Verbos 🎯 | Instituto Comercial Alberto Valenzuela Llanos</title>
@@ -263,7 +253,8 @@ footer.credit{text-align:center; color:var(--muted); font-size:.75rem; padding:2
 
 <footer class="credit">Instituto Comercial Alberto Valenzuela Llanos · Departamento de Inglés</footer>
 
-<script>
+<script type="module">
+import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 /* =========================================================
    DATA
 ========================================================= */
@@ -276,7 +267,7 @@ const CATEGORIES = [
 ];
 const POINTS = [50,40,30,20,10];
 
-let QUESTIONS = [
+const DEFAULT_QUESTIONS = [
   // Verbos Regulares
   {cat:"azul",pts:50,q:'¿Cuál es el pasado simple de "carry" y por qué cambia la "y"?',a:'CARRIED — la "y" cambia a "ied" porque está precedida por una consonante.'},
   {cat:"azul",pts:40,q:'Explica la regla de duplicación de consonante final en verbos como "stop" o "plan" al agregar -ed.',a:'Se duplica la consonante final cuando el verbo termina en consonante-vocal-consonante y la sílaba es tónica (stop→stopped, plan→planned).'},
@@ -309,13 +300,47 @@ let QUESTIONS = [
   {cat:"morado",pts:10,q:'¿Qué modal se usa para expresar habilidad?',a:'CAN'},
 ];
 
-let BONUS_QUESTIONS = [
+const DEFAULT_BONUS_QUESTIONS = [
   {q:'Escribe el pasado simple y el participio pasado de "begin".',a:'BEGAN · BEGUN'},
   {q:'Traduce: "Ella ha estado estudiando inglés por 3 años."',a:'SHE HAS BEEN STUDYING ENGLISH FOR 3 YEARS.'},
   {q:'Ordena la oración: have / I / never / Paris / been / to',a:'I HAVE NEVER BEEN TO PARIS.'},
   {q:'Completa: "If I ___ (have) time, I would travel."',a:'HAD'},
   {q:'Convierte a voz pasiva: "They build houses."',a:'HOUSES ARE BUILT (BY THEM).'},
 ];
+
+/* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore. */
+const { saved: SAVED_JEOPARDY, uid: CURRENT_UID } = await new Promise(function(resolve){
+  initGameSync('jeopardy', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+});
+
+/* Valida que lo guardado tenga la forma esperada antes de usarlo; si no, cae a los defaults. */
+function questionsFromSaved(saved){
+  if(!saved || !Array.isArray(saved.questions)) return null;
+  const ok = saved.questions.length && saved.questions.every(function(it){
+    return it && typeof it === "object"
+      && typeof it.cat === "string" && typeof it.pts === "number"
+      && typeof it.q === "string" && typeof it.a === "string";
+  });
+  return ok ? saved.questions : null;
+}
+function bonusFromSaved(saved){
+  if(!saved || !Array.isArray(saved.bonusQuestions)) return null;
+  const ok = saved.bonusQuestions.length && saved.bonusQuestions.every(function(it){
+    return it && typeof it === "object" && typeof it.q === "string" && typeof it.a === "string";
+  });
+  return ok ? saved.bonusQuestions : null;
+}
+
+/* Preguntas del tablero y bonus: usa lo guardado en la nube por el profesor si existe. */
+let QUESTIONS = questionsFromSaved(SAVED_JEOPARDY) || DEFAULT_QUESTIONS.slice();
+let BONUS_QUESTIONS = bonusFromSaved(SAVED_JEOPARDY) || DEFAULT_BONUS_QUESTIONS.slice();
+
+/* Guarda el estado actual de preguntas en Firestore (con respaldo local). */
+function persistQuestions(){
+  saveGameData('jeopardy', CURRENT_UID, { questions: QUESTIONS, bonusQuestions: BONUS_QUESTIONS }).then(function(ok){
+    if(ok) toast('✓ Guardado y sincronizado');
+  });
+}
 
 /* =========================================================
    STATE
@@ -599,14 +624,14 @@ function renderEditorTable(){
   let html = `<tr><th style="width:16%">Categoría</th><th style="width:8%">Puntos</th><th style="width:38%">Pregunta</th><th style="width:38%">Respuesta</th></tr>`;
   QUESTIONS.forEach((item, idx)=>{
     html += `<tr>
-      <td><select onchange="QUESTIONS[${idx}].cat=this.value">
+      <td><select data-field="cat" data-idx="${idx}">
         ${CATEGORIES.map(c=>`<option value="${c.key}" ${c.key===item.cat?'selected':''}>${c.name}</option>`).join("")}
       </select></td>
-      <td><select onchange="QUESTIONS[${idx}].pts=parseInt(this.value)">
+      <td><select data-field="pts" data-idx="${idx}">
         ${POINTS.map(p=>`<option value="${p}" ${p===item.pts?'selected':''}>${p}</option>`).join("")}
       </select></td>
-      <td><input type="text" value="${escapeAttr(item.q)}" onchange="QUESTIONS[${idx}].q=this.value"></td>
-      <td><input type="text" value="${escapeAttr(item.a)}" onchange="QUESTIONS[${idx}].a=this.value"></td>
+      <td><input type="text" value="${escapeAttr(item.q)}" data-field="q" data-idx="${idx}"></td>
+      <td><input type="text" value="${escapeAttr(item.a)}" data-field="a" data-idx="${idx}"></td>
     </tr>`;
   });
   html += `<tr><td colspan="4" style="text-align:center; padding:14px; color:var(--muted);">🎁 Preguntas Bonus (aparecen al azar al presionar el botón Bonus)</td></tr>`;
@@ -614,12 +639,31 @@ function renderEditorTable(){
     html += `<tr>
       <td style="color:var(--muted);">BONUS</td>
       <td style="color:var(--muted);">25</td>
-      <td><input type="text" value="${escapeAttr(item.q)}" onchange="BONUS_QUESTIONS[${idx}].q=this.value"></td>
-      <td><input type="text" value="${escapeAttr(item.a)}" onchange="BONUS_QUESTIONS[${idx}].a=this.value"></td>
+      <td><input type="text" value="${escapeAttr(item.q)}" data-bonus-field="q" data-bonus-idx="${idx}"></td>
+      <td><input type="text" value="${escapeAttr(item.a)}" data-bonus-field="a" data-bonus-idx="${idx}"></td>
     </tr>`;
   });
   table.innerHTML = html;
 }
+
+/* Delegado: como el script es un módulo, no se pueden usar atributos onchange= inline
+   que referencien QUESTIONS/BONUS_QUESTIONS (quedarían fuera del scope del módulo).
+   En su lugar, cada celda editable trae data-field/data-idx y este listener único
+   aplica el cambio y dispara el guardado en la nube. */
+document.getElementById("qtable").addEventListener("change", function(e){
+  const t = e.target;
+  if(t.dataset.field && t.dataset.idx !== undefined){
+    const idx = parseInt(t.dataset.idx);
+    const field = t.dataset.field;
+    QUESTIONS[idx][field] = field === "pts" ? parseInt(t.value) : t.value;
+    persistQuestions();
+  } else if(t.dataset.bonusField && t.dataset.bonusIdx !== undefined){
+    const idx = parseInt(t.dataset.bonusIdx);
+    const field = t.dataset.bonusField;
+    BONUS_QUESTIONS[idx][field] = t.value;
+    persistQuestions();
+  }
+});
 
 function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -675,6 +719,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
       if(newQ.length){ QUESTIONS = newQ; }
       if(newB.length){ BONUS_QUESTIONS = newB; }
       renderEditorTable();
+      if(newQ.length || newB.length) persistQuestions();
       alert("✅ Preguntas importadas correctamente: " + newQ.length + " preguntas de tablero, " + newB.length + " preguntas bonus.");
     }catch(err){
       alert("⚠️ No se pudo leer el archivo. Asegúrate de exportar primero una plantilla desde este juego y editarla sin cambiar las columnas.");

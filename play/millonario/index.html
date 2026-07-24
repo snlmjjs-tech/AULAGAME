@@ -2,16 +2,6 @@
 <html lang="es-CL">
 <head>
 <script>document.documentElement.style.visibility="hidden";</script>
-<script type="module">
-  import { firebaseConfig } from "../../firebase-config.js";
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-  var app = initializeApp(firebaseConfig);
-  onAuthStateChanged(getAuth(app), function(user){
-    if(user){ document.documentElement.style.visibility = ""; }
-    else { location.replace("/"); }
-  });
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Millonario Quiz | Trivia de Verbos</title>
@@ -920,9 +910,8 @@ p{margin:0;}
 
 <div class="toast-msg" id="toastMsg"></div>
 
-<script>
-(function(){
-"use strict";
+<script type="module">
+import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 
 /* ============================= DEFAULT QUESTION BANK ============================= */
 /* Extraído y curado desde la presentación original "WTM - VERBS" */
@@ -945,10 +934,19 @@ const DEFAULT_CULTURE_QUESTIONS = [
   {prompt:"¿Cuál es el océano más grande del mundo?", options:["Atlántico","Índico","Ártico","Pacífico"], correct:3, type:"culture"}
 ];
 
+/* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore. */
+const { saved: SAVED_MILLONARIO, uid: CURRENT_UID } = await new Promise(function(resolve){
+  initGameSync('millonario', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+});
+
 /* ============================= STATE ============================= */
 const state = {
-  allQuestions: JSON.parse(JSON.stringify(DEFAULT_QUESTIONS)),
-  cultureQuestions: JSON.parse(JSON.stringify(DEFAULT_CULTURE_QUESTIONS)),
+  allQuestions: (SAVED_MILLONARIO && Array.isArray(SAVED_MILLONARIO.allQuestions))
+    ? SAVED_MILLONARIO.allQuestions
+    : JSON.parse(JSON.stringify(DEFAULT_QUESTIONS)),
+  cultureQuestions: (SAVED_MILLONARIO && Array.isArray(SAVED_MILLONARIO.cultureQuestions))
+    ? SAVED_MILLONARIO.cultureQuestions
+    : JSON.parse(JSON.stringify(DEFAULT_CULTURE_QUESTIONS)),
   editorTab: "verbs",
   editIndex: null,
   playerCount: 4,
@@ -1211,6 +1209,9 @@ function renderEditor(){
       if(ok){
         currentBank().splice(idx,1);
         renderEditor();
+        saveGameData('millonario', CURRENT_UID, { allQuestions: state.allQuestions, cultureQuestions: state.cultureQuestions }).then(function(ok){
+          if(ok) toast('✓ Guardado y sincronizado');
+        });
       }
     });
   });
@@ -1254,6 +1255,9 @@ $("qFormSave").addEventListener("click", async ()=>{
   }
   $("modalQuestionForm").classList.remove("active");
   renderEditor();
+  saveGameData('millonario', CURRENT_UID, { allQuestions: state.allQuestions, cultureQuestions: state.cultureQuestions }).then(function(ok){
+    if(ok) toast('✓ Guardado y sincronizado');
+  });
 });
 
 $("btnExport").addEventListener("click", async ()=>{
@@ -1328,6 +1332,9 @@ $("importFile").addEventListener("change", (e)=>{
       else { return; }
       renderEditor();
       showToast("Preguntas importadas desde Excel ✅");
+      saveGameData('millonario', CURRENT_UID, { allQuestions: state.allQuestions, cultureQuestions: state.cultureQuestions }).then(function(ok){
+        if(ok) toast('✓ Guardado y sincronizado');
+      });
     }catch(err){
       await showAlert("No se pudo leer el archivo: "+err.message);
     }
@@ -1342,6 +1349,9 @@ $("btnRestore").addEventListener("click", async ()=>{
     if(state.editorTab==="culture"){ state.cultureQuestions = JSON.parse(JSON.stringify(DEFAULT_CULTURE_QUESTIONS)); }
     else { state.allQuestions = JSON.parse(JSON.stringify(DEFAULT_QUESTIONS)); }
     renderEditor();
+    saveGameData('millonario', CURRENT_UID, { allQuestions: state.allQuestions, cultureQuestions: state.cultureQuestions }).then(function(ok){
+      if(ok) toast('✓ Guardado y sincronizado');
+    });
   }
 });
 
@@ -1832,8 +1842,6 @@ $("btnReplay").addEventListener("click", ()=>{
 /* ============================= INIT ============================= */
 renderEditor();
 buildPlayerInputs();
-
-})();
 </script>
 </body>
 </html>

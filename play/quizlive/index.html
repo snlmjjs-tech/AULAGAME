@@ -268,7 +268,7 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
     <button class="btn verde" onclick="newQuiz()">＋ Nuevo quiz</button>
   </div>
   <div class="card">
-    <p class="muted" style="font-weight:700;margin-bottom:6px">Tus quizzes se guardan automáticamente en este navegador. Usa 📤 Exportar Excel dentro de cada quiz como respaldo o para llevarlos a otro computador.</p>
+    <p class="muted" style="font-weight:700;margin-bottom:6px">Tus quizzes se guardan automáticamente en tu cuenta y sincronizan entre dispositivos. Usa 📤 Exportar Excel dentro de cada quiz como respaldo adicional.</p>
     <div class="qlist" id="libList"></div>
   </div>
 </section>
@@ -459,7 +459,7 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
       <br>
       <p><b>Tipos de pregunta:</b> Quiz con figuras de colores (▲◆●■), Verdadero/Falso, Ordenar, Respuesta corta (se corrige sola) y Respuesta larga (el profesor asigna los puntos en vivo).</p>
       <p><b>Excel:</b> puedes exportar la plantilla, editar las preguntas en Excel y volver a importarlas. Las <b>imágenes</b> de las preguntas no viajan en el Excel; los <b>videos de YouTube</b> sí (columna Video).</p>
-      <p><b>📚 Mis Quizzes:</b> tus quizzes se guardan solos en este navegador (crea uno por curso, duplícalos y adáptalos). Si cambias de computador, llévalos con Exportar/Importar Excel.</p>
+      <p><b>📚 Mis Quizzes:</b> tus quizzes se guardan solos en tu cuenta y sincronizan entre dispositivos (crea uno por curso, duplícalos y adáptalos). También puedes llevarlos a otra cuenta con Exportar/Importar Excel.</p>
     </div>
     <div class="row" style="margin-top:16px;justify-content:flex-end">
       <button class="btn verde" onclick="closeModal('modal-help')">Entendido</button>
@@ -480,7 +480,16 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
 </div>
 
 <div class="toast" id="toast"></div>
-<script>
+<script type="module">
+import { loadGameData, saveGameData, saveGameDataDebounced } from "../shared/game-storage.js";
+
+const _isPinJoin = !!new URLSearchParams(location.search).get("pin");
+// Un alumno que entra con ?pin=... no tiene sesión de profesor: no se toca
+// Firestore para ese caso.
+const { saved: SAVED_QUIZLIVE, uid: CURRENT_UID } = _isPinJoin
+  ? { saved: null, uid: null }
+  : await loadGameData('quizlive');
+
 /* ============================================================
    ✏️ OPCIONAL: pega aquí tu configuración de Firebase para que
    quede fija en el archivo (así los estudiantes no configuran nada).
@@ -613,10 +622,10 @@ function paintImgPrev(){
 }
 function imgHTML(src){ return src?'<img class="qimg" src="'+src+'" alt="">':''; }
 
-/* ================= BIBLIOTECA DE QUIZZES (guardado automático) ================= */
+/* ================= BIBLIOTECA DE QUIZZES (guardado en Firestore, sincroniza entre dispositivos) ================= */
 let LIB=[];
 function libLoad(){
-  try{ LIB=JSON.parse(localStorage.getItem('quizlive_lib'))||[]; }catch(e){ LIB=[]; }
+  LIB = (SAVED_QUIZLIVE && Array.isArray(SAVED_QUIZLIVE.lib)) ? SAVED_QUIZLIVE.lib : [];
   if(!Array.isArray(LIB)) LIB=[];
   if(!LIB.length){
     LIB=[{id:'q'+Date.now(), title:'Quiz de ejemplo', updatedAt:Date.now(), questions:state.questions}];
@@ -624,8 +633,8 @@ function libLoad(){
   }
 }
 function libPersist(){
-  try{ localStorage.setItem('quizlive_lib',JSON.stringify(LIB)); }
-  catch(e){ toast('⚠️ Espacio lleno en este navegador: usa imágenes más pequeñas o exporta a Excel'); }
+  if(_isPinJoin) return; // un alumno unido por PIN nunca guarda la biblioteca del profesor
+  saveGameDataDebounced('quizlive', CURRENT_UID, { lib: LIB }, 800);
 }
 function openLibrary(){ renderLib(); go('scr-library'); }
 function renderLib(){
@@ -1283,6 +1292,19 @@ function localReveal(){
   else $('#fbStatus').innerHTML='⚪ Modo en vivo sin configurar — toca ⚙️ Conexión (solo el profesor, una vez)';
   document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m&&m.id!=='modal-confirm') m.classList.remove('open'); }));
 })();
+
+// El script pasó a ser un módulo (type="module") para poder usar `await` al
+// cargar la biblioteca desde Firestore. Los módulos no exponen sus funciones
+// en el scope global, así que los atributos onclick/onchange inline del HTML
+// necesitan que se re-expongan explícitamente en `window` para seguir funcionando.
+Object.assign(window, {
+  autoSave, cancelLive, clearImg, closeModal, delQ, delQuizLib, dupQuiz, exportExcel,
+  go, gradeSet, hostEndQuestion, hostNext, hostStartGame, importExcel, joinGame,
+  localNext, localReveal, moveQ, musicStop, newQuiz, openConfig, openLibrary,
+  openModal, openQuestionModal, openQuiz, orderPick, orderRemove, orderReset,
+  pickImg, renderTypeFields, saveConfig, saveQuestion, startLive, startLocal,
+  stuAnswer, toggleMusic
+});
 </script>
 </body>
 </html>

@@ -2,16 +2,6 @@
 <html lang="es">
 <head>
 <script>document.documentElement.style.visibility="hidden";</script>
-<script type="module">
-  import { firebaseConfig } from "../../firebase-config.js";
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-  var app = initializeApp(firebaseConfig);
-  onAuthStateChanged(getAuth(app), function(user){
-    if(user){ document.documentElement.style.visibility = ""; }
-    else { location.replace("/"); }
-  });
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MONOPOLY · Verbs & Questions Edition</title>
@@ -439,9 +429,8 @@
 <div id="modalRoot"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script>
-(function(){
-"use strict";
+<script type="module">
+import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 
 /* ==================================================================
    AUDIO — procedural Web Audio API, no external files
@@ -531,6 +520,11 @@ function toggleMusic(){
 document.getElementById('btnMusicTitle').onclick = toggleMusic;
 document.getElementById('btnMusicGame').onclick = toggleMusic;
 
+/* Espera la sesión y carga (si existen) las preguntas/precios guardados del profesor en Firestore. */
+const { saved: SAVED_MONOPOLY, uid: CURRENT_UID } = await new Promise(function(resolve){
+  initGameSync('monopoly', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+});
+
 /* ==================================================================
    BOARD DATA — 36 spaces: 4 corners, 16 properties, 16 question cells
    Rent is ALWAYS half the purchase price. No hotels, no tax.
@@ -573,6 +567,16 @@ const SPACES = [
  {id:34, type:'utility', name:'LIGHT COMPANY', price:20100},
  {id:35, type:'question', name:'?'},
 ];
+
+/* Si el profesor guardó precios personalizados, se sobreescriben por nombre
+   (mismo patrón que usa la importación de Excel más abajo). */
+if(SAVED_MONOPOLY && Array.isArray(SAVED_MONOPOLY.prices)){
+  SAVED_MONOPOLY.prices.forEach(function(p){
+    const target = SPACES.find(function(sp){ return sp.name.toUpperCase() === String(p.name).toUpperCase(); });
+    if(target && p.price) target.price = parseInt(p.price) || target.price;
+  });
+}
+
 const BOARD_SIZE = SPACES.length; // 36
 
 function rentOf(sp){ return Math.round(sp.price/2); }
@@ -595,7 +599,7 @@ const GRID_POS = {
    QUESTION / VERB CARDS (landed on "?" cells) — teacher customizes.
    Correct answer wins money; wrong answer returns money to the bank.
 ================================================================== */
-let QUESTION_CARDS = [
+const DEFAULT_QUESTION_CARDS = [
  {t:"Say a regular verb in the past tense.", win:3000, lose:3000},
  {t:"Name 3 irregular verbs.", win:4000, lose:4000},
  {t:"Conjugate 'to go' in the past tense.", win:3000, lose:3000},
@@ -613,11 +617,14 @@ let QUESTION_CARDS = [
  {t:"Say the -ing form of 'swim'.", win:2000, lose:2000},
  {t:"Give a synonym for the adjective 'happy'.", win:2500, lose:2500},
 ];
+let QUESTION_CARDS = (SAVED_MONOPOLY && Array.isArray(SAVED_MONOPOLY.questionCards) && SAVED_MONOPOLY.questionCards.length)
+  ? SAVED_MONOPOLY.questionCards
+  : DEFAULT_QUESTION_CARDS.slice();
 
 /* ==================================================================
    BONUS CHEST CARDS (drawn manually via the 🎁 Bonus button)
 ================================================================== */
-let BONUS_CARDS = [
+const DEFAULT_BONUS_CARDS = [
  {t:"¡Ganaste $5.000 en un concurso de belleza!", kind:'money', amt:5000},
  {t:"Perdiste $2.000 en la lotería.", kind:'money', amt:-2000},
  {t:"Hoy es tu cumpleaños, ¡todos te dan $5.000!", kind:'collectAll', amt:5000},
@@ -649,6 +656,9 @@ let BONUS_CARDS = [
  {t:"Compartiste tu premio: paga $1.000 a cada equipo.", kind:'payAll', amt:1000},
  {t:"Encontraste un billete perdido: +$2.000.", kind:'money', amt:2000},
 ];
+let BONUS_CARDS = (SAVED_MONOPOLY && Array.isArray(SAVED_MONOPOLY.bonusCards) && SAVED_MONOPOLY.bonusCards.length)
+  ? SAVED_MONOPOLY.bonusCards
+  : DEFAULT_BONUS_CARDS.slice();
 
 const TEAM_COLORS = ['#e05a4e','#3aa0e0','#4caf50','#f2c94c','#a463d6','#ff8c42'];
 
@@ -1281,6 +1291,11 @@ function editorModal(){
     });
     SFX.purchase();
     closeModal();
+    saveGameData('monopoly', CURRENT_UID, {
+      questionCards: QUESTION_CARDS,
+      bonusCards: BONUS_CARDS,
+      prices: SPACES.filter(function(s){ return s.type==='property' || s.type==='utility'; }).map(function(s){ return {name:s.name, price:s.price}; })
+    }).then(function(ok){ if(ok) toast('✓ Guardado y sincronizado'); });
   };
   el.querySelector('#closeEdit').onclick = closeModal;
   el.querySelector('#expXlsx').onclick = ()=>{
@@ -1326,6 +1341,11 @@ function editorModal(){
             if(target && r.Precio) target.price = parseInt(r.Precio)||target.price;
           });
         }
+        saveGameData('monopoly', CURRENT_UID, {
+          questionCards: QUESTION_CARDS,
+          bonusCards: BONUS_CARDS,
+          prices: SPACES.filter(function(s){ return s.type==='property' || s.type==='utility'; }).map(function(s){ return {name:s.name, price:s.price}; })
+        }).then(function(ok){ if(ok) toast('✓ Guardado y sincronizado'); });
         closeModal();
         openModal(editorModal());
       }catch(err){ closeModal(); openModal(infoModal('⚠ Error','Ese archivo no es un Excel válido. Usa el formato exportado por este mismo juego.')); }
@@ -1334,8 +1354,6 @@ function editorModal(){
   };
   return el;
 }
-
-})();
 </script>
 </body>
 </html>

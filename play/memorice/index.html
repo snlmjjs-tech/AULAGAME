@@ -2,16 +2,6 @@
 <html lang="es">
 <head>
 <script>document.documentElement.style.visibility="hidden";</script>
-<script type="module">
-  import { firebaseConfig } from "../../firebase-config.js";
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-  var app = initializeApp(firebaseConfig);
-  onAuthStateChanged(getAuth(app), function(user){
-    if(user){ document.documentElement.style.visibility = ""; }
-    else { location.replace("/"); }
-  });
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Memorice en Clase</title>
@@ -369,7 +359,8 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
   </div>
 </div>
 
-<script>
+<script type="module">
+import { initGameSync, saveGameData, saveGameDataDebounced } from "../shared/game-storage.js";
 /* ============================================================
    MEMORICE EN CLASE — un solo archivo, sin servidor.
    ============================================================ */
@@ -378,10 +369,21 @@ const TEAM_COLORS = ['#ff6b5e','#38a3d8','#9b6ddf','#7fc94f','#f26fa8','#f28b30'
 const DEFAULT_NAMES = ['Equipo Rojo','Equipo Azul','Equipo Morado','Equipo Verde','Equipo Rosado','Equipo Naranjo'];
 const MAX_IMAGES = 15, MIN_IMAGES = 2, POINTS_PER_PAIR = 10;
 
-let images = [];              // {src, label}
-let mode = 'teams';           // 'teams' | 'class'
-let teamCount = 2;
-let teamNamesCustom = {};     // index -> nombre editado
+const { saved: SAVED_MEMORICE, uid: CURRENT_UID } = await new Promise(function(resolve){
+  initGameSync('memorice', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+});
+
+let images = (SAVED_MEMORICE && Array.isArray(SAVED_MEMORICE.images)) ? SAVED_MEMORICE.images : [];              // {src, label}
+let mode = (SAVED_MEMORICE && (SAVED_MEMORICE.mode==='teams'||SAVED_MEMORICE.mode==='class')) ? SAVED_MEMORICE.mode : 'teams';           // 'teams' | 'class'
+let teamCount = (SAVED_MEMORICE && Number.isInteger(SAVED_MEMORICE.teamCount) && SAVED_MEMORICE.teamCount>=2 && SAVED_MEMORICE.teamCount<=6) ? SAVED_MEMORICE.teamCount : 2;
+let teamNamesCustom = (SAVED_MEMORICE && typeof SAVED_MEMORICE.teamNamesCustom==='object' && SAVED_MEMORICE.teamNamesCustom) ? SAVED_MEMORICE.teamNamesCustom : {};     // index -> nombre editado
+
+function persistSetup(){
+  return saveGameData('memorice', CURRENT_UID, { images: images, mode: mode, teamCount: teamCount, teamNamesCustom: teamNamesCustom });
+}
+function persistSetupDebounced(){
+  return saveGameDataDebounced('memorice', CURRENT_UID, { images: images, mode: mode, teamCount: teamCount, teamNamesCustom: teamNamesCustom }, 700);
+}
 
 let game = null;              // estado de la partida
 
@@ -434,6 +436,7 @@ function addFiles(fileList){
     reader.onload = ev => compressImage(ev.target.result, src=>{
       images.push({src, label:''});
       renderThumbs();
+      persistSetup();
     });
     reader.readAsDataURL(file);
   });
@@ -467,10 +470,13 @@ function renderThumbs(){
     thumbsEl.appendChild(d);
   });
   thumbsEl.querySelectorAll('.del').forEach(b=>b.addEventListener('click', ()=>{
-    images.splice(+b.dataset.i,1); renderThumbs();
+    images.splice(+b.dataset.i,1);
+    renderThumbs();
+    persistSetup();
   }));
   thumbsEl.querySelectorAll('input').forEach(inp=>inp.addEventListener('input', ()=>{
     images[+inp.dataset.i].label = inp.value;
+    persistSetupDebounced();
   }));
   imgCountEl.textContent = images.length;
   startBtn.disabled = images.length < MIN_IMAGES;
@@ -499,9 +505,11 @@ setInput.addEventListener('change', ()=>{
     try{
       const data = JSON.parse(ev.target.result);
       if(data.tipo!=='memorice-set' || !Array.isArray(data.images)) throw 0;
-      images = data.images.slice(0, MAX_IMAGES).map(x=>({src:String(x.src||''), label:String(x.label||'')})).filter(x=>x.src.startsWith('data:image'));
+      images = data.images.slice(0, MAX_IMAGES).map(x=>({src:String(x.src||''), label:String(x.label||'')}))
+        .filter(x=>x.src.startsWith('data:image') || x.src.startsWith('http'));
       renderThumbs();
       showMsg('📂','Set cargado','Se cargaron '+images.length+' imágenes. ¡Listo para jugar!');
+      persistSetup();
     }catch(e){
       showMsg('⚠️','Archivo no válido','Ese archivo no parece ser un set de Memorice en Clase.');
     }
@@ -518,6 +526,7 @@ function setMode(m){
   modeTeamsEl.classList.toggle('selected', m==='teams');
   modeClassEl.classList.toggle('selected', m==='class');
   teamConfigEl.style.display = m==='teams' ? '' : 'none';
+  persistSetup();
 }
 [[modeTeamsEl,'teams'],[modeClassEl,'class']].forEach(([el,m])=>{
   el.addEventListener('click', ()=>setMode(m));
@@ -526,8 +535,8 @@ function setMode(m){
 
 const teamNumEl = document.getElementById('teamNum');
 const teamNamesEl = document.getElementById('teamNames');
-document.getElementById('teamMinus').addEventListener('click', ()=>{ if(teamCount>2){teamCount--;renderTeamConfig();} });
-document.getElementById('teamPlus').addEventListener('click', ()=>{ if(teamCount<6){teamCount++;renderTeamConfig();} });
+document.getElementById('teamMinus').addEventListener('click', ()=>{ if(teamCount>2){teamCount--;renderTeamConfig();persistSetup();} });
+document.getElementById('teamPlus').addEventListener('click', ()=>{ if(teamCount<6){teamCount++;renderTeamConfig();persistSetup();} });
 function renderTeamConfig(){
   teamNumEl.textContent = teamCount;
   document.getElementById('teamMinus').disabled = teamCount<=2;
@@ -543,6 +552,7 @@ function renderTeamConfig(){
   }
   teamNamesEl.querySelectorAll('input').forEach(inp=>inp.addEventListener('input', ()=>{
     teamNamesCustom[+inp.dataset.i] = inp.value;
+    persistSetupDebounced();
   }));
 }
 renderTeamConfig();

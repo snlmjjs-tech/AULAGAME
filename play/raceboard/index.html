@@ -2,16 +2,6 @@
 <html lang="es">
 <head>
 <script>document.documentElement.style.visibility="hidden";</script>
-<script type="module">
-  import { firebaseConfig } from "../../firebase-config.js";
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-  var app = initializeApp(firebaseConfig);
-  onAuthStateChanged(getAuth(app), function(user){
-    if(user){ document.documentElement.style.visibility = ""; }
-    else { location.replace("/"); }
-  });
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kart Race: Repaso del Verbo To Be</title>
@@ -495,7 +485,7 @@
 <div id="editorOverlay" class="overlay hidden">
   <div class="modal wide">
     <h2 class="title-font" style="margin-top:0;">✏️ Editar preguntas</h2>
-    <p style="font-size:13px; color:#666;">Modifica, borra o agrega las preguntas que quieras usar en el juego (de cualquier asignatura). Los cambios se guardan en este navegador.</p>
+    <p style="font-size:13px; color:#666;">Modifica, borra o agrega las preguntas que quieras usar en el juego (de cualquier asignatura). Los cambios se guardan en tu cuenta y sincronizan entre dispositivos.</p>
 
     <div class="btnrow" style="justify-content:flex-start; margin-bottom:14px;">
       <button class="btn-ghost small" id="exportExcelBtn">📥 Exportar a Excel</button>
@@ -530,7 +520,8 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script>
+<script type="module">
+import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 /* ================= CONFIG ================= */
 const TOTAL_TILES = 31;
 const KART_COLORS = [
@@ -591,7 +582,14 @@ const DEFAULT_QUESTIONS = [
 ];
 
 /* ================= STATE ================= */
-let questions = loadQuestions();
+/* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore. */
+const { saved: SAVED_RACE, uid: CURRENT_UID } = await new Promise(function(resolve){
+  initGameSync('raceboard', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+});
+
+let questions = (SAVED_RACE && Array.isArray(SAVED_RACE.questions) && SAVED_RACE.questions.length)
+  ? SAVED_RACE.questions
+  : JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
 let tileMeta = buildTileMeta();
 
 let state = {
@@ -602,26 +600,10 @@ let state = {
 };
 
 /* ================= QUESTION STORAGE ================= */
-function loadQuestions(){
-  try{
-    const saved = localStorage.getItem('mkQuestionsBank_v2');
-    if(saved){
-      const parsed = JSON.parse(saved);
-      if(Array.isArray(parsed)) return parsed;
-    }
-    // migración desde una versión anterior con categorías AM/IS/ARE
-    const old = localStorage.getItem('mkQuestionsBank_v1');
-    if(old){
-      const parsedOld = JSON.parse(old);
-      if(parsedOld && !Array.isArray(parsedOld)){
-        return Object.values(parsedOld).flat();
-      }
-    }
-  }catch(e){}
-  return JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
-}
 function saveQuestions(){
-  localStorage.setItem('mkQuestionsBank_v2', JSON.stringify(questions));
+  saveGameData('raceboard', CURRENT_UID, { questions: questions }).then(function(ok){
+    if(ok) toast('✓ Guardado y sincronizado');
+  });
 }
 
 /* ================= TILE META (every tile 1-31 is a question, shell-bonus, or special tile) ================= */

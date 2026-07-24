@@ -2,16 +2,6 @@
 <html lang="es">
 <head>
 <script>document.documentElement.style.visibility="hidden";</script>
-<script type="module">
-  import { firebaseConfig } from "../../firebase-config.js";
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-  var app = initializeApp(firebaseConfig);
-  onAuthStateChanged(getAuth(app), function(user){
-    if(user){ document.documentElement.style.visibility = ""; }
-    else { location.replace("/"); }
-  });
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BET YOUR ANSWER</title>
@@ -385,23 +375,45 @@ body{
 
 <div class="toast" id="toast"></div>
 
-<script>
+<script type="module">
+import { initGameSync, saveGameData } from "../shared/game-storage.js";
 /* ============================================================
    BET YOUR ANSWER — juego digital interactivo
    ============================================================ */
 
+/* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore. */
+const { saved: SAVED_BYA, uid: CURRENT_UID } = await new Promise(function(resolve){
+  initGameSync('betyouranswer', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+});
+
+/* Quita el campo "used" antes de guardar: es estado de la partida en curso (qué
+   preguntas ya se jugaron), no contenido de autor, así que nunca se sincroniza. */
+function stripUsed(questions){
+  return questions.map(function(q){
+    const copy = {};
+    for(const k in q){ if(k !== 'used') copy[k] = q[k]; }
+    return copy;
+  });
+}
+
+/* Reconstruye gameData.questions a partir de lo guardado en Firestore, si existe y
+   tiene forma válida: toma id/type de los valores por defecto (por si el set guardado
+   quedó desalineado) y fusiona encima los campos editables guardados. "used" siempre
+   arranca en false: nunca se sincroniza el progreso de una partida en curso. */
+function questionsFromSaved(saved, defaults){
+  if(!saved || !Array.isArray(saved.questions)) return null;
+  const savedById = {};
+  saved.questions.forEach(function(q){ if(q && q.id!=null) savedById[q.id] = q; });
+  return defaults.map(function(defQ){
+    const s = savedById[defQ.id];
+    const merged = s ? Object.assign({}, defQ, s) : Object.assign({}, defQ);
+    merged.used = false;
+    return merged;
+  });
+}
+
 /* ---------------- DATA (editable en vivo desde el panel admin) ---------------- */
-let gameData = {
-  teams: [
-    {id:1, name:'Equipo Rojo', color:'#e74c3c', score:0},
-    {id:2, name:'Equipo Azul', color:'#3498db', score:0},
-    {id:3, name:'Equipo Naranja', color:'#e67e22', score:0},
-    {id:4, name:'Equipo Verde', color:'#27ae60', score:0},
-    {id:5, name:'Equipo Celeste', color:'#00bcd4', score:0},
-    {id:6, name:'Equipo Rosado', color:'#e84393', score:0},
-  ],
-  currentTurn:0,
-  questions: [
+const DEFAULT_QUESTIONS = [
     {id:1, type:'trivia', value:10000, question:'¿De qué color son las cajas negras de los aviones?', answer:'Naranja', explanation:'Deben estar alojadas en compartimentos de color naranja brillante para hacerlas más visibles entre los restos después de un accidente.', used:false},
     {id:2, type:'trivia', value:5000, question:'¿Cuál es el libro más vendido de todos los tiempos?', answer:'La Biblia', explanation:'Según el Guinness World Records, hasta 1995 la Biblia es el libro más vendido de la historia, con un estimado de 5 mil millones de copias distribuidas.', used:false},
     {id:3, type:'trivia', value:15000, question:'¿Cuál es la película más vista de todos los tiempos?', answer:'Avatar', explanation:'Con una recaudación mundial de más de $2.9 mil millones, Avatar es considerada la película más taquillera de la historia.', used:false},
@@ -435,7 +447,19 @@ let gameData = {
     {id:31, type:'secret', value:null, word:'NOTHING', forbidden:['THERE IS NOT  (no hay)','LACK OF SOMETHING  (falta algo)','ZERO  (cero)','HAVE  (tener)'], used:false},
     {id:32, type:'secret', value:null, word:'HORSE', forbidden:['ANIMAL / FOUR PAWS  (animal, cuatro patas)','NEIGH  (relinchar)','COUNTRYSIDE  (campo)','RACE / BET / RODEO  (carrera, apuesta, rodeo)'], used:false},
     {id:33, type:'bonus', value:25000, question:'¿Cuánto dinero crees que hay dentro de la caja?', answer:'A criterio del profesor', explanation:'Casilla bonus sorpresa — el profesor define el monto real antes de jugar (editable en el panel de edición).', used:false},
+];
+
+let gameData = {
+  teams: [
+    {id:1, name:'Equipo Rojo', color:'#e74c3c', score:0},
+    {id:2, name:'Equipo Azul', color:'#3498db', score:0},
+    {id:3, name:'Equipo Naranja', color:'#e67e22', score:0},
+    {id:4, name:'Equipo Verde', color:'#27ae60', score:0},
+    {id:5, name:'Equipo Celeste', color:'#00bcd4', score:0},
+    {id:6, name:'Equipo Rosado', color:'#e84393', score:0},
   ],
+  currentTurn:0,
+  questions: questionsFromSaved(SAVED_BYA, DEFAULT_QUESTIONS) || DEFAULT_QUESTIONS,
   presentBoxes: [500,0,1000,800,10000,0,0,0,7000,11000,400,20000,0]
 };
 
@@ -461,6 +485,10 @@ function closeModal(){
   $('#modalOverlay').classList.add('hidden');
   if(secretTimer){clearInterval(secretTimer); secretTimer=null;}
 }
+// El HTML de los modales usa onclick="closeModal()" inline (ver openQuestion/openSecretWord/
+// openPresent/openAdmin); en un <script type="module"> las funciones ya no cuelgan de window
+// por defecto, así que se expone explícitamente para no romper esos botones.
+window.closeModal = closeModal;
 $('#modalOverlay').addEventListener('click', e=>{ if(e.target.id==='modalOverlay') closeModal(); });
 
 /* ---------------- AUDIO: música motivadora tipo concurso (Web Audio API) ---------------- */
@@ -857,6 +885,9 @@ function renderAdminList(){
     renderBoard();
     toast('Preguntas actualizadas ✔');
     closeModal();
+    saveGameData('betyouranswer', CURRENT_UID, { questions: stripUsed(gameData.questions) }).then(function(ok){
+      if(ok) toast('✓ Guardado y sincronizado');
+    });
   });
 }
 function exportData(){
@@ -905,6 +936,9 @@ function importData(e){
       });
       renderBoard(); renderAdminList();
       toast('Preguntas importadas desde Excel ✔');
+      saveGameData('betyouranswer', CURRENT_UID, { questions: stripUsed(gameData.questions) }).then(function(ok){
+        if(ok) toast('✓ Guardado y sincronizado');
+      });
     }catch(err){ toast('Error al leer el archivo Excel'); }
   };
   reader.readAsArrayBuffer(file);

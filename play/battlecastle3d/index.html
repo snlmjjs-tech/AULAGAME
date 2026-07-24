@@ -651,7 +651,9 @@
     </div>
 
     <!-- ================= DESARROLLO DEL JUEGO ================= -->
-    <script>
+    <script type="module">
+        import { loadGameData, saveGameData, toast as syncToast } from "../shared/game-storage.js";
+
         /*************************************************************
          * A. MANEJADOR SEGURO DE ALMACENAMIENTO (SafeStorage)
          * Previene bloqueos del hilo JS si el navegador bloquea cookies/almacenamiento en iframes
@@ -1937,14 +1939,45 @@
          * N. EDITOR DE PREGUNTAS + IMPORTAR / EXPORTAR EXCEL
          *************************************************************/
 
-        // Las preguntas personalizadas se guardan en localStorage para persistir entre sesiones
+        // Las preguntas personalizadas del profesor se guardan en Firestore (sincroniza
+        // entre dispositivos); localStorage queda solo como resabio de versiones
+        // anteriores, usado para migrar una única vez si Firestore no tiene nada aún.
         const QUESTIONS_STORAGE_KEY = "battle_castle_custom_questions";
+        const _isRoomJoin = !!new URLSearchParams(location.search).get("room");
 
-        let customQuestions = (function () {
+        let customQuestions = null;
+        let CURRENT_UID = null;
+        // OJO: esto es una IIFE async SIN await de nivel superior a propósito.
+        // El resto del script (más abajo) tiene código que se dispara por eventos
+        // del navegador (ej. window.onload) y asume que todas las declaraciones
+        // del archivo ya se ejecutaron de forma síncrona. Si esta carga bloqueara
+        // con `await` en medio del script, esos eventos podrían dispararse
+        // mientras el script sigue "pausado" acá, y fallarían con un
+        // ReferenceError al acceder a variables declaradas más abajo (temporal
+        // dead zone). Por eso esto corre en paralelo sin frenar el resto.
+        (async function () {
+            // Un jugador que entra por QR (?room=...) no tiene sesión de profesor:
+            // no se toca Firestore para ese caso, se usan las preguntas por defecto.
+            if (_isRoomJoin) return;
+            const { saved, uid } = await loadGameData('battlecastle3d');
+            CURRENT_UID = uid;
+            if (saved && Array.isArray(saved.customQuestions) && saved.customQuestions.length) {
+                customQuestions = saved.customQuestions;
+                updateQuestionCountBadge();
+                return;
+            }
+            // Migración única: si este navegador tenía preguntas personalizadas
+            // guardadas solo en localStorage (de antes de sincronizar con la nube),
+            // se usan como punto de partida y se suben a Firestore.
             try {
-                const saved = localStorage.getItem(QUESTIONS_STORAGE_KEY);
-                return saved ? JSON.parse(saved) : null;
-            } catch (e) { return null; }
+                const legacy = localStorage.getItem(QUESTIONS_STORAGE_KEY);
+                const parsedLegacy = legacy ? JSON.parse(legacy) : null;
+                if (parsedLegacy && Array.isArray(parsedLegacy) && parsedLegacy.length) {
+                    customQuestions = parsedLegacy;
+                    saveGameData('battlecastle3d', CURRENT_UID, { customQuestions: parsedLegacy });
+                    updateQuestionCountBadge();
+                }
+            } catch (e) { /* sin localStorage, o dato corrupto: se ignora */ }
         })();
 
         function getActiveQuestions() {
@@ -1953,13 +1986,9 @@
 
         function saveCustomQuestions(questions) {
             customQuestions = questions;
-            try {
-                if (questions) {
-                    localStorage.setItem(QUESTIONS_STORAGE_KEY, JSON.stringify(questions));
-                } else {
-                    localStorage.removeItem(QUESTIONS_STORAGE_KEY);
-                }
-            } catch (e) { /* sin localStorage */ }
+            saveGameData('battlecastle3d', CURRENT_UID, { customQuestions: questions || null }).then(function(ok){
+                if (ok) syncToast('✓ Preguntas guardadas y sincronizadas');
+            });
             updateQuestionCountBadge();
         }
 
@@ -2674,6 +2703,20 @@
             }
             openModal('modal-qr');
         }
+
+        // El script pasó a ser un módulo (type="module") para poder usar `await`
+        // al cargar el banco de preguntas desde Firestore. Los módulos no exponen
+        // sus funciones en el scope global, así que los atributos onclick/onchange
+        // inline del HTML (que llaman a estas funciones por nombre) necesitan que
+        // se re-expongan explícitamente en `window` para seguir funcionando.
+        Object.assign(window, {
+            activateAndOpenQR, addEditorRow, addSetupCastle, closeEditorSafe, closeModal,
+            downloadTemplate, exportToExcel, importFromExcel, mobileAction,
+            openBonusChestSelection, openQuestionEditor, promptQuestionSelection,
+            removeEditorRow, removeSetupCastle, resetToDefaultQuestions, saveEditorChanges,
+            selectCastleAndConnect, showMobileScreen, startGame, toggleFullscreen,
+            toggleMusic, triggerResetConfirm, triggerResetGame, updateVolume
+        });
 
     </script>
 
