@@ -7,6 +7,7 @@
 <title>FIGHT!!! 3D - English Numbers Battle</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root{
     --gold:#ffd23f;
@@ -174,6 +175,22 @@
   .table-wrap{max-height:320px;overflow-y:auto;border-radius:8px;}
 
   .footer-note{position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,255,255,0.4);z-index:5;pointer-events:none;}
+
+  /* ---------- MODO QR ---------- */
+  .qr-box-wrap{ background:#fff; padding:10px; border-radius:14px; display:inline-block; margin:14px 0; }
+  #student-app{
+    display:none; flex-direction:column; align-items:center; justify-content:flex-start; gap:16px;
+    max-width:460px; margin:0 auto; padding:26px 16px 60px; min-height:100vh; text-align:center;
+    background:#0a0614; color:var(--white); font-family:'Segoe UI',Arial,sans-serif;
+  }
+  #student-app.show{display:flex;}
+  .student-name-field{ width:100%; box-sizing:border-box; padding:14px; border-radius:12px; border:2px solid #4a2d6b; font-size:16px; text-align:center; }
+  .student-opt-btn{
+    width:100%; background:rgba(34,20,54,0.9); border:2px solid #4a2d6b; color:#fff;
+    padding:14px 18px; border-radius:10px; font-size:16px; font-weight:600; text-align:left;
+  }
+  .student-opt-btn:disabled{ opacity:.5; }
+  .student-opt-list{ display:flex; flex-direction:column; gap:10px; width:100%; }
 </style>
 </head>
 <body>
@@ -186,6 +203,7 @@
   </div>
 
   <div class="top-controls">
+    <button class="icon-btn" id="qrBtn" title="Conectar celulares">📱</button>
     <button class="icon-btn" id="muteBtn" title="Silenciar música">🔊</button>
     <button class="icon-btn" id="editBtn" title="Editar / añadir preguntas">✏️</button>
   </div>
@@ -267,6 +285,40 @@
   </div>
 </div>
 
+<!-- ================= QR MODAL ================= -->
+<div class="modal-overlay" id="qrModal">
+  <div class="modal-box" style="max-width:380px;text-align:center;">
+    <h3>📱 Conecta a tus jugadores</h3>
+    <div class="qr-box-wrap"><div id="qrBox"></div></div>
+    <p>Cualquier alumno que escanee se une como combatiente. Todos ven la misma pregunta, y quien responda correcto primero gana la ronda.</p>
+    <p style="font-size:22px;font-weight:800;color:var(--gold);" id="qrSalaCode">------</p>
+    <p style="font-size:13px;opacity:.8;" id="qrLinkCorto"></p>
+    <div class="modal-actions" style="justify-content:center;">
+      <button class="btn small" id="qrCerrarBtn">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODO QR: pantalla del alumno (celular) ================= -->
+<div id="student-app">
+  <h1 style="font-family:'Arial Black',Impact,sans-serif;color:var(--gold);-webkit-text-stroke:2px #7a1010;text-shadow:4px 4px 0 #7a1010;">FIGHT!!!</h1>
+
+  <div id="studentJoin" style="width:100%;">
+    <p>¿Cómo te llamas?</p>
+    <input type="text" id="studentNameInput" class="student-name-field" placeholder="Tu nombre" maxlength="20">
+    <button class="btn" id="studentJoinBtn" style="margin-top:12px;">ENTRAR AL COMBATE</button>
+  </div>
+
+  <div id="studentFight" style="display:none; width:100%;">
+    <p id="studentEstado" style="opacity:.85;">Esperando la primera pregunta…</p>
+    <div id="studentQuestionZone" style="display:none; width:100%;">
+      <div class="prompt-label">HOW DO WE SAY...?</div>
+      <div class="prompt-number" id="studentPromptNumber">320</div>
+      <div class="student-opt-list" id="studentOptions"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ================= CONFIRM MODAL ================= -->
 <div class="modal-overlay" id="confirmModal">
   <div class="modal-box" style="max-width:380px;text-align:center;">
@@ -281,15 +333,26 @@
 
 <script type="module">
 import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
+import { crearSala, refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
 /* ============================================================
    FIGHT!!! 3D - English Numbers Battle
    Single-file HTML educational game (Three.js r128)
    ============================================================ */
 
-/* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore. */
-const { saved: SAVED_ROBOTFIGHT, uid: CURRENT_UID } = await new Promise(function(resolve){
-  initGameSync('robotfight', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
-});
+/* ================= MODO QR: alumno vs. profesor ================= */
+const _paramsRF = new URLSearchParams(location.search);
+const SALA_ALUMNO = _paramsRF.get("room");
+const ES_ALUMNO = !!SALA_ALUMNO;
+
+/* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore.
+   Un alumno que entra con ?room=... no tiene sesión de profesor: se salta el gate. */
+let SAVED_ROBOTFIGHT = null, CURRENT_UID = null;
+if(!ES_ALUMNO){
+  const _r = await new Promise(function(resolve){
+    initGameSync('robotfight', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+  });
+  SAVED_ROBOTFIGHT = _r.saved; CURRENT_UID = _r.uid;
+}
 
 /* questionBank es un array de objetos (cada uno con un campo "wrong" que es un
    array de 2 elementos) — esto SÍ es válido en Firestore, no es un array anidado
@@ -322,6 +385,8 @@ let roundQuestions = [];
 let currentRound = 0;
 let playerHP = 100, rivalHP = 100;
 const DAMAGE = 34;
+let salaActual = null;     // código de sala en vivo (null = modo QR no activado)
+let rondaResuelta = false; // evita que dos respuestas (local + celulares) resuelvan la misma ronda dos veces
 let musicOn = true;
 let audioCtx = null;
 
@@ -784,6 +849,7 @@ function startGame(){
 }
 
 function loadRound(){
+  rondaResuelta = false;
   const q = roundQuestions[currentRound];
   document.getElementById('roundBadge').textContent = `Pregunta ${currentRound+1}/${roundQuestions.length}`;
   drawRoundSprite(`Pregunta ${currentRound+1}/${roundQuestions.length}`);
@@ -799,9 +865,21 @@ function loadRound(){
     const b = document.createElement('button');
     b.className='opt-btn';
     b.textContent=o.text;
-    b.addEventListener('click', ()=>answerRound(o.correct,b));
+    b.addEventListener('click', ()=>resolveRound(o.correct, o.text, null));
     box.appendChild(b);
   });
+  if(salaActual){
+    escribir(refSala('robotfight', salaActual, 'respuestas'), null);
+    escribir(refSala('robotfight', salaActual, 'estado'), {
+      rondaIndice: currentRound,
+      rondaTotal: roundQuestions.length,
+      numero: q.number,
+      alternativas: opts.map(function(o){ return o.text; }),
+      ganadorRonda: null,
+      playerHP: playerHP,
+      rivalHP: rivalHP
+    });
+  }
 }
 
 function updateHpBars(){
@@ -817,14 +895,18 @@ function updateHpBars(){
   });
 }
 
-function answerRound(isCorrect, btnEl){
+/* ganadorNombre viene de un celular conectado (modo QR); null = clic local en el proyector. */
+function resolveRound(isCorrect, answerText, ganadorNombre){
+  if(rondaResuelta) return;
+  rondaResuelta = true;
   document.querySelectorAll('.opt-btn').forEach(b=>b.disabled=true);
+  const btnEl = Array.from(document.querySelectorAll('.opt-btn')).find(function(b){ return b.textContent === answerText; });
   const stamp = document.getElementById('feedbackStamp');
 
   if(isCorrect){
-    btnEl.classList.add('correct');
+    if(btnEl) btnEl.classList.add('correct');
     playCorrect();
-    stamp.textContent='¡CORRECTO!';
+    stamp.textContent = ganadorNombre ? ('¡' + ganadorNombre.toUpperCase() + ' GANA LA RONDA!') : '¡CORRECTO!';
     stamp.className='feedback-stamp correct show';
     punchAnim(playerRig, rivalRig, ()=>{
       playHit();
@@ -832,9 +914,10 @@ function answerRound(isCorrect, btnEl){
       hurtAnim(rivalRig);
       rivalHP -= DAMAGE;
       updateHpBars();
+      if(salaActual) escribir(refSala('robotfight', salaActual, 'estado/rivalHP'), rivalHP);
     });
   } else {
-    btnEl.classList.add('wrong');
+    if(btnEl) btnEl.classList.add('wrong');
     document.querySelectorAll('.opt-btn').forEach(b=>{
       if(b.textContent === roundQuestions[currentRound].correct) b.classList.add('correct');
     });
@@ -847,7 +930,12 @@ function answerRound(isCorrect, btnEl){
       hurtAnim(playerRig);
       playerHP -= DAMAGE;
       updateHpBars();
+      if(salaActual) escribir(refSala('robotfight', salaActual, 'estado/playerHP'), playerHP);
     });
+  }
+
+  if(salaActual){
+    escribir(refSala('robotfight', salaActual, 'estado/ganadorRonda'), { nombre: ganadorNombre || 'El profe', correcto: isCorrect });
   }
 
   setTimeout(()=>{
@@ -1013,12 +1101,130 @@ document.getElementById('importExcel').addEventListener('change', (e)=>{
   reader.readAsBinaryString(file);
 });
 
+/* ================= MODO QR: sala en vivo para celulares ================= */
+async function abrirModalQR(){
+  const modal = document.getElementById('qrModal');
+  modal.classList.add('active');
+  if(salaActual) return;
+  const codeEl = document.getElementById('qrSalaCode');
+  codeEl.textContent = 'Creando sala…';
+  try{
+    const { sala, codigoCorto } = await crearSala('robotfight', '/play/robotfight/');
+    salaActual = sala;
+    codeEl.textContent = sala;
+    const joinUrl = location.origin + '/play/robotfight/?room=' + sala;
+    const qb = document.getElementById('qrBox');
+    qb.innerHTML = '';
+    if(window.QRCode){
+      new QRCode(qb, { text: joinUrl, width: 190, height: 190, colorDark: '#1b0f2e', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    }
+    document.getElementById('qrLinkCorto').textContent = codigoCorto ? ('🔗 ' + location.host + '/' + codigoCorto) : joinUrl;
+    escuchar(refSala('robotfight', salaActual, 'respuestas'), function(datos){
+      if(rondaResuelta || !datos || !roundQuestions[currentRound]) return;
+      const correctText = roundQuestions[currentRound].correct;
+      const ganadores = Object.values(datos)
+        .filter(function(e){ return e && e.alternativaTexto === correctText; })
+        .sort(function(a,b){ return (a.enviadaEn||0) - (b.enviadaEn||0); });
+      if(ganadores.length){
+        resolveRound(true, correctText, ganadores[0].nombre || 'Un alumno');
+      }
+    });
+  }catch(e){
+    codeEl.textContent = 'Error al crear la sala';
+    toast('No se pudo crear la sala en vivo. Revisa tu conexión.');
+  }
+}
+document.getElementById('qrBtn').addEventListener('click', abrirModalQR);
+document.getElementById('qrCerrarBtn').addEventListener('click', function(){ document.getElementById('qrModal').classList.remove('active'); });
+
+/* ---------------- Vista del alumno (celular) ---------------- */
+function initStudentView(){
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('student-app').classList.add('show');
+  document.documentElement.style.visibility = '';
+
+  const jugadorId = idJugador(SALA_ALUMNO);
+  const nombreKey = 'aulagame_rf_nombre_' + SALA_ALUMNO;
+  let miNombre = sessionStorage.getItem(nombreKey);
+  let estado = null;
+  let yaRespondido = false;
+  let ultimaRonda = undefined;
+
+  const joinEl = document.getElementById('studentJoin');
+  const fightEl = document.getElementById('studentFight');
+  const nameInput = document.getElementById('studentNameInput');
+
+  function unirse(){
+    const nombre = nameInput.value.trim().slice(0,20) || 'Alumno';
+    miNombre = nombre;
+    sessionStorage.setItem(nombreKey, nombre);
+    escribir(refSala('robotfight', SALA_ALUMNO, 'jugadores/' + jugadorId), { equipoId: jugadorId, nombre: nombre, unidoEn: marcaTiempo() });
+    joinEl.style.display = 'none';
+    fightEl.style.display = 'block';
+    render();
+  }
+  document.getElementById('studentJoinBtn').addEventListener('click', unirse);
+
+  function render(){
+    if(!estado || miNombre === null) return;
+    const estadoEl = document.getElementById('studentEstado');
+    const zone = document.getElementById('studentQuestionZone');
+
+    if(estado.rondaIndice !== ultimaRonda){
+      ultimaRonda = estado.rondaIndice;
+      yaRespondido = false;
+    }
+
+    if(estado.ganadorRonda && estado.ganadorRonda.correcto){
+      zone.style.display = 'none';
+      estadoEl.textContent = (estado.ganadorRonda.nombre === miNombre)
+        ? '🏆 ¡Ganaste esta ronda!'
+        : ('😢 ' + estado.ganadorRonda.nombre + ' ganó esta ronda. Esperando la siguiente…');
+      return;
+    }
+
+    if(estado.numero){
+      estadoEl.textContent = '';
+      zone.style.display = 'block';
+      document.getElementById('studentPromptNumber').textContent = estado.numero;
+      const opts = document.getElementById('studentOptions');
+      opts.innerHTML = '';
+      (estado.alternativas || []).forEach(function(texto){
+        const btn = document.createElement('button');
+        btn.className = 'student-opt-btn';
+        btn.textContent = texto;
+        btn.disabled = yaRespondido;
+        btn.addEventListener('click', function(){
+          if(yaRespondido) return;
+          yaRespondido = true;
+          opts.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
+          escribir(refSala('robotfight', SALA_ALUMNO, 'respuestas/' + jugadorId), {
+            alternativaTexto: texto, jugadorId: jugadorId, nombre: miNombre, enviadaEn: marcaTiempo()
+          });
+          estadoEl.textContent = '✓ Respuesta enviada…';
+        });
+        opts.appendChild(btn);
+      });
+    } else {
+      zone.style.display = 'none';
+      estadoEl.textContent = 'Esperando la primera pregunta…';
+    }
+  }
+
+  escuchar(refSala('robotfight', SALA_ALUMNO, 'estado'), function(datos){
+    estado = datos;
+    render();
+  });
+}
+
 /* ---------- Boot ---------- */
 // El script ahora espera (await) la carga de Firestore antes de llegar acá, así
 // que el evento 'load' de la ventana puede haberse disparado ya para cuando se
 // ejecuta esta línea; si es así, hay que llamar initThree() directamente en vez
 // de esperar un evento que ya pasó.
-if(document.readyState === 'complete'){ initThree(); }
+if(ES_ALUMNO){
+  initStudentView();
+} else if(document.readyState === 'complete'){ initThree(); }
 else { window.addEventListener('load', initThree); }
 </script>
 </body>
