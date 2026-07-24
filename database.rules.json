@@ -1,0 +1,35 @@
+{
+  "rules": {
+    "salasVivo": {
+      "$juego": {
+        "$sala": {
+          ".read": true,
+
+          "meta": { ".write": "auth != null" },
+          "equipoActivo": { ".write": "auth != null" },
+          "paused": { ".write": "auth != null" },
+          "gameOver": { ".write": "auth != null" },
+          "estado": { ".write": "auth != null" },
+          "equipos": { ".write": "auth != null" },
+          "turno": { ".write": "auth != null" },
+
+          "jugadores": {
+            "$jugadorId": {
+              ".write": "auth != null || !data.exists()"
+            }
+          },
+
+          "respuestas": {
+            "$equipoId": {
+              ".write": "auth != null || (newData.child('jugadorId').val() != null && root.child('salasVivo/'+$juego+'/'+$sala+'/jugadores/'+newData.child('jugadorId').val()+'/equipoId').val() === $equipoId)"
+            }
+          },
+
+          "$otroCampo": {
+            ".write": "auth != null"
+          }
+        }
+      }
+    }
+  }
+}

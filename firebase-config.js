@@ -5,6 +5,7 @@
 export const firebaseConfig = {
   apiKey: "AIzaSyD91ABYd2MLq5GAYW51afqbVIpPJZxu7dU",
   authDomain: "aulagame-4c019.firebaseapp.com",
+  databaseURL: "https://aulagame-4c019-default-rtdb.firebaseio.com",
   projectId: "aulagame-4c019",
   storageBucket: "aulagame-4c019.firebasestorage.app",
   messagingSenderId: "1049740023587",
