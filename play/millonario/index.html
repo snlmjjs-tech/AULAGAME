@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 /* ============================= TOKENS ============================= */
 :root{
@@ -649,10 +650,25 @@ p{margin:0;}
   .question-card{padding:20px 16px;}
   .lifeline-btn{min-width:90px; padding:10px 12px;}
 }
+
+/* ============================= MODO QR ============================= */
+.qr-box-wrap{ background:#fff; padding:10px; border-radius:14px; display:inline-block; margin:14px 0; }
+#screen-student{ padding-top:24px; }
+.student-panel{ width:100%; max-width:420px; display:flex; flex-direction:column; align-items:center; gap:16px; margin:0 auto; }
+.student-players{ display:flex; flex-direction:column; gap:10px; width:100%; }
+.student-player-btn{
+  padding:16px; border-radius:12px; border:1px solid var(--border-soft);
+  background:linear-gradient(180deg, var(--navy-3), var(--navy-2));
+  color:var(--ink); font-family:var(--font-display); font-weight:700; font-size:16px; text-align:center;
+}
+.student-roster{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; width:100%; }
+.student-options{ display:flex; flex-direction:column; gap:10px; width:100%; }
+.student-feedback{ font-family:var(--font-display); font-weight:700; font-size:15px; text-align:center; min-height:20px; }
 </style>
 </head>
 <body>
 <div class="topbar-fixed">
+  <button class="icon-btn" id="qrBtn" title="Conectar celulares">📱</button>
   <button class="icon-btn" id="muteBtn" title="Silenciar sonido">🔊</button>
 </div>
 
@@ -813,6 +829,35 @@ p{margin:0;}
     </div>
   </section>
 
+  <!-- ============ MODO QR: pantalla del alumno (celular) ============ -->
+  <section class="screen" id="screen-student">
+    <div class="student-panel" id="studentSelect">
+      <h2 style="color:var(--gold-soft); font-size:20px;">MILLONARIO QUIZ</h2>
+      <p class="subtitle">¿Quién eres?</p>
+      <div class="student-players" id="studentPlayerButtons"></div>
+    </div>
+
+    <div class="student-panel hidden" id="studentPlay" style="display:none;">
+      <div class="student-roster" id="studentRoster"></div>
+
+      <div id="studentTurnoActivo" class="student-panel">
+        <div class="amount-panel">
+          <span class="amount-label">Esta pregunta vale</span>
+          <div class="amount-value" id="studentAmount">$?</div>
+        </div>
+        <div class="question-card" style="padding:18px;">
+          <div class="question-text" id="studentQuestionText">Pregunta</div>
+          <div class="student-options" id="studentOptions"></div>
+          <div class="student-feedback" id="studentFeedback"></div>
+        </div>
+      </div>
+
+      <div id="studentEsperando" style="display:none;">
+        <p class="subtitle" style="text-align:center;">⏳ Espera tu turno…</p>
+      </div>
+    </div>
+  </section>
+
 </div>
 
 <!-- ============ MODALS ============ -->
@@ -908,10 +953,29 @@ p{margin:0;}
   </div>
 </div>
 
+<div class="modal-overlay" id="modalQR">
+  <div class="modal-box" style="text-align:center;">
+    <h3>📱 Conecta a tus jugadores</h3>
+    <div class="qr-box-wrap"><div id="qrBox"></div></div>
+    <p class="subtitle" style="text-align:center;">Cada jugador escanea el mismo código y elige su nombre en el celular</p>
+    <div class="amount-value" id="qrSalaCode" style="font-size:30px; margin:6px 0;">------</div>
+    <p class="subtitle" id="qrLinkCorto" style="text-align:center;"></p>
+    <div class="modal-actions" style="justify-content:center;">
+      <button class="btn btn-primary" id="qrCerrarBtn">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-msg" id="toastMsg"></div>
 
 <script type="module">
 import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
+import { crearSala, refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
+
+/* ================= MODO QR: alumno vs. profesor ================= */
+const _paramsMillonario = new URLSearchParams(location.search);
+const SALA_ALUMNO = _paramsMillonario.get("room");
+const ES_ALUMNO = !!SALA_ALUMNO;
 
 /* ============================= DEFAULT QUESTION BANK ============================= */
 /* Extraído y curado desde la presentación original "WTM - VERBS" */
@@ -934,10 +998,15 @@ const DEFAULT_CULTURE_QUESTIONS = [
   {prompt:"¿Cuál es el océano más grande del mundo?", options:["Atlántico","Índico","Ártico","Pacífico"], correct:3, type:"culture"}
 ];
 
-/* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore. */
-const { saved: SAVED_MILLONARIO, uid: CURRENT_UID } = await new Promise(function(resolve){
-  initGameSync('millonario', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
-});
+/* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore.
+   Un alumno que entra con ?room=... no tiene sesión de profesor: se salta el gate. */
+let SAVED_MILLONARIO = null, CURRENT_UID = null;
+if(!ES_ALUMNO){
+  const _r = await new Promise(function(resolve){
+    initGameSync('millonario', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+  });
+  SAVED_MILLONARIO = _r.saved; CURRENT_UID = _r.uid;
+}
 
 /* ============================= STATE ============================= */
 const state = {
@@ -967,6 +1036,7 @@ const state = {
   muted: false,
   audioCtx: null
 };
+let salaActual = null; // código de sala en vivo (null = modo QR no activado)
 
 /* ============================= UTIL ============================= */
 function $(id){ return document.getElementById(id); }
@@ -1399,6 +1469,7 @@ function nextTurn(){
   startMusic();
   renderBoard();
   showScreen("board");
+  syncTurno();
 }
 function renderBoard(){
   const p = state.currentPlayer;
@@ -1671,6 +1742,7 @@ function renderQuestion(){
       state.currentAmount = randomAmount();
       amountEl.textContent = formatCLP(state.currentAmount);
       amountEl.classList.add("locked");
+      syncPregunta();
     }
   }, 70);
 }
@@ -1697,6 +1769,7 @@ function selectAnswer(idx){
     playWrong();
     $("feedbackToast").textContent = "Incorrecto. Era la " + letterIndex(q.correct) + ": " + q.options[q.correct];
   }
+  syncResultado(correct, correct ? state.currentAmount : 0);
   setTimeout(()=>{ nextTurn(); }, 2100);
 }
 
@@ -1725,6 +1798,7 @@ $("lifelineChange").addEventListener("click", ()=>{
   state.currentAmount = null;
   renderBoard();
   showScreen("board");
+  if(salaActual) escribir(refSala('millonario', salaActual, 'estado/preguntaActual'), null);
 });
 
 $("lifelineCall").addEventListener("click", ()=>{
@@ -1839,9 +1913,167 @@ $("btnReplay").addEventListener("click", ()=>{
   showScreen("players");
 });
 
-/* ============================= INIT ============================= */
-renderEditor();
-buildPlayerInputs();
+/* ============================= MODO QR: sala en vivo para celulares ============================= */
+function syncTurno(){
+  if(!salaActual) return;
+  const turnoIdx = state.players.indexOf(state.currentPlayer);
+  escribir(refSala('millonario', salaActual, 'estado/turnoIdx'), turnoIdx);
+  escribir(refSala('millonario', salaActual, 'estado/roster'), state.players.map(function(p){ return { nombre: p.name, dinero: p.money }; }));
+  escribir(refSala('millonario', salaActual, 'estado/preguntaActual'), null);
+  escribir(refSala('millonario', salaActual, 'estado/resultado'), null);
+  escribir(refSala('millonario', salaActual, 'respuestas'), null);
+}
+function syncPregunta(){
+  if(!salaActual || !state.currentQuestion) return;
+  escribir(refSala('millonario', salaActual, 'estado/preguntaActual'), {
+    texto: state.currentQuestion.prompt,
+    alternativas: state.currentQuestion.options,
+    montoEnJuego: state.currentAmount
+  });
+}
+function syncResultado(correcto, monto){
+  if(!salaActual) return;
+  escribir(refSala('millonario', salaActual, 'estado/resultado'), { correcto: correcto, monto: monto });
+}
+
+async function abrirModalQR(){
+  const modal = $("modalQR");
+  modal.classList.add("active");
+  if(salaActual) return;
+  const codeEl = $("qrSalaCode");
+  codeEl.textContent = "Creando sala…";
+  try{
+    const { sala, codigoCorto } = await crearSala('millonario', '/play/millonario/');
+    salaActual = sala;
+    codeEl.textContent = sala;
+    const joinUrl = location.origin + '/play/millonario/?room=' + sala;
+    const qb = $("qrBox");
+    qb.innerHTML = "";
+    if(window.QRCode){
+      new QRCode(qb, { text: joinUrl, width: 190, height: 190, colorDark: '#0c1a52', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    }
+    $("qrLinkCorto").textContent = codigoCorto ? ('🔗 ' + location.host + '/' + codigoCorto) : joinUrl;
+    if(state.currentPlayer) syncTurno();
+    escuchar(refSala('millonario', salaActual, 'respuestas'), function(datos){
+      if(!datos || state.answered || !state.currentPlayer) return;
+      const turnoIdx = state.players.indexOf(state.currentPlayer);
+      const resp = datos[turnoIdx];
+      if(resp && typeof resp.alternativaElegida === 'number'){
+        selectAnswer(resp.alternativaElegida);
+      }
+    });
+  }catch(e){
+    codeEl.textContent = "Error al crear la sala";
+    showToast("No se pudo crear la sala en vivo. Revisa tu conexión.");
+  }
+}
+$("qrBtn").addEventListener("click", abrirModalQR);
+$("qrCerrarBtn").addEventListener("click", ()=> $("modalQR").classList.remove("active"));
+
+/* ---------------- Vista del alumno (celular) ---------------- */
+function initStudentView(){
+  document.querySelectorAll(".screen").forEach(function(s){ s.classList.remove("active"); });
+  $("screen-student").classList.add("active");
+  document.documentElement.style.visibility = "";
+
+  const jugadorId = idJugador(SALA_ALUMNO);
+  const idxKey = "aulagame_millonario_idx_" + SALA_ALUMNO;
+  let miIdx = sessionStorage.getItem(idxKey);
+  let estado = null;
+  let yaRespondido = false;
+  let ultimaPregunta = undefined;
+
+  const selectEl = $("studentSelect");
+  const playEl = $("studentPlay");
+  const btnsWrap = $("studentPlayerButtons");
+
+  function elegirJugador(i){
+    miIdx = String(i);
+    sessionStorage.setItem(idxKey, miIdx);
+    escribir(refSala('millonario', SALA_ALUMNO, 'jugadores/' + jugadorId), { equipoId: miIdx, unidoEn: marcaTiempo() });
+    selectEl.style.display = "none";
+    playEl.style.display = "flex";
+    renderStudent();
+  }
+
+  function renderStudent(){
+    if(!estado || miIdx === null) return;
+    const roster = estado.roster || [];
+    const rosterEl = $("studentRoster");
+    rosterEl.innerHTML = "";
+    roster.forEach(function(p, i){
+      const chip = document.createElement("span");
+      chip.className = "pill";
+      chip.textContent = (String(i) === String(miIdx) ? "👤 " : "") + p.nombre + " · $" + p.dinero.toLocaleString("es-CL");
+      rosterEl.appendChild(chip);
+    });
+
+    const soyYo = String(estado.turnoIdx) === String(miIdx);
+    const preguntaTexto = estado.preguntaActual ? estado.preguntaActual.texto : null;
+    if(preguntaTexto !== ultimaPregunta){
+      ultimaPregunta = preguntaTexto;
+      yaRespondido = false;
+      $("studentFeedback").textContent = "";
+    }
+
+    $("studentTurnoActivo").style.display = (soyYo && estado.preguntaActual) ? "flex" : "none";
+    $("studentEsperando").style.display = (soyYo && estado.preguntaActual) ? "none" : "block";
+
+    if(soyYo && estado.preguntaActual){
+      $("studentAmount").textContent = "$" + estado.preguntaActual.montoEnJuego.toLocaleString("es-CL");
+      $("studentQuestionText").textContent = estado.preguntaActual.texto;
+      const opts = $("studentOptions");
+      opts.innerHTML = "";
+      estado.preguntaActual.alternativas.forEach(function(opt, i){
+        const btn = document.createElement("button");
+        btn.className = "btn btn-secondary";
+        btn.textContent = opt;
+        btn.disabled = yaRespondido;
+        btn.addEventListener("click", function(){
+          if(yaRespondido) return;
+          yaRespondido = true;
+          $("studentOptions").querySelectorAll("button").forEach(function(b){ b.disabled = true; });
+          escribir(refSala('millonario', SALA_ALUMNO, 'respuestas/' + miIdx), {
+            alternativaElegida: i, jugadorId: jugadorId, respondioEn: marcaTiempo()
+          });
+          $("studentFeedback").textContent = "✓ Respuesta enviada…";
+        });
+        opts.appendChild(btn);
+      });
+    }
+    if(estado.resultado){
+      $("studentFeedback").textContent = estado.resultado.correcto
+        ? ("¡Correcto! +$" + estado.resultado.monto.toLocaleString("es-CL"))
+        : "Incorrecto.";
+    }
+  }
+
+  escuchar(refSala('millonario', SALA_ALUMNO, 'estado'), function(datos){
+    estado = datos;
+    if(!estado) return;
+    if(miIdx === null){
+      btnsWrap.innerHTML = "";
+      (estado.roster || []).forEach(function(p, i){
+        const btn = document.createElement("div");
+        btn.className = "student-player-btn";
+        btn.textContent = p.nombre;
+        btn.addEventListener("click", function(){ elegirJugador(i); });
+        btnsWrap.appendChild(btn);
+      });
+    } else {
+      selectEl.style.display = "none";
+      playEl.style.display = "flex";
+      renderStudent();
+    }
+  });
+}
+
+if(ES_ALUMNO){
+  initStudentView();
+} else {
+  renderEditor();
+  buildPlayerInputs();
+}
 </script>
 </body>
 </html>
