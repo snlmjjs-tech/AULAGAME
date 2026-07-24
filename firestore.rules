@@ -5,7 +5,17 @@ service cloud.firestore {
     // Cada profe solo puede leer/escribir su propio documento,
     // identificado por su uid de Firebase Authentication.
     match /profes/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      // El campo "plan" ("gratis" | "premium") no lo puede tocar el propio
+      // profe desde el cliente — solo se activa a mano desde la consola de
+      // Firebase (que no pasa por estas reglas). Así nadie se auto-asigna
+      // premium editando la consola del navegador.
+      allow create: if request.auth != null && request.auth.uid == uid
+        && (!('plan' in request.resource.data) || request.resource.data.plan == 'gratis');
+      allow update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.get('plan', 'gratis') == resource.data.get('plan', 'gratis');
+      allow delete: if request.auth != null && request.auth.uid == uid;
 
       // Contenido editable de cada juego (preguntas, rondas, configuración...),
       // un documento por juego, para que sincronice entre dispositivos.

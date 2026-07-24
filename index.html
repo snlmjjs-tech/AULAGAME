@@ -591,7 +591,7 @@
 
     <div class="plan-gratuito oculto" id="plan-gratuito">
       <span id="plan-gratuito-texto"></span>
-      <a class="btn btn-whatsapp oculto" id="plan-gratuito-btn" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20crear%20m%C3%A1s%20juegos%20en%20AulaGame." target="_blank" rel="noopener">💬 Hablar por WhatsApp</a>
+      <a class="btn btn-whatsapp oculto" id="plan-gratuito-btn" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">💬 Pasarme a Premium</a>
     </div>
 
     <div class="grid" id="grid-mis-juegos">
@@ -611,8 +611,8 @@
       <span class="conf" style="top:14px; right:26%;" aria-hidden="true">🎉</span>
       <span class="conf" style="bottom:14px; right:8%; animation-delay:1.6s;" aria-hidden="true">⭐</span>
       <span class="anuncio-badge">✨ Recién comenzando</span>
-      <p class="anuncio-texto">🚀 <strong>¡Bienvenido a AulaGame!</strong> Gracias por ser uno de los primeros profesores en probar la plataforma. Como parte del lanzamiento puedes crear hasta 3 juegos completamente gratis. Si necesitas más juegos o quieres acceder a funciones exclusivas, escríbeme directamente por WhatsApp. Siempre estaré disponible para ayudarte.</p>
-      <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20crear%20m%C3%A1s%20juegos%20en%20AulaGame." target="_blank" rel="noopener">💬 Hablar por WhatsApp</a>
+      <p class="anuncio-texto">🚀 <strong>¡Bienvenido a AulaGame!</strong> Gracias por ser uno de los primeros profesores en probar la plataforma. El plan gratuito permite crear 1 juego. Si necesitas más juegos o quieres acceder a funciones exclusivas, escríbeme directamente por WhatsApp para pasarte a Premium. Siempre estaré disponible para ayudarte.</p>
+      <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">💬 Hablar por WhatsApp</a>
     </div>
   </section>
 
@@ -847,11 +847,11 @@
 <div class="modal-fondo oculto" id="modal-limite">
   <div class="modal-caja" role="dialog" aria-modal="true" aria-labelledby="limite-titulo">
     <div class="icono">🔒</div>
-    <h3 id="limite-titulo">Has alcanzado el límite de juegos gratuitos</h3>
-    <p>Elimina un juego para liberar espacio, o contáctame por WhatsApp si quieres crear más juegos o acceder a funciones premium.</p>
+    <h3 id="limite-titulo">Llegaste al límite del plan gratuito</h3>
+    <p>Tu plan gratuito permite guardar 1 juego a la vez. Elimina el que tienes para reemplazarlo, o escríbenos por WhatsApp para pasarte a Premium y crear todos los que quieras.</p>
     <div class="modal-acciones">
       <button class="btn btn-cancelar" id="btn-limite-cerrar">Cerrar</button>
-      <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20crear%20m%C3%A1s%20juegos%20en%20AulaGame." target="_blank" rel="noopener">Quiero crear más juegos</a>
+      <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">Quiero pasarme a Premium</a>
     </div>
   </div>
 </div>
@@ -874,8 +874,12 @@
   var db = getFirestore(app);
 
   // ---------- Estado ----------
-  var TOTAL_CUPOS = 3;
+  var CUPOS_PLAN_GRATIS = 1;
   var uidActual = null;
+  var planActual = "gratis"; // "gratis" | "premium" — se lee de profes/{uid}.plan al iniciar sesión
+
+  function esPremium(){ return planActual === "premium"; }
+  function totalCupos(){ return esPremium() ? Infinity : CUPOS_PLAN_GRATIS; }
 
   // ---------- Modal de login ----------
   var modalLogin = document.getElementById("modal-login");
@@ -1016,33 +1020,46 @@
   // ---------- Cupos y contadores ----------
   function actualizarEstado(){
     var usados = document.querySelectorAll(".kard-mia").length;
-    var libres = TOTAL_CUPOS - usados;
+    var cupos = totalCupos();
+    var libres = cupos - usados;
 
-    document.getElementById("pill-mis-juegos").textContent = usados + " / " + TOTAL_CUPOS + " guardados";
-
-    // Plan Gratuito: solo visible con sesión iniciada
     var planGratuito = document.getElementById("plan-gratuito");
     var planTexto = document.getElementById("plan-gratuito-texto");
     var planBtn = document.getElementById("plan-gratuito-btn");
+    var textoVacia = document.getElementById("texto-vacia");
+
+    if(uidActual && esPremium()){
+      // Plan Premium: sin tope, se oculta el contador/banner de plan gratuito.
+      document.getElementById("pill-mis-juegos").textContent = usados + " guardados";
+      planGratuito.classList.add("oculto");
+      textoVacia.textContent = "Duplica una plantilla de abajo y guárdala aquí.";
+      document.getElementById("kard-vacia").style.display = "";
+      return;
+    }
+
+    document.getElementById("pill-mis-juegos").textContent = usados + " / " + cupos + " guardados";
+
+    // Plan Gratuito: solo visible con sesión iniciada
     planGratuito.classList.toggle("oculto", !uidActual);
     if(uidActual){
       if(libres > 0){
         planGratuito.classList.remove("lleno");
         planBtn.classList.add("oculto");
-        planTexto.textContent = "Plan Gratuito — Has creado " + usados + " de " + TOTAL_CUPOS + " juegos. Te "
+        planTexto.textContent = "Plan Gratuito — Has creado " + usados + " de " + cupos + " juegos. Te "
           + (libres === 1 ? "queda 1 juego disponible." : "quedan " + libres + " juegos disponibles.");
       } else {
         planGratuito.classList.add("lleno");
         planBtn.classList.remove("oculto");
-        planTexto.textContent = "Has utilizado los " + TOTAL_CUPOS + " juegos gratuitos. ¿Necesitas más?";
+        planTexto.textContent = "Llegaste al límite del plan gratuito (" + cupos + " juego" + (cupos === 1 ? "" : "s") + "). ¿Necesitas más?";
       }
     }
 
-    var textoVacia = document.getElementById("texto-vacia");
     if(libres === 1){
       textoVacia.textContent = "Duplica una plantilla de abajo y guárdala aquí. Te queda 1 cupo gratis.";
-    } else {
+    } else if(libres > 1){
       textoVacia.textContent = "Duplica una plantilla de abajo y guárdala aquí. Te quedan " + libres + " cupos gratis.";
+    } else {
+      textoVacia.textContent = "Llegaste al límite del plan gratuito.";
     }
 
     // si no quedan cupos, se esconde la carta vacía
@@ -1070,19 +1087,27 @@
   async function cargarJuegos(uid){
     var ref = doc(db, "profes", uid);
     var snap = await getDoc(ref);
-    if(snap.exists() && Array.isArray(snap.data().juegos)){
-      var lista = snap.data().juegos;
-      if(migrarNombres(lista)) guardarJuegos(lista);
-      return lista;
+    if(snap.exists()){
+      var data = snap.data();
+      // Campo "plan": "premium" | "gratis". Si no existe (profes ya registrados
+      // antes de este cambio), se trata como "gratis" — no rompe a nadie.
+      planActual = data.plan === "premium" ? "premium" : "gratis";
+      if(Array.isArray(data.juegos)){
+        var lista = data.juegos;
+        if(migrarNombres(lista)) guardarJuegos(lista);
+        return lista;
+      }
     }
+    planActual = "gratis";
     var porDefecto = juegosPorDefecto();
-    await setDoc(ref, { juegos: porDefecto });
+    await setDoc(ref, { juegos: porDefecto }, { merge: true });
     return porDefecto;
   }
 
   function guardarJuegos(lista){
     if(!uidActual) return;
-    setDoc(doc(db, "profes", uidActual), { juegos: lista || misJuegos }).catch(function(){
+    // merge:true para no borrar el campo "plan" (u otros) al guardar la lista de juegos.
+    setDoc(doc(db, "profes", uidActual), { juegos: lista || misJuegos }, { merge: true }).catch(function(){
       mostrarAviso("No se pudo guardar. Revisa tu conexión.", true);
     });
   }
@@ -1148,7 +1173,7 @@
   // url: dónde se juega (propio dominio si ya está migrado, si no la plantilla original)
   // editUrl: dónde se personaliza el contenido (el artifact original de Claude)
   function duplicarJuego(nombre, icono, color, url, editUrl){
-    if(misJuegos.length >= TOTAL_CUPOS){
+    if(misJuegos.length >= totalCupos()){
       mostrarModalLimite();
       return;
     }
@@ -1291,12 +1316,14 @@
           combinados.push(local);
         }
       });
-      if(combinados.length > TOTAL_CUPOS) combinados = combinados.slice(0, TOTAL_CUPOS);
+      var cupos = totalCupos();
+      if(combinados.length > cupos) combinados = combinados.slice(0, cupos);
       misJuegos = combinados;
       renderMisJuegos();
       if(sinGuardar.length) guardarJuegos();
     } else {
       uidActual = null;
+      planActual = "gratis";
       misJuegos = [];
       actualizarUISesion(null);
       renderMisJuegos();
