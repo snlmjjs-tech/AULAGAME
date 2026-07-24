@@ -221,6 +221,23 @@
   }
   .plan-gratuito .btn-whatsapp{ padding:9px 16px; font-size:12.5px; flex-shrink:0; }
 
+  .tutorial-vacio{
+    display:flex; align-items:center; gap:16px;
+    background: var(--panel); border:2px dashed var(--amarillo);
+    border-radius:18px; padding:18px 22px; margin-bottom:20px;
+  }
+  .tutorial-vacio-emoji{ font-size:30px; flex-shrink:0; }
+  .tutorial-vacio strong{ font-family:'Baloo 2', cursive; font-weight:800; font-size:16.5px; display:block; margin-bottom:3px; }
+  .tutorial-vacio p{ margin:0; font-size:13.5px; font-weight:600; color: var(--texto-suave); line-height:1.5; }
+  .tutorial-vacio-flecha{
+    font-size:26px; color: var(--amarillo); font-weight:800; flex-shrink:0;
+    animation: rebote-flecha 1.4s ease-in-out infinite;
+  }
+  @keyframes rebote-flecha{
+    0%, 100%{ transform: translateY(0); }
+    50%{ transform: translateY(8px); }
+  }
+
   .count-pill{
     font-family:'Space Mono', monospace; font-size:12px;
     background: var(--tinta); border:2px solid var(--linea);
@@ -448,6 +465,18 @@
     font-size: 14px; font-weight: 600; line-height: 1.55;
   }
   .modal-caja p strong{ color: var(--texto); }
+  .campo-nombrar{
+    display:flex; flex-direction:column; gap:6px; text-align:left;
+    font-size:11.5px; font-weight:800; color: var(--texto-suave);
+    text-transform:uppercase; letter-spacing:0.5px; margin-bottom:20px;
+  }
+  .campo-nombrar input{
+    font-family:'Nunito Sans', sans-serif; font-size:14.5px; font-weight:700;
+    color: var(--texto); background: var(--tinta);
+    border:2px solid var(--linea); border-radius:12px; padding:11px 14px;
+    width:100%; text-transform:none; letter-spacing:normal;
+  }
+  .campo-nombrar input:focus-visible{ border-color: var(--turquesa); }
   .modal-acciones{ display:flex; gap:10px; }
   .btn-cancelar{
     flex:1;
@@ -604,6 +633,15 @@
       <a class="btn btn-whatsapp oculto" id="plan-gratuito-btn" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">💬 Pasarme a Premium</a>
     </div>
 
+    <div class="tutorial-vacio oculto" id="tutorial-vacio">
+      <span class="tutorial-vacio-emoji">👋</span>
+      <div>
+        <strong>Aún no tienes juegos</strong>
+        <p>Elige una plantilla de abajo y duplícala para personalizarla con tu clase.</p>
+      </div>
+      <span class="tutorial-vacio-flecha" aria-hidden="true">↓</span>
+    </div>
+
     <div class="grid" id="grid-mis-juegos">
 
       <article class="kard kard-vacia" role="button" tabindex="0" id="kard-vacia">
@@ -621,7 +659,7 @@
       <span class="conf" style="top:14px; right:26%;" aria-hidden="true">🎉</span>
       <span class="conf" style="bottom:14px; right:8%; animation-delay:1.6s;" aria-hidden="true">⭐</span>
       <span class="anuncio-badge">✨ Recién comenzando</span>
-      <p class="anuncio-texto">🚀 <strong>¡Bienvenido a AulaGame!</strong> Gracias por ser uno de los primeros profesores en probar la plataforma. El plan gratuito permite crear 1 juego. Si necesitas más juegos o quieres acceder a funciones exclusivas, escríbeme directamente por WhatsApp para pasarte a Premium. Siempre estaré disponible para ayudarte.</p>
+      <p class="anuncio-texto">🚀 <strong>¡Bienvenido a AulaGame!</strong> Gracias por ser uno de los primeros profesores en probar la plataforma. El plan gratuito permite crear 2 juegos. Si necesitas más juegos o quieres acceder a funciones exclusivas, escríbeme directamente por WhatsApp para pasarte a Premium. Siempre estaré disponible para ayudarte.</p>
       <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">💬 Hablar por WhatsApp</a>
     </div>
   </section>
@@ -858,11 +896,29 @@
   <div class="modal-caja" role="dialog" aria-modal="true" aria-labelledby="limite-titulo">
     <div class="icono">🔒</div>
     <h3 id="limite-titulo">Llegaste al límite del plan gratuito</h3>
-    <p>Tu plan gratuito permite guardar 1 juego a la vez. Elimina el que tienes para reemplazarlo, o escríbenos por WhatsApp para pasarte a Premium y crear todos los que quieras.</p>
+    <p>Tu plan gratuito permite guardar 2 juegos a la vez. Elimina uno para reemplazarlo, o escríbenos por WhatsApp para pasarte a Premium y crear todos los que quieras.</p>
     <div class="modal-acciones">
       <button class="btn btn-cancelar" id="btn-limite-cerrar">Cerrar</button>
       <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">Quiero pasarme a Premium</a>
     </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL NOMBRAR JUEGO ==================== -->
+<div class="modal-fondo oculto" id="modal-nombrar">
+  <div class="modal-caja" role="dialog" aria-modal="true" aria-labelledby="nombrar-titulo">
+    <div class="icono">✏️</div>
+    <h3 id="nombrar-titulo">Ponle un nombre a tu juego</h3>
+    <p>Agrega el curso o la unidad para reconocerlo fácil en "Mis juegos".</p>
+    <form id="form-nombrar" novalidate>
+      <label class="campo-nombrar">Nombre del juego
+        <input type="text" id="input-nombrar" required maxlength="60" autocomplete="off">
+      </label>
+      <div class="modal-acciones">
+        <button type="button" class="btn btn-cancelar" id="btn-nombrar-cancelar">Cancelar</button>
+        <button type="submit" class="btn btn-jugar" id="btn-nombrar-guardar">Guardar</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -884,7 +940,7 @@
   var db = getFirestore(app);
 
   // ---------- Estado ----------
-  var CUPOS_PLAN_GRATIS = 1;
+  var CUPOS_PLAN_GRATIS = 2;
   var uidActual = null;
   var planActual = "gratis"; // "gratis" | "premium" — se lee de profes/{uid}.plan al iniciar sesión
 
@@ -1039,6 +1095,7 @@
     var textoVacia = document.getElementById("texto-vacia");
 
     document.getElementById("badge-premium-header").classList.toggle("oculto", !(uidActual && esPremium()));
+    document.getElementById("tutorial-vacio").classList.toggle("oculto", !(uidActual && usados === 0));
 
     if(uidActual && esPremium()){
       // Plan Premium: sin tope. Se muestra el banner en modo "confirmación",
@@ -1094,13 +1151,6 @@
   }
 
   // ---------- Mis juegos: guardado persistente (Firestore) ----------
-  function juegosPorDefecto(){
-    return [
-      { id:"demo-battle-castle", nombre:"Battle Castle — 2ºC Verbos Irregulares", icono:"<svg width=\"78\" height=\"78\" viewBox=\"0 0 100 100\" fill=\"none\"><rect x=\"9\" y=\"48\" width=\"19\" height=\"32\" rx=\"2\" fill=\"#fff\"/><polygon points=\"9,48 28,48 18.5,36\" fill=\"#fff\"/><rect x=\"16.5\" y=\"27\" width=\"4\" height=\"10\" fill=\"#fff\"/><polygon points=\"20.5,27 20.5,33 29,30\" fill=\"var(--tinta)\"/><rect x=\"73\" y=\"48\" width=\"19\" height=\"32\" rx=\"2\" fill=\"#fff\" opacity=\"0.85\"/><polygon points=\"73,48 92,48 82.5,36\" fill=\"#fff\" opacity=\"0.85\"/><rect x=\"80.5\" y=\"27\" width=\"4\" height=\"10\" fill=\"#fff\" opacity=\"0.85\"/><polygon points=\"84.5,27 84.5,33 93,30\" fill=\"var(--tinta)\"/><rect x=\"30\" y=\"40\" width=\"40\" height=\"40\" rx=\"2\" fill=\"#fff\"/><rect x=\"30\" y=\"35\" width=\"7\" height=\"7\" fill=\"#fff\"/><rect x=\"43.5\" y=\"35\" width=\"7\" height=\"7\" fill=\"#fff\"/><rect x=\"57\" y=\"35\" width=\"7\" height=\"7\" fill=\"#fff\"/><rect x=\"63\" y=\"35\" width=\"7\" height=\"7\" fill=\"#fff\"/><path d=\"M44 80 V65 a6 6 0 0 1 12 0 V80 Z\" fill=\"var(--tinta)\"/><rect x=\"48.5\" y=\"20\" width=\"3\" height=\"15\" fill=\"#fff\"/><polygon points=\"51.5,20 51.5,27.5 62,24\" fill=\"var(--tinta)\"/></svg>", color:"c-naranja", url:"/play/battlecastle3d/", editUrl:"/play/battlecastle3d/", meta:"Editado hace 3 días" },
-      { id:"demo-millonario", nombre:"Escalera Millonaria — 1ºC", icono:"<svg width=\"80\" height=\"80\" viewBox=\"0 0 100 100\" fill=\"none\"><path d=\"M14 46 a36 22 0 0 1 72 0 Z\" fill=\"#fff\"/><rect x=\"14\" y=\"46\" width=\"72\" height=\"36\" rx=\"7\" fill=\"#fff\"/><rect x=\"14\" y=\"58\" width=\"72\" height=\"5\" fill=\"var(--tinta)\" opacity=\"0.18\"/><rect x=\"36\" y=\"30\" width=\"6\" height=\"30\" fill=\"var(--tinta)\" opacity=\"0.18\"/><rect x=\"58\" y=\"30\" width=\"6\" height=\"34\" fill=\"var(--tinta)\" opacity=\"0.18\"/><circle cx=\"50\" cy=\"58\" r=\"8\" fill=\"var(--tinta)\"/><rect x=\"47.5\" y=\"54\" width=\"5\" height=\"10\" rx=\"1.2\" fill=\"#fff\"/><circle cx=\"19\" cy=\"30\" r=\"9\" fill=\"var(--tinta)\"/><circle cx=\"81\" cy=\"28\" r=\"7\" fill=\"#fff\" stroke=\"var(--tinta)\" stroke-width=\"2.2\"/></svg>", color:"c-violeta", url:"/play/millonario/", editUrl:"/play/millonario/", meta:"Editado hace 1 semana" }
-    ];
-  }
-
   async function cargarJuegos(uid){
     var ref = doc(db, "profes", uid);
     var snap = await getDoc(ref);
@@ -1116,9 +1166,7 @@
       }
     }
     planActual = "gratis";
-    var porDefecto = juegosPorDefecto();
-    await setDoc(ref, { juegos: porDefecto }, { merge: true });
-    return porDefecto;
+    return [];
   }
 
   function guardarJuegos(lista){
@@ -1213,6 +1261,44 @@
     }
   }
 
+  // ---------- Modal: nombre personalizado al duplicar ----------
+  var modalNombrar = document.getElementById("modal-nombrar");
+  var formNombrar = document.getElementById("form-nombrar");
+  var inputNombrar = document.getElementById("input-nombrar");
+  var duplicadoPendiente = null;
+
+  function abrirModalNombrar(nombre, icono, color, url, editUrl){
+    if(misJuegos.length >= totalCupos()){
+      mostrarModalLimite();
+      return;
+    }
+    duplicadoPendiente = { icono: icono, color: color, url: url, editUrl: editUrl };
+    inputNombrar.value = nombre;
+    modalNombrar.classList.remove("oculto");
+    setTimeout(function(){ inputNombrar.focus(); inputNombrar.select(); }, 0);
+  }
+  function cerrarModalNombrar(){
+    modalNombrar.classList.add("oculto");
+    duplicadoPendiente = null;
+  }
+  document.getElementById("btn-nombrar-cancelar").addEventListener("click", cerrarModalNombrar);
+  modalNombrar.addEventListener("click", function(e){
+    if(e.target === modalNombrar) cerrarModalNombrar();
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && !modalNombrar.classList.contains("oculto")) cerrarModalNombrar();
+  });
+  formNombrar.addEventListener("submit", function(e){
+    e.preventDefault();
+    if(!duplicadoPendiente) return;
+    var nombre = inputNombrar.value.trim();
+    if(!nombre) return;
+    var d = duplicadoPendiente;
+    modalNombrar.classList.add("oculto");
+    duplicadoPendiente = null;
+    duplicarJuego(nombre, d.icono, d.color, d.url, d.editUrl);
+  });
+
   // Duplicar desde una plantilla
   document.querySelector("main").addEventListener("click", function(e){
     var boton = e.target.closest(".btn-dup");
@@ -1223,7 +1309,7 @@
     var color = Array.prototype.find.call(kard.classList, function(c){ return c.indexOf("c-") === 0; }) || "c-violeta";
     var editUrl = boton.getAttribute("data-url");
     var playUrl = boton.getAttribute("data-play") || editUrl;
-    duplicarJuego(nombre, icono, color, playUrl, editUrl);
+    abrirModalNombrar(nombre, icono, color, playUrl, editUrl);
   });
 
   // ---------- Espacio libre: lleva a las plantillas ----------
@@ -1257,7 +1343,7 @@
       var kardMia = botonDup.closest(".kard-mia");
       var id = kardMia.getAttribute("data-id");
       var juego = misJuegos.find(function(j){ return j.id === id; });
-      if(juego) duplicarJuego(juego.nombre, juego.icono || juego.emoji, juego.color, juego.url, juego.editUrl);
+      if(juego) abrirModalNombrar(juego.nombre, juego.icono || juego.emoji, juego.color, juego.url, juego.editUrl);
       return;
     }
     var boton = e.target.closest(".btn-borrar");
