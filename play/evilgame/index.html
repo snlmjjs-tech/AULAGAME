@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Evil Game - by Mr. Nuñez</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&family=Bungee&display=swap');
 
@@ -545,6 +546,25 @@
     .event-emoji{ font-size:6rem; }
     .event-text{ font-size:1.7rem; }
   }
+
+  /* ---------- MODO QR ---------- */
+  .qr-box-wrap{ background:#fff; padding:10px; border-radius:12px; display:inline-block; margin:12px 0; }
+  #student-app{
+    position:fixed; inset:0; display:none; flex-direction:column; align-items:center; justify-content:flex-start;
+    overflow-y:auto; padding:26px 16px 60px; text-align:center; background:#05070f; color:#fff; z-index:500;
+  }
+  #student-app.show{ display:flex; }
+  .student-wrap{ max-width:460px; width:100%; margin:0 auto; }
+  .student-team-btn{
+    display:block; width:100%; padding:16px; margin-bottom:10px; border-radius:14px; border:3px solid #fff;
+    font-weight:800; font-size:16px; color:#fff;
+  }
+  .student-roll-btn{
+    width:100%; padding:22px; border-radius:16px; border:none; background:#ff3d5a; color:#fff;
+    font-weight:800; font-size:20px;
+  }
+  .student-roll-btn:disabled{ opacity:.4; }
+  .hidden{ display:none !important; }
 </style>
 </head>
 <body>
@@ -654,6 +674,7 @@
       <div class="turn-card" id="turn-card">-</div>
 
       <button class="btn secondary" id="music-btn" style="width:100%; padding:8px; font-size:.8rem; margin-bottom:10px;" onclick="toggleMusic()">🔊 Música: ON</button>
+      <button class="btn secondary" id="qr-btn" style="width:100%; padding:8px; font-size:.8rem; margin-bottom:10px;" onclick="abrirModalQR()">📱 Conectar celulares</button>
 
       <div class="dice-mode-switch">
         <button id="sw-digital" class="on" onclick="setDiceMode('digital', true)">🎲 Digital</button>
@@ -701,6 +722,42 @@
   <div class="event-sub" id="event-sub"></div>
 </div>
 
+<!-- ================= MODO QR ================= -->
+<div class="modal-overlay" id="qr-modal">
+  <div class="modal-card">
+    <div class="modal-icon">📱</div>
+    <h2>Conecta a tus jugadores</h2>
+    <div class="qr-box-wrap"><div id="qrBox"></div></div>
+    <p id="q-sub" style="opacity:.8;">Cada equipo escanea el mismo código y elige su equipo en el celular</p>
+    <div id="qrSalaCode" style="font-size:1.6rem; font-weight:800;">------</div>
+    <p id="qrLinkCorto" style="font-size:.85rem; opacity:.8;"></p>
+    <button class="btn" onclick="cerrarModalQR()">Cerrar</button>
+  </div>
+</div>
+
+<!-- ================= MODO QR: pantalla del alumno (celular) ================= -->
+<div id="student-app">
+  <div class="student-wrap">
+    <h1 style="font-family:'Bungee',sans-serif; font-size:1.8rem; margin-bottom:16px;">EVIL GAME</h1>
+
+    <div id="studentSelect">
+      <p style="margin-bottom:12px;">¿En qué equipo estás?</p>
+      <div id="studentTeamButtons"></div>
+    </div>
+
+    <div id="studentPlay" style="display:none;">
+      <div id="studentEstado" style="font-weight:800; margin-bottom:14px;"></div>
+      <button class="student-roll-btn hidden" id="studentRollBtn">🎲 LANZAR DADO</button>
+      <div id="studentDadoResultado" style="font-size:1rem; font-weight:700; margin-top:10px;"></div>
+      <div id="studentPreguntaZone" class="hidden" style="margin-top:16px; background:rgba(255,255,255,.06); border-radius:14px; padding:16px; text-align:left;">
+        <div style="font-size:.75rem; opacity:.7; text-transform:uppercase;">Casilla</div>
+        <h2 id="studentQuestionText" style="font-size:1.2rem; margin:6px 0;"></h2>
+        <p style="font-size:.8rem; opacity:.75;">El profesor está evaluando la respuesta oral del equipo…</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ================= QUESTION MODAL ================= -->
 <div class="modal-overlay" id="question-modal">
   <div class="modal-card">
@@ -729,6 +786,13 @@
 
 <script type="module">
 import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
+import { crearSala, refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
+
+/* ================= MODO QR: alumno vs. profesor ================= */
+const _paramsEvil = new URLSearchParams(location.search);
+const SALA_ALUMNO = _paramsEvil.get("room");
+const ES_ALUMNO = !!SALA_ALUMNO;
+
 /* ============ DATA: exact layout extracted from the original .pptm ============ */
 const CELLS = [
  {n:1, left:11.87, top:7.22, w:10, h:17.78, q:'WHAT', type:'question'},
@@ -771,10 +835,15 @@ const FINAL = 33;
 const DEFAULT_QUESTIONS = {};
 CELLS.forEach(c=>{ if(c.q !== undefined) DEFAULT_QUESTIONS[c.n] = c.q; });
 
-/* Espera la sesión y carga (si existen) las preguntas/nombres de equipo guardados del profesor en Firestore. */
-const { saved: SAVED_EVIL, uid: CURRENT_UID } = await new Promise(function(resolve){
-  initGameSync('evilgame', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
-});
+/* Espera la sesión y carga (si existen) las preguntas/nombres de equipo guardados del profesor en Firestore.
+   Un alumno que entra con ?room=... no tiene sesión de profesor: se salta el gate. */
+let SAVED_EVIL = null, CURRENT_UID = null;
+if(!ES_ALUMNO){
+  const _r = await new Promise(function(resolve){
+    initGameSync('evilgame', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+  });
+  SAVED_EVIL = _r.saved; CURRENT_UID = _r.uid;
+}
 
 /* Construye el objeto {casilla: pregunta} / {equipoId: nombre} vigente, para guardarlo. */
 function questionsMap(){
@@ -1136,6 +1205,7 @@ loadSavedTeamNames();
 let selectedTeams = [1,2,3,4];
 let teams = [];
 let currentTurn = 0;
+let salaActual = null; // código de sala en vivo (null = modo QR no activado)
 let gameOver = false;
 let busy = false;
 let diceMode = 'digital'; // 'digital' | 'physical'
@@ -1420,6 +1490,7 @@ function renderTeams(){
     row.innerHTML = `<div class="dot" style="background:${t.color}"></div>${t.name}${t.finished?' 🏆':''}<span class="pos">Casilla ${t.pos}</span>`;
     list.appendChild(row);
   });
+  syncEstado();
 }
 
 function updateTurnCard(){
@@ -1486,6 +1557,7 @@ async function playTurn(roll){
   const start = t.pos;
   turnStartPos = start;
   log(`${t.name} sacó 🎲 ${roll}`);
+  if(salaActual) escribir(refSala('evilgame', salaActual, 'estado/dado'), { valor: roll });
 
   let path = [];
   const distToGoal = FINAL - start;
@@ -1606,12 +1678,14 @@ function showQuestion(c){
     document.getElementById('q-continue').style.display = 'none';
     modalCallback = resolve;
     document.getElementById('question-modal').classList.add('active');
+    if(salaActual) escribir(refSala('evilgame', salaActual, 'estado/preguntaAsignada'), { texto: c.q });
   });
 }
 
 function answerQuestion(ok){
   document.getElementById('question-modal').classList.remove('active');
   if(ok) sfxCorrect(); else sfxWrong();
+  if(salaActual) escribir(refSala('evilgame', salaActual, 'estado/resultado'), { correcto: ok });
   if(modalCallback){ const cb = modalCallback; modalCallback = null; cb(ok); }
 }
 
@@ -1619,6 +1693,12 @@ function endTurn(){
   if(gameOver) return;
   do{ currentTurn = (currentTurn+1)%teams.length; } while(teams[currentTurn].finished);
   updateTurnCard();
+  if(salaActual){
+    escribir(refSala('evilgame', salaActual, 'estado/dado'), null);
+    escribir(refSala('evilgame', salaActual, 'estado/preguntaAsignada'), null);
+    escribir(refSala('evilgame', salaActual, 'estado/resultado'), null);
+    escribir(refSala('evilgame', salaActual, 'respuestas'), null);
+  }
   renderTeams();
   busy = false;
   setControlsEnabled(true);
@@ -1710,10 +1790,151 @@ function launchConfetti(){
   }
 }
 
+/* ================= MODO QR: sala en vivo para celulares ================= */
+function syncEstado(){
+  if(!salaActual || !teams.length) return;
+  escribir(refSala('evilgame', salaActual, 'estado/turnoEquipoId'), teams[currentTurn].id);
+  escribir(refSala('evilgame', salaActual, 'estado/roster'), teams.map(function(t){
+    return { id: t.id, nombre: t.name, color: t.color, pos: t.pos };
+  }));
+}
+
+async function abrirModalQR(){
+  document.getElementById('qr-modal').classList.add('active');
+  if(salaActual) return;
+  const codeEl = document.getElementById('qrSalaCode');
+  codeEl.textContent = 'Creando sala…';
+  try{
+    const { sala, codigoCorto } = await crearSala('evilgame', '/play/evilgame/');
+    salaActual = sala;
+    codeEl.textContent = sala;
+    const joinUrl = location.origin + '/play/evilgame/?room=' + sala;
+    const qb = document.getElementById('qrBox');
+    qb.innerHTML = '';
+    if(window.QRCode){
+      new QRCode(qb, { text: joinUrl, width: 190, height: 190, colorDark: '#05070f', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    }
+    document.getElementById('qrLinkCorto').textContent = codigoCorto ? ('🔗 ' + location.host + '/' + codigoCorto) : joinUrl;
+    syncEstado();
+    escuchar(refSala('evilgame', salaActual, 'respuestas'), function(datos){
+      if(!datos || busy || gameOver || !teams.length) return;
+      const turnoId = teams[currentTurn].id;
+      const peticion = datos[turnoId];
+      if(peticion && peticion.tipo === 'lanzar'){
+        rollDice();
+      }
+    });
+  }catch(e){
+    codeEl.textContent = 'Error al crear la sala';
+    toast('No se pudo crear la sala en vivo. Revisa tu conexión.');
+  }
+}
+function cerrarModalQR(){
+  document.getElementById('qr-modal').classList.remove('active');
+}
+
+/* ---------------- Vista del alumno (celular) ---------------- */
+function initStudentView(){
+  document.getElementById('student-app').classList.add('show');
+  document.documentElement.style.visibility = '';
+
+  const jugadorId = idJugador(SALA_ALUMNO);
+  const idKey = 'aulagame_evil_equipo_' + SALA_ALUMNO;
+  let miEquipoId = sessionStorage.getItem(idKey);
+  let estado = null;
+  let yaLanzado = false;
+  let ultimoDado = undefined;
+
+  const selectEl = document.getElementById('studentSelect');
+  const playEl = document.getElementById('studentPlay');
+  const btnsWrap = document.getElementById('studentTeamButtons');
+  const rollBtnStudent = document.getElementById('studentRollBtn');
+
+  function elegirEquipo(id){
+    miEquipoId = String(id);
+    sessionStorage.setItem(idKey, miEquipoId);
+    escribir(refSala('evilgame', SALA_ALUMNO, 'jugadores/' + jugadorId), { equipoId: miEquipoId, unidoEn: marcaTiempo() });
+    selectEl.style.display = 'none';
+    playEl.style.display = 'block';
+    render();
+  }
+
+  function render(){
+    if(!estado || miEquipoId === null) return;
+    const roster = estado.roster || [];
+    const soyYo = String(estado.turnoEquipoId) === String(miEquipoId);
+
+    if(estado.dado){
+      if(estado.dado.valor !== ultimoDado){ ultimoDado = estado.dado.valor; yaLanzado = true; }
+    } else {
+      yaLanzado = false; ultimoDado = undefined;
+    }
+
+    const estadoEl = document.getElementById('studentEstado');
+    const preguntaZone = document.getElementById('studentPreguntaZone');
+    const dadoEl = document.getElementById('studentDadoResultado');
+
+    if(estado.resultado){
+      preguntaZone.classList.add('hidden');
+      dadoEl.textContent = estado.resultado.correcto ? '✅ ¡Correcto!' : '❌ Incorrecto.';
+    } else if(estado.preguntaAsignada){
+      preguntaZone.classList.remove('hidden');
+      document.getElementById('studentQuestionText').textContent = estado.preguntaAsignada.texto;
+      dadoEl.textContent = '';
+    } else {
+      preguntaZone.classList.add('hidden');
+      dadoEl.textContent = estado.dado ? ('🎲 Salió ' + estado.dado.valor) : '';
+    }
+
+    if(soyYo && !yaLanzado && !estado.dado){
+      estadoEl.textContent = '¡Es el turno de tu equipo!';
+      rollBtnStudent.classList.remove('hidden');
+      rollBtnStudent.disabled = false;
+    } else if(soyYo){
+      estadoEl.textContent = 'Turno de tu equipo — mira la pantalla grande';
+      rollBtnStudent.classList.add('hidden');
+    } else {
+      const turno = roster.find(function(p){ return String(p.id) === String(estado.turnoEquipoId); });
+      estadoEl.textContent = 'Turno de ' + (turno ? turno.nombre : '...') + ' — espera tu turno';
+      rollBtnStudent.classList.add('hidden');
+    }
+  }
+
+  rollBtnStudent.addEventListener('click', function(){
+    if(rollBtnStudent.disabled) return;
+    rollBtnStudent.disabled = true;
+    escribir(refSala('evilgame', SALA_ALUMNO, 'respuestas/' + miEquipoId), { tipo: 'lanzar', jugadorId: jugadorId, enviadaEn: marcaTiempo() });
+  });
+
+  escuchar(refSala('evilgame', SALA_ALUMNO, 'estado'), function(datos){
+    estado = datos;
+    if(!estado) return;
+    if(miEquipoId === null){
+      btnsWrap.innerHTML = '';
+      (estado.roster || []).forEach(function(t){
+        const btn = document.createElement('div');
+        btn.className = 'student-team-btn';
+        btn.style.background = t.color;
+        btn.textContent = t.nombre;
+        btn.addEventListener('click', function(){ elegirEquipo(t.id); });
+        btnsWrap.appendChild(btn);
+      });
+    } else {
+      render();
+    }
+  });
+}
+
+if(ES_ALUMNO){
+  initStudentView();
+}
+
 /* Este script ahora es un módulo (type="module"), así que sus funciones ya no
    quedan en el scope global por defecto. El HTML todavía las invoca mediante
    atributos onclick/onchange inline, así que se exponen explícitamente aquí
    para no romper esos manejadores. */
+window.abrirModalQR = abrirModalQR;
+window.cerrarModalQR = cerrarModalQR;
 window.goTo = goTo;
 window.openEditor = openEditor;
 window.exportExcel = exportExcel;
