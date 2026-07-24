@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Poppins:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{
   --bg1:#1c0b3a;
@@ -310,6 +311,20 @@ body{
 .hidden{display:none !important;}
 ::-webkit-scrollbar{width:8px;}
 ::-webkit-scrollbar-thumb{background:var(--purple); border-radius:10px;}
+
+/* ---------- MODO QR ---------- */
+.qr-box-wrap{ background:#fff; padding:10px; border-radius:14px; display:inline-block; margin:14px 0; }
+#student-app{max-width:460px; margin:0 auto; padding:26px 16px 60px; position:relative; z-index:1; display:none; flex-direction:column; align-items:center; gap:16px; text-align:center;}
+#student-app.show{display:flex;}
+.student-team-grid{display:flex; flex-direction:column; gap:10px; width:100%;}
+.student-team-btn{
+  padding:16px; border-radius:14px; border:3px solid var(--ink); font-family:'Poppins'; font-weight:800; font-size:16px;
+  color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.3);
+}
+.student-input{
+  width:100%; padding:14px; border-radius:12px; border:2px solid var(--ink); font-size:16px;
+  text-align:center; background:#fff; color:var(--ink); box-sizing:border-box;
+}
 </style>
 </head>
 <body>
@@ -353,6 +368,7 @@ body{
       <div class="brand-mini">BET YOUR ANSWER</div>
       <div class="scoreboard" id="scoreboard"></div>
       <div class="tools">
+        <button class="btn btn-small btn-outline" id="qrBtn">📱 Celulares</button>
         <button class="icon-btn" id="muteBtnBoard" title="Silenciar música">🔊</button>
         <button class="btn btn-small btn-outline" id="homeBtnBoard">🏠 Menú</button>
       </div>
@@ -369,22 +385,66 @@ body{
 
 </div>
 
+<div class="modal-overlay hidden" id="modalQR">
+  <div class="modal-content" style="text-align:center; max-width:420px;">
+    <h3>📱 Conecta a tus jugadores</h3>
+    <div class="qr-box-wrap"><div id="qrBox"></div></div>
+    <p style="opacity:.8; font-size:14px;">Cada equipo escanea el mismo código y elige su equipo en el celular</p>
+    <div class="value-badge money-font" id="qrSalaCode">------</div>
+    <p style="opacity:.75; font-size:13px;" id="qrLinkCorto"></p>
+    <div class="action-row" style="justify-content:center;">
+      <button class="btn btn-gold btn-small" id="qrCerrarBtn">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="modalOverlay">
   <div class="modal-content" id="modalContent"></div>
 </div>
 
 <div class="toast" id="toast"></div>
 
+<!-- ===================== MODO QR: pantalla del alumno (celular) ===================== -->
+<div id="student-app">
+  <div id="studentSelect">
+    <h2 class="title-logo" style="font-size:32px;">BET YOUR<br>ANSWER</h2>
+    <p style="opacity:.85;">¿En qué equipo estás?</p>
+    <div class="student-team-grid" id="studentTeamButtons"></div>
+  </div>
+
+  <div id="studentPlay" style="display:none; width:100%;">
+    <p id="studentEstado" style="opacity:.85; font-weight:700;">Esperando a que el profe elija una pregunta…</p>
+    <div id="studentQuestionZone" class="hidden" style="width:100%;">
+      <div class="value-badge money-font" id="studentValor">$0</div>
+      <div class="q-text" id="studentQuestionText" style="color:#fff;"></div>
+      <input type="text" id="studentInput" class="student-input" placeholder="Escribe tu respuesta...">
+      <button class="btn btn-gold" id="studentEnviarBtn" style="margin-top:10px;">ENVIAR</button>
+      <p id="studentSentHint" style="opacity:.8; font-size:13px; margin-top:8px;"></p>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initGameSync, saveGameData } from "../shared/game-storage.js";
+import { crearSala, refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
 /* ============================================================
    BET YOUR ANSWER — juego digital interactivo
    ============================================================ */
 
-/* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore. */
-const { saved: SAVED_BYA, uid: CURRENT_UID } = await new Promise(function(resolve){
-  initGameSync('betyouranswer', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
-});
+/* ================= MODO QR: alumno vs. profesor ================= */
+const _paramsBYA = new URLSearchParams(location.search);
+const SALA_ALUMNO = _paramsBYA.get("room");
+const ES_ALUMNO = !!SALA_ALUMNO;
+
+/* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore.
+   Un alumno que entra con ?room=... no tiene sesión de profesor: se salta el gate. */
+let SAVED_BYA = null, CURRENT_UID = null;
+if(!ES_ALUMNO){
+  const _r = await new Promise(function(resolve){
+    initGameSync('betyouranswer', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+  });
+  SAVED_BYA = _r.saved; CURRENT_UID = _r.uid;
+}
 
 /* Quita el campo "used" antes de guardar: es estado de la partida en curso (qué
    preguntas ya se jugaron), no contenido de autor, así que nunca se sincroniza. */
@@ -465,6 +525,8 @@ let gameData = {
 
 let presentBoxesState = [...gameData.presentBoxes];
 let secretTimer = null, secretTimeLeft = 45;
+let salaActual = null;         // código de sala en vivo (null = modo QR no activado)
+let respuestasActuales = {};   // { [equipoId]: {texto, jugadorId} } — respuestas entrantes desde celulares
 
 /* ---------------- UTIL ---------------- */
 const $ = s => document.querySelector(s);
@@ -484,6 +546,7 @@ function openModal(html){
 function closeModal(){
   $('#modalOverlay').classList.add('hidden');
   if(secretTimer){clearInterval(secretTimer); secretTimer=null;}
+  if(salaActual) escribir(refSala('betyouranswer', salaActual, 'estado/preguntaActual'), null);
 }
 // El HTML de los modales usa onclick="closeModal()" inline (ver openQuestion/openSecretWord/
 // openPresent/openAdmin); en un <script type="module"> las funciones ya no cuelgan de window
@@ -618,6 +681,7 @@ function renderScoreboard(){
     </div>
   `).join('');
   $('#turnTeamLabel').textContent = gameData.teams[gameData.currentTurn].name;
+  syncEstado();
 }
 $('#nextTurnBtn').addEventListener('click', ()=>{
   gameData.currentTurn = (gameData.currentTurn+1) % gameData.teams.length;
@@ -675,6 +739,7 @@ function bindAwardButtons(container, value, onAward){
       const amt = sign * value;
       amt>0 ? stingCorrect() : stingWrong();
       awardTeam(teamId, amt);
+      if(salaActual) escribir(refSala('betyouranswer', salaActual, 'respuestas/' + teamId), null);
       if(onAward) onAward();
     });
   });
@@ -690,6 +755,7 @@ function openQuestion(q){
     <h3>${q.type==='bonus'?'Caja Bonus':'Pregunta'}</h3>
     <div class="value-badge money-font">${fmt(q.value)}</div>
     <div class="q-text">${q.question}</div>
+    <p id="respuestaEntranteBox" style="font-size:13.5px; font-weight:700; color:var(--ink-soft); min-height:18px;"></p>
     <button class="btn btn-outline btn-small" id="revealBtn">👁 Revelar respuesta</button>
     <div class="answer-box" id="answerBox">
       <div class="a-word">${q.answer}</div>
@@ -705,6 +771,19 @@ function openQuestion(q){
   $('#revealBtn').addEventListener('click', ()=>{ $('#answerBox').classList.add('show'); });
   bindAwardButtons($('#modalContent'), q.value);
   $('#markUsedBtn').addEventListener('click', ()=>{ markUsed(q.id); closeModal(); });
+  if(salaActual){
+    respuestasActuales = {};
+    escribir(refSala('betyouranswer', salaActual, 'respuestas'), null);
+    escribir(refSala('betyouranswer', salaActual, 'estado/preguntaActual'), { id: q.id, texto: q.question, valor: q.value });
+    renderRespuestaEntrante();
+  }
+}
+function renderRespuestaEntrante(){
+  const box = document.getElementById('respuestaEntranteBox');
+  if(!box) return;
+  const teamId = gameData.teams[gameData.currentTurn].id;
+  const resp = respuestasActuales[teamId];
+  box.textContent = (resp && resp.texto) ? ('📱 ' + gameData.teams[gameData.currentTurn].name + ' respondió: "' + resp.texto + '"') : '';
 }
 
 /* ----- Secret word (taboo) modal ----- */
@@ -970,8 +1049,135 @@ $('#muteBtnBoard').addEventListener('click', toggleMute);
   }
 })();
 
+/* ================= MODO QR: sala en vivo para celulares ================= */
+function syncEstado(){
+  if(!salaActual) return;
+  escribir(refSala('betyouranswer', salaActual, 'estado/equipos'), gameData.teams.map(function(t){
+    return { id: t.id, nombre: t.name, color: t.color, score: t.score };
+  }));
+  escribir(refSala('betyouranswer', salaActual, 'estado/turnoEquipoId'), gameData.teams[gameData.currentTurn].id);
+}
+
+async function abrirModalQR(){
+  const modal = $('#modalQR');
+  modal.classList.remove('hidden');
+  if(salaActual) return;
+  const codeEl = $('#qrSalaCode');
+  codeEl.textContent = 'Creando sala…';
+  try{
+    const { sala, codigoCorto } = await crearSala('betyouranswer', '/play/betyouranswer/');
+    salaActual = sala;
+    codeEl.textContent = sala;
+    const joinUrl = location.origin + '/play/betyouranswer/?room=' + sala;
+    const qb = $('#qrBox');
+    qb.innerHTML = '';
+    if(window.QRCode){
+      new QRCode(qb, { text: joinUrl, width: 190, height: 190, colorDark: '#2a1554', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    }
+    $('#qrLinkCorto').textContent = codigoCorto ? ('🔗 ' + location.host + '/' + codigoCorto) : joinUrl;
+    syncEstado();
+    escuchar(refSala('betyouranswer', salaActual, 'respuestas'), function(datos){
+      respuestasActuales = datos || {};
+      renderRespuestaEntrante();
+    });
+  }catch(e){
+    codeEl.textContent = 'Error al crear la sala';
+    toast('No se pudo crear la sala en vivo. Revisa tu conexión.');
+  }
+}
+$('#qrBtn').addEventListener('click', abrirModalQR);
+$('#qrCerrarBtn').addEventListener('click', ()=> $('#modalQR').classList.add('hidden'));
+$('#modalQR').addEventListener('click', e=>{ if(e.target.id==='modalQR') $('#modalQR').classList.add('hidden'); });
+
+/* ---------------- Vista del alumno (celular) ---------------- */
+function initStudentView(){
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('student-app').classList.add('show');
+  document.documentElement.style.visibility = '';
+
+  const jugadorId = idJugador(SALA_ALUMNO);
+  const equipoKey = 'aulagame_bya_equipo_' + SALA_ALUMNO;
+  let miEquipoId = sessionStorage.getItem(equipoKey);
+  let estado = null;
+  let yaEnviado = false;
+  let ultimaPregunta = undefined;
+
+  const selectEl = document.getElementById('studentSelect');
+  const playEl = document.getElementById('studentPlay');
+  const btnsWrap = document.getElementById('studentTeamButtons');
+  const inputEl = document.getElementById('studentInput');
+  const sentHintEl = document.getElementById('studentSentHint');
+
+  function elegirEquipo(id){
+    miEquipoId = String(id);
+    sessionStorage.setItem(equipoKey, miEquipoId);
+    escribir(refSala('betyouranswer', SALA_ALUMNO, 'jugadores/' + jugadorId), { equipoId: miEquipoId, unidoEn: marcaTiempo() });
+    selectEl.style.display = 'none';
+    playEl.style.display = 'block';
+    renderStudent();
+  }
+
+  function renderStudent(){
+    if(!estado || miEquipoId === null) return;
+    const p = estado.preguntaActual;
+    const zone = document.getElementById('studentQuestionZone');
+    const estadoEl = document.getElementById('studentEstado');
+    const textoPregunta = p ? p.texto : null;
+    if(textoPregunta !== ultimaPregunta){
+      ultimaPregunta = textoPregunta;
+      yaEnviado = false;
+      inputEl.value = '';
+      sentHintEl.textContent = '';
+    }
+    if(p){
+      estadoEl.textContent = '';
+      zone.classList.remove('hidden');
+      document.getElementById('studentValor').textContent = '$' + p.valor.toLocaleString('es-CL');
+      document.getElementById('studentQuestionText').textContent = p.texto;
+      inputEl.disabled = yaEnviado;
+      document.getElementById('studentEnviarBtn').disabled = yaEnviado;
+      if(yaEnviado) sentHintEl.textContent = '✓ Respuesta enviada, esperando al profe…';
+    } else {
+      zone.classList.add('hidden');
+      estadoEl.textContent = 'Esperando a que el profe elija una pregunta…';
+    }
+  }
+
+  document.getElementById('studentEnviarBtn').addEventListener('click', function(){
+    const texto = inputEl.value.trim();
+    if(!texto || yaEnviado || miEquipoId === null) return;
+    yaEnviado = true;
+    escribir(refSala('betyouranswer', SALA_ALUMNO, 'respuestas/' + miEquipoId), {
+      texto: texto, jugadorId: jugadorId, enviadaEn: marcaTiempo()
+    });
+    renderStudent();
+  });
+
+  escuchar(refSala('betyouranswer', SALA_ALUMNO, 'estado'), function(datos){
+    estado = datos;
+    if(!estado) return;
+    if(miEquipoId === null){
+      btnsWrap.innerHTML = '';
+      (estado.equipos || []).forEach(function(t){
+        const btn = document.createElement('div');
+        btn.className = 'student-team-btn';
+        btn.style.background = t.color;
+        btn.textContent = t.nombre;
+        btn.addEventListener('click', function(){ elegirEquipo(t.id); });
+        btnsWrap.appendChild(btn);
+      });
+    } else {
+      renderStudent();
+    }
+  });
+}
+
 /* initial render */
-renderTeamSetup();
+if(ES_ALUMNO){
+  initStudentView();
+} else {
+  renderTeamSetup();
+}
 </script>
 </body>
 </html>
