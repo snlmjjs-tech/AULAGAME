@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>¿Quién Es El Impostor? — Juego de Clase Editable</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root{
     --bg-deep: #05060f;
@@ -396,6 +397,26 @@
   .adj-hint{white-space:pre-wrap; font-size:13.5px; color:var(--text-dim); line-height:1.7; margin-top:10px;}
 
   .empty-state{text-align:center; padding:40px 20px; color:var(--text-dim);}
+
+  /* ---- MODO QR ---- */
+  .qr-box-wrap{ background:#fff; padding:10px; border-radius:14px; display:inline-block; margin:14px 0; }
+  #student-app{max-width:460px; margin:0 auto; padding:24px 16px 60px; position:relative; z-index:1; display:none; flex-direction:column; align-items:center; gap:16px; text-align:center;}
+  #student-app.show{display:flex;}
+  .color-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; width:100%;}
+  .color-swatch{
+    aspect-ratio:1/1; border-radius:14px; border:2px solid var(--border);
+    display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800;
+    color:#0d0f1e; text-shadow:0 1px 2px rgba(255,255,255,.3);
+  }
+  .color-swatch.taken{ opacity:.25; }
+  .vote-list{display:flex; flex-direction:column; gap:10px; width:100%;}
+  .vote-row{
+    display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:12px;
+    background:var(--panel-light); border:1px solid var(--border); cursor:pointer;
+  }
+  .vote-row.voted{ opacity:.4; cursor:default; }
+  .vote-row .swatch{width:26px;height:26px;border-radius:50%; flex-shrink:0; border:2px solid rgba(255,255,255,.4);}
+  .vote-count{font-size:13px; color:var(--text-dim); margin-left:auto;}
 </style>
 </head>
 <body>
@@ -408,6 +429,7 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="setup">⚙️ Configurar</button>
       <button class="tab-btn" data-tab="play">▶️ Jugar</button>
+      <button class="tab-btn" id="qrBtn">📱 Celulares</button>
     </div>
   </header>
 
@@ -470,6 +492,33 @@
   <footer class="hint">Hecho para Mr. Núñez 🎓 — archivo HTML único, sin dependencias, editable para cualquier profesor y asignatura.</footer>
 </div>
 
+<div id="modalQR" style="position:fixed; inset:0; background:rgba(2,3,10,.75); display:none; align-items:center; justify-content:center; z-index:2100; padding:20px;">
+  <div class="modal-box" style="text-align:center;">
+    <h3>📱 Conecta a tus jugadores</h3>
+    <div class="qr-box-wrap"><div id="qrBox"></div></div>
+    <p class="muted">Cada alumno escanea el mismo código y elige su color en el celular</p>
+    <div style="font-size:26px; font-weight:800; margin:8px 0;" id="qrSalaCode">------</div>
+    <p class="muted" id="qrLinkCorto"></p>
+    <div class="modal-actions" style="justify-content:center;">
+      <button class="btn btn-primary btn-sm" id="qrCerrarBtn">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODO QR: pantalla del alumno (celular) ===================== -->
+<div id="student-app">
+  <div id="studentSelect">
+    <h2>¿QUIÉN ERES?</h2>
+    <p class="muted">Elige tu color</p>
+    <div class="color-grid" id="studentColorGrid"></div>
+  </div>
+
+  <div id="studentPlay" style="display:none; width:100%;">
+    <p class="muted" id="studentEstado">Esperando a que el profe inicie la votación…</p>
+    <div class="vote-list" id="studentVoteList"></div>
+  </div>
+</div>
+
 <div id="revealOverlay">
   <div class="eject-track">
     <div class="crew3d" id="revealCrewmate" style="--c:#999;">
@@ -499,6 +548,13 @@
 
 <script type="module">
 import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
+import { crearSala, refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
+
+/* ================= MODO QR: alumno vs. profesor ================= */
+const _paramsImpostor = new URLSearchParams(location.search);
+const SALA_ALUMNO = _paramsImpostor.get("room");
+const ES_ALUMNO = !!SALA_ALUMNO;
+
 /* ===================================================================
    ESTADO Y DATOS
 =================================================================== */
@@ -521,10 +577,15 @@ function blankWords(){
 
 function uid(){ return 'r' + Math.random().toString(36).slice(2,10); }
 
-/* Espera la sesión y carga (si existen) las rondas/actividad final guardadas del profesor en Firestore. */
-const { saved: SAVED_IMPOSTOR, uid: CURRENT_UID } = await new Promise(function(resolve){
-  initGameSync('impostor', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
-});
+/* Espera la sesión y carga (si existen) las rondas/actividad final guardadas del profesor en Firestore.
+   Un alumno que entra con ?room=... no tiene sesión de profesor: se salta el gate. */
+let SAVED_IMPOSTOR = null, CURRENT_UID = null;
+if(!ES_ALUMNO){
+  const _r = await new Promise(function(resolve){
+    initGameSync('impostor', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+  });
+  SAVED_IMPOSTOR = _r.saved; CURRENT_UID = _r.uid;
+}
 
 const savedRounds = SAVED_IMPOSTOR && Array.isArray(SAVED_IMPOSTOR.rounds) ? SAVED_IMPOSTOR.rounds : null;
 const savedClosing = SAVED_IMPOSTOR && SAVED_IMPOSTOR.closing && typeof SAVED_IMPOSTOR.closing === 'object' ? SAVED_IMPOSTOR.closing : null;
@@ -557,6 +618,8 @@ let play = {
 
 let soundOn = true;
 let audioCtx = null;
+let salaActual = null;        // código de sala en vivo (null = modo QR no activado)
+let votosActuales = {};       // { [colorKey]: {votadoA, jugadorId} } — últimos votos recibidos de celulares
 
 /* ===================================================================
    EJEMPLO PRECARGADO (extraído del PPT original de Among Us)
@@ -1094,6 +1157,11 @@ function startVoting(){
   play.remaining = round.impostorCount;
   play.phase = 'voting';
   renderPlay();
+  if(salaActual){
+    votosActuales = {};
+    escribir(refSala('impostor', salaActual, 'estado'), { fase: 'votando', resultado: null });
+    escribir(refSala('impostor', salaActual, 'respuestas'), null);
+  }
 }
 
 function shuffle(arr){
@@ -1126,8 +1194,30 @@ function renderVotingScreen(){
           </div>`;
         }).join('')}
       </div>
+      ${salaActual ? `
+        <div class="center-col" style="margin-top:14px;">
+          <p class="muted" id="votoTally"></p>
+          <button class="btn btn-gold btn-sm" id="revelarVotosBtn">🔓 Revelar votos de los celulares</button>
+        </div>
+      ` : ``}
     </div>
   `;
+  if(salaActual){
+    const tallyEl = document.getElementById('votoTally');
+    const cuenta = Object.keys(votosActuales).length;
+    tallyEl.textContent = cuenta + ' voto' + (cuenta===1?'':'s') + ' recibido' + (cuenta===1?'':'s') + ' hasta ahora';
+    document.getElementById('revelarVotosBtn').addEventListener('click', ()=>{
+      const conteo = {};
+      Object.values(votosActuales).forEach(function(v){
+        conteo[v.votadoA] = (conteo[v.votadoA]||0) + 1;
+      });
+      escribir(refSala('impostor', salaActual, 'estado'), { fase: 'revelado', resultado: { conteo: conteo } });
+      const texto = Object.keys(conteo).length
+        ? Object.entries(conteo).map(function(e){ const c = COLORS.find(x=>x.key===e[0]); return (c?c.name:e[0]) + ': ' + e[1]; }).join(' · ')
+        : 'Nadie votó todavía.';
+      alertMsg('🔓 Votos revelados', texto);
+    });
+  }
   wrap.querySelectorAll('.crew-card:not(.revealed)').forEach(card=>{
     card.addEventListener('click', ()=> handleReveal(card.dataset.color));
   });
@@ -1256,6 +1346,144 @@ document.getElementById('soundBtn').addEventListener('click', (e)=>{
 })();
 
 /* ===================================================================
+   MODO QR: sala en vivo para celulares
+=================================================================== */
+async function abrirModalQR(){
+  const modal = document.getElementById('modalQR');
+  modal.style.display = 'flex';
+  if(salaActual) return;
+  const codeEl = document.getElementById('qrSalaCode');
+  codeEl.textContent = 'Creando sala…';
+  try{
+    const { sala, codigoCorto } = await crearSala('impostor', '/play/impostor/');
+    salaActual = sala;
+    codeEl.textContent = sala;
+    const joinUrl = location.origin + '/play/impostor/?room=' + sala;
+    const qb = document.getElementById('qrBox');
+    qb.innerHTML = '';
+    if(window.QRCode){
+      new QRCode(qb, { text: joinUrl, width: 190, height: 190, colorDark: '#10132a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    }
+    document.getElementById('qrLinkCorto').textContent = codigoCorto ? ('🔗 ' + location.host + '/' + codigoCorto) : joinUrl;
+    escuchar(refSala('impostor', salaActual, 'respuestas'), function(datos){
+      votosActuales = datos || {};
+      if(play.phase === 'voting') renderVotingScreen();
+    });
+  }catch(e){
+    codeEl.textContent = 'Error al crear la sala';
+    toast('No se pudo crear la sala en vivo. Revisa tu conexión.');
+  }
+}
+document.getElementById('qrBtn').addEventListener('click', function(e){ e.preventDefault(); abrirModalQR(); });
+document.getElementById('qrCerrarBtn').addEventListener('click', function(){ document.getElementById('modalQR').style.display = 'none'; });
+document.getElementById('modalQR').addEventListener('click', function(e){ if(e.target.id==='modalQR') e.currentTarget.style.display='none'; });
+
+/* ---------------- Vista del alumno (celular) ---------------- */
+function initStudentView(){
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('student-app').classList.add('show');
+  document.documentElement.style.visibility = '';
+
+  const jugadorId = idJugador(SALA_ALUMNO);
+  const colorKey = 'aulagame_impostor_color_' + SALA_ALUMNO;
+  let miColor = sessionStorage.getItem(colorKey);
+  let coloresOcupados = {};
+  let estado = null;
+  let yaVote = false;
+  let ultimaFase = undefined;
+
+  const selectEl = document.getElementById('studentSelect');
+  const playEl = document.getElementById('studentPlay');
+  const gridEl = document.getElementById('studentColorGrid');
+
+  function renderColorGrid(){
+    if(miColor !== null) return;
+    gridEl.innerHTML = '';
+    COLORS.forEach(function(c){
+      const taken = !!coloresOcupados[c.key];
+      const sw = document.createElement('div');
+      sw.className = 'color-swatch' + (taken ? ' taken' : '');
+      sw.style.background = c.hex;
+      sw.textContent = taken ? '' : c.name;
+      if(!taken){
+        sw.addEventListener('click', function(){ elegirColor(c.key); });
+      }
+      gridEl.appendChild(sw);
+    });
+  }
+
+  function elegirColor(key){
+    miColor = key;
+    sessionStorage.setItem(colorKey, key);
+    escribir(refSala('impostor', SALA_ALUMNO, 'jugadores/' + jugadorId), { equipoId: key, unidoEn: marcaTiempo() });
+    selectEl.style.display = 'none';
+    playEl.style.display = 'block';
+    renderStudentPlay();
+  }
+
+  function renderStudentPlay(){
+    if(!estado || miColor === null) return;
+    const fase = estado.fase || 'lobby';
+    if(fase !== ultimaFase){ ultimaFase = fase; yaVote = false; }
+
+    const estadoEl = document.getElementById('studentEstado');
+    const listEl = document.getElementById('studentVoteList');
+
+    if(fase === 'votando'){
+      estadoEl.textContent = yaVote ? '✓ Ya votaste. Esperando al profe…' : '🗳️ ¿Quién crees que es el impostor?';
+      listEl.innerHTML = '';
+      const disponibles = Object.keys(coloresOcupados);
+      disponibles.forEach(function(key){
+        const c = COLORS.find(function(x){ return x.key === key; });
+        if(!c) return;
+        const row = document.createElement('div');
+        row.className = 'vote-row' + (yaVote ? ' voted' : '');
+        row.innerHTML = '<span class="swatch" style="background:' + c.hex + '"></span><span>' + c.name + (key === miColor ? ' (tú)' : '') + '</span>';
+        if(!yaVote){
+          row.addEventListener('click', function(){
+            yaVote = true;
+            escribir(refSala('impostor', SALA_ALUMNO, 'respuestas/' + miColor), {
+              votadoA: key, jugadorId: jugadorId, respondioEn: marcaTiempo()
+            });
+            renderStudentPlay();
+          });
+        }
+        listEl.appendChild(row);
+      });
+    } else if(fase === 'revelado' && estado.resultado){
+      listEl.innerHTML = '';
+      estadoEl.textContent = '🔓 Resultado de la votación:';
+      const conteo = estado.resultado.conteo || {};
+      COLORS.forEach(function(c){
+        if(!conteo[c.key]) return;
+        const row = document.createElement('div');
+        row.className = 'vote-row voted';
+        row.innerHTML = '<span class="swatch" style="background:' + c.hex + '"></span><span>' + c.name + '</span><span class="vote-count">' + conteo[c.key] + ' voto' + (conteo[c.key]===1?'':'s') + '</span>';
+        listEl.appendChild(row);
+      });
+      if(!Object.keys(conteo).length){ listEl.innerHTML = '<p class="muted">Nadie votó en esta ronda.</p>'; }
+    } else {
+      estadoEl.textContent = 'Esperando a que el profe inicie la votación…';
+      listEl.innerHTML = '';
+    }
+  }
+
+  escuchar(refSala('impostor', SALA_ALUMNO, 'jugadores'), function(datos){
+    coloresOcupados = {};
+    Object.values(datos || {}).forEach(function(j){ if(j && j.equipoId) coloresOcupados[j.equipoId] = true; });
+    renderColorGrid();
+    if(miColor !== null) renderStudentPlay();
+  });
+
+  escuchar(refSala('impostor', SALA_ALUMNO, 'estado'), function(datos){
+    estado = datos;
+    if(miColor !== null) renderStudentPlay();
+  });
+
+  renderColorGrid();
+}
+
+/* ===================================================================
    INICIALIZACIÓN
 =================================================================== */
 function init(){
@@ -1265,7 +1493,12 @@ function init(){
   renderRoundList();
   bindClosingInputs();
 }
-init();
+
+if(ES_ALUMNO){
+  initStudentView();
+} else {
+  init();
+}
 </script>
 </body>
 </html>
