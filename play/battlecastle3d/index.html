@@ -1729,10 +1729,13 @@
                     });
                 }
                 
-                showFeedbackModal(
+                // Notificación pequeña de esquina (no un modal de pantalla completa):
+                // el jugador debe poder ver el mapa y los castillos mientras elige
+                // a quién atacar.
+                showAttackToast(
                     "🔥 ¡PREPARAD CATAPULTA!",
                     "¡Respuesta correcta! Haced clic sobre el reino enemigo que deseáis bombardear en el mapa.",
-                    [{ label: "ELEGIR OBJETIVO EN EL MAPA", action: () => closeModal('modal-feedback') }]
+                    [{ label: "Elegir objetivo", action: () => {} }]
                 );
 
             } else {
@@ -2920,10 +2923,10 @@
         // se re-expongan explícitamente en `window` para seguir funcionando.
         Object.assign(window, {
             activateAndOpenQR, addEditorRow, addSetupCastle, changeCastle, closeEditorSafe, closeModal,
-            closeTutorialModal, copiarLinkCortoBC, downloadTemplate, exportToExcel, importFromExcel, mobileAction,
+            closeTutorialModal, copiarLinkCortoBC, downloadTemplate, exportToExcel, flipChest, importFromExcel, mobileAction,
             openBonusChestSelection, openQuestionEditor, promptQuestionSelection,
             removeEditorRow, removeSetupCastle, resetToDefaultQuestions, retryJoinCastleSelect, saveEditorChanges,
-            selectCastleAndConnect, showMobileScreen, startGame, toggleFullscreen,
+            selectCastleAndConnect, selectQuestion, showMobileScreen, startGame, submitAnswer, toggleFullscreen,
             toggleMusic, triggerResetConfirm, triggerResetGame, updateVolume
         });
 
@@ -3519,6 +3522,7 @@
             gameState.castles.forEach((castle, i) => {
                 const entry = castleEntries[i];
                 if (!entry) return;
+                try {
 
                 // Nombre / HP / recursos
                 entry.label.nameTag.textContent = castle.name;
@@ -3558,6 +3562,10 @@
                 }
 
                 if (castle.destroyed) entry.destroyed = true;
+                } catch(refreshErr) {
+                    // Salvaguarda: un error al refrescar un castillo no debe
+                    // impedir que se actualicen los demás.
+                }
             });
         }
 
@@ -3729,17 +3737,23 @@
             // Proyectiles de catapulta
             for (let i = activeProjectiles.length - 1; i >= 0; i--) {
                 const p = activeProjectiles[i];
-                p.t += dt * p.speed;
-                if (p.t >= 1) {
-                    const endPos = p.curve.getPoint(1);
-                    scene.remove(p.ball);
-                    spawnBurst(endPos, p.isSuper);
+                try {
+                    p.t += dt * p.speed;
+                    if (p.t >= 1) {
+                        const endPos = p.curve.getPoint(1);
+                        scene.remove(p.ball);
+                        spawnBurst(endPos, p.isSuper);
+                        activeProjectiles.splice(i, 1);
+                        p.onImpact();
+                    } else {
+                        const pos = p.curve.getPoint(p.t);
+                        p.ball.position.copy(pos);
+                        p.ball.rotation.x += dt * 8;
+                    }
+                } catch(projErr) {
+                    // Salvaguarda: si un proyectil individual falla (ej. datos
+                    // corruptos), se descarta sin congelar el resto de la animación.
                     activeProjectiles.splice(i, 1);
-                    p.onImpact();
-                } else {
-                    const pos = p.curve.getPoint(p.t);
-                    p.ball.position.copy(pos);
-                    p.ball.rotation.x += dt * 8;
                 }
             }
 
