@@ -171,6 +171,13 @@ table.qtable th, table.qtable td{padding:8px; border-bottom:1px solid #2a335f; f
 table.qtable th{background:var(--panel2); text-align:left;}
 table.qtable input, table.qtable select{width:100%; padding:6px; background:#0f1430; color:var(--ink); border:1px solid #2a335f; border-radius:6px; font-family:inherit;}
 
+.setup-wrap .rules-box{
+  background:var(--panel); border:2px dashed var(--gold); border-radius:14px;
+  padding:16px 22px; margin-bottom:24px; font-size:14px; text-align:left;
+}
+.setup-wrap .rules-box h3{margin:0 0 8px; color:var(--gold);}
+.setup-wrap .rules-box ul{margin:0; padding-left:20px; line-height:1.7;}
+
 .hint{color:var(--muted); font-size:.8rem; margin:8px 0 16px;}
 footer.credit{text-align:center; color:var(--muted); font-size:.75rem; padding:20px;}
 
@@ -223,6 +230,15 @@ footer.credit{text-align:center; color:var(--muted); font-size:.75rem; padding:2
 <!-- SETUP SCREEN -->
 <div class="screen active" id="setupScreen">
   <div class="setup-wrap">
+    <div class="rules-box">
+      <h3>🎯 Bienvenido a Jeopardy — ¿Cómo se juega?</h3>
+      <ul>
+        <li>El profesor ingresa los nombres de los equipos abajo (o deja los nombres por defecto) y presiona "Comenzar juego".</li>
+        <li>El QR es opcional: se puede jugar 100% offline y por turno (sin celulares), o los alumnos escanean el QR del menú para conectarse desde su celular y usarlo como chicharra.</li>
+        <li>Haz clic en una casilla del tablero para abrir una pregunta. Si hay celulares conectados, los equipos presionan su chicharra y gana quien presione primero; si no, se juega por turno.</li>
+        <li>Revela la respuesta y otorga los puntos al equipo que acertó. Usa "🎁 Bonus" para una pregunta extra al azar.</li>
+      </ul>
+    </div>
     <h2>Configura tu partida</h2>
     <p class="sub">Ingresa el nombre de cada equipo (o deja el nombre por defecto) y comienza a jugar.</p>
     <div class="team-inputs" id="teamInputs"></div>
