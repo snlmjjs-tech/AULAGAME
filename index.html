@@ -618,8 +618,8 @@
 
 <div class="entrar-sala-bar">
   <form class="entrar-sala-inner" id="form-entrar-sala">
-    <label for="input-codigo-sala">🔑 ¿Tienes un código de sala?</label>
-    <input type="text" id="input-codigo-sala" placeholder="Ej: L8228" maxlength="10" autocomplete="off" autocapitalize="characters" inputmode="text">
+    <label for="input-codigo-sala">🔑 ¿Tienes el PIN de la sala?</label>
+    <input type="text" id="input-codigo-sala" placeholder="Ej: 123456" maxlength="6" autocomplete="off" inputmode="numeric" pattern="[0-9]*">
     <button type="submit">Entrar a sala ▶</button>
   </form>
   <p class="entrar-sala-msg oculto" id="entrar-sala-msg"></p>
@@ -966,10 +966,14 @@
   import {
     getFirestore, doc, getDoc, setDoc
   } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+  import {
+    getDatabase, ref as refRtdb, get as getRtdb
+  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
   var app = initializeApp(firebaseConfig);
   var auth = getAuth(app);
   var db = getFirestore(app);
+  var rtdb = getDatabase(app);
 
   // ---------- Estado ----------
   var CUPOS_PLAN_GRATIS = 2;
@@ -1000,20 +1004,42 @@
     if(e.key === "Escape" && !modalLogin.classList.contains("oculto")) cerrarLoginModal();
   });
 
-  // ---------- Entrar a sala (código corto tipo L8228) ----------
-  // Reutiliza el mismo formato/lógica que r.html: el código es una letra +
-  // dígitos, guardado en Firestore "codigosCortos". No hace falta sesión.
+  // ---------- Entrar a sala (PIN numérico) ----------
+  // El PIN es el mismo código de 6 dígitos que ya se genera y muestra en el
+  // menú de cada juego (play/shared/live-room.js crearSala). Se busca en el
+  // registro global "pines" (lectura pública, ver database.rules.json) para
+  // saber a qué juego pertenece y redirigir directo — no hace falta sesión.
   document.getElementById("form-entrar-sala").addEventListener("submit", function(e){
     e.preventDefault();
     var msgEl = document.getElementById("entrar-sala-msg");
-    var codigo = document.getElementById("input-codigo-sala").value.trim().toUpperCase().replace(/\s+/g, "");
-    if(!/^[A-Z0-9]{3,10}$/.test(codigo)){
-      msgEl.textContent = "Ese código no parece válido. Revisa que esté bien escrito (ej: L8228).";
+    var submitBtn = e.target.querySelector("button[type=submit]");
+    var pin = document.getElementById("input-codigo-sala").value.trim().replace(/\s+/g, "");
+    if(!/^\d{4,6}$/.test(pin)){
+      msgEl.textContent = "Ese PIN no parece válido. Revisa que esté bien escrito (ej: 123456).";
       msgEl.classList.remove("oculto");
       return;
     }
     msgEl.classList.add("oculto");
-    location.href = "/" + codigo;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Buscando…";
+    getRtdb(refRtdb(rtdb, "pines/" + pin)).then(function(snap){
+      if(!snap.exists()){
+        msgEl.textContent = "No encontramos ninguna sala con ese PIN. Pídele a tu profe que lo revise.";
+        msgEl.classList.remove("oculto");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Entrar a sala ▶";
+        return;
+      }
+      var d = snap.val();
+      var url = d.destino + "?" + (d.paramNombre || "room") + "=" + encodeURIComponent(pin);
+      if(d.extraQuery) url += "&" + d.extraQuery;
+      location.href = url;
+    }).catch(function(){
+      msgEl.textContent = "No se pudo buscar la sala. Revisa tu conexión e intenta de nuevo.";
+      msgEl.classList.remove("oculto");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Entrar a sala ▶";
+    });
   });
 
   // ---------- Header según sesión ----------

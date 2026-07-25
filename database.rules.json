@@ -1,5 +1,12 @@
 {
   "rules": {
+    "pines": {
+      "$pin": {
+        ".read": true,
+        ".write": "auth != null"
+      }
+    },
+
     "salasVivo": {
       "$juego": {
         "$sala": {

@@ -492,6 +492,7 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
 <script type="module">
 import { loadGameData, saveGameData, saveGameDataDebounced } from "../shared/game-storage.js";
 import { crearCodigoCorto } from "../shared/short-links.js";
+import { registrarPinExterno } from "../shared/live-room.js";
 
 const _isPinJoin = !!new URLSearchParams(location.search).get("pin");
 // Un alumno que entra con ?pin=... no tiene sesión de profesor: no se toca
@@ -934,6 +935,10 @@ function startLive(){
       juego:'quizlive', destino:'/play/quizlive/',
       paramNombre:'pin', paramValor:state.pin
     }).then(mostrarLinkCorto);
+    // QuizLive vive en su propio proyecto Firebase (quizlive-seba), separado del
+    // principal — se registra el PIN en el proyecto principal para que el cuadro
+    // "Entrar a sala" de la página de inicio también lo encuentre.
+    registrarPinExterno(state.pin, 'quizlive', '/play/quizlive/', 'pin').catch(function(){});
     listen(state.gameRef.child('players'),'value',snap=>{
       state.players=snap.val()||{};
       const arr=Object.values(state.players);

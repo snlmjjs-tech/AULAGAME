@@ -23,8 +23,19 @@ export function refSala(juego, sala, path){
 }
 
 /**
+ * Registro global de PINes (independiente de `juego`, nodo "pines" al tope de
+ * la base de datos) — permite que la página principal reciba solo un PIN
+ * numérico (sin saber a qué juego pertenece) y lo resuelva con una sola
+ * lectura pública, en vez de tener que revisar salasVivo/<juego>/<pin> juego
+ * por juego. Lectura pública, escritura solo autenticada (ver database.rules.json).
+ */
+function refPin(pin){ return ref(db, "pines/" + pin); }
+
+/**
  * Crea una sala nueva para `juego` en Realtime Database y su link corto
  * asociado (Firestore, colección codigosCortos — ver short-links.js).
+ * El código de sala es único a nivel global (no solo dentro de `juego`), para
+ * que el mismo PIN nunca apunte a dos juegos distintos.
  * Devuelve { sala, codigoCorto }. codigoCorto puede ser null si falló al
  * generarse (sin conexión) — no bloqueante, el QR/código de sala igual sirven.
  */
@@ -32,21 +43,46 @@ export async function crearSala(juego, destino){
   let sala = null;
   for(let intento = 0; intento < 5; intento++){
     const candidato = generarCodigoSala();
-    const snap = await get(refSala(juego, candidato, "meta"));
-    if(!snap.exists()){ sala = candidato; break; }
+    const [snapPin, snapMeta] = await Promise.all([
+      get(refPin(candidato)),
+      get(refSala(juego, candidato, "meta"))
+    ]);
+    if(!snapPin.exists() && !snapMeta.exists()){ sala = candidato; break; }
   }
   if(!sala) throw new Error("No se pudo generar un código de sala único");
 
-  await set(refSala(juego, sala, "meta"), { creadoEn: serverTimestamp() });
+  const destinoFinal = destino || ("/play/" + juego + "/");
+
+  await Promise.all([
+    set(refSala(juego, sala, "meta"), { creadoEn: serverTimestamp() }),
+    set(refPin(sala), { juego: juego, destino: destinoFinal, paramNombre: "room", creadoEn: serverTimestamp() })
+  ]);
 
   const codigoCorto = await crearCodigoCorto({
     juego: juego,
-    destino: destino || ("/play/" + juego + "/"),
+    destino: destinoFinal,
     paramNombre: "room",
     paramValor: sala
   });
 
   return { sala: sala, codigoCorto: codigoCorto };
+}
+
+/**
+ * Registra un PIN generado por un juego que NO usa crearSala() de este mismo
+ * módulo (ej. QuizLive tiene su propia base de datos separada; Battle Castle
+ * 3D usa PeerJS sin base de datos) — para que igual aparezca en el registro
+ * global y la página principal pueda redirigir con solo el PIN.
+ */
+export async function registrarPinExterno(pin, juego, destino, paramNombre, extraQuery){
+  const datos = {
+    juego: juego,
+    destino: destino,
+    paramNombre: paramNombre || "room",
+    creadoEn: serverTimestamp()
+  };
+  if(extraQuery) datos.extraQuery = extraQuery;
+  await set(refPin(pin), datos);
 }
 
 export function escuchar(ref_, cb){

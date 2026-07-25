@@ -687,6 +687,7 @@
     <script type="module">
         import { loadGameData, saveGameData, toast as syncToast } from "../shared/game-storage.js";
         import { crearCodigoCorto } from "../shared/short-links.js";
+        import { registrarPinExterno } from "../shared/live-room.js";
 
         /*************************************************************
          * A. MANEJADOR SEGURO DE ALMACENAMIENTO (SafeStorage)
@@ -2884,6 +2885,10 @@
                 linkCortoBox.dataset.url = url;
                 linkCortoBox.style.display = 'flex';
             });
+            // Battle Castle no usa base de datos para la sala (es PeerJS puro): se
+            // registra igual el PIN en el proyecto principal para que el cuadro
+            // "Entrar a sala" de la página de inicio también lo encuentre.
+            registrarPinExterno(currentRoomCode, 'battlecastle3d', '/play/battlecastle3d/', 'room', 'names=' + namesQuery).catch(function(){});
 
             if (qrBox) {
                 qrBox.innerHTML = '';
