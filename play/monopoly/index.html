@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MONOPOLY · Verbs & Questions Edition</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root{
     --bg1:#1b1030;
@@ -408,6 +409,16 @@
       <button class="btn secondary" id="btnBackTitle">← Back</button>
       <button class="btn" id="btnStartGame">🎲 START GAME</button>
     </div>
+
+    <div style="margin-top:22px; display:flex; flex-direction:column; align-items:center; gap:6px;">
+      <div style="display:flex; align-items:center; gap:8px; font-size:.85rem;">
+        <span style="font-size:1.3rem;">👉</span>
+        <span>Escanea este código para unirte desde tu celular</span>
+      </div>
+      <div id="qrBoxMenu" style="background:#fff; padding:8px; border-radius:10px; min-width:130px; min-height:130px;"></div>
+      <div id="qrSalaCodeMenu" style="font-weight:800; font-size:1.1rem;">------</div>
+      <p id="qrLinkCortoMenu" style="font-size:.75rem; opacity:.8; margin:0;"></p>
+    </div>
   </div>
 </div>
 
@@ -428,9 +439,36 @@
 
 <div id="modalRoot"></div>
 
+<!-- MODO QR: pantalla del alumno (celular) -->
+<div id="student-app" style="display:none; flex-direction:column; align-items:center; justify-content:flex-start; gap:16px; max-width:460px; margin:0 auto; padding:26px 16px 60px; min-height:100vh; text-align:center; background:var(--bg1); color:var(--cream); font-family:inherit;">
+  <div id="studentSelect">
+    <h2 style="color:var(--gold-light); margin:0 0 4px;">🎲 MONOPOLY</h2>
+    <p style="opacity:.85; margin:0 0 14px;">¿Qué equipo eres?</p>
+    <div id="studentTeamButtons" style="display:flex; flex-direction:column; gap:10px; width:100%;"></div>
+  </div>
+  <div id="studentPlay" style="display:none; width:100%;">
+    <h2 style="color:var(--gold-light); margin:0 0 10px;" id="studentTeamLabel"></h2>
+    <p id="studentEstado" style="opacity:.85; font-weight:700;">Esperando a que empiece el juego…</p>
+    <button class="btn" id="studentRollBtn" style="display:none; width:100%;">🎲 LANZAR DADO</button>
+    <div id="studentPreguntaZone" style="display:none; margin-top:16px; background:rgba(255,255,255,.06); border-radius:14px; padding:16px; text-align:left;">
+      <div style="font-size:.75rem; opacity:.7; text-transform:uppercase;">Pregunta</div>
+      <div id="studentQuestionText" style="font-size:1.05rem; font-weight:600; margin:6px 0;"></div>
+      <p id="studentResultado" style="font-size:.9rem; font-weight:700; margin:8px 0 0;"></p>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script type="module">
 import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
+import { refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
+import { pintarQR } from "../shared/qr-inline.js";
+import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
+
+/* ================= MODO QR: alumno vs. profesor ================= */
+const _paramsMonopoly = new URLSearchParams(location.search);
+const SALA_ALUMNO = _paramsMonopoly.get("room");
+const ES_ALUMNO = !!SALA_ALUMNO;
 
 /* ==================================================================
    AUDIO — procedural Web Audio API, no external files
@@ -520,10 +558,15 @@ function toggleMusic(){
 document.getElementById('btnMusicTitle').onclick = toggleMusic;
 document.getElementById('btnMusicGame').onclick = toggleMusic;
 
-/* Espera la sesión y carga (si existen) las preguntas/precios guardados del profesor en Firestore. */
-const { saved: SAVED_MONOPOLY, uid: CURRENT_UID } = await new Promise(function(resolve){
-  initGameSync('monopoly', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
-});
+/* Espera la sesión y carga (si existen) las preguntas/precios guardados del profesor en Firestore.
+   Un alumno que entra con ?room=... no tiene sesión de profesor: se salta el gate. */
+let SAVED_MONOPOLY = null, CURRENT_UID = null;
+if(!ES_ALUMNO){
+  const _r = await new Promise(function(resolve){
+    initGameSync('monopoly', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+  });
+  SAVED_MONOPOLY = _r.saved; CURRENT_UID = _r.uid;
+}
 
 /* ==================================================================
    BOARD DATA — 36 spaces: 4 corners, 16 properties, 16 question cells
@@ -724,6 +767,7 @@ document.getElementById('btnStartGame').onclick = ()=>{
   for(let i=0;i<teamCount;i++){
     const nameEl = document.getElementById('teamName'+i);
     state.teams.push({
+      id: i,
       name: (nameEl.value||('Team '+(i+1))).trim() || ('Team '+(i+1)),
       color: TEAM_COLORS[i],
       money: money,
@@ -893,6 +937,7 @@ function renderAll(){
   updateTurnBanner();
   const rollBtn = document.getElementById('btnRoll');
   if(rollBtn){ rollBtn.disabled = false; rollBtn.classList.remove('hidden'); }
+  syncEstado();
 }
 
 /* ==================================================================
@@ -902,6 +947,11 @@ function doRoll(){
   if(state.gameOver) return;
   const team = state.teams[state.currentTeam];
   document.getElementById('btnRoll').disabled = true;
+  if(salaActual){
+    escribir(refSala('monopoly', salaActual, 'respuestas'), null);
+    escribir(refSala('monopoly', salaActual, 'estado/pregunta'), null);
+    escribir(refSala('monopoly', salaActual, 'estado/resultado'), null);
+  }
   SFX.diceRoll();
   let ticks = 0;
   const maxTicks = 10;
@@ -1054,6 +1104,7 @@ function drawQuestion(team){
   const idx = state.qDeck.pop();
   state.qDiscard.push(idx);
   const card = QUESTION_CARDS[idx];
+  if(salaActual) escribir(refSala('monopoly', salaActual, 'estado/pregunta'), { texto: card.t });
   const el = document.createElement('div');
   el.className = 'modal-overlay';
   el.innerHTML = `
@@ -1066,8 +1117,16 @@ function drawQuestion(team){
         <button class="btn danger" id="mLose">❌ Incorrecto — devuelve ${fmt(card.lose)}</button>
       </div>
     </div>`;
-  el.querySelector('#mWin').onclick = ()=>{ team.money += card.win; SFX.cash(); closeModal(); finishLanding(); };
-  el.querySelector('#mLose').onclick = ()=>{ team.money -= card.lose; SFX.error(); closeModal(); finishLanding(); };
+  el.querySelector('#mWin').onclick = ()=>{
+    team.money += card.win; SFX.cash(); closeModal();
+    if(salaActual) escribir(refSala('monopoly', salaActual, 'estado/resultado'), { correcto: true });
+    finishLanding();
+  };
+  el.querySelector('#mLose').onclick = ()=>{
+    team.money -= card.lose; SFX.error(); closeModal();
+    if(salaActual) escribir(refSala('monopoly', salaActual, 'estado/resultado'), { correcto: false });
+    finishLanding();
+  };
   openModal(el);
 }
 
@@ -1353,6 +1412,178 @@ function editorModal(){
     reader.readAsArrayBuffer(file);
   };
   return el;
+}
+
+/* ==================================================================
+   MODO QR: sala en vivo para celulares
+================================================================== */
+let salaActual = null;
+
+function syncEstado(){
+  if(!salaActual || !state.teams.length) return;
+  escribir(refSala('monopoly', salaActual, 'estado/roster'), state.teams.map(function(t){
+    return { id: t.id, nombre: t.name, color: t.color, money: t.money, pos: t.pos, bankrupt: t.bankrupt };
+  }));
+  escribir(refSala('monopoly', salaActual, 'estado/turnoEquipoId'), state.teams[state.currentTeam].id);
+}
+
+let salaListenerListo = false;
+
+/* Crea (o reutiliza) la sala en vivo y pinta el QR en el menú principal —
+   se puede llamar varias veces sin duplicar salas. */
+async function iniciarSalaQR(){
+  const r = await pintarQR({
+    juego: 'monopoly',
+    destino: '/play/monopoly/',
+    contenedores: ['qrBoxMenu'],
+    links: ['qrLinkCortoMenu']
+  });
+  if(!r) return null;
+  salaActual = r.sala;
+  const codeElMenu = document.getElementById('qrSalaCodeMenu');
+  if(codeElMenu) codeElMenu.textContent = r.sala;
+  syncEstado();
+  if(!salaListenerListo){
+    salaListenerListo = true;
+    // Un alumno presiona "LANZAR DADO" desde su celular: dispara el mismo
+    // botón que usaría el profesor en pantalla, solo si es su turno.
+    escuchar(refSala('monopoly', salaActual, 'respuestas'), function(datos){
+      if(!datos || !state.started || state.gameOver) return;
+      const turnoId = state.teams[state.currentTeam].id;
+      const peticion = datos[turnoId];
+      const rollBtn = document.getElementById('btnRoll');
+      if(peticion && peticion.tipo === 'lanzar' && rollBtn && !rollBtn.disabled){
+        rollBtn.click();
+      }
+    });
+  }
+  return salaActual;
+}
+
+/* ---------------- Vista del alumno (celular) ---------------- */
+function initStudentView(){
+  document.getElementById('titleScreen').classList.add('hidden');
+  document.getElementById('setupScreen').classList.add('hidden');
+  document.getElementById('gameScreen').classList.add('hidden');
+  document.getElementById('student-app').style.display = 'flex';
+  document.documentElement.style.visibility = '';
+
+  const jugadorId = idJugador(SALA_ALUMNO);
+  const idKey = 'aulagame_monopoly_id_' + SALA_ALUMNO;
+  let miId = sessionStorage.getItem(idKey);
+  let estado = null;
+  let yaLanzado = false;
+  let ultimoTurno = undefined;
+  let ultimaPregunta = undefined;
+
+  const selectEl = document.getElementById('studentSelect');
+  const playEl = document.getElementById('studentPlay');
+  const btnsWrap = document.getElementById('studentTeamButtons');
+  const rollBtnStudent = document.getElementById('studentRollBtn');
+  const labelEl = document.getElementById('studentTeamLabel');
+
+  function elegirEquipo(id, nombre){
+    miId = String(id);
+    sessionStorage.setItem(idKey, miId);
+    escribir(refSala('monopoly', SALA_ALUMNO, 'jugadores/' + jugadorId), { equipoId: miId, unidoEn: marcaTiempo() });
+    selectEl.style.display = 'none';
+    playEl.style.display = 'block';
+    labelEl.textContent = nombre;
+    render();
+  }
+
+  function render(){
+    if(!estado || miId === null) return;
+    const roster = estado.roster || [];
+    const yo = roster.find(function(p){ return String(p.id) === String(miId); });
+    const soyYo = String(estado.turnoEquipoId) === String(miId);
+
+    if(estado.turnoEquipoId !== ultimoTurno){
+      ultimoTurno = estado.turnoEquipoId;
+      yaLanzado = false;
+    }
+
+    const estadoEl = document.getElementById('studentEstado');
+    const preguntaZone = document.getElementById('studentPreguntaZone');
+
+    if(estado.pregunta && estado.pregunta.texto !== ultimaPregunta){
+      ultimaPregunta = estado.pregunta.texto;
+      yaLanzado = true;
+    }
+    if(!estado.pregunta){ ultimaPregunta = undefined; }
+
+    if(estado.resultado){
+      preguntaZone.style.display = 'block';
+      document.getElementById('studentResultado').textContent = estado.resultado.correcto ? '✅ ¡Correcto!' : '❌ Incorrecto.';
+    } else if(estado.pregunta){
+      preguntaZone.style.display = 'block';
+      document.getElementById('studentQuestionText').textContent = estado.pregunta.texto;
+      document.getElementById('studentResultado').textContent = 'El profesor está evaluando la respuesta…';
+    } else {
+      preguntaZone.style.display = 'none';
+    }
+
+    if(soyYo && !yaLanzado){
+      estadoEl.textContent = '¡Es tu turno, ' + (yo ? yo.nombre : '') + '!';
+      rollBtnStudent.style.display = 'block';
+      rollBtnStudent.disabled = false;
+    } else if(soyYo){
+      estadoEl.textContent = 'Tu turno — mira la pantalla grande';
+      rollBtnStudent.style.display = 'none';
+    } else {
+      const turno = roster.find(function(p){ return String(p.id) === String(estado.turnoEquipoId); });
+      estadoEl.textContent = 'Turno de ' + (turno ? turno.nombre : '...') + ' — espera tu turno';
+      rollBtnStudent.style.display = 'none';
+    }
+  }
+
+  rollBtnStudent.addEventListener('click', function(){
+    if(rollBtnStudent.disabled) return;
+    rollBtnStudent.disabled = true;
+    yaLanzado = true;
+    escribir(refSala('monopoly', SALA_ALUMNO, 'respuestas/' + miId), { tipo: 'lanzar', jugadorId: jugadorId, enviadaEn: marcaTiempo() });
+  });
+
+  escuchar(refSala('monopoly', SALA_ALUMNO, 'estado'), function(datos){
+    estado = datos;
+    if(!estado) return;
+    if(miId === null){
+      btnsWrap.innerHTML = '';
+      (estado.roster || []).forEach(function(p){
+        const btn = document.createElement('div');
+        btn.style.cssText = 'padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:#fff; background:' + p.color;
+        btn.textContent = p.nombre;
+        btn.addEventListener('click', function(){ elegirEquipo(p.id, p.nombre); });
+        btnsWrap.appendChild(btn);
+      });
+    } else {
+      render();
+    }
+  });
+}
+
+if(ES_ALUMNO){
+  initStudentView();
+  mostrarTutorialSiPrimeraVez('monopoly_alumno', {
+    titulo: '¿Cómo se juega? 🎲',
+    pasos: [
+      'Elige tu equipo tocándolo en la pantalla.',
+      'Cuando sea tu turno, toca "🎲 LANZAR DADO" para tirar desde tu celular.',
+      'Si caes en una pregunta, verás el texto aquí mismo — el profesor evalúa tu respuesta y marca el resultado.',
+      'Mira la pantalla grande para ver el tablero y tu posición.'
+    ]
+  });
+} else {
+  iniciarSalaQR();
+  mostrarTutorialSiPrimeraVez('monopoly_profe', {
+    titulo: '¿Cómo se juega? 🎲',
+    pasos: [
+      'Configura los equipos y el dinero inicial, y presiona "START GAME".',
+      'El QR es opcional, solo mejora la experiencia: los alumnos pueden escanearlo para unirse desde su celular y lanzar el dado ellos mismos, o puedes jugar sin QR lanzando tú el dado en pantalla.',
+      'Cuando un equipo cae en una pregunta, evalúa su respuesta oral y marca correcto/incorrecto.',
+      'Usa "🎁 Bonus" para dar una carta sorpresa a cualquier equipo en cualquier momento.'
+    ]
+  });
 }
 </script>
 </body>
