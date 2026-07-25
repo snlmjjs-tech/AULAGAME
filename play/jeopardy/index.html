@@ -4,7 +4,7 @@
 <script>document.documentElement.style.visibility="hidden";</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jeopardy 🎯 | Instituto Comercial Alberto Valenzuela Llanos</title>
+<title>Jeopardy 🎯</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
@@ -289,6 +289,7 @@ footer.credit{text-align:center; color:var(--muted); font-size:.75rem; padding:2
     <div class="atext" id="modalA">Respuesta...</div>
     <div class="modal-actions">
       <button class="btn btn-gold" id="revealBtn">👁️ Revelar respuesta</button>
+      <button class="btn btn-danger" id="noAciertaBtn" style="display:none;">❌ No acierta</button>
       <button class="btn" id="closeModalBtn">✖️ Cerrar</button>
     </div>
     <div class="hint" id="awardHint" style="display:none;">¿Qué equipo respondió correctamente?</div>
@@ -296,7 +297,7 @@ footer.credit{text-align:center; color:var(--muted); font-size:.75rem; padding:2
   </div>
 </div>
 
-<footer class="credit">Instituto Comercial Alberto Valenzuela Llanos · Departamento de Inglés</footer>
+<footer class="credit">Created and developed by Mr. Nuñez</footer>
 
 <!-- MODO QR -->
 <div class="overlay" id="qrOverlay">
@@ -322,6 +323,7 @@ footer.credit{text-align:center; color:var(--muted); font-size:.75rem; padding:2
   <div id="studentPlay" style="display:none; width:100%;">
     <h2 style="color:var(--gold); margin-bottom:10px;" id="studentTeamLabel"></h2>
     <p id="studentEstado" class="hint" style="font-size:.95rem;">Esperando a que el profe abra una pregunta…</p>
+    <p id="studentPreguntaTexto" style="display:none; font-size:1.05rem; font-weight:600; background:var(--panel); border-radius:12px; padding:14px; margin:10px 0;"></p>
     <button class="student-buzz-btn hidden" id="studentBuzzBtn" style="display:none;">🔔 ¡LO SÉ!</button>
   </div>
 </div>
@@ -341,53 +343,55 @@ const ES_ALUMNO = !!SALA_ALUMNO;
    DATA
 ========================================================= */
 const CATEGORIES = [
-  { key:"azul",     name:"Verbos Regulares",  color:"#2563eb" },
-  { key:"rojo",      name:"Verbos Irregulares", color:"#dc2626" },
-  { key:"verde",    name:"Tiempos Verbales",  color:"#16a34a" },
-  { key:"amarillo", name:"Verbos Frasales",   color:"#eab308" },
-  { key:"morado",   name:"Verbos Modales",    color:"#9333ea" },
+  { key:"azul",     name:"Categoría 1",  color:"#2563eb" },
+  { key:"rojo",      name:"Categoría 2", color:"#dc2626" },
+  { key:"verde",    name:"Categoría 3",  color:"#16a34a" },
+  { key:"amarillo", name:"Categoría 4",   color:"#eab308" },
+  { key:"morado",   name:"Categoría 5",    color:"#9333ea" },
 ];
 const POINTS = [50,40,30,20,10];
 
+/* Preguntas de ejemplo genéricas — el profesor las reemplaza por el contenido
+   real de su clase en "Editar preguntas" (funciona para cualquier asignatura). */
 const DEFAULT_QUESTIONS = [
-  // Verbos Regulares
-  {cat:"azul",pts:50,q:'¿Cuál es el pasado simple de "carry" y por qué cambia la "y"?',a:'CARRIED — la "y" cambia a "ied" porque está precedida por una consonante.'},
-  {cat:"azul",pts:40,q:'Explica la regla de duplicación de consonante final en verbos como "stop" o "plan" al agregar -ed.',a:'Se duplica la consonante final cuando el verbo termina en consonante-vocal-consonante y la sílaba es tónica (stop→stopped, plan→planned).'},
-  {cat:"azul",pts:30,q:'¿Cuál es el pasado simple de "stop"?',a:'STOPPED'},
-  {cat:"azul",pts:20,q:'¿Cuál es el pasado simple de "study"?',a:'STUDIED'},
-  {cat:"azul",pts:10,q:'¿Cuál es el pasado simple de "play"?',a:'PLAYED'},
-  // Verbos Irregulares
-  {cat:"rojo",pts:50,q:'El verbo "lie" tiene dos significados. Da el pasado simple para "mentir" y para "recostarse".',a:'Mentir → LIED · Recostarse → LAY (participio: LAIN)'},
-  {cat:"rojo",pts:40,q:'¿Cuál es el pasado simple de "swim"?',a:'SWAM'},
-  {cat:"rojo",pts:30,q:'¿Cuál es el participio pasado de "write"?',a:'WRITTEN'},
-  {cat:"rojo",pts:20,q:'¿Cuál es el pasado simple de "eat"?',a:'ATE'},
-  {cat:"rojo",pts:10,q:'¿Cuál es el pasado simple de "go"?',a:'WENT'},
-  // Tiempos Verbales
-  {cat:"verde",pts:50,q:'Escribe la estructura del PASADO PERFECTO (Past Perfect).',a:'Sujeto + HAD + participio pasado (Ej: She had finished.)'},
-  {cat:"verde",pts:40,q:'¿Cuál es la diferencia entre "was" y "were" en pasado simple del verbo "to be"?',a:'WAS se usa con I / he / she / it — WERE se usa con you / we / they.'},
-  {cat:"verde",pts:30,q:'Escribe la estructura del PRESENTE PERFECTO (Present Perfect).',a:'Sujeto + HAVE/HAS + participio pasado (Ej: I have studied.)'},
-  {cat:"verde",pts:20,q:'Escribe la estructura del PRESENTE CONTINUO (Present Continuous).',a:'Sujeto + AM/IS/ARE + verbo-ING (Ej: They are playing.)'},
-  {cat:"verde",pts:10,q:'Escribe la estructura del PRESENTE SIMPLE afirmativo.',a:'Sujeto + verbo (+S en 3ra persona singular) (Ej: He plays.)'},
-  // Verbos Frasales
-  {cat:"amarillo",pts:50,q:'¿Qué significa el phrasal verb "put up with"?',a:'TOLERAR / AGUANTAR'},
-  {cat:"amarillo",pts:40,q:'¿Qué significa el phrasal verb "run into"?',a:'ENCONTRARSE CON ALGUIEN POR CASUALIDAD'},
-  {cat:"amarillo",pts:30,q:'¿Qué significa el phrasal verb "turn off"?',a:'APAGAR'},
-  {cat:"amarillo",pts:20,q:'¿Qué significa el phrasal verb "look for"?',a:'BUSCAR'},
-  {cat:"amarillo",pts:10,q:'¿Qué significa el phrasal verb "give up"?',a:'RENDIRSE / ABANDONAR'},
-  // Verbos Modales
-  {cat:"morado",pts:50,q:'¿Cuál es la diferencia entre "must" y "have to"?',a:'MUST expresa una obligación personal/interna. HAVE TO expresa una obligación externa (reglas, leyes).'},
-  {cat:"morado",pts:40,q:'¿Qué modal se usa para expresar una obligación fuerte?',a:'MUST'},
-  {cat:"morado",pts:30,q:'¿Qué modal se usa para dar un consejo?',a:'SHOULD'},
-  {cat:"morado",pts:20,q:'¿Qué modal se usa para expresar posibilidad?',a:'MAY / MIGHT'},
-  {cat:"morado",pts:10,q:'¿Qué modal se usa para expresar habilidad?',a:'CAN'},
+  // Categoría 1
+  {cat:"azul",pts:50,q:'Pregunta de ejemplo — Categoría 1, 50 puntos. Edítala en "Editar preguntas".',a:'Respuesta de ejemplo'},
+  {cat:"azul",pts:40,q:'Pregunta de ejemplo — Categoría 1, 40 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"azul",pts:30,q:'Pregunta de ejemplo — Categoría 1, 30 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"azul",pts:20,q:'Pregunta de ejemplo — Categoría 1, 20 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"azul",pts:10,q:'Pregunta de ejemplo — Categoría 1, 10 puntos.',a:'Respuesta de ejemplo'},
+  // Categoría 2
+  {cat:"rojo",pts:50,q:'Pregunta de ejemplo — Categoría 2, 50 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"rojo",pts:40,q:'Pregunta de ejemplo — Categoría 2, 40 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"rojo",pts:30,q:'Pregunta de ejemplo — Categoría 2, 30 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"rojo",pts:20,q:'Pregunta de ejemplo — Categoría 2, 20 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"rojo",pts:10,q:'Pregunta de ejemplo — Categoría 2, 10 puntos.',a:'Respuesta de ejemplo'},
+  // Categoría 3
+  {cat:"verde",pts:50,q:'Pregunta de ejemplo — Categoría 3, 50 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"verde",pts:40,q:'Pregunta de ejemplo — Categoría 3, 40 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"verde",pts:30,q:'Pregunta de ejemplo — Categoría 3, 30 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"verde",pts:20,q:'Pregunta de ejemplo — Categoría 3, 20 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"verde",pts:10,q:'Pregunta de ejemplo — Categoría 3, 10 puntos.',a:'Respuesta de ejemplo'},
+  // Categoría 4
+  {cat:"amarillo",pts:50,q:'Pregunta de ejemplo — Categoría 4, 50 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"amarillo",pts:40,q:'Pregunta de ejemplo — Categoría 4, 40 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"amarillo",pts:30,q:'Pregunta de ejemplo — Categoría 4, 30 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"amarillo",pts:20,q:'Pregunta de ejemplo — Categoría 4, 20 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"amarillo",pts:10,q:'Pregunta de ejemplo — Categoría 4, 10 puntos.',a:'Respuesta de ejemplo'},
+  // Categoría 5
+  {cat:"morado",pts:50,q:'Pregunta de ejemplo — Categoría 5, 50 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"morado",pts:40,q:'Pregunta de ejemplo — Categoría 5, 40 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"morado",pts:30,q:'Pregunta de ejemplo — Categoría 5, 30 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"morado",pts:20,q:'Pregunta de ejemplo — Categoría 5, 20 puntos.',a:'Respuesta de ejemplo'},
+  {cat:"morado",pts:10,q:'Pregunta de ejemplo — Categoría 5, 10 puntos.',a:'Respuesta de ejemplo'},
 ];
 
 const DEFAULT_BONUS_QUESTIONS = [
-  {q:'Escribe el pasado simple y el participio pasado de "begin".',a:'BEGAN · BEGUN'},
-  {q:'Traduce: "Ella ha estado estudiando inglés por 3 años."',a:'SHE HAS BEEN STUDYING ENGLISH FOR 3 YEARS.'},
-  {q:'Ordena la oración: have / I / never / Paris / been / to',a:'I HAVE NEVER BEEN TO PARIS.'},
-  {q:'Completa: "If I ___ (have) time, I would travel."',a:'HAD'},
-  {q:'Convierte a voz pasiva: "They build houses."',a:'HOUSES ARE BUILT (BY THEM).'},
+  {q:'Pregunta bonus de ejemplo 1 — edítala en "Editar preguntas".',a:'Respuesta de ejemplo'},
+  {q:'Pregunta bonus de ejemplo 2.',a:'Respuesta de ejemplo'},
+  {q:'Pregunta bonus de ejemplo 3.',a:'Respuesta de ejemplo'},
+  {q:'Pregunta bonus de ejemplo 4.',a:'Respuesta de ejemplo'},
+  {q:'Pregunta bonus de ejemplo 5.',a:'Respuesta de ejemplo'},
 ];
 
 /* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore.
@@ -462,6 +466,7 @@ function beep(freq, dur=0.12, type="sine", vol=0.18, delay=0){
   osc.start(t0); osc.stop(t0+dur+0.02);
 }
 function sfxSelect(){ beep(660,0.08,"square",0.15); beep(880,0.1,"square",0.12,0.06); }
+function sfxBuzz(){ beep(180,0.32,"sawtooth",0.32); beep(140,0.28,"sawtooth",0.24,0.05); }
 function sfxCorrect(){ [523,659,784,1047].forEach((f,i)=>beep(f,0.16,"triangle",0.2,i*0.09)); }
 function sfxWrong(){ beep(220,0.25,"sawtooth",0.18); beep(160,0.3,"sawtooth",0.16,0.1); }
 function sfxBonus(){ [440,554,659,880,1108].forEach((f,i)=>beep(f,0.14,"square",0.18,i*0.07)); }
@@ -614,12 +619,34 @@ let activeBonusIdx = null;
 
 /* ---------- Chicharra (buzzer) ---------- */
 let buzzGanadorIdx = null;
+let equiposDescartados = new Set(); // equipos que ya presionaron y no acertaron, para esta pregunta
+let jugadoresConectados = {}; // jugadorId -> {equipoIdx, unidoEn}
+
+/* El QR es opcional: si nadie se conectó desde su celular, se juega por turno
+   (sin chicharra) — el profesor simplemente revela y otorga los puntos. La
+   chicharra solo tiene sentido cuando hay celulares conectados para presionarla. */
+function hayQR(){ return Object.keys(jugadoresConectados).length > 0; }
 
 function renderBuzzRow(){
   const row = document.getElementById("buzzRow");
   const result = document.getElementById("buzzResult");
+  const hint = document.getElementById("buzzHint");
+  const revealBtn = document.getElementById("revealBtn");
+  const noAciertaBtn = document.getElementById("noAciertaBtn");
+
+  if(!hayQR()){
+    // Sin QR conectado: se juega por turno, sin chicharra.
+    row.innerHTML = "";
+    hint.style.display = "none";
+    result.style.display = "none";
+    revealBtn.style.display = "inline-block";
+    noAciertaBtn.style.display = "none";
+    return;
+  }
+
   row.innerHTML = "";
   teams.forEach((t,i)=>{
+    if(equiposDescartados.has(i)) return; // ya intentó y no acertó esta pregunta
     const b = document.createElement("button");
     b.className = "buzz-btn" + (buzzGanadorIdx===i ? " winner" : "");
     b.style.background = t.color;
@@ -628,22 +655,41 @@ function renderBuzzRow(){
     b.addEventListener("click", ()=>presionarChicharra(i));
     row.appendChild(b);
   });
-  document.getElementById("buzzHint").style.display = buzzGanadorIdx===null ? "block" : "none";
+  hint.style.display = buzzGanadorIdx===null ? "block" : "none";
   if(buzzGanadorIdx !== null){
     result.textContent = "🔔 ¡" + teams[buzzGanadorIdx].name.toUpperCase() + " PRESIONÓ PRIMERO!";
     result.style.display = "block";
+    revealBtn.style.display = "inline-block";
+    noAciertaBtn.style.display = "inline-block";
   } else {
     result.style.display = "none";
+    revealBtn.style.display = "none";
+    noAciertaBtn.style.display = "none";
   }
 }
 
 function presionarChicharra(idx){
-  if(buzzGanadorIdx !== null || !teams[idx]) return;
+  if(buzzGanadorIdx !== null || equiposDescartados.has(idx) || !teams[idx]) return;
   buzzGanadorIdx = idx;
-  sfxSelect();
+  sfxBuzz();
   renderBuzzRow();
   if(salaActual) escribir(refSala("jeopardy", salaActual, "estado/buzzGanadorIdx"), idx);
 }
+
+/* El equipo que presionó primero no supo la respuesta: se descarta para esta
+   pregunta y se reabre la chicharra para el resto (sin revelar la respuesta). */
+function noAcierta(){
+  if(buzzGanadorIdx === null) return;
+  equiposDescartados.add(buzzGanadorIdx);
+  sfxWrong();
+  buzzGanadorIdx = null;
+  renderBuzzRow();
+  if(salaActual){
+    escribir(refSala("jeopardy", salaActual, "estado/buzzGanadorIdx"), null);
+    escribir(refSala("jeopardy", salaActual, "estado/equiposDescartados"), Array.from(equiposDescartados));
+  }
+}
+document.getElementById("noAciertaBtn").addEventListener("click", noAcierta);
 
 function openQuestion(catKey, pts, cellKey){
   const item = QUESTIONS.find(q=>q.cat===catKey && q.pts===pts);
@@ -651,6 +697,7 @@ function openQuestion(catKey, pts, cellKey){
   activeCellKey = cellKey; activeIsBonus = false;
   const cat = CATEGORIES.find(c=>c.key===catKey);
   buzzGanadorIdx = null;
+  equiposDescartados = new Set();
   sfxSelect();
   document.getElementById("modalTag").textContent = cat.name;
   document.getElementById("modalTag").style.background = cat.color;
@@ -661,11 +708,10 @@ function openQuestion(catKey, pts, cellKey){
   document.getElementById("modalA").classList.remove("shown");
   document.getElementById("awardHint").style.display = "none";
   document.getElementById("awardRow").classList.remove("shown");
-  document.getElementById("revealBtn").style.display = "inline-block";
   renderBuzzRow();
   buildAwardRow(pts);
   document.getElementById("overlay").classList.add("active");
-  syncPregunta(cat.name, pts);
+  syncPregunta(cat.name, pts, item.q);
 }
 
 function openBonus(){
@@ -674,6 +720,7 @@ function openBonus(){
   activeBonusIdx = idx; activeIsBonus = true; activeCellKey = null;
   const item = BONUS_QUESTIONS[idx];
   buzzGanadorIdx = null;
+  equiposDescartados = new Set();
   sfxBonus();
   document.getElementById("modalTag").textContent = "🎁 PREGUNTA BONUS";
   document.getElementById("modalTag").style.background = "";
@@ -684,11 +731,10 @@ function openBonus(){
   document.getElementById("modalA").classList.remove("shown");
   document.getElementById("awardHint").style.display = "none";
   document.getElementById("awardRow").classList.remove("shown");
-  document.getElementById("revealBtn").style.display = "inline-block";
   renderBuzzRow();
   buildAwardRow(25);
   document.getElementById("overlay").classList.add("active");
-  syncPregunta("🎁 Pregunta bonus", 25);
+  syncPregunta("🎁 Pregunta bonus", 25, item.q);
 }
 document.getElementById("bonusBtn").addEventListener("click", openBonus);
 
@@ -714,6 +760,7 @@ function buildAwardRow(pts){
 document.getElementById("revealBtn").addEventListener("click", ()=>{
   document.getElementById("modalA").classList.add("shown");
   document.getElementById("revealBtn").style.display = "none";
+  document.getElementById("noAciertaBtn").style.display = "none";
   document.getElementById("awardHint").style.display = "block";
   document.getElementById("awardRow").classList.add("shown");
 });
@@ -739,12 +786,14 @@ function awardPoints(teamIdx, pts){
 function closeModal(){
   document.getElementById("overlay").classList.remove("active");
   buzzGanadorIdx = null;
+  equiposDescartados = new Set();
   if(salaActual){
     // Escrituras separadas: "buzz" y "estado" tienen reglas distintas, y un update()
     // multi-ruta que abarca ambas es rechazado con permission_denied.
     escribir(refSala("jeopardy", salaActual, "buzz"), null);
     escribir(refSala("jeopardy", salaActual, "estado/preguntaActiva"), false);
     escribir(refSala("jeopardy", salaActual, "estado/buzzGanadorIdx"), null);
+    escribir(refSala("jeopardy", salaActual, "estado/equiposDescartados"), null);
   }
 }
 document.getElementById("closeModalBtn").addEventListener("click", closeModal);
@@ -900,14 +949,16 @@ function syncRoster(){
   escribir(refSala("jeopardy", salaActual, "estado/turnoEquipoIdx"), currentTeam);
 }
 
-/* Publica la pregunta activa (solo categoría/puntos, no el texto) y resetea la chicharra. */
-function syncPregunta(categoriaNombre, pts){
+/* Publica la pregunta activa (categoría/puntos/texto) y resetea la chicharra. */
+function syncPregunta(categoriaNombre, pts, texto){
   if(!salaActual) return;
   escribir(refSala("jeopardy", salaActual, "buzz"), null);
   escribir(refSala("jeopardy", salaActual, "estado/preguntaActiva"), true);
   escribir(refSala("jeopardy", salaActual, "estado/categoria"), categoriaNombre);
   escribir(refSala("jeopardy", salaActual, "estado/puntos"), pts);
+  escribir(refSala("jeopardy", salaActual, "estado/texto"), texto || "");
   escribir(refSala("jeopardy", salaActual, "estado/buzzGanadorIdx"), null);
+  escribir(refSala("jeopardy", salaActual, "estado/equiposDescartados"), null);
 }
 
 let salaListenerListo = false;
@@ -931,13 +982,20 @@ async function iniciarSalaQR(){
   if(!salaListenerListo){
     salaListenerListo = true;
     // Un alumno presiona la chicharra desde su celular: gana quien llegue primero,
-    // igual que un clic local — ambos caminos comparten presionarChicharra().
+    // igual que un clic local — ambos caminos comparten presionarChicharra(). Se
+    // excluyen los equipos ya descartados en la pregunta actual (ver noAcierta()).
     escuchar(refSala("jeopardy", salaActual, "buzz"), function(datos){
       if(buzzGanadorIdx !== null || !datos) return;
       const primero = Object.values(datos)
-        .filter(function(e){ return e && typeof e.equipoIdx === "number" && teams[e.equipoIdx]; })
+        .filter(function(e){ return e && typeof e.equipoIdx === "number" && teams[e.equipoIdx] && !equiposDescartados.has(e.equipoIdx); })
         .sort(function(a,b){ return (a.enviadaEn||0) - (b.enviadaEn||0); })[0];
       if(primero) presionarChicharra(primero.equipoIdx);
+    });
+    // Si alguien se conecta o desconecta mientras hay una pregunta abierta, la
+    // chicharra debe aparecer/desaparecer en el acto (el QR es opcional).
+    escuchar(refSala("jeopardy", salaActual, "jugadores"), function(datos){
+      jugadoresConectados = datos || {};
+      if(document.getElementById("overlay").classList.contains("active")) renderBuzzRow();
     });
   }
   return salaActual;
@@ -1013,12 +1071,27 @@ function initStudentView(){
       yaPresiono = false;
       buzzBtn.disabled = false;
     }
+
+    const textoEl = document.getElementById("studentPreguntaTexto");
+    if(estado.preguntaActiva && estado.texto){
+      textoEl.textContent = estado.texto;
+      textoEl.style.display = "block";
+    } else {
+      textoEl.style.display = "none";
+    }
+
+    const descartados = estado.equiposDescartados || [];
+    const yoDescartado = descartados.indexOf(miEquipoIdx) !== -1;
+
     if(estado.buzzGanadorIdx !== null && estado.buzzGanadorIdx !== undefined){
       buzzBtn.style.display = "none";
       const equipoGanador = (estado.equipos || [])[estado.buzzGanadorIdx];
       estadoEl.textContent = estado.buzzGanadorIdx === miEquipoIdx
         ? "🔔 ¡Presionaste primero! Responde en voz alta."
         : ("🔔 " + (equipoGanador ? equipoGanador.nombre : "Otro equipo") + " presionó primero. Esperando la siguiente…");
+    } else if(yoDescartado){
+      buzzBtn.style.display = "none";
+      estadoEl.textContent = "❌ Tu equipo no acertó. Esperando a que otro equipo responda…";
     } else if(estado.preguntaActiva){
       buzzBtn.style.display = "block";
       buzzBtn.disabled = yaPresiono;
@@ -1057,8 +1130,8 @@ if(ES_ALUMNO){
     titulo: "¿Cómo se juega? 🎯",
     pasos: [
       "Elige tu equipo tocándolo en la pantalla.",
-      "Cuando el profesor abra una pregunta, aparecerá el botón 🔔 ¡LO SÉ! — tócalo apenas sepas la respuesta.",
-      "El primer equipo en presionar responde en voz alta. Si te equivocas, el profesor pasa a otro equipo.",
+      "Cuando el profesor abra una pregunta, verás el texto y aparecerá el botón 🔔 ¡LO SÉ! — tócalo apenas sepas la respuesta.",
+      "El primer equipo en presionar responde en voz alta. Si te equivocas, tu botón se bloquea y el profesor le da la oportunidad a otro equipo.",
       "Los botones se bloquean hasta que el profesor pase a la siguiente pregunta."
     ]
   });
@@ -1068,8 +1141,8 @@ if(ES_ALUMNO){
     titulo: "¿Cómo se juega? 🎯",
     pasos: [
       "Configura los nombres de los equipos (puedes quitar equipos de más con ✕) y presiona \"Comenzar juego\".",
-      "Los alumnos pueden escanear el QR del menú principal para unirse desde su celular y usarlo como chicharra.",
-      "Haz clic en una casilla del tablero: los equipos presionan su botón 🔔 (en pantalla o desde su celular) para responder.",
+      "El QR es opcional, solo mejora la experiencia: si nadie se conecta desde su celular, se juega por turno (revela la respuesta y otorga los puntos directamente). Si los alumnos escanean el QR, aparece la chicharra automáticamente y gana quien presione primero desde su celular.",
+      "Si un equipo presiona primero pero no acierta, usa \"❌ No acierta\" para bloquear solo a ese equipo y reabrir la chicharra para el resto, sin revelar todavía la respuesta.",
       "Revela la respuesta y otorga los puntos al equipo que respondió correctamente."
     ]
   });
