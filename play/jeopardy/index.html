@@ -328,7 +328,7 @@ footer.credit{text-align:center; color:var(--muted); font-size:.75rem; padding:2
 
 <script type="module">
 import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
-import { refSala, escuchar, escribir, actualizar, marcaTiempo, idJugador } from "../shared/live-room.js";
+import { refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
 import { pintarQR } from "../shared/qr-inline.js";
 import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
 
@@ -740,7 +740,11 @@ function closeModal(){
   document.getElementById("overlay").classList.remove("active");
   buzzGanadorIdx = null;
   if(salaActual){
-    actualizar(refSala("jeopardy", salaActual, ""), { buzz: null, "estado/preguntaActiva": false, "estado/buzzGanadorIdx": null });
+    // Escrituras separadas: "buzz" y "estado" tienen reglas distintas, y un update()
+    // multi-ruta que abarca ambas es rechazado con permission_denied.
+    escribir(refSala("jeopardy", salaActual, "buzz"), null);
+    escribir(refSala("jeopardy", salaActual, "estado/preguntaActiva"), false);
+    escribir(refSala("jeopardy", salaActual, "estado/buzzGanadorIdx"), null);
   }
 }
 document.getElementById("closeModalBtn").addEventListener("click", closeModal);
@@ -899,13 +903,11 @@ function syncRoster(){
 /* Publica la pregunta activa (solo categoría/puntos, no el texto) y resetea la chicharra. */
 function syncPregunta(categoriaNombre, pts){
   if(!salaActual) return;
-  actualizar(refSala("jeopardy", salaActual, ""), {
-    "buzz": null,
-    "estado/preguntaActiva": true,
-    "estado/categoria": categoriaNombre,
-    "estado/puntos": pts,
-    "estado/buzzGanadorIdx": null
-  });
+  escribir(refSala("jeopardy", salaActual, "buzz"), null);
+  escribir(refSala("jeopardy", salaActual, "estado/preguntaActiva"), true);
+  escribir(refSala("jeopardy", salaActual, "estado/categoria"), categoriaNombre);
+  escribir(refSala("jeopardy", salaActual, "estado/puntos"), pts);
+  escribir(refSala("jeopardy", salaActual, "estado/buzzGanadorIdx"), null);
 }
 
 let salaListenerListo = false;

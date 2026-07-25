@@ -4,7 +4,7 @@
 <script>document.documentElement.style.visibility="hidden";</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FIGHT!!! 3D - English Numbers Battle</title>
+<title>FIGHT!!! 3D</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -212,13 +212,13 @@
   <!-- ================= TITLE SCREEN ================= -->
   <div class="screen" id="screen-title">
     <h1>FIGHT!!!</h1>
-    <h2>English Numbers Battle · 3D</h2>
+    <h2>Duelo de preguntas · 3D</h2>
     <div class="btn-row">
       <button class="btn" id="startBtn">EMPEZAR PELEA</button>
       <button class="btn ghost" id="addQuestionsBtnTitle">➕ Añadir / editar preguntas</button>
     </div>
     <div class="instructions">
-      Responde correctamente cómo se dice cada número en inglés para atacar a tu rival.
+      Responde correctamente para atacar a tu rival.
       ¡Si te equivocas, el rival te golpeará a ti! Gana quien deje al otro fuera de combate.
     </div>
     <div style="margin-top:22px; display:flex; flex-direction:column; align-items:center; gap:6px;">
@@ -248,7 +248,7 @@
     <div class="spacer-grow"></div>
     <div class="feedback-stamp" id="feedbackStamp"></div>
     <div class="question-panel">
-      <div class="prompt-label">HOW DO WE SAY...?</div>
+      <div class="prompt-label">RESPONDE:</div>
       <div class="prompt-number" id="promptNumber">320</div>
       <div class="options" id="optionsBox"></div>
     </div>
@@ -265,7 +265,7 @@
     </div>
   </div>
 
-  <div class="footer-note">Mr. Núñez · Fight! English Numbers 3D</div>
+  <div class="footer-note">Mr. Núñez · Fight! 3D</div>
 </div>
 
 <!-- ================= EDIT QUESTIONS MODAL ================= -->
@@ -322,7 +322,7 @@
   <div id="studentFight" style="display:none; width:100%;">
     <p id="studentEstado" style="opacity:.85;">Esperando la primera pregunta…</p>
     <div id="studentQuestionZone" style="display:none; width:100%;">
-      <div class="prompt-label">HOW DO WE SAY...?</div>
+      <div class="prompt-label">RESPONDE:</div>
       <div class="prompt-number" id="studentPromptNumber">320</div>
       <div class="student-opt-list" id="studentOptions"></div>
     </div>
@@ -343,7 +343,7 @@
 
 <script type="module">
 import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
-import { refSala, escuchar, escribir, actualizar, marcaTiempo, idJugador } from "../shared/live-room.js";
+import { refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
 import { pintarQR } from "../shared/qr-inline.js";
 import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
 /* ============================================================
@@ -860,6 +860,8 @@ function startGame(){
   loadRound();
 }
 
+let currentOptsText = null; // alternativas de la ronda actual, para poder re-sincronizar si la sala aún no estaba lista
+
 function loadRound(){
   rondaResuelta = false;
   if(ventanaTimer){ clearTimeout(ventanaTimer); ventanaTimer = null; }
@@ -872,6 +874,7 @@ function loadRound(){
     {text:q.wrong[0], correct:false},
     {text:q.wrong[1], correct:false}
   ]);
+  currentOptsText = opts.map(function(o){ return o.text; });
   const box = document.getElementById('optionsBox');
   box.innerHTML='';
   opts.forEach(o=>{
@@ -881,22 +884,30 @@ function loadRound(){
     b.addEventListener('click', ()=>resolveRound(o.correct, o.text, null));
     box.appendChild(b);
   });
-  if(salaActual){
-    // Un solo update() atómico: evita que un celular vea "nueva ronda" en /estado
-    // mientras /respuestas todavía tiene datos de la ronda anterior (o viceversa).
-    actualizar(refSala('robotfight', salaActual, ''), {
-      'respuestas': null,
-      'estado': {
-        rondaIndice: currentRound,
-        rondaTotal: roundQuestions.length,
-        numero: q.number,
-        alternativas: opts.map(function(o){ return o.text; }),
-        ganadorRonda: null,
-        playerHP: playerHP,
-        rivalHP: rivalHP
-      }
-    });
-  }
+  syncRondaEnVivo();
+}
+
+/* Publica la ronda actual (pregunta/alternativas) en la sala en vivo. Se llama desde
+   loadRound() y también apenas la sala termina de crearse (iniciarSalaQR), por si el
+   profesor alcanzó a presionar "Empezar pelea" antes de que crearSala() terminara —
+   sin esto, el primer celular conectado se quedaba esperando una pregunta que nunca
+   llegó a publicarse. */
+function syncRondaEnVivo(){
+  if(!salaActual || !currentOptsText || !roundQuestions[currentRound]) return;
+  // Dos escrituras separadas (no un update() multi-ruta): las reglas de la base de
+  // datos evalúan "estado" y "respuestas" con reglas distintas, y un update() que
+  // abarca ambas rutas a la vez es rechazado con permission_denied aunque cada
+  // escritura por separado esté permitida.
+  escribir(refSala('robotfight', salaActual, 'respuestas'), null);
+  escribir(refSala('robotfight', salaActual, 'estado'), {
+    rondaIndice: currentRound,
+    rondaTotal: roundQuestions.length,
+    numero: roundQuestions[currentRound].number,
+    alternativas: currentOptsText,
+    ganadorRonda: null,
+    playerHP: playerHP,
+    rivalHP: rivalHP
+  });
 }
 
 function updateHpBars(){
@@ -1206,6 +1217,9 @@ async function iniciarSalaQR(){
     salaListenerListo = true;
     escuchar(refSala('robotfight', salaActual, 'respuestas'), evaluarRespuestas);
   }
+  // Si el profesor ya alcanzó a iniciar una ronda antes de que la sala terminara
+  // de crearse, hay que publicarla recién ahora (ver comentario en syncRondaEnVivo).
+  if(!rondaResuelta) syncRondaEnVivo();
   return salaActual;
 }
 

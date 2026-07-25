@@ -14,18 +14,21 @@
           "turno": { ".write": "auth != null" },
 
           "jugadores": {
+            ".write": "auth != null",
             "$jugadorId": {
               ".write": "auth != null || !data.exists()"
             }
           },
 
           "buzz": {
+            ".write": "auth != null",
             "$jugadorId": {
               ".write": "auth != null || !data.exists()"
             }
           },
 
           "respuestas": {
+            ".write": "auth != null",
             "$equipoId": {
               ".write": "auth != null || (newData.child('jugadorId').val() != null && root.child('salasVivo/'+$juego+'/'+$sala+'/jugadores/'+newData.child('jugadorId').val()+'/equipoId').val() === $equipoId)"
             }
