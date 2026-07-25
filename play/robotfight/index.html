@@ -140,6 +140,7 @@
   }
   .feedback-stamp.correct{color:#4dff88;border:5px solid #4dff88;background:rgba(10,40,15,0.75);}
   .feedback-stamp.wrong{color:#ff6b6b;border:5px solid #ff6b6b;background:rgba(40,10,10,0.75);}
+  .feedback-stamp.empate{color:#ffd23f;border:5px solid #ffd23f;background:rgba(40,34,10,0.75);}
 
   #screen-end h1{
     font-size:clamp(46px,9vw,90px);font-family:'Arial Black',Impact,sans-serif;color:var(--gold);
@@ -219,6 +220,15 @@
     <div class="instructions">
       Responde correctamente cómo se dice cada número en inglés para atacar a tu rival.
       ¡Si te equivocas, el rival te golpeará a ti! Gana quien deje al otro fuera de combate.
+    </div>
+    <div style="margin-top:22px; display:flex; flex-direction:column; align-items:center; gap:6px;">
+      <div style="display:flex; align-items:center; gap:8px; font-size:.85rem; opacity:.9;">
+        <span style="font-size:1.3rem;">👉</span>
+        <span>Escanea este código para unirte desde tu celular</span>
+      </div>
+      <div id="qrBoxMenu" style="background:#fff; padding:8px; border-radius:10px; min-width:140px; min-height:140px;"></div>
+      <div id="qrSalaCodeMenu" style="font-size:1.1rem; font-weight:800;">------</div>
+      <p id="qrLinkCortoMenu" style="font-size:.75rem; opacity:.8; margin:0;"></p>
     </div>
   </div>
 
@@ -333,7 +343,9 @@
 
 <script type="module">
 import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
-import { crearSala, refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
+import { refSala, escuchar, escribir, actualizar, marcaTiempo, idJugador } from "../shared/live-room.js";
+import { pintarQR } from "../shared/qr-inline.js";
+import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
 /* ============================================================
    FIGHT!!! 3D - English Numbers Battle
    Single-file HTML educational game (Three.js r128)
@@ -850,6 +862,7 @@ function startGame(){
 
 function loadRound(){
   rondaResuelta = false;
+  if(ventanaTimer){ clearTimeout(ventanaTimer); ventanaTimer = null; }
   const q = roundQuestions[currentRound];
   document.getElementById('roundBadge').textContent = `Pregunta ${currentRound+1}/${roundQuestions.length}`;
   drawRoundSprite(`Pregunta ${currentRound+1}/${roundQuestions.length}`);
@@ -869,15 +882,19 @@ function loadRound(){
     box.appendChild(b);
   });
   if(salaActual){
-    escribir(refSala('robotfight', salaActual, 'respuestas'), null);
-    escribir(refSala('robotfight', salaActual, 'estado'), {
-      rondaIndice: currentRound,
-      rondaTotal: roundQuestions.length,
-      numero: q.number,
-      alternativas: opts.map(function(o){ return o.text; }),
-      ganadorRonda: null,
-      playerHP: playerHP,
-      rivalHP: rivalHP
+    // Un solo update() atómico: evita que un celular vea "nueva ronda" en /estado
+    // mientras /respuestas todavía tiene datos de la ronda anterior (o viceversa).
+    actualizar(refSala('robotfight', salaActual, ''), {
+      'respuestas': null,
+      'estado': {
+        rondaIndice: currentRound,
+        rondaTotal: roundQuestions.length,
+        numero: q.number,
+        alternativas: opts.map(function(o){ return o.text; }),
+        ganadorRonda: null,
+        playerHP: playerHP,
+        rivalHP: rivalHP
+      }
     });
   }
 }
@@ -936,6 +953,30 @@ function resolveRound(isCorrect, answerText, ganadorNombre){
 
   if(salaActual){
     escribir(refSala('robotfight', salaActual, 'estado/ganadorRonda'), { nombre: ganadorNombre || 'El profe', correcto: isCorrect });
+  }
+
+  setTimeout(()=>{
+    stamp.classList.remove('show');
+    checkRoundEnd();
+  },1450);
+}
+
+/* Dos alumnos respondieron correcto dentro de la misma ventana de tiempo
+   (ver EMPATE_VENTANA_MS): nadie ataca esta ronda. */
+function resolveEmpate(){
+  if(rondaResuelta) return;
+  rondaResuelta = true;
+  document.querySelectorAll('.opt-btn').forEach(b=>b.disabled=true);
+  document.querySelectorAll('.opt-btn').forEach(function(b){
+    if(b.textContent === roundQuestions[currentRound].correct) b.classList.add('correct');
+  });
+  const stamp = document.getElementById('feedbackStamp');
+  playCorrect();
+  stamp.textContent = '¡EMPATE!';
+  stamp.className = 'feedback-stamp empate show';
+
+  if(salaActual){
+    escribir(refSala('robotfight', salaActual, 'estado/ganadorRonda'), { empate: true });
   }
 
   setTimeout(()=>{
@@ -1102,6 +1143,72 @@ document.getElementById('importExcel').addEventListener('change', (e)=>{
 });
 
 /* ================= MODO QR: sala en vivo para celulares ================= */
+
+// Ventana de gracia: si un segundo alumno responde correcto dentro de este
+// margen desde el primero, se considera empate (nadie ataca). Si no, el primero
+// gana apenas se cumple la ventana — sin esperar a que el segundo responda.
+const EMPATE_VENTANA_MS = 600;
+let ventanaTimer = null;
+
+function evaluarRespuestas(datos){
+  if(rondaResuelta || !datos || !roundQuestions[currentRound]) return;
+  const correctText = roundQuestions[currentRound].correct;
+  const ganadores = Object.values(datos)
+    .filter(function(e){ return e && e.alternativaTexto === correctText; })
+    .sort(function(a,b){ return (a.enviadaEn||0) - (b.enviadaEn||0); });
+  if(!ganadores.length) return;
+
+  const primero = ganadores[0];
+
+  if(ganadores.length >= 2){
+    const gap = (ganadores[1].enviadaEn||0) - (primero.enviadaEn||0);
+    if(gap <= EMPATE_VENTANA_MS){
+      if(ventanaTimer){ clearTimeout(ventanaTimer); ventanaTimer = null; }
+      resolveEmpate();
+      return;
+    }
+    // El segundo llegó fuera de la ventana: no es empate, gana el primero ya mismo.
+    if(ventanaTimer){ clearTimeout(ventanaTimer); ventanaTimer = null; }
+    resolveRound(true, correctText, primero.nombre || 'Un alumno');
+    return;
+  }
+
+  // Solo hay un ganador por ahora: se espera el resto de la ventana (no más)
+  // por si llega un segundo alumno casi al mismo tiempo, y recién ahí se resuelve.
+  if(!ventanaTimer){
+    const restante = Math.max(0, EMPATE_VENTANA_MS - (Date.now() - (primero.enviadaEn||Date.now())));
+    ventanaTimer = setTimeout(function(){
+      ventanaTimer = null;
+      if(rondaResuelta) return;
+      resolveRound(true, correctText, primero.nombre || 'Un alumno');
+    }, restante);
+  }
+}
+
+let salaListenerListo = false;
+
+/* Crea (o reutiliza) la sala en vivo y pinta el QR en el menú principal y en
+   el modal de detalle a la vez — se puede llamar varias veces sin duplicar salas. */
+async function iniciarSalaQR(){
+  const r = await pintarQR({
+    juego: 'robotfight',
+    destino: '/play/robotfight/',
+    contenedores: ['qrBoxMenu', 'qrBox'],
+    links: ['qrLinkCortoMenu', 'qrLinkCorto']
+  });
+  if(!r) return null;
+  salaActual = r.sala;
+  const codeEl = document.getElementById('qrSalaCode');
+  const codeElMenu = document.getElementById('qrSalaCodeMenu');
+  if(codeEl) codeEl.textContent = r.sala;
+  if(codeElMenu) codeElMenu.textContent = r.sala;
+  if(!salaListenerListo){
+    salaListenerListo = true;
+    escuchar(refSala('robotfight', salaActual, 'respuestas'), evaluarRespuestas);
+  }
+  return salaActual;
+}
+
 async function abrirModalQR(){
   const modal = document.getElementById('qrModal');
   modal.classList.add('active');
@@ -1109,26 +1216,7 @@ async function abrirModalQR(){
   const codeEl = document.getElementById('qrSalaCode');
   codeEl.textContent = 'Creando sala…';
   try{
-    const { sala, codigoCorto } = await crearSala('robotfight', '/play/robotfight/');
-    salaActual = sala;
-    codeEl.textContent = sala;
-    const joinUrl = location.origin + '/play/robotfight/?room=' + sala;
-    const qb = document.getElementById('qrBox');
-    qb.innerHTML = '';
-    if(window.QRCode){
-      new QRCode(qb, { text: joinUrl, width: 190, height: 190, colorDark: '#1b0f2e', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
-    }
-    document.getElementById('qrLinkCorto').textContent = codigoCorto ? ('🔗 ' + location.host + '/' + codigoCorto) : joinUrl;
-    escuchar(refSala('robotfight', salaActual, 'respuestas'), function(datos){
-      if(rondaResuelta || !datos || !roundQuestions[currentRound]) return;
-      const correctText = roundQuestions[currentRound].correct;
-      const ganadores = Object.values(datos)
-        .filter(function(e){ return e && e.alternativaTexto === correctText; })
-        .sort(function(a,b){ return (a.enviadaEn||0) - (b.enviadaEn||0); });
-      if(ganadores.length){
-        resolveRound(true, correctText, ganadores[0].nombre || 'Un alumno');
-      }
-    });
+    await iniciarSalaQR();
   }catch(e){
     codeEl.textContent = 'Error al crear la sala';
     toast('No se pudo crear la sala en vivo. Revisa tu conexión.');
@@ -1173,6 +1261,12 @@ function initStudentView(){
     if(estado.rondaIndice !== ultimaRonda){
       ultimaRonda = estado.rondaIndice;
       yaRespondido = false;
+    }
+
+    if(estado.ganadorRonda && estado.ganadorRonda.empate){
+      zone.style.display = 'none';
+      estadoEl.textContent = '🤝 ¡Empate! Nadie atacó esta ronda. Esperando la siguiente…';
+      return;
     }
 
     if(estado.ganadorRonda && estado.ganadorRonda.correcto){
@@ -1224,8 +1318,28 @@ function initStudentView(){
 // de esperar un evento que ya pasó.
 if(ES_ALUMNO){
   initStudentView();
-} else if(document.readyState === 'complete'){ initThree(); }
-else { window.addEventListener('load', initThree); }
+  mostrarTutorialSiPrimeraVez('robotfight_alumno', {
+    titulo: '¿Cómo se juega? 🤖',
+    pasos: [
+      'Escribe tu nombre para unirte a la sala.',
+      'Cuando aparezca una pregunta, toca la alternativa correcta lo más rápido posible.',
+      'Quien responda correcto primero ataca al rival. Si ambos responden casi al mismo tiempo, es empate y nadie ataca esa ronda.'
+    ]
+  });
+} else {
+  iniciarSalaQR();
+  mostrarTutorialSiPrimeraVez('robotfight_profe', {
+    titulo: '¿Cómo se juega? 🤖',
+    pasos: [
+      'Presiona "EMPEZAR PELEA" para iniciar el combate.',
+      'Los alumnos pueden escanear el QR del menú principal para unirse desde su celular y responder ahí.',
+      'También puedes jugar localmente tocando una alternativa en la pantalla.',
+      'Gana quien deje al rival fuera de combate primero.'
+    ]
+  });
+  if(document.readyState === 'complete'){ initThree(); }
+  else { window.addEventListener('load', initThree); }
+}
 </script>
 </body>
 </html>
