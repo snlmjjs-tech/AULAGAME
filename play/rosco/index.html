@@ -435,6 +435,9 @@
     text-align:center; background:rgba(255,255,255,.95); color:#111; box-sizing:border-box;
   }
   .student-sent-hint{ font-size:13px; opacity:.85; text-align:center; min-height:18px; }
+  .student-btn-row{ display:flex; gap:8px; margin-top:10px; }
+  .student-btn-row .modal-again{ flex:1; margin-top:0; }
+  .student-btn-pasa{ background:linear-gradient(180deg, var(--red), var(--red-dark)) !important; }
 
   @media (max-width: 700px){
     .avatar-box{ width:56px;height:56px; }
@@ -612,7 +615,10 @@
       <div class="student-letter-big" id="studentLetraActiva">A</div>
       <div class="student-clue" id="studentClue">Esperando pregunta…</div>
       <input type="text" id="studentInput" class="student-input" placeholder="Escribe tu respuesta..." maxlength="80">
-      <button class="modal-again" id="studentEnviarBtn">ENVIAR</button>
+      <div class="student-btn-row">
+        <button class="modal-again" id="studentEnviarBtn">ENVIAR</button>
+        <button class="modal-again student-btn-pasa" id="studentPasaBtn">🔁 PASAPALABRA</button>
+      </div>
       <div class="student-sent-hint" id="studentSentHint"></div>
     </div>
 
@@ -819,6 +825,14 @@ const teamNameInputs = [];
     teamNameInputs.push(inp);
   }
 }
+/* Mientras el profe escribe el nombre en la pantalla de inicio (antes de PLAY),
+   se sincroniza en vivo con los celulares ya conectados que están eligiendo equipo. */
+teamNameInputs.forEach((inp, i) => {
+  inp.addEventListener('input', () => {
+    teams[i].name = inp.value.trim() || DEFAULT_TEAM_NAMES[i];
+    if(salaActual) pushEstadoCompleto();
+  });
+});
 
 const teamChips = [], teamNameEls = [], teamTimerEls = [], teamCorrectEls = [], teamWrongEls = [];
 {
@@ -1410,6 +1424,11 @@ async function abrirModalQR(){
     pushEstadoCompleto();
     escuchar(refSala('rosco', salaActual, 'respuestas'), function(datos){
       respuestasActuales = datos || {};
+      const resp = respuestasActuales[activeTeam];
+      if(resp && resp.tipo === 'pasapalabra'){
+        triggerPassToNextTeam();
+        return;
+      }
       renderRosco();
     });
   }catch(e){
@@ -1502,6 +1521,11 @@ function initStudentView(){
         btnsWrap.appendChild(btn);
       });
     } else {
+      // Si la página se recarga (o se restaura desde segundo plano) con el equipo
+      // ya elegido en una sesión anterior, hay que mostrar la pantalla de juego
+      // directamente en vez de quedarse pegado en la de selección de equipo.
+      selectTeamEl.classList.add('hidden');
+      playEl.classList.remove('hidden');
       renderStudent();
     }
   });
@@ -1510,10 +1534,18 @@ function initStudentView(){
     const texto = inputEl.value.trim();
     if(!texto || miEquipoId === null) return;
     escribir(refSala('rosco', SALA_ALUMNO, 'respuestas/' + miEquipoId), {
-      texto: texto, jugadorId: jugadorId, jugadorNombre: 'Un alumno', enviadaEn: marcaTiempo()
+      tipo: 'respuesta', texto: texto, jugadorId: jugadorId, jugadorNombre: 'Un alumno', enviadaEn: marcaTiempo()
     });
     inputEl.value = '';
     sentHintEl.textContent = '✓ Respuesta enviada, esperando al profe…';
+  });
+
+  document.getElementById('studentPasaBtn').addEventListener('click', function(){
+    if(miEquipoId === null) return;
+    escribir(refSala('rosco', SALA_ALUMNO, 'respuestas/' + miEquipoId), {
+      tipo: 'pasapalabra', jugadorId: jugadorId, enviadaEn: marcaTiempo()
+    });
+    sentHintEl.textContent = '🔁 Pasapalabra enviado…';
   });
 }
 
