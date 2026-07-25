@@ -4,7 +4,7 @@
 <script>document.documentElement.style.visibility="hidden";</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kart Race: Repaso del Verbo To Be</title>
+<title>Kart Race</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -356,8 +356,8 @@
 
 <header>
   <div class="flag-strip"></div>
-  <h1>🏁 KART RACE: Repaso del verbo TO BE</h1>
-  <p>Juego de tablero educativo — AM · IS · ARE</p>
+  <h1>🏁 KART RACE</h1>
+  <p>Juego de tablero educativo — personalízalo con las preguntas de tu clase</p>
 </header>
 
 <main>
@@ -382,6 +382,18 @@
     <div style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;">
       <button class="btn-green" id="startGameBtn">🏎️ ¡Empezar la carrera!</button>
       <button class="btn-ghost" id="openEditorFromSetup">✏️ Editar preguntas</button>
+    </div>
+
+    <div class="panel" style="margin-top:20px; padding:16px; display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
+      <div style="display:flex; align-items:center; gap:8px; font-size:.9rem;">
+        <span style="font-size:1.4rem;">👉</span>
+        <span>Escanea este código para unirte desde tu celular</span>
+      </div>
+      <div id="qrBoxMenu" style="background:#fff; padding:8px; border-radius:10px; min-width:120px; min-height:120px;"></div>
+      <div>
+        <div id="qrSalaCodeMenu" style="font-family:'Baloo 2',cursive; font-weight:800; font-size:1.1rem;">------</div>
+        <p id="qrLinkCortoMenu" style="font-size:.75rem; color:#666; margin:2px 0 0;"></p>
+      </div>
     </div>
   </section>
 
@@ -577,7 +589,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script type="module">
 import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
-import { crearSala, refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
+import { refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
+import { pintarQR } from "../shared/qr-inline.js";
+import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
 /* ================= CONFIG ================= */
 const TOTAL_TILES = 31;
 const KART_COLORS = [
@@ -1617,24 +1631,26 @@ function syncEstado(){
   }));
 }
 
-async function abrirModalQR(){
-  const overlay = document.getElementById('qrOverlay');
-  overlay.classList.remove('hidden');
-  if(salaActual) return;
+let salaListenerListo = false;
+
+/* Crea (o reutiliza) la sala en vivo y pinta el QR en el menú principal y en
+   el modal de detalle a la vez — se puede llamar varias veces sin duplicar salas. */
+async function iniciarSalaQR(){
+  const r = await pintarQR({
+    juego: 'raceboard',
+    destino: '/play/raceboard/',
+    contenedores: ['qrBoxMenu', 'qrBox'],
+    links: ['qrLinkCortoMenu', 'qrLinkCorto']
+  });
+  if(!r) return null;
+  salaActual = r.sala;
   const codeEl = document.getElementById('qrSalaCode');
-  codeEl.textContent = 'Creando sala…';
-  try{
-    const { sala, codigoCorto } = await crearSala('raceboard', '/play/raceboard/');
-    salaActual = sala;
-    codeEl.textContent = sala;
-    const joinUrl = location.origin + '/play/raceboard/?room=' + sala;
-    const qb = document.getElementById('qrBox');
-    qb.innerHTML = '';
-    if(window.QRCode){
-      new QRCode(qb, { text: joinUrl, width: 190, height: 190, colorDark: '#1a1a2e', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
-    }
-    document.getElementById('qrLinkCorto').textContent = codigoCorto ? ('🔗 ' + location.host + '/' + codigoCorto) : joinUrl;
-    syncEstado();
+  const codeElMenu = document.getElementById('qrSalaCodeMenu');
+  if(codeEl) codeEl.textContent = r.sala;
+  if(codeElMenu) codeElMenu.textContent = r.sala;
+  syncEstado();
+  if(!salaListenerListo){
+    salaListenerListo = true;
     escuchar(refSala('raceboard', salaActual, 'respuestas'), function(datos){
       if(!datos || awaitingResolution || state.gameOver) return;
       const turnoId = state.players[state.currentIndex].id;
@@ -1643,6 +1659,18 @@ async function abrirModalQR(){
         rollBtn.click();
       }
     });
+  }
+  return salaActual;
+}
+
+async function abrirModalQR(){
+  const overlay = document.getElementById('qrOverlay');
+  overlay.classList.remove('hidden');
+  if(salaActual) return;
+  const codeEl = document.getElementById('qrSalaCode');
+  codeEl.textContent = 'Creando sala…';
+  try{
+    await iniciarSalaQR();
   }catch(e){
     codeEl.textContent = 'Error al crear la sala';
     toast('No se pudo crear la sala en vivo. Revisa tu conexión.');
@@ -1749,6 +1777,26 @@ function initStudentView(){
 
 if(ES_ALUMNO){
   initStudentView();
+  mostrarTutorialSiPrimeraVez('raceboard_alumno', {
+    titulo: '¿Cómo se juega? 🏁',
+    pasos: [
+      'Elige quién eres tocando tu nombre.',
+      'Cuando sea tu turno, toca "🎲 LANZAR DADO" para tirar desde tu celular.',
+      'El profesor evalúa tu respuesta cuando caigas en una casilla de pregunta.',
+      '¡Gana quien llegue primero a la meta!'
+    ]
+  });
+} else {
+  iniciarSalaQR();
+  mostrarTutorialSiPrimeraVez('raceboard_profe', {
+    titulo: '¿Cómo se juega? 🏁',
+    pasos: [
+      'Elige cuántos jugadores participan y presiona "¡Empezar la carrera!".',
+      'Los alumnos pueden escanear el QR del menú principal para unirse desde su celular y lanzar el dado ellos mismos.',
+      'Cuando un jugador cae en una pregunta, evalúa su respuesta y marca correcto/incorrecto.',
+      '¡Gana quien llegue primero a la meta!'
+    ]
+  });
 }
 </script>
 </body>
