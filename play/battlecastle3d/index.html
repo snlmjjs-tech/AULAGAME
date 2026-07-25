@@ -657,6 +657,35 @@
         </div>
     </div>
 
+    <!-- ================= NOTIFICACIÓN DE ATAQUE (esquina, no tapa la arena 3D) ================= -->
+    <div id="attack-toast" class="fixed bottom-6 right-6 z-[70] hidden max-w-[calc(100%-3rem)] w-80">
+        <div class="bg-stone-950/95 border-2 border-amber-600 rounded-2xl p-4 shadow-2xl backdrop-blur-sm">
+            <h4 id="attack-toast-title" class="text-sm font-medieval text-amber-400 mb-1 font-bold">Mensaje</h4>
+            <p id="attack-toast-message" class="text-stone-300 text-xs mb-3 leading-relaxed">Mensaje informativo.</p>
+            <div class="flex justify-end gap-2 flex-wrap" id="attack-toast-buttons">
+                <!-- Botones inyectados dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: TUTORIAL / CÓMO SE JUEGA (primera vez en este dispositivo) ================= -->
+    <div id="modal-tutorial" class="fixed inset-0 bg-black/90 z-[300] backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-stone-950/95 border-4 border-amber-600 rounded-3xl p-6 max-w-lg w-full relative shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h3 class="text-2xl font-decorative text-center text-amber-400 mb-4 font-bold">🏰 ¿CÓMO SE JUEGA? ⚔️</h3>
+            <ul class="space-y-3 text-sm text-stone-300 font-medieval leading-relaxed mb-6">
+                <li class="flex gap-3"><span class="text-xl shrink-0">🏰</span><span>Cada <strong class="text-amber-300">castillo</strong> representa a un equipo de la clase.</span></li>
+                <li class="flex gap-3"><span class="text-xl shrink-0">🔄</span><span>Los castillos se turnan uno a uno. En tu turno, respondes una pregunta de verbos irregulares.</span></li>
+                <li class="flex gap-3"><span class="text-xl shrink-0">📜</span><span>Si respondes <strong class="text-emerald-400">correctamente</strong>, puedes atacar con la catapulta.</span></li>
+                <li class="flex gap-3"><span class="text-xl shrink-0">🎯</span><span>Elige a qué castillo enemigo atacar tocando (o haciendo clic en) su fortaleza en el mapa 3D.</span></li>
+                <li class="flex gap-3"><span class="text-xl shrink-0">❤️</span><span>Cada castillo tiene 5 puntos de vida. Al llegar a 0, ¡el castillo queda destruido y sale de la partida!</span></li>
+                <li class="flex gap-3"><span class="text-xl shrink-0">👑</span><span>Gana el último castillo que sigue en pie.</span></li>
+            </ul>
+            <button onclick="closeTutorialModal()" class="rpg-btn w-full py-3 px-6 text-base font-medieval text-white font-bold rounded-xl tracking-wider shadow-lg">
+                ¡ENTENDIDO! ⚔️
+            </button>
+        </div>
+    </div>
+
     <!-- ================= DESARROLLO DEL JUEGO ================= -->
     <script type="module">
         import { loadGameData, saveGameData, toast as syncToast } from "../shared/game-storage.js";
@@ -1368,6 +1397,10 @@
                     SafeStorage.removeItem(LOCAL_STORAGE_KEY);
                 }
             }
+
+            // Tutorial de reglas del juego: solo la primera vez en este dispositivo
+            // (funciona tanto para el profesor como para el alumno que entra por QR).
+            maybeShowTutorial();
         };
 
         // Dibuja los inputs de nombre para los castillos activos (2 a 5, ver setupCastles)
@@ -1752,11 +1785,11 @@
                 if (target.shield > 0) {
                     target.shield--;
                     sound.playShield();
-                    gameState.kingMoods[targetIndex] = "shield"; 
+                    gameState.kingMoods[targetIndex] = "shield";
                     logAction(`🛡️ ¡El Escudo rúnico de <strong class="text-white">${target.name}</strong> neutralizó el impacto!`, "success");
-                    
-                    showFeedbackModal("🛡️ IMPACTO ABSORBIDO", `El escudo protector de <strong>${target.name}</strong> bloqueó la bomba con éxito.`, [
-                        { label: "Continuar", action: () => { closeModal('modal-feedback'); nextTurn(); } }
+
+                    showAttackToast("🛡️ IMPACTO ABSORBIDO", `El escudo protector de <strong>${target.name}</strong> bloqueó la bomba con éxito.`, [
+                        { label: "Continuar", action: () => nextTurn() }
                     ]);
                 } else {
                     target.hp -= damageToDeal;
@@ -1766,11 +1799,11 @@
 
                     if (target.hp <= 0) {
                         target.destroyed = true;
-                        gameState.kingMoods[targetIndex] = "destroyed"; 
+                        gameState.kingMoods[targetIndex] = "destroyed";
                         logAction(`🏰☠️ ¡LA CIUDADELA DE <strong class="text-white">${target.name}</strong> HA SIDO ASOLADA!`, "danger");
-                        
-                        showFeedbackModal("💥 ¡REINO ASOLADO!", `El castillo de <strong>${target.name}</strong> ha quedado reducido a escombros 3D. Sus tropas huyen.`, [
-                            { label: "Continuar", action: () => { closeModal('modal-feedback'); nextTurn(); } }
+
+                        showAttackToast("💥 ¡REINO ASOLADO!", `El castillo de <strong>${target.name}</strong> ha quedado reducido a escombros 3D. Sus tropas huyen.`, [
+                            { label: "Continuar", action: () => nextTurn() }
                         ]);
                     } else {
                         setTimeout(() => {
@@ -1778,8 +1811,8 @@
                             updateUI();
                         }, 1800);
 
-                        showFeedbackModal("💥 IMPACTO DIRECTO", `La fortaleza de <strong>${target.name}</strong> sufre graves averías estructurales (-${damageToDeal} HP).`, [
-                            { label: "Continuar", action: () => { closeModal('modal-feedback'); nextTurn(); } }
+                        showAttackToast("💥 IMPACTO DIRECTO", `La fortaleza de <strong>${target.name}</strong> sufre graves averías estructurales (-${damageToDeal} HP).`, [
+                            { label: "Continuar", action: () => nextTurn() }
                         ]);
                     }
                 }
@@ -1940,6 +1973,45 @@
             });
 
             openModal('modal-feedback');
+        }
+
+        // Notificación de resultado de ataque: esquina pequeña en vez de overlay
+        // de pantalla completa, para no tapar la animación 3D del proyectil/impacto.
+        function showAttackToast(title, message, buttons = []) {
+            document.getElementById("attack-toast-title").innerHTML = title;
+            document.getElementById("attack-toast-message").innerHTML = message;
+
+            const btnContainer = document.getElementById("attack-toast-buttons");
+            btnContainer.innerHTML = "";
+
+            if (buttons.length === 0) {
+                buttons.push({ label: "Continuar", action: () => {} });
+            }
+
+            buttons.forEach(btnConfig => {
+                const btn = document.createElement("button");
+                btn.className = "rpg-btn py-1.5 px-4 text-[11px] font-medieval text-white font-bold rounded-lg tracking-wider shadow-md";
+                btn.innerText = btnConfig.label;
+                btn.onclick = () => { closeAttackToast(); btnConfig.action(); };
+                btnContainer.appendChild(btn);
+            });
+
+            document.getElementById('attack-toast').classList.remove('hidden');
+        }
+
+        function closeAttackToast() {
+            document.getElementById('attack-toast')?.classList.add('hidden');
+        }
+
+        // Tutorial de reglas: se muestra una sola vez por dispositivo (profesor y alumno)
+        const TUTORIAL_SEEN_KEY = 'bc_tutorial_seen_v1';
+        function maybeShowTutorial() {
+            if (SafeStorage.getItem(TUTORIAL_SEEN_KEY)) return;
+            openModal('modal-tutorial');
+        }
+        function closeTutorialModal() {
+            SafeStorage.setItem(TUTORIAL_SEEN_KEY, '1');
+            closeModal('modal-tutorial');
         }
 
 
@@ -2283,6 +2355,7 @@
         let currentRoomCode = null;
         let qrModeActive  = false; // el profesor activa el modo QR explícitamente
         let joinCastleNames = []; // nombres personalizados leídos del QR, antes de conectar con el host
+        let rejectedByHost = false; // evita que el handler 'close' pise el mensaje de rechazo
 
         // Código de sala: 6 dígitos numéricos
         function getOrCreateRoomCode() {
@@ -2340,8 +2413,14 @@
                     conn.on('open', () => {
                         const ci = parseInt(conn.metadata?.ci);
                         if (isNaN(ci) || ci < 0 || ci > 4) return;
-                        if (!teamConns[ci]) teamConns[ci] = [];
-                        teamConns[ci].push(conn);
+                        // Un solo dispositivo por castillo: si ya hay un jugador conectado
+                        // a este castillo, se rechaza la nueva conexión con un mensaje claro.
+                        if (teamConns[ci] && teamConns[ci].length > 0) {
+                            sendToConn(conn, { type: 'rejected', reason: 'Este castillo ya tiene un jugador conectado.' });
+                            setTimeout(() => { try { conn.close(); } catch(e) {} }, 300);
+                            return;
+                        }
+                        teamConns[ci] = [conn];
                         updateConnBadge();
                         sendToConn(conn, { type: 'state', ...buildSnap() });
                     });
@@ -2452,7 +2531,20 @@
         // El estudiante toca su castillo → se conecta al host con ese índice
         function selectCastleAndConnect(castleIndex) {
             myTeamIndex = castleIndex;
+            rejectedByHost = false;
             initAsPlayer(currentRoomCode, castleIndex);
+        }
+
+        // Vuelve a la pantalla de selección de castillo (ej. tras ser rechazado
+        // por estar ese castillo ya ocupado por otro dispositivo).
+        function retryJoinCastleSelect() {
+            rejectedByHost = false;
+            try { hostDataConn?.close(); } catch(e) {}
+            try { bcPeer?.destroy(); } catch(e) {}
+            bcPeer = null;
+            hostDataConn = null;
+            myTeamIndex = -1;
+            showMobileScreen('castleSelect', mobileLastState);
         }
 
         function initAsPlayer(roomCode, castleIndex) {
@@ -2464,9 +2556,9 @@
                     hostDataConn = bcPeer.connect('bcgame-' + roomCode, {
                         metadata: { ci: castleIndex }, reliable: true
                     });
-                    hostDataConn.on('open',  () => showMobileScreen('waiting', '⏳ Esperando que el juego inicie...'));
+                    hostDataConn.on('open',  () => showMobileScreen('waiting', '⏳ Espera a que el profesor inicie el juego...'));
                     hostDataConn.on('data',  msg => handleMobileMsg(msg));
-                    hostDataConn.on('close', () => showMobileScreen('waiting', '⚠️ Conexión perdida. Recarga la página.'));
+                    hostDataConn.on('close', () => { if (!rejectedByHost) showMobileScreen('waiting', '⚠️ Conexión perdida. Recarga la página.'); });
                     hostDataConn.on('error', () => showMobileScreen('waiting', '⚠️ Error de conexión.'));
                 });
                 bcPeer.on('error', () => showMobileScreen('waiting', '❌ No se pudo conectar al host.'));
@@ -2479,6 +2571,7 @@
                 case 'questionList':   showMobileScreen('questionList', msg); break;
                 case 'questionData':   showMobileScreen('question', msg); break;
                 case 'questionResult': showMobileScreen('result', msg); break;
+                case 'rejected':       rejectedByHost = true; showMobileScreen('rejected', msg.reason); break;
             }
         }
 
@@ -2538,10 +2631,31 @@
                 return;
             }
 
+            // ── CASTILLO OCUPADO: otro dispositivo ya está conectado a este castillo ──
+            if (view === 'rejected') {
+                ctrl.innerHTML = `
+                <div class="flex-1 flex flex-col items-center justify-center gap-4 p-8 font-medieval text-center"
+                     style="background:radial-gradient(ellipse at top,#4c051922,#0c0813 70%)">
+                    <span class="text-5xl">🚫</span>
+                    <h2 class="text-lg font-bold text-rose-400">Castillo ocupado</h2>
+                    <p class="text-stone-300 text-sm">${data || 'Este castillo ya tiene un jugador conectado.'}</p>
+                    <button onclick="retryJoinCastleSelect()" class="rpg-btn mt-2 py-3 px-6 text-sm font-medieval text-white font-bold rounded-xl">
+                        Elegir otro castillo
+                    </button>
+                </div>`;
+                return;
+            }
+
             if (view === 'controller') {
                 const state  = data;
                 const castle = state.castles?.[myTeamIndex];
-                if (!castle) { showMobileScreen('waiting', '⏳ Esperando datos...'); return; }
+                if (!castle) {
+                    const msg = (state.status === 'setup' || !state.status)
+                        ? '⏳ Espera a que el profesor inicie el juego...'
+                        : '⏳ Esperando datos...';
+                    showMobileScreen('waiting', msg);
+                    return;
+                }
                 const cc = CC[castle.color]||{};
                 const isMyTurn = state.currentTurn === myTeamIndex && state.status === 'playing' && !castle.destroyed;
                 const hpPct = Math.max(0,(castle.hp/5)*100);
@@ -2570,7 +2684,7 @@
                             ? '<p class="text-rose-400 font-bold">💀 Castillo destruido</p>'
                             : isMyTurn
                                 ? '<p class="text-amber-400 font-bold text-xl">⚔️ ¡ES TU TURNO!</p>'
-                                : `<p class="text-stone-500 text-xs mb-1">Turno de:</p><p class="text-white font-bold text-sm">${state.castles?.[state.currentTurn]?.name||'...'}</p>`}
+                                : `<p class="text-stone-400 text-sm font-bold mb-1">⏳ Espera tu turno</p><p class="text-stone-500 text-xs">Ahora juega: <span class="text-white font-bold">${state.castles?.[state.currentTurn]?.name||'...'}</span></p>`}
                     </div>
                     ${isMyTurn && !castle.destroyed ? `
                     <div class="flex flex-col gap-3">
@@ -2743,9 +2857,9 @@
         // se re-expongan explícitamente en `window` para seguir funcionando.
         Object.assign(window, {
             activateAndOpenQR, addEditorRow, addSetupCastle, closeEditorSafe, closeModal,
-            copiarLinkCortoBC, downloadTemplate, exportToExcel, importFromExcel, mobileAction,
+            closeTutorialModal, copiarLinkCortoBC, downloadTemplate, exportToExcel, importFromExcel, mobileAction,
             openBonusChestSelection, openQuestionEditor, promptQuestionSelection,
-            removeEditorRow, removeSetupCastle, resetToDefaultQuestions, saveEditorChanges,
+            removeEditorRow, removeSetupCastle, resetToDefaultQuestions, retryJoinCastleSelect, saveEditorChanges,
             selectCastleAndConnect, showMobileScreen, startGame, toggleFullscreen,
             toggleMusic, triggerResetConfirm, triggerResetGame, updateVolume
         });
