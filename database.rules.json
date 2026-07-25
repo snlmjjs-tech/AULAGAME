@@ -19,6 +19,12 @@
             }
           },
 
+          "buzz": {
+            "$jugadorId": {
+              ".write": "auth != null || !data.exists()"
+            }
+          },
+
           "respuestas": {
             "$equipoId": {
               ".write": "auth != null || (newData.child('jugadorId').val() != null && root.child('salasVivo/'+$juego+'/'+$sala+'/jugadores/'+newData.child('jugadorId').val()+'/equipoId').val() === $equipoId)"

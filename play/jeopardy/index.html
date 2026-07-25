@@ -4,8 +4,9 @@
 <script>document.documentElement.style.visibility="hidden";</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jeopardy de Verbos 🎯 | Instituto Comercial Alberto Valenzuela Llanos</title>
+<title>Jeopardy 🎯 | Instituto Comercial Alberto Valenzuela Llanos</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{
   --azul:#2563eb; --rojo:#dc2626; --verde:#16a34a; --amarillo:#eab308; --morado:#9333ea;
@@ -64,12 +65,24 @@ button:active{transform:scale(.95);}
   background:var(--panel); border-radius:14px; padding:14px; border:2px solid transparent;
 }
 .team-input label{display:block; font-size:.75rem; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:1px;}
+.team-input{position:relative;}
 .team-input input{
   width:100%; padding:10px; border-radius:8px; border:none; background:var(--panel2); color:var(--ink);
   font-size:1rem; font-family:inherit; text-align:center;
 }
+.team-remove-btn{
+  position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%;
+  background:#3a2030; color:#ff9b9b; font-size:.8rem; line-height:24px; padding:0;
+}
 .setup-actions{display:flex; gap:12px; justify-content:center; flex-wrap:wrap;}
 .setup-actions button{padding:14px 26px; font-size:1rem; border-radius:12px;}
+
+/* ---------- Chicharra (buzzer) ---------- */
+.buzz-row{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:16px 0;}
+.buzz-btn{padding:12px 16px; border-radius:12px; color:#fff; font-size:.9rem; text-shadow:0 1px 3px rgba(0,0,0,.4);}
+.buzz-btn:disabled{opacity:.35; cursor:not-allowed;}
+.buzz-btn.winner{outline:4px solid var(--gold); transform:scale(1.08); box-shadow:0 0 20px rgba(255,212,59,.6);}
+#buzzResult{display:none; margin:0 0 14px; font-size:1.15rem; font-weight:bold; color:var(--gold); text-align:center;}
 
 /* ---------- Scoreboard ---------- */
 .scoreboard{
@@ -160,6 +173,24 @@ table.qtable input, table.qtable select{width:100%; padding:6px; background:#0f1
 
 .hint{color:var(--muted); font-size:.8rem; margin:8px 0 16px;}
 footer.credit{text-align:center; color:var(--muted); font-size:.75rem; padding:20px;}
+
+/* ---------- MODO QR: pantalla del alumno (celular) ---------- */
+.qr-box-wrap{background:#fff; padding:10px; border-radius:14px; display:inline-block; margin:14px 0;}
+#student-app{
+  display:none; flex-direction:column; align-items:center; justify-content:flex-start; gap:16px;
+  max-width:460px; margin:0 auto; padding:26px 16px 60px; min-height:100vh; text-align:center;
+  background:var(--bg); color:var(--ink); font-family:'Trebuchet MS','Segoe UI',sans-serif;
+}
+#student-app.show{display:flex;}
+.student-team-btn{
+  width:100%; padding:16px; border-radius:12px; font-weight:bold; font-size:1rem; color:#fff;
+  text-shadow:0 1px 3px rgba(0,0,0,.4); cursor:pointer;
+}
+.student-buzz-btn{
+  width:100%; padding:34px 18px; border-radius:20px; font-weight:900; font-size:1.5rem; color:#fff;
+  background:linear-gradient(135deg,#ffe066,var(--gold)); color:#3a2c00; box-shadow:0 6px 0 #b38f00;
+}
+.student-buzz-btn:disabled{opacity:.4; box-shadow:none;}
 @media(max-width:900px){
   .board{grid-template-columns:repeat(5,1fr); gap:5px;}
   .cell{font-size:1rem;}
@@ -176,11 +207,12 @@ footer.credit{text-align:center; color:var(--muted); font-size:.75rem; padding:2
   <div class="brand">
     <div class="logo">🎯</div>
     <div>
-      <h1>JEOPARDY DE VERBOS</h1>
-      <small>English Verbs Challenge · 5 equipos · 5 categorías</small>
+      <h1>JEOPARDY</h1>
+      <small>Trivia por categorías · hasta 5 equipos · 5 categorías</small>
     </div>
   </div>
   <div class="topbtns">
+    <button class="btn" id="qrBtn">📱 Celulares</button>
     <button class="btn" id="musicBtn">🔊 Música</button>
     <button class="btn" id="editorBtn">✏️ Editar preguntas</button>
     <button class="btn" id="bonusBtn">🎁 Bonus</button>
@@ -197,6 +229,16 @@ footer.credit{text-align:center; color:var(--muted); font-size:.75rem; padding:2
     <div class="setup-actions">
       <button class="btn btn-gold" id="startBtn">▶️ Comenzar juego</button>
       <button class="btn" id="setupEditorBtn">✏️ Editar preguntas antes de jugar</button>
+    </div>
+
+    <div style="margin-top:26px; display:flex; flex-direction:column; align-items:center; gap:6px;">
+      <div style="display:flex; align-items:center; gap:8px; font-size:.85rem; color:var(--muted);">
+        <span style="font-size:1.3rem;">👉</span>
+        <span>Escanea este código para unirte desde tu celular</span>
+      </div>
+      <div id="qrBoxMenu" style="background:#fff; padding:8px; border-radius:10px; min-width:140px; min-height:140px;"></div>
+      <div id="qrSalaCodeMenu" style="font-size:1.1rem; font-weight:800; color:var(--gold);">------</div>
+      <p id="qrLinkCortoMenu" style="font-size:.75rem; color:var(--muted); margin:0;"></p>
     </div>
   </div>
 </div>
@@ -241,6 +283,9 @@ footer.credit{text-align:center; color:var(--muted); font-size:.75rem; padding:2
     <span class="tag" id="modalTag">Categoría</span>
     <div class="pts" id="modalPts">50 PUNTOS</div>
     <div class="qtext" id="modalQ">Pregunta...</div>
+    <div class="hint" id="buzzHint">🔔 ¿Qué equipo presiona primero?</div>
+    <div class="buzz-row" id="buzzRow"></div>
+    <div id="buzzResult"></div>
     <div class="atext" id="modalA">Respuesta...</div>
     <div class="modal-actions">
       <button class="btn btn-gold" id="revealBtn">👁️ Revelar respuesta</button>
@@ -253,8 +298,45 @@ footer.credit{text-align:center; color:var(--muted); font-size:.75rem; padding:2
 
 <footer class="credit">Instituto Comercial Alberto Valenzuela Llanos · Departamento de Inglés</footer>
 
+<!-- MODO QR -->
+<div class="overlay" id="qrOverlay">
+  <div class="modal" style="max-width:420px;">
+    <span class="tag" id="qrTag" style="background:var(--azul);">📱 Conecta a tus jugadores</span>
+    <div class="qr-box-wrap"><div id="qrBox"></div></div>
+    <p class="hint">Cada equipo escanea el mismo código y elige su equipo en el celular</p>
+    <div id="qrSalaCode" style="font-size:1.6rem; font-weight:800; color:var(--gold); margin-bottom:8px;">------</div>
+    <p class="hint" id="qrLinkCorto"></p>
+    <div class="modal-actions">
+      <button class="btn btn-gold" id="qrCerrarBtn">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODO QR: pantalla del alumno (celular) -->
+<div id="student-app">
+  <div id="studentSelect">
+    <h2 style="color:var(--gold);">🎯 JEOPARDY</h2>
+    <p class="hint">¿Qué equipo eres?</p>
+    <div id="studentTeamButtons" style="display:flex; flex-direction:column; gap:10px; width:100%;"></div>
+  </div>
+  <div id="studentPlay" style="display:none; width:100%;">
+    <h2 style="color:var(--gold); margin-bottom:10px;" id="studentTeamLabel"></h2>
+    <p id="studentEstado" class="hint" style="font-size:.95rem;">Esperando a que el profe abra una pregunta…</p>
+    <button class="student-buzz-btn hidden" id="studentBuzzBtn" style="display:none;">🔔 ¡LO SÉ!</button>
+  </div>
+</div>
+
 <script type="module">
 import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
+import { refSala, escuchar, escribir, actualizar, marcaTiempo, idJugador } from "../shared/live-room.js";
+import { pintarQR } from "../shared/qr-inline.js";
+import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
+
+/* ================= MODO QR: alumno vs. profesor ================= */
+const _paramsJeopardy = new URLSearchParams(location.search);
+const SALA_ALUMNO = _paramsJeopardy.get("room");
+const ES_ALUMNO = !!SALA_ALUMNO;
+
 /* =========================================================
    DATA
 ========================================================= */
@@ -308,10 +390,15 @@ const DEFAULT_BONUS_QUESTIONS = [
   {q:'Convierte a voz pasiva: "They build houses."',a:'HOUSES ARE BUILT (BY THEM).'},
 ];
 
-/* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore. */
-const { saved: SAVED_JEOPARDY, uid: CURRENT_UID } = await new Promise(function(resolve){
-  initGameSync('jeopardy', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
-});
+/* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore.
+   Un alumno que entra con ?room=... no tiene sesión de profesor: se salta el gate. */
+let SAVED_JEOPARDY = null, CURRENT_UID = null;
+if(!ES_ALUMNO){
+  const _r = await new Promise(function(resolve){
+    initGameSync('jeopardy', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+  });
+  SAVED_JEOPARDY = _r.saved; CURRENT_UID = _r.uid;
+}
 
 /* Valida que lo guardado tenga la forma esperada antes de usarlo; si no, cae a los defaults. */
 function questionsFromSaved(saved){
@@ -349,6 +436,10 @@ let teams = [];
 let currentTeam = 0;
 let usedCells = new Set();
 let musicOn = false;
+let salaActual = null;       // código de sala en vivo (null = modo QR no activado)
+
+/* Lista editable de equipos antes de empezar (se puede quitar equipos, mínimo 2). */
+let teamSetup = CATEGORIES.map(function(c,i){ return { name: 'Equipo ' + (i+1), color: c.color }; });
 
 /* =========================================================
    AUDIO (Web Audio API — procedural, no external files)
@@ -406,29 +497,47 @@ function showScreen(id){
 function buildTeamInputs(){
   const wrap = document.getElementById("teamInputs");
   wrap.innerHTML = "";
-  const colors = CATEGORIES.map(c=>c.color);
-  for(let i=0;i<5;i++){
+  teamSetup.forEach(function(t, i){
+    // conserva lo que el profe ya haya escrito en el input antes de re-renderizar
+    const existing = document.getElementById("teamName"+i);
+    if(existing) t.name = existing.value.trim() || t.name;
+  });
+  teamSetup.forEach(function(t, i){
     const div = document.createElement("div");
     div.className = "team-input";
-    div.style.borderColor = colors[i];
-    div.innerHTML = `<label>Equipo ${i+1}</label><input type="text" id="teamName${i}" value="Equipo ${i+1}" maxlength="20">`;
+    div.style.borderColor = t.color;
+    div.innerHTML = `<label>Equipo ${i+1}</label><input type="text" id="teamName${i}" value="${escapeAttr(t.name)}" maxlength="20">`
+      + (teamSetup.length > 2 ? `<button type="button" class="team-remove-btn" data-remove-team="${i}" title="Quitar equipo">✕</button>` : '');
     wrap.appendChild(div);
-  }
+  });
+  wrap.querySelectorAll('[data-remove-team]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      const idx = Number(btn.getAttribute('data-remove-team'));
+      if(teamSetup.length <= 2) return;
+      teamSetup.splice(idx, 1);
+      buildTeamInputs();
+    });
+  });
+}
+function resetTeamSetup(){
+  teamSetup = CATEGORIES.map(function(c,i){ return { name: 'Equipo ' + (i+1), color: c.color }; });
+  buildTeamInputs();
 }
 buildTeamInputs();
 
 document.getElementById("startBtn").addEventListener("click", ()=>{
-  teams = [];
-  for(let i=0;i<5;i++){
-    const val = document.getElementById("teamName"+i).value.trim() || ("Equipo "+(i+1));
-    teams.push({name:val, score:0, color: CATEGORIES[i].color});
-  }
+  teams = teamSetup.map(function(t, i){
+    const input = document.getElementById("teamName"+i);
+    const val = (input ? input.value.trim() : '') || t.name;
+    return { name: val, score: 0, color: t.color };
+  });
   currentTeam = 0;
   usedCells = new Set();
   renderScoreboard();
   renderBoard();
   showScreen("gameScreen");
   sfxSelect();
+  syncRoster();
 });
 
 document.getElementById("setupEditorBtn").addEventListener("click", ()=>{ openEditor(); });
@@ -442,7 +551,7 @@ document.getElementById("resetBtn").addEventListener("click", ()=>{
   }
 });
 document.getElementById("playAgainBtn").addEventListener("click", ()=>{
-  buildTeamInputs();
+  resetTeamSetup();
   showScreen("setupScreen");
 });
 
@@ -459,6 +568,7 @@ function renderScoreboard(){
       <div class="tscore">${t.score}</div>`;
     sb.appendChild(card);
   });
+  syncRoster();
 }
 
 /* ---------- Board ---------- */
@@ -502,11 +612,45 @@ let activeCellKey = null;
 let activeIsBonus = false;
 let activeBonusIdx = null;
 
+/* ---------- Chicharra (buzzer) ---------- */
+let buzzGanadorIdx = null;
+
+function renderBuzzRow(){
+  const row = document.getElementById("buzzRow");
+  const result = document.getElementById("buzzResult");
+  row.innerHTML = "";
+  teams.forEach((t,i)=>{
+    const b = document.createElement("button");
+    b.className = "buzz-btn" + (buzzGanadorIdx===i ? " winner" : "");
+    b.style.background = t.color;
+    b.textContent = "🔔 " + t.name;
+    b.disabled = buzzGanadorIdx !== null;
+    b.addEventListener("click", ()=>presionarChicharra(i));
+    row.appendChild(b);
+  });
+  document.getElementById("buzzHint").style.display = buzzGanadorIdx===null ? "block" : "none";
+  if(buzzGanadorIdx !== null){
+    result.textContent = "🔔 ¡" + teams[buzzGanadorIdx].name.toUpperCase() + " PRESIONÓ PRIMERO!";
+    result.style.display = "block";
+  } else {
+    result.style.display = "none";
+  }
+}
+
+function presionarChicharra(idx){
+  if(buzzGanadorIdx !== null || !teams[idx]) return;
+  buzzGanadorIdx = idx;
+  sfxSelect();
+  renderBuzzRow();
+  if(salaActual) escribir(refSala("jeopardy", salaActual, "estado/buzzGanadorIdx"), idx);
+}
+
 function openQuestion(catKey, pts, cellKey){
   const item = QUESTIONS.find(q=>q.cat===catKey && q.pts===pts);
   if(!item) return;
   activeCellKey = cellKey; activeIsBonus = false;
   const cat = CATEGORIES.find(c=>c.key===catKey);
+  buzzGanadorIdx = null;
   sfxSelect();
   document.getElementById("modalTag").textContent = cat.name;
   document.getElementById("modalTag").style.background = cat.color;
@@ -518,8 +662,10 @@ function openQuestion(catKey, pts, cellKey){
   document.getElementById("awardHint").style.display = "none";
   document.getElementById("awardRow").classList.remove("shown");
   document.getElementById("revealBtn").style.display = "inline-block";
+  renderBuzzRow();
   buildAwardRow(pts);
   document.getElementById("overlay").classList.add("active");
+  syncPregunta(cat.name, pts);
 }
 
 function openBonus(){
@@ -527,6 +673,7 @@ function openBonus(){
   const idx = Math.floor(Math.random()*BONUS_QUESTIONS.length);
   activeBonusIdx = idx; activeIsBonus = true; activeCellKey = null;
   const item = BONUS_QUESTIONS[idx];
+  buzzGanadorIdx = null;
   sfxBonus();
   document.getElementById("modalTag").textContent = "🎁 PREGUNTA BONUS";
   document.getElementById("modalTag").style.background = "";
@@ -538,8 +685,10 @@ function openBonus(){
   document.getElementById("awardHint").style.display = "none";
   document.getElementById("awardRow").classList.remove("shown");
   document.getElementById("revealBtn").style.display = "inline-block";
+  renderBuzzRow();
   buildAwardRow(25);
   document.getElementById("overlay").classList.add("active");
+  syncPregunta("🎁 Pregunta bonus", 25);
 }
 document.getElementById("bonusBtn").addEventListener("click", openBonus);
 
@@ -589,6 +738,10 @@ function awardPoints(teamIdx, pts){
 
 function closeModal(){
   document.getElementById("overlay").classList.remove("active");
+  buzzGanadorIdx = null;
+  if(salaActual){
+    actualizar(refSala("jeopardy", salaActual, ""), { buzz: null, "estado/preguntaActiva": false, "estado/buzzGanadorIdx": null });
+  }
 }
 document.getElementById("closeModalBtn").addEventListener("click", closeModal);
 document.getElementById("overlay").addEventListener("click", (e)=>{
@@ -687,7 +840,7 @@ document.getElementById("exportBtn").addEventListener("click", ()=>{
   ws["!cols"] = [{wch:20},{wch:12},{wch:8},{wch:50},{wch:50},{wch:8}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Preguntas");
-  XLSX.writeFile(wb, "jeopardy_verbos_preguntas.xlsx");
+  XLSX.writeFile(wb, "jeopardy_preguntas.xlsx");
 });
 
 /* Import from Excel */
@@ -729,6 +882,196 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
   reader.readAsArrayBuffer(file);
   e.target.value = "";
 });
+
+/* =========================================================
+   MODO QR: sala en vivo para celulares
+========================================================= */
+
+/* Publica el roster de equipos (nombre/color/puntaje) y a quién le toca. */
+function syncRoster(){
+  if(!salaActual) return;
+  escribir(refSala("jeopardy", salaActual, "estado/equipos"), teams.map(function(t,i){
+    return { idx: i, nombre: t.name, color: t.color, score: t.score };
+  }));
+  escribir(refSala("jeopardy", salaActual, "estado/turnoEquipoIdx"), currentTeam);
+}
+
+/* Publica la pregunta activa (solo categoría/puntos, no el texto) y resetea la chicharra. */
+function syncPregunta(categoriaNombre, pts){
+  if(!salaActual) return;
+  actualizar(refSala("jeopardy", salaActual, ""), {
+    "buzz": null,
+    "estado/preguntaActiva": true,
+    "estado/categoria": categoriaNombre,
+    "estado/puntos": pts,
+    "estado/buzzGanadorIdx": null
+  });
+}
+
+let salaListenerListo = false;
+
+/* Crea (o reutiliza) la sala en vivo y pinta el QR en el menú principal y en
+   el modal de detalle a la vez — se puede llamar varias veces sin duplicar salas. */
+async function iniciarSalaQR(){
+  const r = await pintarQR({
+    juego: "jeopardy",
+    destino: "/play/jeopardy/",
+    contenedores: ["qrBoxMenu", "qrBox"],
+    links: ["qrLinkCortoMenu", "qrLinkCorto"]
+  });
+  if(!r) return null;
+  salaActual = r.sala;
+  const codeEl = document.getElementById("qrSalaCode");
+  const codeElMenu = document.getElementById("qrSalaCodeMenu");
+  if(codeEl) codeEl.textContent = r.sala;
+  if(codeElMenu) codeElMenu.textContent = r.sala;
+  syncRoster();
+  if(!salaListenerListo){
+    salaListenerListo = true;
+    // Un alumno presiona la chicharra desde su celular: gana quien llegue primero,
+    // igual que un clic local — ambos caminos comparten presionarChicharra().
+    escuchar(refSala("jeopardy", salaActual, "buzz"), function(datos){
+      if(buzzGanadorIdx !== null || !datos) return;
+      const primero = Object.values(datos)
+        .filter(function(e){ return e && typeof e.equipoIdx === "number" && teams[e.equipoIdx]; })
+        .sort(function(a,b){ return (a.enviadaEn||0) - (b.enviadaEn||0); })[0];
+      if(primero) presionarChicharra(primero.equipoIdx);
+    });
+  }
+  return salaActual;
+}
+
+async function abrirModalQR(){
+  const overlay = document.getElementById("qrOverlay");
+  overlay.classList.add("active");
+  if(salaActual) return;
+  const codeEl = document.getElementById("qrSalaCode");
+  codeEl.textContent = "Creando sala…";
+  try{
+    await iniciarSalaQR();
+  }catch(e){
+    codeEl.textContent = "Error al crear la sala";
+    toast("No se pudo crear la sala en vivo. Revisa tu conexión.");
+  }
+}
+document.getElementById("qrBtn").addEventListener("click", abrirModalQR);
+document.getElementById("qrCerrarBtn").addEventListener("click", ()=>{
+  document.getElementById("qrOverlay").classList.remove("active");
+});
+document.getElementById("qrOverlay").addEventListener("click", (e)=>{
+  if(e.target.id === "qrOverlay") document.getElementById("qrOverlay").classList.remove("active");
+});
+
+/* ---------------- Vista del alumno (celular) ---------------- */
+function initStudentView(){
+  document.querySelector(".topbar").style.display = "none";
+  document.querySelectorAll(".screen").forEach(function(s){ s.classList.remove("active"); });
+  document.getElementById("student-app").classList.add("show");
+  document.documentElement.style.visibility = "";
+
+  const jugadorId = idJugador(SALA_ALUMNO);
+  const equipoKey = "aulagame_jeopardy_equipo_" + SALA_ALUMNO;
+  let miEquipoIdx = sessionStorage.getItem(equipoKey);
+  miEquipoIdx = miEquipoIdx === null ? null : Number(miEquipoIdx);
+  let estado = null;
+  let yaPresiono = false;
+  let ultimaPregunta = undefined;
+
+  const selectEl = document.getElementById("studentSelect");
+  const playEl = document.getElementById("studentPlay");
+  const btnsWrap = document.getElementById("studentTeamButtons");
+  const estadoEl = document.getElementById("studentEstado");
+  const buzzBtn = document.getElementById("studentBuzzBtn");
+  const labelEl = document.getElementById("studentTeamLabel");
+
+  function elegirEquipo(idx, nombre){
+    miEquipoIdx = idx;
+    sessionStorage.setItem(equipoKey, String(idx));
+    escribir(refSala("jeopardy", SALA_ALUMNO, "jugadores/" + jugadorId), { equipoIdx: idx, unidoEn: marcaTiempo() });
+    selectEl.style.display = "none";
+    playEl.style.display = "block";
+    labelEl.textContent = nombre;
+    render();
+  }
+
+  buzzBtn.addEventListener("click", function(){
+    if(yaPresiono || miEquipoIdx === null) return;
+    yaPresiono = true;
+    buzzBtn.disabled = true;
+    escribir(refSala("jeopardy", SALA_ALUMNO, "buzz/" + jugadorId), {
+      equipoIdx: miEquipoIdx, jugadorId: jugadorId, enviadaEn: marcaTiempo()
+    });
+    estadoEl.textContent = "✓ ¡Presionaste! Esperando al profe…";
+  });
+
+  function render(){
+    if(!estado || miEquipoIdx === null) return;
+    if(estado.categoria !== ultimaPregunta){
+      ultimaPregunta = estado.categoria;
+      yaPresiono = false;
+      buzzBtn.disabled = false;
+    }
+    if(estado.buzzGanadorIdx !== null && estado.buzzGanadorIdx !== undefined){
+      buzzBtn.style.display = "none";
+      const equipoGanador = (estado.equipos || [])[estado.buzzGanadorIdx];
+      estadoEl.textContent = estado.buzzGanadorIdx === miEquipoIdx
+        ? "🔔 ¡Presionaste primero! Responde en voz alta."
+        : ("🔔 " + (equipoGanador ? equipoGanador.nombre : "Otro equipo") + " presionó primero. Esperando la siguiente…");
+    } else if(estado.preguntaActiva){
+      buzzBtn.style.display = "block";
+      buzzBtn.disabled = yaPresiono;
+      estadoEl.textContent = yaPresiono ? "✓ ¡Presionaste! Esperando al profe…" : ("🎯 " + (estado.categoria || "") + " — " + (estado.puntos || "") + " puntos. ¡Presiona si sabes la respuesta!");
+    } else {
+      buzzBtn.style.display = "none";
+      estadoEl.textContent = "Esperando a que el profe abra una pregunta…";
+    }
+  }
+
+  escuchar(refSala("jeopardy", SALA_ALUMNO, "estado"), function(datos){
+    estado = datos;
+    if(!estado) return;
+    if(miEquipoIdx === null){
+      btnsWrap.innerHTML = "";
+      (estado.equipos || []).forEach(function(t){
+        const btn = document.createElement("div");
+        btn.className = "student-team-btn";
+        btn.style.background = t.color;
+        btn.textContent = t.nombre;
+        btn.addEventListener("click", function(){ elegirEquipo(t.idx, t.nombre); });
+        btnsWrap.appendChild(btn);
+      });
+    } else {
+      selectEl.style.display = "none";
+      playEl.style.display = "block";
+      labelEl.textContent = (estado.equipos || [])[miEquipoIdx] ? estado.equipos[miEquipoIdx].nombre : "";
+      render();
+    }
+  });
+}
+
+if(ES_ALUMNO){
+  initStudentView();
+  mostrarTutorialSiPrimeraVez("jeopardy_alumno", {
+    titulo: "¿Cómo se juega? 🎯",
+    pasos: [
+      "Elige tu equipo tocándolo en la pantalla.",
+      "Cuando el profesor abra una pregunta, aparecerá el botón 🔔 ¡LO SÉ! — tócalo apenas sepas la respuesta.",
+      "El primer equipo en presionar responde en voz alta. Si te equivocas, el profesor pasa a otro equipo.",
+      "Los botones se bloquean hasta que el profesor pase a la siguiente pregunta."
+    ]
+  });
+} else {
+  iniciarSalaQR();
+  mostrarTutorialSiPrimeraVez("jeopardy_profe", {
+    titulo: "¿Cómo se juega? 🎯",
+    pasos: [
+      "Configura los nombres de los equipos (puedes quitar equipos de más con ✕) y presiona \"Comenzar juego\".",
+      "Los alumnos pueden escanear el QR del menú principal para unirse desde su celular y usarlo como chicharra.",
+      "Haz clic en una casilla del tablero: los equipos presionan su botón 🔔 (en pantalla o desde su celular) para responder.",
+      "Revela la respuesta y otorga los puntos al equipo que respondió correctamente."
+    ]
+  });
+}
 </script>
 </body>
 </html>
