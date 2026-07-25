@@ -365,12 +365,13 @@
   <!-- ============ SETUP SCREEN ============ -->
   <section id="setup-screen" class="panel">
     <div class="rules-box">
-      <h3>📋 Reglas de la clase</h3>
+      <h3>🏁 ¿Cómo se juega?</h3>
       <ul>
-        <li>No celulares durante el juego</li>
-        <li>No peleas — ¡respeto entre compañeros!</li>
-        <li>Presta atención cuando sea tu turno</li>
-        <li>Tira tu basura en el basurero</li>
+        <li>Elige cuántos jugadores participan, escribe sus nombres y presiona "¡Empezar la carrera!".</li>
+        <li>El QR es opcional: los alumnos pueden escanearlo para unirse desde su celular y lanzar el dado ellos mismos, o puedes jugar sin QR lanzando tú el dado en pantalla.</li>
+        <li>Cuando un jugador cae en una pregunta, evalúa su respuesta oral y marca correcto/incorrecto.</li>
+        <li>Si ganas un 🐢 caparazón, úsalo para atacar a otro equipo — desde la pantalla o desde el celular.</li>
+        <li>¡Gana quien llegue primero a la meta!</li>
       </ul>
     </div>
 
@@ -451,6 +452,10 @@
       <div class="panel" style="padding:16px; display:flex; align-items:center;">
         <button class="btn-blue small" id="qrBtn" style="width:100%; background:var(--blue); box-shadow:0 4px 0 var(--blue-dark);">📱 Conectar celulares</button>
       </div>
+
+      <div class="panel" style="padding:16px; display:flex; align-items:center;">
+        <button class="btn-ghost small" id="helpBtn" style="width:100%;">❓ Cómo se juega</button>
+      </div>
     </div>
 
     <!-- Leyenda, al final -->
@@ -494,6 +499,10 @@
         <span class="cat-badge" style="background:var(--blue);">❓ Pregunta</span>
         <div id="studentQuestionText" class="question-text"></div>
         <p style="font-size:12.5px; color:#666;">El profesor está evaluando tu respuesta oral…</p>
+      </div>
+      <div id="studentShellZone" class="hidden" style="margin-top:14px;">
+        <button class="btn-red" id="studentShellBtn" style="width:100%;">🐢 Usar caparazón</button>
+        <div id="studentShellTargets" class="hidden" style="margin-top:10px; display:flex; flex-direction:column; gap:8px;"></div>
       </div>
     </div>
   </div>
@@ -591,7 +600,7 @@
 import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 import { refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
 import { pintarQR } from "../shared/qr-inline.js";
-import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
+import { mostrarTutorial, mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
 /* ================= CONFIG ================= */
 const TOTAL_TILES = 31;
 const KART_COLORS = [
@@ -1264,6 +1273,7 @@ document.getElementById('qCorrectBtn').onclick = () => {
   const player = state.players[state.currentIndex];
   if(isShellQuestion){
     player.shells = (player.shells||0) + 1;
+    syncEstado();
     showToast(`✅ ¡Correcto! ${player.name} ganó un caparazón 🐢`);
   } else {
     showToast('✅ ¡Correcto!');
@@ -1346,6 +1356,7 @@ function useShellOn(target){
   const player = state.players[state.currentIndex];
   player.shells -= 1;
   renderSidebar();
+  syncEstado();
   showToast(`🐢 ¡${player.name} le lanzó un caparazón a ${target.name}!`);
   if(target.shield){
     target.shield = false;
@@ -1627,7 +1638,7 @@ function syncEstado(){
   if(!salaActual || !state.players.length) return;
   escribir(refSala('raceboard', salaActual, 'estado/turnoJugadorId'), state.players[state.currentIndex].id);
   escribir(refSala('raceboard', salaActual, 'estado/roster'), state.players.map(function(p){
-    return { id: p.id, nombre: p.name, color: p.color, position: p.position };
+    return { id: p.id, nombre: p.name, color: p.color, position: p.position, shells: p.shells || 0 };
   }));
 }
 
@@ -1652,11 +1663,18 @@ async function iniciarSalaQR(){
   if(!salaListenerListo){
     salaListenerListo = true;
     escuchar(refSala('raceboard', salaActual, 'respuestas'), function(datos){
-      if(!datos || awaitingResolution || state.gameOver) return;
+      if(!datos || state.gameOver) return;
       const turnoId = state.players[state.currentIndex].id;
       const peticion = datos[turnoId];
-      if(peticion && peticion.tipo === 'lanzar' && !rollBtn.disabled){
+      if(!peticion) return;
+      if(peticion.tipo === 'lanzar' && !awaitingResolution && !rollBtn.disabled){
         rollBtn.click();
+      } else if(peticion.tipo === 'caparazon'){
+        const player = state.players[state.currentIndex];
+        if(!(player.shells > 0)) return;
+        const target = state.players.find(function(p){ return String(p.id) === String(peticion.targetId); });
+        escribir(refSala('raceboard', salaActual, 'respuestas/' + turnoId), null);
+        if(target) useShellOn(target);
       }
     });
   }
@@ -1698,6 +1716,9 @@ function initStudentView(){
   const playEl = document.getElementById('studentPlay');
   const btnsWrap = document.getElementById('studentPlayerButtons');
   const rollBtnStudent = document.getElementById('studentRollBtn');
+  const shellZone = document.getElementById('studentShellZone');
+  const shellBtn = document.getElementById('studentShellBtn');
+  const shellTargets = document.getElementById('studentShellTargets');
 
   function elegirJugador(id){
     miId = String(id);
@@ -1748,7 +1769,34 @@ function initStudentView(){
       estadoEl.textContent = 'Turno de ' + (turno ? turno.nombre : '...') + ' — espera tu turno';
       rollBtnStudent.classList.add('hidden');
     }
+
+    if(soyYo && yo && yo.shells > 0){
+      shellZone.classList.remove('hidden');
+      renderShellTargets(roster);
+    } else {
+      shellZone.classList.add('hidden');
+      shellTargets.classList.add('hidden');
+    }
   }
+
+  function renderShellTargets(roster){
+    shellTargets.innerHTML = roster
+      .filter(function(p){ return String(p.id) !== String(miId); })
+      .map(function(p){ return '<button class="btn-red small" data-target="' + p.id + '" style="width:100%;">🐢 Atacar a ' + p.nombre + '</button>'; })
+      .join('');
+    shellTargets.querySelectorAll('[data-target]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        escribir(refSala('raceboard', SALA_ALUMNO, 'respuestas/' + miId), {
+          tipo: 'caparazon', targetId: btn.getAttribute('data-target'), jugadorId: jugadorId, enviadaEn: marcaTiempo()
+        });
+        shellTargets.classList.add('hidden');
+      });
+    });
+  }
+
+  shellBtn.addEventListener('click', function(){
+    shellTargets.classList.toggle('hidden');
+  });
 
   rollBtnStudent.addEventListener('click', function(){
     if(rollBtnStudent.disabled) return;
@@ -1775,6 +1823,17 @@ function initStudentView(){
   });
 }
 
+const TUTORIAL_PROFE = {
+  titulo: '¿Cómo se juega? 🏁',
+  pasos: [
+    'Elige cuántos jugadores participan y presiona "¡Empezar la carrera!".',
+    'El QR es opcional, solo mejora la experiencia: los alumnos pueden escanearlo para unirse desde su celular y lanzar el dado ellos mismos, pero también puedes jugar sin QR lanzando el dado tú mismo en pantalla.',
+    'Cuando un jugador cae en una pregunta, evalúa su respuesta y marca correcto/incorrecto.',
+    'Si un jugador gana un 🐢 caparazón, puede usarlo contra otro equipo desde la pantalla o desde su celular.',
+    '¡Gana quien llegue primero a la meta!'
+  ]
+};
+
 if(ES_ALUMNO){
   initStudentView();
   mostrarTutorialSiPrimeraVez('raceboard_alumno', {
@@ -1783,19 +1842,16 @@ if(ES_ALUMNO){
       'Elige quién eres tocando tu nombre.',
       'Cuando sea tu turno, toca "🎲 LANZAR DADO" para tirar desde tu celular.',
       'El profesor evalúa tu respuesta cuando caigas en una casilla de pregunta.',
+      'Si ganas un 🐢 caparazón, puedes usarlo para atacar a otro equipo desde tu celular.',
       '¡Gana quien llegue primero a la meta!'
     ]
   });
 } else {
   iniciarSalaQR();
-  mostrarTutorialSiPrimeraVez('raceboard_profe', {
-    titulo: '¿Cómo se juega? 🏁',
-    pasos: [
-      'Elige cuántos jugadores participan y presiona "¡Empezar la carrera!".',
-      'El QR es opcional, solo mejora la experiencia: los alumnos pueden escanearlo para unirse desde su celular y lanzar el dado ellos mismos, pero también puedes jugar sin QR lanzando el dado tú mismo en pantalla.',
-      'Cuando un jugador cae en una pregunta, evalúa su respuesta y marca correcto/incorrecto.',
-      '¡Gana quien llegue primero a la meta!'
-    ]
+  mostrarTutorialSiPrimeraVez('raceboard_profe', TUTORIAL_PROFE);
+  // Accesible en cualquier momento durante la partida, no solo al principio.
+  document.getElementById('helpBtn').addEventListener('click', function(){
+    mostrarTutorial('raceboard_profe', TUTORIAL_PROFE);
   });
 }
 </script>
