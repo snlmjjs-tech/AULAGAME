@@ -1381,7 +1381,7 @@ function renderJugadoresConectados(){
     const c = COLORS.find(function(x){ return x.key === (j && j.equipoId); });
     const nombre = c ? c.name : (j && j.equipoId) || '?';
     const hex = c ? c.hex : '#666';
-    return '<span class="chip" style="display:inline-flex; align-items:center; gap:6px; background:#1b1f38; border-radius:20px; padding:4px 6px 4px 10px; font-size:.8rem;">'
+    return '<span class="chip" style="display:inline-flex; align-items:center; gap:6px; background:#1b1f38; color:#fff; border-radius:20px; padding:4px 6px 4px 10px; font-size:.8rem;">'
       + '<span class="swatch" style="width:10px;height:10px;border-radius:50%;background:' + hex + ';display:inline-block;"></span>'
       + nombre
       + '<button data-quitar-jugador="' + id + '" title="Quitar jugador" style="border:none;background:#3a2030;color:#ff9b9b;border-radius:50%;width:18px;height:18px;line-height:18px;cursor:pointer;font-size:.75rem;">✕</button>'
