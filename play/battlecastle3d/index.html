@@ -613,10 +613,6 @@
                     <p class="text-[10px] font-medieval text-stone-500 uppercase tracking-widest">Sala</p>
                     <p id="qr-room-code" class="text-2xl font-black text-amber-400 tracking-widest font-cinzel">------</p>
                 </div>
-                <div class="w-full bg-stone-900/60 border border-stone-800 rounded-xl px-3 py-2 text-center">
-                    <p class="text-[9px] text-stone-500 font-medieval">Enlace directo:</p>
-                    <p id="qr-join-url" class="text-[9px] text-amber-300 font-medieval break-all mt-0.5"></p>
-                </div>
                 <div class="w-full bg-stone-900/60 border border-amber-700/40 rounded-xl px-3 py-2 flex items-center justify-center gap-3" id="qr-link-corto-box" style="display:none">
                     <div class="text-center">
                         <p class="text-[9px] text-stone-500 font-medieval">Link corto:</p>
@@ -2799,12 +2795,10 @@
             const joinUrl = baseUrl + '?room=' + currentRoomCode + '&names=' + namesQuery;
 
             const roomEl = document.getElementById('qr-room-code');
-            const urlEl  = document.getElementById('qr-join-url');
             const qrBox  = document.getElementById('qr-single-box');
             const warnEl = document.getElementById('qr-file-warning');
 
             if (roomEl) roomEl.textContent = currentRoomCode;
-            if (urlEl)  urlEl.textContent  = joinUrl;
             if (warnEl) warnEl.classList.toggle('hidden', window.location.protocol !== 'file:');
 
             const linkCortoBox = document.getElementById('qr-link-corto-box');
