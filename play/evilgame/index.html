@@ -1920,6 +1920,12 @@ function initStudentView(){
         btnsWrap.appendChild(btn);
       });
     } else {
+      // El equipo puede venir de sessionStorage (recarga de página a mitad
+      // de partida) en vez de un clic recién hecho en elegirEquipo(): hay que
+      // asegurar el cambio de pantalla acá también, si no el alumno queda
+      // viendo la pantalla vacía de selección para siempre.
+      selectEl.style.display = 'none';
+      playEl.style.display = 'block';
       render();
     }
   });
