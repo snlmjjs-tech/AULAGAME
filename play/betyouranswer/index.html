@@ -343,6 +343,7 @@ body{
       <div class="title-actions">
         <button class="btn btn-gold" id="playBtn">▶ PLAY</button>
         <button class="btn btn-outline" id="editBtnTitle">✏ Editar preguntas</button>
+        <button class="btn btn-outline" id="qrBtnTitle">📱 Conéctate con QR aquí</button>
       </div>
       <div class="credit">CREATED AND DEVELOPED BY MR. NUÑEZ · versión digital</div>
     </div>
@@ -1086,6 +1087,7 @@ async function abrirModalQR(){
   }
 }
 $('#qrBtn').addEventListener('click', abrirModalQR);
+$('#qrBtnTitle').addEventListener('click', abrirModalQR);
 $('#qrCerrarBtn').addEventListener('click', ()=> $('#modalQR').classList.add('hidden'));
 $('#modalQR').addEventListener('click', e=>{ if(e.target.id==='modalQR') $('#modalQR').classList.add('hidden'); });
 
