@@ -674,6 +674,7 @@
                 <li class="flex gap-3"><span class="text-xl shrink-0">📜</span><span>Si respondes <strong class="text-emerald-400">correctamente</strong>, puedes atacar con la catapulta.</span></li>
                 <li class="flex gap-3"><span class="text-xl shrink-0">🎯</span><span>Elige a qué castillo enemigo atacar tocando (o haciendo clic en) su fortaleza en el mapa 3D.</span></li>
                 <li class="flex gap-3"><span class="text-xl shrink-0">❤️</span><span>Cada castillo tiene 5 puntos de vida. Al llegar a 0, ¡el castillo queda destruido y sale de la partida!</span></li>
+                <li class="flex gap-3"><span class="text-xl shrink-0">🎁</span><span>Habrá un <strong class="text-purple-300">cofre de recursos</strong> que el profesor puede abrir para ganar escudos, martillos u otras ayudas durante la batalla.</span></li>
                 <li class="flex gap-3"><span class="text-xl shrink-0">👑</span><span>Gana el último castillo que sigue en pie.</span></li>
             </ul>
             <button onclick="closeTutorialModal()" class="rpg-btn w-full py-3 px-6 text-base font-medieval text-white font-bold rounded-xl tracking-wider shadow-lg">
@@ -1393,10 +1394,6 @@
                     SafeStorage.removeItem(LOCAL_STORAGE_KEY);
                 }
             }
-
-            // Tutorial de reglas del juego: solo la primera vez en este dispositivo
-            // (funciona tanto para el profesor como para el alumno que entra por QR).
-            maybeShowTutorial();
         };
 
         // Dibuja los inputs de nombre para los castillos activos (2 a 5, ver setupCastles)
@@ -1490,6 +1487,7 @@
             logAction("⚔️ ¡Ha iniciado el asedio de los reinos! Demostrad vuestro conocimiento.", "warning");
             updateUI();
             saveGameState();
+            showGameTutorial();
         }
 
         function nextTurn() {
@@ -2016,14 +2014,12 @@
             document.getElementById('attack-toast')?.classList.add('hidden');
         }
 
-        // Tutorial de reglas: se muestra una sola vez por dispositivo (profesor y alumno)
-        const TUTORIAL_SEEN_KEY = 'bc_tutorial_seen_v1';
-        function maybeShowTutorial() {
-            if (SafeStorage.getItem(TUTORIAL_SEEN_KEY)) return;
+        // Tutorial de reglas: se muestra cada vez que comienza una batalla nueva
+        // (profesor al pulsar "Comenzar Batalla", alumno al unirse a su castillo).
+        function showGameTutorial() {
             openModal('modal-tutorial');
         }
         function closeTutorialModal() {
-            SafeStorage.setItem(TUTORIAL_SEEN_KEY, '1');
             closeModal('modal-tutorial');
         }
 
@@ -2608,6 +2604,7 @@
             if (!window.Peer) { showMobileScreen('waiting', '❌ PeerJS no cargó. ¿Hay internet?'); return; }
             myTeamIndex = castleIndex;
             showMobileScreen('waiting', '🔌 Uniéndote a tu castillo...');
+            showGameTutorial();
             if (hostDataConn?.open) {
                 try { hostDataConn.send({ action: 'selectCastle', ci: castleIndex }); } catch(e) {}
             } else {
