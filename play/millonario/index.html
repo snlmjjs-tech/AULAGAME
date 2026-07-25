@@ -691,6 +691,7 @@ p{margin:0;}
     <div class="home-actions">
       <button class="btn btn-primary" id="btnGoPlayers">🎮 Empezar Juego</button>
       <button class="btn btn-secondary" id="btnGoEditor">✏️ Editar Preguntas</button>
+      <button class="btn btn-secondary" id="btnGoQRHome">📱 Conéctate con QR aquí</button>
     </div>
     <p class="credit">Basado en el juego original de clases · Digitalizado y mejorado</p>
   </section>
@@ -1968,6 +1969,7 @@ async function abrirModalQR(){
   }
 }
 $("qrBtn").addEventListener("click", abrirModalQR);
+$("btnGoQRHome").addEventListener("click", ()=>{ playClick(); abrirModalQR(); });
 $("qrCerrarBtn").addEventListener("click", ()=> $("modalQR").classList.remove("active"));
 
 /* ---------------- Vista del alumno (celular) ---------------- */
