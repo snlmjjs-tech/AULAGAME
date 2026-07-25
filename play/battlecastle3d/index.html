@@ -670,7 +670,7 @@
             <h3 class="text-2xl font-decorative text-center text-amber-400 mb-4 font-bold">🏰 ¿CÓMO SE JUEGA? ⚔️</h3>
             <ul class="space-y-3 text-sm text-stone-300 font-medieval leading-relaxed mb-6">
                 <li class="flex gap-3"><span class="text-xl shrink-0">🏰</span><span>Cada <strong class="text-amber-300">castillo</strong> representa a un equipo de la clase.</span></li>
-                <li class="flex gap-3"><span class="text-xl shrink-0">🔄</span><span>Los castillos se turnan uno a uno. En tu turno, respondes una pregunta de verbos irregulares.</span></li>
+                <li class="flex gap-3"><span class="text-xl shrink-0">🔄</span><span>Los castillos se turnan uno a uno. En tu turno, debes responder la pregunta.</span></li>
                 <li class="flex gap-3"><span class="text-xl shrink-0">📜</span><span>Si respondes <strong class="text-emerald-400">correctamente</strong>, puedes atacar con la catapulta.</span></li>
                 <li class="flex gap-3"><span class="text-xl shrink-0">🎯</span><span>Elige a qué castillo enemigo atacar tocando (o haciendo clic en) su fortaleza en el mapa 3D.</span></li>
                 <li class="flex gap-3"><span class="text-xl shrink-0">❤️</span><span>Cada castillo tiene 5 puntos de vida. Al llegar a 0, ¡el castillo queda destruido y sale de la partida!</span></li>
@@ -1413,7 +1413,6 @@
                         <div class="w-full">
                             <label class="text-[10px] uppercase tracking-widest font-bold ${colorConfig.accent}">${colorConfig.name}</label>
                             <input id="input-castle-${i}" type="text" value="${name}" maxlength="20"
-                                oninput="setupCastles[${i}] = this.value"
                                 class="w-full bg-amber-50/95 border-2 border-amber-950/30 rounded-lg px-3 py-1.5 text-stone-900 font-semibold focus:border-amber-700 outline-none text-sm">
                         </div>
                         <button type="button" onclick="removeSetupCastle(${i})" title="Eliminar castillo"
@@ -1428,6 +1427,21 @@
                 addBtn.classList.toggle("opacity-30", atMax);
                 addBtn.classList.toggle("pointer-events-none", atMax);
             }
+            // Los inputs de nombre se conectan con addEventListener (no con un
+            // atributo oninput inline) porque este script es un módulo: un
+            // oninput="setupCastles[i]=..." inline no puede ver la variable
+            // `setupCastles` del scope del módulo y fallaría en silencio.
+            setupCastles.forEach((name, i) => {
+                const inp = document.getElementById(`input-castle-${i}`);
+                if (!inp) return;
+                inp.addEventListener('input', () => {
+                    setupCastles[i] = inp.value;
+                    if (window.broadcastStateToPlayers) window.broadcastStateToPlayers();
+                });
+            });
+            // Los celulares que ya están conectados eligiendo castillo (o esperando)
+            // ven en vivo la cantidad de castillos y sus nombres actualizados.
+            if (window.broadcastStateToPlayers) window.broadcastStateToPlayers();
         }
 
         function addSetupCastle() {
@@ -2346,11 +2360,13 @@
         let isHostDevice  = true;
         let myTeamIndex   = -1;
         let hostDataConn  = null;
-        const teamConns   = {};
+        const teamConns   = {};  // ci -> [conn] — solo conexiones ya asignadas a un castillo
+        let allConns      = [];  // todas las conexiones abiertas (asignadas o eligiendo aún)
+        let pendingSelectCi = null; // castillo elegido antes de que la conexión terminara de abrir
         let mobileLastState = null;
         let currentRoomCode = null;
         let qrModeActive  = false; // el profesor activa el modo QR explícitamente
-        let joinCastleNames = []; // nombres personalizados leídos del QR, antes de conectar con el host
+        let joinCastleNames = []; // nombres leídos del QR como respaldo inicial, antes de recibir el estado en vivo
         let rejectedByHost = false; // evita que el handler 'close' pise el mensaje de rechazo
 
         // Código de sala: 6 dígitos numéricos
@@ -2380,6 +2396,10 @@
                 document.getElementById('three-loading')?.style.setProperty('display','none');
                 document.getElementById('battle-arena')?.style.setProperty('display','none');
                 showMobileScreen('castleSelect', null);
+                // Se conecta de inmediato (sin elegir castillo todavía) para recibir
+                // los nombres reales en vivo, por si el profe los cambió después de
+                // generar el QR.
+                connectToHostAsPlayer(currentRoomCode);
             } else {
                 // MODO HOST: pantalla principal
                 isHostDevice = true;
@@ -2407,24 +2427,21 @@
                 bcPeer.on('open', () => updateNetBadge('online'));
                 bcPeer.on('connection', conn => {
                     conn.on('open', () => {
-                        const ci = parseInt(conn.metadata?.ci);
-                        if (isNaN(ci) || ci < 0 || ci > 4) return;
-                        // Un solo dispositivo por castillo: si ya hay un jugador conectado
-                        // a este castillo, se rechaza la nueva conexión con un mensaje claro.
-                        if (teamConns[ci] && teamConns[ci].length > 0) {
-                            sendToConn(conn, { type: 'rejected', reason: 'Este castillo ya tiene un jugador conectado.' });
-                            setTimeout(() => { try { conn.close(); } catch(e) {} }, 300);
-                            return;
-                        }
-                        teamConns[ci] = [conn];
-                        updateConnBadge();
+                        // La conexión llega sin castillo asignado todavía: se registra
+                        // como "viendo" para que reciba el estado (nombres, etc.) en
+                        // vivo mientras el alumno decide a qué castillo unirse.
+                        allConns.push(conn);
                         sendToConn(conn, { type: 'state', ...buildSnap() });
                     });
                     conn.on('data', data => {
-                        const ci = parseInt(conn.metadata?.ci);
-                        if (!isNaN(ci)) handlePlayerAction(data, ci);
+                        if (data && data.action === 'selectCastle') {
+                            handleSelectCastle(conn, data.ci);
+                            return;
+                        }
+                        if (typeof conn.__ci === 'number') handlePlayerAction(data, conn.__ci);
                     });
                     conn.on('close', () => {
+                        allConns = allConns.filter(c => c !== conn);
                         Object.keys(teamConns).forEach(k => {
                             teamConns[k] = (teamConns[k]||[]).filter(x => x !== conn);
                             if (!teamConns[k].length) delete teamConns[k];
@@ -2442,11 +2459,45 @@
             } catch(e) { updateNetBadge('offline'); }
         }
 
+        // Un solo dispositivo por castillo: el alumno elige (o cambia de) castillo
+        // enviando este mensaje por su conexión ya abierta, en vez de reconectar.
+        function handleSelectCastle(conn, ciRaw) {
+            const ci = parseInt(ciRaw);
+            if (isNaN(ci) || ci < 0 || ci > 4) return;
+            if (teamConns[ci] && teamConns[ci].length > 0 && teamConns[ci][0] !== conn) {
+                sendToConn(conn, { type: 'rejected', reason: 'Este castillo ya tiene un jugador conectado.' });
+                return;
+            }
+            // Libera cualquier castillo previamente asignado a esta misma conexión.
+            Object.keys(teamConns).forEach(k => {
+                teamConns[k] = (teamConns[k]||[]).filter(c => c !== conn);
+                if (!teamConns[k].length) delete teamConns[k];
+            });
+            teamConns[ci] = [conn];
+            conn.__ci = ci;
+            updateConnBadge();
+            sendToConn(conn, { type: 'state', ...buildSnap() });
+        }
+
         function buildSnap() {
+            // Antes de "COMENZAR BATALLA" (gameState.castles todavía vacío), se
+            // envían los nombres provisionales de la pantalla de configuración,
+            // para que el celular muestre el nombre real y en vivo al elegir
+            // castillo (incluso si el profe lo cambia después de generar el QR).
+            if (!gameState.castles || !gameState.castles.length) {
+                return {
+                    currentTurn: -1,
+                    status: 'setup',
+                    castles: setupCastles.map((name, i) => ({
+                        name: name, color: CASTLE_COLORS[i], hp: 5,
+                        shield: 0, hammer: 0, superbomb: false, destroyed: false, bonusCooldown: 0
+                    }))
+                };
+            }
             return {
                 currentTurn: gameState.currentTurn,
                 status: gameState.status || 'setup',
-                castles: (gameState.castles||[]).map(c => ({
+                castles: gameState.castles.map(c => ({
                     name: c.name, color: c.color, hp: c.hp,
                     shield: c.shield, hammer: c.hammer, superbomb: c.superbomb,
                     destroyed: c.destroyed, bonusCooldown: c.bonusCooldown||0
@@ -2465,8 +2516,7 @@
         window.broadcastStateToPlayers = function() {
             if (!isHostDevice || !qrModeActive) return;
             const snap = { type: 'state', ...buildSnap() };
-            Object.keys(teamConns).forEach(k =>
-                (teamConns[k]||[]).forEach(conn => sendToConn(conn, snap)));
+            allConns.forEach(conn => sendToConn(conn, snap));
         };
 
         function handlePlayerAction(data, ci) {
@@ -2524,50 +2574,69 @@
         }
 
         // ══════════════ MODO CELULAR ═══════════════════════════════════════════
-        // El estudiante toca su castillo → se conecta al host con ese índice
-        function selectCastleAndConnect(castleIndex) {
-            myTeamIndex = castleIndex;
-            rejectedByHost = false;
-            initAsPlayer(currentRoomCode, castleIndex);
-        }
-
-        // Vuelve a la pantalla de selección de castillo (ej. tras ser rechazado
-        // por estar ese castillo ya ocupado por otro dispositivo).
-        function retryJoinCastleSelect() {
-            rejectedByHost = false;
-            try { hostDataConn?.close(); } catch(e) {}
-            try { bcPeer?.destroy(); } catch(e) {}
-            bcPeer = null;
-            hostDataConn = null;
-            myTeamIndex = -1;
-            showMobileScreen('castleSelect', mobileLastState);
-        }
-
-        function initAsPlayer(roomCode, castleIndex) {
-            showMobileScreen('waiting', '🔌 Conectando...');
-            if (!window.Peer) { showMobileScreen('waiting', '❌ PeerJS no cargó. ¿Hay internet?'); return; }
+        // Se conecta al host apenas se abre el link/QR (sin castillo elegido
+        // todavía), para recibir los nombres reales en vivo mientras el alumno
+        // decide. La misma conexión se reutiliza para elegir/cambiar de castillo.
+        function connectToHostAsPlayer(roomCode) {
+            if (!window.Peer) return;
             try {
                 bcPeer = new Peer({ host: '0.peerjs.com', port: 443, path: '/', secure: true, debug: 0 });
                 bcPeer.on('open', () => {
-                    hostDataConn = bcPeer.connect('bcgame-' + roomCode, {
-                        metadata: { ci: castleIndex }, reliable: true
+                    hostDataConn = bcPeer.connect('bcgame-' + roomCode, { reliable: true });
+                    hostDataConn.on('open', () => {
+                        if (pendingSelectCi !== null) {
+                            const ci = pendingSelectCi;
+                            pendingSelectCi = null;
+                            try { hostDataConn.send({ action: 'selectCastle', ci: ci }); } catch(e) {}
+                        }
                     });
-                    hostDataConn.on('open',  () => showMobileScreen('waiting', '⏳ Espera a que el profesor inicie el juego...'));
                     hostDataConn.on('data',  msg => handleMobileMsg(msg));
-                    hostDataConn.on('close', () => { if (!rejectedByHost) showMobileScreen('waiting', '⚠️ Conexión perdida. Recarga la página.'); });
-                    hostDataConn.on('error', () => showMobileScreen('waiting', '⚠️ Error de conexión.'));
+                    hostDataConn.on('close', () => { if (!rejectedByHost && myTeamIndex >= 0) showMobileScreen('waiting', '⚠️ Conexión perdida. Recarga la página.'); });
+                    hostDataConn.on('error', () => { if (myTeamIndex >= 0) showMobileScreen('waiting', '⚠️ Error de conexión.'); });
                 });
-                bcPeer.on('error', () => showMobileScreen('waiting', '❌ No se pudo conectar al host.'));
-            } catch(e) { showMobileScreen('waiting', '❌ Error inesperado.'); }
+                bcPeer.on('error', () => { if (myTeamIndex >= 0) showMobileScreen('waiting', '❌ No se pudo conectar al host.'); });
+            } catch(e) {}
         }
+
+        // El estudiante toca su castillo → lo pide por la conexión ya abierta
+        // (o, si todavía no terminó de conectar, se guarda para pedirlo apenas abra).
+        function selectCastleAndConnect(castleIndex) {
+            rejectedByHost = false;
+            if (!window.Peer) { showMobileScreen('waiting', '❌ PeerJS no cargó. ¿Hay internet?'); return; }
+            myTeamIndex = castleIndex;
+            showMobileScreen('waiting', '🔌 Uniéndote a tu castillo...');
+            if (hostDataConn?.open) {
+                try { hostDataConn.send({ action: 'selectCastle', ci: castleIndex }); } catch(e) {}
+            } else {
+                pendingSelectCi = castleIndex;
+                if (!bcPeer) connectToHostAsPlayer(currentRoomCode);
+            }
+        }
+
+        // Vuelve a la pantalla de selección de castillo (ej. tras ser rechazado
+        // por estar ese castillo ya ocupado por otro dispositivo, o para cambiar
+        // de castillo). La conexión con el host se mantiene abierta.
+        function changeCastle() {
+            rejectedByHost = false;
+            myTeamIndex = -1;
+            showMobileScreen('castleSelect', mobileLastState);
+        }
+        const retryJoinCastleSelect = changeCastle;
 
         function handleMobileMsg(msg) {
             switch(msg.type) {
-                case 'state':          mobileLastState = msg; showMobileScreen('controller', msg); break;
+                case 'state':
+                    mobileLastState = msg;
+                    showMobileScreen(myTeamIndex === -1 ? 'castleSelect' : 'controller', msg);
+                    break;
                 case 'questionList':   showMobileScreen('questionList', msg); break;
                 case 'questionData':   showMobileScreen('question', msg); break;
                 case 'questionResult': showMobileScreen('result', msg); break;
-                case 'rejected':       rejectedByHost = true; showMobileScreen('rejected', msg.reason); break;
+                case 'rejected':
+                    rejectedByHost = true;
+                    myTeamIndex = -1;
+                    showMobileScreen('rejected', msg.reason);
+                    break;
             }
         }
 
@@ -2704,7 +2773,7 @@
                     </div>
                 </div>
                 <div class="shrink-0 flex items-center justify-between px-4 py-2 bg-stone-950/80 border-t border-stone-800">
-                    <button onclick="showMobileScreen('castleSelect', mobileLastState)" class="text-[10px] text-stone-600 underline font-medieval">Cambiar castillo</button>
+                    <button onclick="changeCastle()" class="text-[10px] text-stone-600 underline font-medieval">Cambiar castillo</button>
                     <span class="text-[10px] text-emerald-500 font-medieval">🟢 Conectado</span>
                 </div>`;
                 return;
@@ -2850,7 +2919,7 @@
         // inline del HTML (que llaman a estas funciones por nombre) necesitan que
         // se re-expongan explícitamente en `window` para seguir funcionando.
         Object.assign(window, {
-            activateAndOpenQR, addEditorRow, addSetupCastle, closeEditorSafe, closeModal,
+            activateAndOpenQR, addEditorRow, addSetupCastle, changeCastle, closeEditorSafe, closeModal,
             closeTutorialModal, copiarLinkCortoBC, downloadTemplate, exportToExcel, importFromExcel, mobileAction,
             openBonusChestSelection, openQuestionEditor, promptQuestionSelection,
             removeEditorRow, removeSetupCastle, resetToDefaultQuestions, retryJoinCastleSelect, saveEditorChanges,
