@@ -110,6 +110,29 @@
     font-size:13px; font-weight:800;
   }
   /* ============ BANNER ============ */
+  /* ============ ENTRAR A SALA (código corto) ============ */
+  .entrar-sala-bar{ max-width:1180px; margin:18px auto 0; padding:0 40px; }
+  .entrar-sala-inner{
+    background: var(--tinta); border:2px dashed var(--turquesa);
+    border-radius:16px; padding:14px 22px;
+    display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;
+  }
+  .entrar-sala-inner label{ font-weight:800; font-size:14.5px; color:var(--texto); }
+  .entrar-sala-inner input{
+    background: var(--panel); border:2px solid var(--linea); color:var(--texto);
+    border-radius:10px; padding:10px 14px; font-size:15px; font-weight:700;
+    letter-spacing:1px; text-transform:uppercase; width:150px; text-align:center;
+    font-family:inherit;
+  }
+  .entrar-sala-inner input::placeholder{ color:var(--texto-suave); text-transform:none; letter-spacing:normal; font-weight:600; }
+  .entrar-sala-inner button{
+    background: var(--turquesa); color:var(--tinta); border:none; border-radius:10px;
+    padding:11px 20px; font-weight:800; font-size:14.5px; cursor:pointer;
+    box-shadow:0 4px 0 var(--turquesa-dark); font-family:inherit;
+  }
+  .entrar-sala-inner button:active{ transform:translateY(2px); box-shadow:0 2px 0 var(--turquesa-dark); }
+  .entrar-sala-msg{ max-width:1180px; margin:8px auto 0; padding:0 40px; text-align:center; font-size:13px; color:var(--rosa); font-weight:700; }
+
   .banner{ position:relative; max-width:1180px; margin: 30px auto 0; padding: 0 40px; }
   .banner-inner{
     position:relative;
@@ -593,6 +616,15 @@
   </div>
 </header>
 
+<div class="entrar-sala-bar">
+  <form class="entrar-sala-inner" id="form-entrar-sala">
+    <label for="input-codigo-sala">🔑 ¿Tienes un código de sala?</label>
+    <input type="text" id="input-codigo-sala" placeholder="Ej: L8228" maxlength="10" autocomplete="off" autocapitalize="characters" inputmode="text">
+    <button type="submit">Entrar a sala ▶</button>
+  </form>
+  <p class="entrar-sala-msg oculto" id="entrar-sala-msg"></p>
+</div>
+
 <div class="banner">
   <div class="banner-inner">
     <span class="conf" style="top:14px; left:36%;" aria-hidden="true">🎉</span>
@@ -966,6 +998,22 @@
   });
   document.addEventListener("keydown", function(e){
     if(e.key === "Escape" && !modalLogin.classList.contains("oculto")) cerrarLoginModal();
+  });
+
+  // ---------- Entrar a sala (código corto tipo L8228) ----------
+  // Reutiliza el mismo formato/lógica que r.html: el código es una letra +
+  // dígitos, guardado en Firestore "codigosCortos". No hace falta sesión.
+  document.getElementById("form-entrar-sala").addEventListener("submit", function(e){
+    e.preventDefault();
+    var msgEl = document.getElementById("entrar-sala-msg");
+    var codigo = document.getElementById("input-codigo-sala").value.trim().toUpperCase().replace(/\s+/g, "");
+    if(!/^[A-Z0-9]{3,10}$/.test(codigo)){
+      msgEl.textContent = "Ese código no parece válido. Revisa que esté bien escrito (ej: L8228).";
+      msgEl.classList.remove("oculto");
+      return;
+    }
+    msgEl.classList.add("oculto");
+    location.href = "/" + codigo;
   });
 
   // ---------- Header según sesión ----------
