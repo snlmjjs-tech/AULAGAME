@@ -668,6 +668,7 @@ p{margin:0;}
 </head>
 <body>
 <div class="topbar-fixed">
+  <button class="icon-btn" id="helpBtn" title="¿Cómo se juega?">❓</button>
   <button class="icon-btn" id="qrBtn" title="Conectar celulares">📱</button>
   <button class="icon-btn" id="muteBtn" title="Silenciar sonido">🔊</button>
 </div>
@@ -851,6 +852,20 @@ p{margin:0;}
           <div class="student-options" id="studentOptions"></div>
           <div class="student-feedback" id="studentFeedback"></div>
         </div>
+        <div class="lifelines-row" id="studentLifelines" style="margin-top:14px;">
+          <button class="lifeline-btn" id="studentLifelineCall" data-comodin="call">
+            <span class="lifeline-icon">📞</span>
+            <span class="lifeline-label">Llamar a un amigo</span>
+          </button>
+          <button class="lifeline-btn" id="studentLifelineFifty" data-comodin="fifty">
+            <span class="lifeline-icon">➗</span>
+            <span class="lifeline-label">50 / 50</span>
+          </button>
+          <button class="lifeline-btn" id="studentLifelineChange" data-comodin="change">
+            <span class="lifeline-icon">🔁</span>
+            <span class="lifeline-label">Cambiar pregunta</span>
+          </button>
+        </div>
       </div>
 
       <div id="studentEsperando" style="display:none;">
@@ -972,6 +987,7 @@ p{margin:0;}
 <script type="module">
 import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 import { crearSala, refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
+import { mostrarTutorial, mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
 
 /* ================= MODO QR: alumno vs. profesor ================= */
 const _paramsMillonario = new URLSearchParams(location.search);
@@ -1780,6 +1796,7 @@ $("lifelineFifty").addEventListener("click", ()=>{
   if(p.lifelines.fifty || state.answered || state.currentAmount===null) return;
   p.lifelines.fifty = true;
   $("lifelineFifty").disabled = true;
+  syncLifelines();
   playClick();
   const q = state.currentQuestion;
   const wrongIdxs = [0,1,2,3].filter(i=>i!==q.correct);
@@ -1792,6 +1809,7 @@ $("lifelineChange").addEventListener("click", ()=>{
   const p = state.currentPlayer;
   if(p.lifelines.change || state.answered) return;
   p.lifelines.change = true;
+  syncLifelines();
   playClick();
   clearInterval(state.revealTimer);
   state.currentQuestion = null;
@@ -1818,6 +1836,7 @@ $("lifelineCall").addEventListener("click", ()=>{
     btn.addEventListener("click", ()=>{
       p.lifelines.call = true;
       $("lifelineCall").disabled = true;
+      syncLifelines();
       grid.querySelectorAll(".friend-btn").forEach(b=>b.disabled = true);
       showFriendHint(FRIENDS[fi], tiers[n]);
     });
@@ -1919,10 +1938,20 @@ function syncTurno(){
   if(!salaActual) return;
   const turnoIdx = state.players.indexOf(state.currentPlayer);
   escribir(refSala('millonario', salaActual, 'estado/turnoIdx'), turnoIdx);
-  escribir(refSala('millonario', salaActual, 'estado/roster'), state.players.map(function(p){ return { nombre: p.name, dinero: p.money }; }));
+  escribir(refSala('millonario', salaActual, 'estado/roster'), state.players.map(function(p){
+    return { nombre: p.name, dinero: p.money, lifelines: p.lifelines };
+  }));
   escribir(refSala('millonario', salaActual, 'estado/preguntaActual'), null);
   escribir(refSala('millonario', salaActual, 'estado/resultado'), null);
   escribir(refSala('millonario', salaActual, 'respuestas'), null);
+}
+/* Publica el estado de los comodines del jugador en turno (sin esperar al próximo
+   cambio de turno) — para que su celular sepa al instante cuáles ya usó. */
+function syncLifelines(){
+  if(!salaActual || !state.currentPlayer) return;
+  escribir(refSala('millonario', salaActual, 'estado/roster'), state.players.map(function(p){
+    return { nombre: p.name, dinero: p.money, lifelines: p.lifelines };
+  }));
 }
 function syncPregunta(){
   if(!salaActual || !state.currentQuestion) return;
@@ -1956,11 +1985,21 @@ async function abrirModalQR(){
     $("qrLinkCorto").textContent = codigoCorto ? ('🔗 ' + location.host + '/' + codigoCorto) : joinUrl;
     if(state.currentPlayer) syncTurno();
     escuchar(refSala('millonario', salaActual, 'respuestas'), function(datos){
-      if(!datos || state.answered || !state.currentPlayer) return;
+      if(!datos || !state.currentPlayer) return;
       const turnoIdx = state.players.indexOf(state.currentPlayer);
       const resp = datos[turnoIdx];
-      if(resp && typeof resp.alternativaElegida === 'number'){
+      if(!resp) return;
+      if(typeof resp.alternativaElegida === 'number'){
+        if(state.answered) return;
         selectAnswer(resp.alternativaElegida);
+      } else if(resp.comodin){
+        // El alumno activó un comodín desde su celular: se dispara el mismo botón
+        // que usaría el profesor en pantalla, para reutilizar exactamente la misma
+        // lógica y que el resultado se vea en la pantalla grande para toda la clase.
+        escribir(refSala('millonario', salaActual, 'respuestas/' + turnoIdx), null);
+        if(resp.comodin === 'fifty') $("lifelineFifty").click();
+        else if(resp.comodin === 'change') $("lifelineChange").click();
+        else if(resp.comodin === 'call') $("lifelineCall").click();
       }
     });
   }catch(e){
@@ -2048,7 +2087,28 @@ function initStudentView(){
         ? ("¡Correcto! +$" + estado.resultado.monto.toLocaleString("es-CL"))
         : "Incorrecto.";
     }
+
+    const yo = roster[Number(miIdx)];
+    if(soyYo && estado.preguntaActual && !estado.resultado){
+      const ll = (yo && yo.lifelines) || {};
+      $("studentLifelineCall").disabled = !!ll.call;
+      $("studentLifelineFifty").disabled = !!ll.fifty;
+      $("studentLifelineChange").disabled = !!ll.change;
+      $("studentLifelines").style.display = "flex";
+    } else {
+      $("studentLifelines").style.display = "none";
+    }
   }
+
+  document.querySelectorAll('#studentLifelines [data-comodin]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if(btn.disabled) return;
+      btn.disabled = true;
+      escribir(refSala('millonario', SALA_ALUMNO, 'respuestas/' + miIdx), {
+        comodin: btn.getAttribute('data-comodin'), jugadorId: jugadorId, enviadaEn: marcaTiempo()
+      });
+    });
+  });
 
   escuchar(refSala('millonario', SALA_ALUMNO, 'estado'), function(datos){
     estado = datos;
@@ -2070,11 +2130,34 @@ function initStudentView(){
   });
 }
 
+const TUTORIAL_PROFE = {
+  titulo: '¿Cómo se juega? 💎',
+  pasos: [
+    'Agrega los jugadores y presiona "Comenzar Juego".',
+    'El QR es opcional, solo mejora la experiencia: los alumnos pueden escanearlo (botón "📱 Conéctate con QR aquí" o el ícono 📱) para responder desde su celular, o puedes jugar sin QR seleccionando las respuestas tú mismo en pantalla.',
+    'Cada jugador tiene 3 comodines: 📞 Llamar a un amigo, ➗ 50/50 y 🔁 Cambiar pregunta. Si el jugador está conectado por celular, también puede activarlos desde ahí en su turno — el resultado se ve igual en la pantalla grande.',
+    '¡Gana quien junte más dinero al final de la partida!'
+  ]
+};
+
 if(ES_ALUMNO){
   initStudentView();
+  mostrarTutorialSiPrimeraVez('millonario_alumno', {
+    titulo: '¿Cómo se juega? 💎',
+    pasos: [
+      'Elige quién eres tocando tu nombre.',
+      'Cuando sea tu turno, responde tocando una alternativa desde tu celular.',
+      'También puedes usar tus comodines (📞 llamar, ➗ 50/50, 🔁 cambiar pregunta) desde aquí — el resultado se muestra en la pantalla grande para toda la clase.',
+      'Cada comodín solo se puede usar una vez por jugador en toda la partida.'
+    ]
+  });
 } else {
   renderEditor();
   buildPlayerInputs();
+  mostrarTutorialSiPrimeraVez('millonario_profe', TUTORIAL_PROFE);
+  document.getElementById('helpBtn').addEventListener('click', function(){
+    mostrarTutorial('millonario_profe', TUTORIAL_PROFE);
+  });
 }
 </script>
 </body>
