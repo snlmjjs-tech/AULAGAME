@@ -579,6 +579,15 @@
     <button class="btn" onclick="goTo('screen-instructions')">Start ▶</button>
     <button class="btn secondary" onclick="openEditor()">✏️ Modificar preguntas</button>
   </div>
+  <div style="margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:6px;">
+    <div style="display:flex; align-items:center; gap:8px; font-size:.85rem; opacity:.9;">
+      <span style="font-size:1.3rem;">👉</span>
+      <span>Escanea este código para unirte desde tu celular</span>
+    </div>
+    <div id="qrBoxMenu" style="background:#fff; padding:8px; border-radius:10px; min-width:140px; min-height:140px;"></div>
+    <div id="qrSalaCodeMenu" style="font-size:1.1rem; font-weight:800;">------</div>
+    <p id="qrLinkCortoMenu" style="font-size:.75rem; opacity:.8; margin:0;"></p>
+  </div>
 </div>
 
 <!-- ================= SCREEN EDITOR ================= -->
@@ -786,7 +795,9 @@
 
 <script type="module">
 import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
-import { crearSala, refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
+import { refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
+import { pintarQR } from "../shared/qr-inline.js";
+import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
 
 /* ================= MODO QR: alumno vs. profesor ================= */
 const _paramsEvil = new URLSearchParams(location.search);
@@ -1799,23 +1810,27 @@ function syncEstado(){
   }));
 }
 
-async function abrirModalQR(){
-  document.getElementById('qr-modal').classList.add('active');
-  if(salaActual) return;
+let salaListenerListo = false;
+
+/* Crea (o reutiliza) la sala en vivo y pinta el QR en el menú principal y en
+   el modal de detalle a la vez, para que ambos siempre muestren el mismo
+   código — se puede llamar varias veces sin crear salas duplicadas. */
+async function iniciarSalaQR(){
+  const r = await pintarQR({
+    juego: 'evilgame',
+    destino: '/play/evilgame/',
+    contenedores: ['qrBoxMenu', 'qrBox'],
+    links: ['qrLinkCortoMenu', 'qrLinkCorto']
+  });
+  if(!r) return null;
+  salaActual = r.sala;
   const codeEl = document.getElementById('qrSalaCode');
-  codeEl.textContent = 'Creando sala…';
-  try{
-    const { sala, codigoCorto } = await crearSala('evilgame', '/play/evilgame/');
-    salaActual = sala;
-    codeEl.textContent = sala;
-    const joinUrl = location.origin + '/play/evilgame/?room=' + sala;
-    const qb = document.getElementById('qrBox');
-    qb.innerHTML = '';
-    if(window.QRCode){
-      new QRCode(qb, { text: joinUrl, width: 190, height: 190, colorDark: '#05070f', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
-    }
-    document.getElementById('qrLinkCorto').textContent = codigoCorto ? ('🔗 ' + location.host + '/' + codigoCorto) : joinUrl;
-    syncEstado();
+  const codeElMenu = document.getElementById('qrSalaCodeMenu');
+  if(codeEl) codeEl.textContent = r.sala;
+  if(codeElMenu) codeElMenu.textContent = r.sala;
+  syncEstado();
+  if(!salaListenerListo){
+    salaListenerListo = true;
     escuchar(refSala('evilgame', salaActual, 'respuestas'), function(datos){
       if(!datos || busy || gameOver || !teams.length) return;
       const turnoId = teams[currentTurn].id;
@@ -1824,6 +1839,17 @@ async function abrirModalQR(){
         rollDice();
       }
     });
+  }
+  return salaActual;
+}
+
+async function abrirModalQR(){
+  document.getElementById('qr-modal').classList.add('active');
+  if(salaActual) return;
+  const codeEl = document.getElementById('qrSalaCode');
+  codeEl.textContent = 'Creando sala…';
+  try{
+    await iniciarSalaQR();
   }catch(e){
     codeEl.textContent = 'Error al crear la sala';
     toast('No se pudo crear la sala en vivo. Revisa tu conexión.');
@@ -1933,6 +1959,27 @@ function initStudentView(){
 
 if(ES_ALUMNO){
   initStudentView();
+  mostrarTutorialSiPrimeraVez('evilgame_alumno', {
+    titulo: '¿Cómo se juega? 😈',
+    pasos: [
+      'Elige tu equipo tocando su color.',
+      'Cuando sea el turno de tu equipo, toca "🎲 LANZAR DADO".',
+      'Avanzas casillas según el número que salió. Si caes en 😈 retrocedes, en 🎭 puedes saltar 3 números, y en 🪜 subes o bajas.',
+      'El profesor evalúa tu respuesta oral cuando caigas en una pregunta.',
+      '¡Gana el primer equipo que llegue exacto a la casilla 33!'
+    ]
+  });
+} else {
+  iniciarSalaQR();
+  mostrarTutorialSiPrimeraVez('evilgame_profe', {
+    titulo: '¿Cómo se juega? 😈',
+    pasos: [
+      'Configura los equipos y el modo de dado, y presiona "Start Game".',
+      'Los alumnos pueden escanear el QR del menú principal para unirse desde su celular y lanzar el dado ellos mismos.',
+      'Cuando un equipo cae en una pregunta, evalúa su respuesta oral y marca correcto/incorrecto.',
+      'El primer equipo que llegue exacto a la casilla 33 gana la partida.'
+    ]
+  });
 }
 
 /* Este script ahora es un módulo (type="module"), así que sus funciones ya no

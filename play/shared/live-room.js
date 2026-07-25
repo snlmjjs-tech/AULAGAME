@@ -57,6 +57,20 @@ export function actualizar(ref_, datos){ return update(ref_, datos); }
 export function eliminar(ref_){ return remove(ref_); }
 export function marcaTiempo(){ return serverTimestamp(); }
 
+const cacheSalas = {}; // "juego:destino" -> Promise<{sala, codigoCorto}>
+
+/**
+ * Igual que crearSala, pero cachea la Promise por juego+destino dentro de la
+ * misma carga de página: llamarla varias veces (ej. desde el QR visible del
+ * menú y luego desde el botón "Conectar celulares") reutiliza la misma sala
+ * en vez de crear una nueva cada vez.
+ */
+export function crearSalaCacheada(juego, destino){
+  const clave = juego + ":" + (destino || "");
+  if(!cacheSalas[clave]) cacheSalas[clave] = crearSala(juego, destino);
+  return cacheSalas[clave];
+}
+
 /** Id estable por sala para este dispositivo/pestaña — sobrevive recargas de página. */
 export function idJugador(sala){
   const key = "aulagame_jugador_" + sala;
