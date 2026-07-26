@@ -59,6 +59,16 @@
   }
   .tab-btn.active{background:linear-gradient(135deg, var(--accent), #ff8a5c); color:#1a0b08; box-shadow:0 4px 14px rgba(255,90,78,.4);}
   .tab-btn:not(.active):hover{color:var(--text); background:rgba(255,255,255,.06);}
+  .tab-btn.tab-btn-jugar{
+    font-size:16px; font-weight:800; padding:13px 28px;
+    background:linear-gradient(135deg, var(--accent2), #0ea5c4); color:#04222b;
+    box-shadow:0 4px 16px rgba(34,211,238,.45);
+  }
+  .tab-btn.tab-btn-jugar:hover{ filter:brightness(1.08); }
+  .tab-btn.tab-btn-jugar.active{
+    background:linear-gradient(135deg, var(--accent), #ff8a5c); color:#1a0b08;
+    box-shadow:0 6px 22px rgba(255,90,78,.65);
+  }
 
   .card{
     background:var(--panel);
@@ -428,7 +438,7 @@
     <h1>🚀 ¿QUIÉN ES EL <span class="accent">IMPOSTOR</span>? <span class="accent2">·</span> Juego de Clase</h1>
     <div class="tabs">
       <button class="tab-btn active" data-tab="setup">⚙️ Configurar</button>
-      <button class="tab-btn" data-tab="play">▶️ Jugar</button>
+      <button class="tab-btn tab-btn-jugar" data-tab="play">▶️ JUGAR</button>
       <button class="tab-btn" id="qrBtn">📱 Celulares</button>
     </div>
   </header>
