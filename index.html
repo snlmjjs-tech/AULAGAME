@@ -157,12 +157,12 @@
   }
   .tc-track{
     position:relative;
-    min-height: 300px;
+    min-height: 340px;
   }
   .tc-slide{
     position:absolute; inset:0;
-    display:flex; align-items:center; justify-content:center; gap:36px;
-    padding: 30px 42px;
+    display:flex; align-items:center; justify-content:center; gap:40px;
+    padding: 28px 26px;
     opacity:0;
     transform: translateY(16px) scale(0.97);
     transition: opacity .7s ease, transform .7s ease;
@@ -184,7 +184,7 @@
   }
 
   .tc-slide-step{ text-align:left; }
-  .tc-step-texto{ flex: 1 1 300px; max-width:420px; }
+  .tc-step-texto{ flex: 1 1 340px; max-width:560px; }
   .tc-num{
     display:flex; align-items:center; justify-content:center;
     width:52px; height:52px; border-radius:50%;
@@ -202,7 +202,7 @@
     margin:0; color: var(--texto-suave); font-size:14.5px; font-weight:600; line-height:1.5;
   }
   .tc-step-imagen{
-    flex: 1 1 220px; max-width:260px;
+    flex: 1 1 300px; max-width:420px;
     display:flex; align-items:center; justify-content:center;
     background: var(--tinta);
     border: 2px solid var(--linea);
@@ -800,7 +800,7 @@
   var slides = Array.prototype.slice.call(document.querySelectorAll("#tutorial-carrusel .tc-slide"));
   var dots = Array.prototype.slice.call(document.querySelectorAll("#tutorial-carrusel .tc-dot"));
   if(!slides.length) return;
-  var duraciones = [3000,5000,5000,5000,5000,5000,3000];
+  var duraciones = [2000,3200,3200,3200,3200,3200,2000];
   var actual = 0;
   var timerId = null;
 
