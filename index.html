@@ -428,6 +428,19 @@
   .paso h3{ font-family:'Baloo 2', cursive; font-weight:800; font-size:16.5px; margin:0 0 6px; }
   .paso p{ margin:0; font-size:13px; color: var(--texto-suave); font-weight:600; line-height:1.55; }
 
+  .kard-proximamente .kard-icon{ opacity:.75; }
+  .chip-proximamente{
+    background: linear-gradient(135deg, var(--amarillo), var(--violeta));
+    color:#fff;
+  }
+  .btn-proximamente{
+    background: var(--panel); color: var(--texto-suave);
+    border: 2px dashed var(--linea);
+    box-shadow:none;
+    width:100%;
+  }
+  .btn-proximamente:hover{ border-color: var(--amarillo); color: var(--texto); filter:none; }
+
   .c-rosa{     --c: var(--rosa);     --c-dark: var(--rosa-dark);     --c-ink:#fff; }
   .c-amarillo{ --c: var(--amarillo); --c-dark: var(--amarillo-dark); --c-ink: var(--tinta); }
   .c-turquesa{ --c: var(--turquesa); --c-dark: var(--turquesa-dark); --c-ink: var(--tinta); }
@@ -831,6 +844,51 @@
           <div class="kard-title">Memorice</div>
           <p class="kard-desc">El clásico juego de memoria por parejas: se proyecta y se juega por turnos entre equipos.</p>
           <button class="btn btn-dup" type="button" data-url="https://snlmjjs-tech.github.io/memorice/" data-play="/play/memorice/">⧉ Duplicar</button>
+        </div>
+      </article>
+
+      <article class="kard c-violeta kard-proximamente">
+        <div class="kard-top"><span class="kard-icon">🎮</span><span class="chip chip-proximamente">✨ Próximamente</span></div>
+        <div class="kard-body">
+          <div class="kard-title">Sorpresa 1</div>
+          <p class="kard-desc">Un juego nuevo se está cocinando. Muy pronto vas a poder usarlo con tu curso.</p>
+          <button class="btn btn-proximamente" type="button">🔒 Disponible pronto</button>
+        </div>
+      </article>
+
+      <article class="kard c-turquesa kard-proximamente">
+        <div class="kard-top"><span class="kard-icon">✨</span><span class="chip chip-proximamente">✨ Próximamente</span></div>
+        <div class="kard-body">
+          <div class="kard-title">Sorpresa 2</div>
+          <p class="kard-desc">Estamos preparando otra plantilla nueva para tus clases. Vuelve pronto para descubrirla.</p>
+          <button class="btn btn-proximamente" type="button">🔒 Disponible pronto</button>
+        </div>
+      </article>
+
+      <article class="kard c-rosa kard-proximamente">
+        <div class="kard-top"><span class="kard-icon">🔒</span><span class="chip chip-proximamente">✨ Próximamente</span></div>
+        <div class="kard-body">
+          <div class="kard-title">Sorpresa 3</div>
+          <p class="kard-desc">Todavía es secreto, pero ya se viene otro juego nuevo para el catálogo.</p>
+          <button class="btn btn-proximamente" type="button">🔒 Disponible pronto</button>
+        </div>
+      </article>
+
+      <article class="kard c-amarillo kard-proximamente">
+        <div class="kard-top"><span class="kard-icon">🎁</span><span class="chip chip-proximamente">✨ Próximamente</span></div>
+        <div class="kard-body">
+          <div class="kard-title">Sorpresa 4</div>
+          <p class="kard-desc">Nueva plantilla en camino. Síguenos por WhatsApp para ser el primero en enterarte.</p>
+          <button class="btn btn-proximamente" type="button">🔒 Disponible pronto</button>
+        </div>
+      </article>
+
+      <article class="kard c-naranja kard-proximamente">
+        <div class="kard-top"><span class="kard-icon">❓</span><span class="chip chip-proximamente">✨ Próximamente</span></div>
+        <div class="kard-body">
+          <div class="kard-title">Sorpresa 5</div>
+          <p class="kard-desc">El catálogo sigue creciendo. Esta plantilla nueva llegará muy pronto.</p>
+          <button class="btn btn-proximamente" type="button">🔒 Disponible pronto</button>
         </div>
       </article>
 
@@ -1371,6 +1429,13 @@
     modalNombrar.classList.add("oculto");
     duplicadoPendiente = null;
     duplicarJuego(nombre, d.icono, d.color, d.url, d.editUrl);
+  });
+
+  // Tarjetas "Próximamente": solo muestran un aviso, no hacen nada más
+  document.querySelector("main").addEventListener("click", function(e){
+    var botonProx = e.target.closest(".btn-proximamente");
+    if(!botonProx) return;
+    mostrarAviso("Este juego estará disponible pronto. Síguenos por WhatsApp para enterarte 📲", false);
   });
 
   // Duplicar desde una plantilla

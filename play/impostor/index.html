@@ -806,8 +806,6 @@ function renderRoundList(){
       <div class="title">${escapeHTML(r.title || 'Sin título')}</div>
       <div class="count-badge">👤 impostor: ${r.impostorCount}</div>
       <div class="row-actions">
-        <button class="icon-btn" data-act="up" title="Subir">↑</button>
-        <button class="icon-btn" data-act="down" title="Bajar">↓</button>
         <button class="icon-btn" data-act="dup" title="Duplicar">⧉</button>
         <button class="icon-btn" data-act="del" title="Eliminar">🗑️</button>
       </div>
@@ -825,8 +823,6 @@ function renderRoundList(){
         e.stopPropagation(); playClick();
         const act = btn.dataset.act;
         const idx = state.rounds.findIndex(r=>r.id===id);
-        if(act==='up' && idx>0){ [state.rounds[idx-1],state.rounds[idx]]=[state.rounds[idx],state.rounds[idx-1]]; renderRoundList(); persist(); }
-        if(act==='down' && idx<state.rounds.length-1){ [state.rounds[idx+1],state.rounds[idx]]=[state.rounds[idx],state.rounds[idx+1]]; renderRoundList(); persist(); }
         if(act==='dup'){
           const copy = JSON.parse(JSON.stringify(state.rounds[idx]));
           copy.id = uid(); copy.title = copy.title + ' (copia)';
