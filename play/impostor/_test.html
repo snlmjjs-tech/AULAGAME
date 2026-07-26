@@ -614,10 +614,8 @@ function uid(){ return 'r' + Math.random().toString(36).slice(2,10); }
    Un alumno que entra con ?room=... no tiene sesión de profesor: se salta el gate. */
 let SAVED_IMPOSTOR = null, CURRENT_UID = null;
 if(!ES_ALUMNO){
-  const _r = await new Promise(function(resolve){
-    initGameSync('impostor', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
-  });
-  SAVED_IMPOSTOR = _r.saved; CURRENT_UID = _r.uid;
+  CURRENT_UID = 'test-uid';
+  document.documentElement.style.visibility = '';
 }
 
 const savedRounds = SAVED_IMPOSTOR && Array.isArray(SAVED_IMPOSTOR.rounds) ? SAVED_IMPOSTOR.rounds : null;

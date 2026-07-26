@@ -139,37 +139,106 @@
     background: linear-gradient(120deg, var(--panel), var(--noche-alta));
     border: 2px solid var(--linea);
     border-radius: 24px;
-    padding: 34px 38px;
-    display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap;
+    padding: 28px 32px;
+    display:flex; flex-direction:column; align-items:center; gap:20px;
     overflow:hidden;
   }
-  .banner h1{
+  .hero-botones{ display:flex; flex-wrap:wrap; justify-content:center; gap:12px; width:100%; }
+  .hero-botones .btn{ flex: 0 0 auto; padding: 13px 26px; font-size:14.5px; }
+
+  /* ============ TUTORIAL CARRUSEL ============ */
+  .tutorial-carrusel{
+    position:relative;
+    width:100%;
+    background: #171233;
+    border: 2px solid var(--linea);
+    border-radius: 20px;
+    overflow:hidden;
+  }
+  .tc-track{
+    position:relative;
+    min-height: 300px;
+  }
+  .tc-slide{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center; gap:36px;
+    padding: 30px 42px;
+    opacity:0;
+    transform: translateY(16px) scale(0.97);
+    transition: opacity .7s ease, transform .7s ease;
+    pointer-events:none;
+  }
+  .tc-slide.is-active{
+    opacity:1; transform: translateY(0) scale(1);
+    pointer-events:auto;
+  }
+  .tc-slide-bookend{ flex-direction:column; text-align:center; gap:14px; }
+  .tc-logo{ max-width: 140px; max-height:90px; width:auto; height:auto; object-fit:contain; }
+  .tc-open-text{
     font-family:'Baloo 2', cursive; font-weight:800;
-    font-size: clamp(28px, 4vw, 42px);
-    margin:0; line-height:1.1;
+    font-size: clamp(19px, 2.6vw, 26px); margin:0; color: var(--texto);
   }
-  .banner h1 .hola{ color: var(--amarillo); }
-  .banner p{ margin:8px 0 0; color: var(--texto-suave); font-size:15px; font-weight:600; }
-  .hero-texto{ width:100%; }
-  .hero-botones{ display:flex; flex-wrap:wrap; gap:12px; margin-top:20px; }
-  .hero-botones .btn{ flex: 0 0 auto; padding: 13px 22px; font-size:14.5px; }
-  .mini-pasos{
-    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;
-    margin-top:24px; width:100%;
+  .tc-close-text{
+    font-family:'Baloo 2', cursive; font-weight:800;
+    font-size: clamp(20px, 2.8vw, 28px); margin:0; color: var(--celeste-tc, #5fd4ff);
   }
-  .mini-paso{
-    flex: 1 1 160px;
-    display:flex; align-items:center; justify-content:center; gap:8px;
-    background: var(--tinta); border:2px solid var(--linea);
-    border-radius:16px; padding:14px 18px;
-    font-size:17px; font-weight:800; color: var(--texto);
-    white-space:nowrap;
+
+  .tc-slide-step{ text-align:left; }
+  .tc-step-texto{ flex: 1 1 300px; max-width:420px; }
+  .tc-num{
+    display:flex; align-items:center; justify-content:center;
+    width:52px; height:52px; border-radius:50%;
+    background: var(--acento, var(--amarillo));
+    color: var(--tinta);
+    font-family:'Baloo 2', cursive; font-weight:800; font-size:24px;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.25);
+    margin-bottom:14px;
   }
-  .mini-emoji{ font-size:22px; }
-  .mini-flecha{ color: var(--texto-suave); font-size:22px; flex: 0 0 auto; }
-  @media (max-width: 900px){
-    .mini-flecha{ display:none; }
-    .mini-paso{ flex: 1 1 45%; }
+  .tc-step-texto h3{
+    font-family:'Baloo 2', cursive; font-weight:800;
+    font-size: clamp(19px, 2.4vw, 25px); margin:0 0 8px; color: var(--texto); line-height:1.15;
+  }
+  .tc-step-texto p{
+    margin:0; color: var(--texto-suave); font-size:14.5px; font-weight:600; line-height:1.5;
+  }
+  .tc-step-imagen{
+    flex: 1 1 220px; max-width:260px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--tinta);
+    border: 2px solid var(--linea);
+    border-radius: 18px;
+    box-shadow: 0 10px 0 rgba(0,0,0,0.3);
+    overflow:hidden;
+    aspect-ratio: 4 / 3;
+  }
+  .tc-step-imagen img{ width:100%; height:100%; object-fit:cover; }
+  .tc-qr-placeholder{
+    width:100%; height:100%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    background:
+      repeating-linear-gradient(135deg, rgba(139,124,255,0.28) 0 10px, rgba(139,124,255,0.08) 10px 20px),
+      var(--tinta);
+  }
+  .tc-qr-placeholder .tc-qr-icono{ font-size:44px; }
+  .tc-qr-placeholder .tc-qr-texto{
+    font-family:'Baloo 2', cursive; font-weight:800; font-size:14px; color: var(--texto);
+    background: rgba(23,18,51,0.7); padding:4px 12px; border-radius:10px;
+  }
+
+  .tc-dots{ display:flex; align-items:center; justify-content:center; gap:8px; padding: 16px 0 20px; }
+  .tc-dot{
+    width:10px; height:10px; border-radius:6px;
+    background: rgba(242,236,255,0.25);
+    transition: width .4s ease, background-color .4s ease;
+  }
+
+  @media (max-width: 640px){
+    .tc-track{ min-height: 420px; }
+    .tc-slide{ flex-direction:column; gap:18px; padding: 26px 24px; text-align:center; }
+    .tc-slide-step{ text-align:center; }
+    .tc-step-texto{ max-width:none; }
+    .tc-num{ margin:0 auto 12px; }
+    .tc-step-imagen{ max-width:220px; }
   }
 
   .cupos{
@@ -640,27 +709,142 @@
 
 <div class="banner">
   <div class="banner-inner">
-    <span class="conf" style="top:14px; left:36%;" aria-hidden="true">🎉</span>
-    <span class="conf" style="bottom:16px; left:52%; animation-delay:1.2s;" aria-hidden="true">⭐</span>
-    <span class="conf" style="top:22px; right:30%; animation-delay:2.4s;" aria-hidden="true">🎲</span>
-    <div class="hero-texto">
-      <h1><span class="hola">¡Hola!</span><br>¿Qué jugamos hoy?</h1>
-      <p>Elige un juego guardado o duplica una plantilla nueva para tu próxima clase.</p>
-      <div class="hero-botones">
-        <button class="btn btn-jugar" id="btn-hero-crear" type="button">🎮 Crear mi primer juego</button>
+    <div class="tutorial-carrusel" id="tutorial-carrusel" aria-label="Tutorial: cómo crear tu juego en 5 pasos" role="group">
+      <div class="tc-track">
+
+        <div class="tc-slide tc-slide-bookend is-active" data-slide="0">
+          <img class="tc-logo" src="img/tutorial/logo.png" alt="AulaGames">
+          <p class="tc-open-text">Cómo crear tu juego en 5 pasos</p>
+        </div>
+
+        <div class="tc-slide tc-slide-step" data-slide="1" style="--acento:#ff5fa8;">
+          <div class="tc-step-texto">
+            <span class="tc-num">1</span>
+            <h3>Escoge tu juego</h3>
+            <p>Elige una plantilla o duplica una que ya tengas.</p>
+          </div>
+          <div class="tc-step-imagen">
+            <img src="img/tutorial/paso1.png" alt="Escoge tu juego">
+          </div>
+        </div>
+
+        <div class="tc-slide tc-slide-step" data-slide="2" style="--acento:#ffd23f;">
+          <div class="tc-step-texto">
+            <span class="tc-num">2</span>
+            <h3>Personalízalo con un nombre</h3>
+            <p>Ponle un nombre para reconocerlo fácil en Mis juegos.</p>
+          </div>
+          <div class="tc-step-imagen">
+            <img src="img/tutorial/paso2.png" alt="Personalízalo con un nombre">
+          </div>
+        </div>
+
+        <div class="tc-slide tc-slide-step" data-slide="3" style="--acento:#5fd4ff;">
+          <div class="tc-step-texto">
+            <span class="tc-num">3</span>
+            <h3>Ponle a play</h3>
+            <p>Comienza la partida con tus equipos.</p>
+          </div>
+          <div class="tc-step-imagen">
+            <img src="img/tutorial/paso3.png" alt="Ponle a play">
+          </div>
+        </div>
+
+        <div class="tc-slide tc-slide-step" data-slide="4" style="--acento:#ff8a3d;">
+          <div class="tc-step-texto">
+            <span class="tc-num">4</span>
+            <h3>Edítalo a tu gusto</h3>
+            <p>Modifica las preguntas cuando quieras. Todo queda guardado.</p>
+          </div>
+          <div class="tc-step-imagen">
+            <img src="img/tutorial/paso4.png" alt="Edítalo a tu gusto">
+          </div>
+        </div>
+
+        <div class="tc-slide tc-slide-step" data-slide="5" style="--acento:#8b7cff;">
+          <div class="tc-step-texto">
+            <span class="tc-num">5</span>
+            <h3>Conecta a tus estudiantes</h3>
+            <p>Pide que escaneen el código QR desde Conectar celulares.</p>
+          </div>
+          <div class="tc-step-imagen">
+            <div class="tc-qr-placeholder">
+              <span class="tc-qr-icono" aria-hidden="true">📱</span>
+              <span class="tc-qr-texto">Conectar celulares</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="tc-slide tc-slide-bookend" data-slide="6">
+          <img class="tc-logo" src="img/tutorial/logo.png" alt="AulaGames">
+          <p class="tc-close-text">aulagames.cl</p>
+        </div>
+
       </div>
-      <div class="mini-pasos">
-        <span class="mini-paso"><span class="mini-emoji">1️⃣ 🎯</span> Elige</span>
-        <span class="mini-flecha">→</span>
-        <span class="mini-paso"><span class="mini-emoji">2️⃣ ✏️</span> Personaliza</span>
-        <span class="mini-flecha">→</span>
-        <span class="mini-paso"><span class="mini-emoji">3️⃣ 📱</span> Comparte</span>
-        <span class="mini-flecha">→</span>
-        <span class="mini-paso"><span class="mini-emoji">4️⃣ 🏆</span> Juega</span>
+      <div class="tc-dots" aria-hidden="true">
+        <span class="tc-dot" data-dot="1"></span>
+        <span class="tc-dot" data-dot="2"></span>
+        <span class="tc-dot" data-dot="3"></span>
+        <span class="tc-dot" data-dot="4"></span>
+        <span class="tc-dot" data-dot="5"></span>
       </div>
+    </div>
+    <div class="hero-botones">
+      <button class="btn btn-jugar" id="btn-hero-crear" type="button">🎮 Crear mi primer juego</button>
     </div>
   </div>
 </div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll("#tutorial-carrusel .tc-slide"));
+  var dots = Array.prototype.slice.call(document.querySelectorAll("#tutorial-carrusel .tc-dot"));
+  if(!slides.length) return;
+  var duraciones = [3000,5000,5000,5000,5000,5000,3000];
+  var actual = 0;
+  var timerId = null;
+
+  function pintarPuntos(pasoActivo){
+    dots.forEach(function(dot){
+      var esActivo = Number(dot.getAttribute("data-dot")) === pasoActivo;
+      if(esActivo){
+        var slideActivo = slides[actual];
+        dot.style.width = "26px";
+        dot.style.background = slideActivo.style.getPropertyValue("--acento") || "#ffffff";
+      } else {
+        dot.style.width = "10px";
+        dot.style.background = "rgba(242,236,255,0.25)";
+      }
+    });
+  }
+
+  function mostrar(indice){
+    slides.forEach(function(slide, i){
+      slide.classList.toggle("is-active", i === indice);
+    });
+    var pasoAttr = slides[indice].getAttribute("data-slide");
+    var paso = Number(pasoAttr);
+    pintarPuntos(paso >= 1 && paso <= 5 ? paso : -1);
+  }
+
+  function siguiente(){
+    actual = (actual + 1) % slides.length;
+    mostrar(actual);
+    timerId = setTimeout(siguiente, duraciones[actual]);
+  }
+
+  mostrar(actual);
+  timerId = setTimeout(siguiente, duraciones[actual]);
+
+  document.addEventListener("visibilitychange", function(){
+    if(document.hidden){
+      clearTimeout(timerId);
+    } else {
+      timerId = setTimeout(siguiente, duraciones[actual]);
+    }
+  });
+})();
+</script>
 
 <main>
 
