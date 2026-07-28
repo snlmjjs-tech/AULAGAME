@@ -3501,9 +3501,19 @@
                 label.obj.position.set(0, 5.6, 0);
                 root.add(label.obj);
 
+                // Zona de clic ampliada e invisible: el anillo de objetivo es muy delgado
+                // (radio 2.9-3.3) y fácil de fallar con el mouse/touch. Este cilindro cubre
+                // todo el volumen del castillo para que un clic "cerca" también cuente.
+                const clickHitbox = new THREE.Mesh(
+                    new THREE.CylinderGeometry(3.3, 3.3, 9, 16),
+                    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+                );
+                clickHitbox.position.y = 4.2;
+                root.add(clickHitbox);
+
                 castleEntries.push({
                     index, root, ...castleParts, king: kingParts,
-                    turnRing, targetRing, turnArrow, label,
+                    turnRing, targetRing, turnArrow, label, clickHitbox,
                     mood: 'idle', moodStart: performance.now(),
                     destroyed: false, hpVisualStage: 5
                 });
@@ -3693,6 +3703,10 @@
                     return;
                 }
             }
+
+            // El clic no acertó a ningún castillo elegible (anillo rojo): avisamos en vez
+            // de fallar en silencio, para que quede claro que hay que apuntar de nuevo.
+            logAction('🎯 Clic fuera de un castillo elegible. Apuntad directamente al reino con el anillo rojo.', 'warning');
         }
 
         // ---------- Bucle de animación principal ----------
