@@ -5,6 +5,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Evil Game - by Mr. Nuñez</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&family=Bungee&display=swap');
@@ -601,6 +605,7 @@
       <button class="btn secondary" onclick="exportExcel()">📤 Exportar a Excel</button>
       <button class="btn secondary" onclick="document.getElementById('excel-file').click()">📥 Importar desde Excel</button>
       <input type="file" id="excel-file" accept=".xlsx,.csv" style="display:none" onchange="importExcel(this.files[0]); this.value='';">
+      <span id="aiGenerateBtnContainer" style="display:inline-block;"></span>
     </div>
     <div class="editor-actions">
       <button class="btn secondary" onclick="restoreQuestions()">↺ Restaurar originales</button>
@@ -798,6 +803,7 @@ import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 import { refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
 import { pintarQR } from "../shared/qr-inline.js";
 import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
+import { renderAIButton } from "../shared/ai-questions.js";
 
 /* ================= MODO QR: alumno vs. profesor ================= */
 const _paramsEvil = new URLSearchParams(location.search);
@@ -855,6 +861,27 @@ if(!ES_ALUMNO){
   });
   SAVED_EVIL = _r.saved; CURRENT_UID = _r.uid;
 }
+
+renderAIButton(document.getElementById('aiGenerateBtnContainer'), {
+  uid: CURRENT_UID,
+  game: 'evilgame',
+  defaultCount: 23,
+  className: 'btn secondary',
+  onGenerated(data){
+    const list = (data && Array.isArray(data.questions)) ? data.questions : [];
+    if(!list.length) return;
+    let i = 0;
+    CELLS.forEach(c=>{
+      if(c.type === 'question' && i < list.length){
+        c.q = String(list[i]).trim();
+        i++;
+      }
+    });
+    buildEditor();
+    const msg = document.getElementById('editor-msg');
+    if(msg) msg.textContent = '✨ Preguntas generadas con IA. Revísalas y presiona "Guardar cambios" para conservarlas.';
+  }
+});
 
 /* Construye el objeto {casilla: pregunta} / {equipoId: nombre} vigente, para guardarlo. */
 function questionsMap(){

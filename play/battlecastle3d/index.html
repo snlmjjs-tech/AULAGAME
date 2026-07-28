@@ -19,6 +19,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BATTLE CASTLE - Irregular Verbs 3D Game</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <!-- Tailwind CSS para diseño rápido y responsivo -->
     <!-- Silencia el aviso informativo de Tailwind CDN (no es un error, es solo una nota de Tailwind) -->
     <script>
@@ -523,6 +527,7 @@
 
             <!-- Barra de herramientas Excel -->
             <div class="flex flex-wrap gap-2 p-3 border-b border-stone-800 bg-stone-900/60 shrink-0">
+                <span id="aiGenerateBtnContainer" class="inline-block"></span>
                 <!-- Importar Excel -->
                 <label class="cursor-pointer px-4 py-2 bg-emerald-900 hover:bg-emerald-800 border border-emerald-600 text-emerald-200 rounded-xl text-xs font-medieval flex items-center gap-2 transition-all shadow-md">
                     📥 IMPORTAR EXCEL
@@ -688,6 +693,7 @@
         import { loadGameData, saveGameData, toast as syncToast } from "../shared/game-storage.js";
         import { crearCodigoCorto } from "../shared/short-links.js";
         import { registrarPinExterno } from "../shared/live-room.js";
+        import { renderAIButton } from "../shared/ai-questions.js";
 
         /*************************************************************
          * A. MANEJADOR SEGURO DE ALMACENAMIENTO (SafeStorage)
@@ -2096,6 +2102,23 @@
             sound.playClick();
             renderEditorTable(getActiveQuestions());
             openModal('modal-editor');
+            const aiBtnContainer = document.getElementById('aiGenerateBtnContainer');
+            aiBtnContainer.innerHTML = '';
+            renderAIButton(aiBtnContainer, {
+                uid: CURRENT_UID, game: 'battlecastle3d', defaultCount: 15,
+                className: 'px-4 py-2 bg-fuchsia-900 hover:bg-fuchsia-800 border border-fuchsia-600 text-fuchsia-200 rounded-xl text-xs font-medieval flex items-center gap-2 transition-all shadow-md',
+                onGenerated(data) {
+                    if (!data || !Array.isArray(data.questions) || !data.questions.length) return;
+                    const tbody = document.getElementById('editor-tbody');
+                    data.questions.forEach(q => {
+                        if (!q || !q.question || !Array.isArray(q.options) || q.options.length !== 3) return;
+                        const num = tbody.querySelectorAll('tr').length + 1;
+                        tbody.appendChild(buildEditorRow(num, { question: q.question.toUpperCase(), correct: q.options[0].toUpperCase(), options: q.options.map(o => String(o).toUpperCase()) }));
+                    });
+                    document.getElementById('editor-question-count').textContent = tbody.querySelectorAll('tr').length;
+                    syncToast('✨ Preguntas generadas agregadas. Revísalas y presiona GUARDAR CAMBIOS.');
+                }
+            });
         }
 
         function closeEditorSafe() {
@@ -2925,7 +2948,7 @@
         // se re-expongan explícitamente en `window` para seguir funcionando.
         Object.assign(window, {
             activateAndOpenQR, addEditorRow, addSetupCastle, changeCastle, closeEditorSafe, closeModal,
-            closeTutorialModal, copiarLinkCortoBC, downloadTemplate, exportToExcel, flipChest, importFromExcel, mobileAction,
+            closeTutorialModal, copiarLinkCortoBC, downloadTemplate, executeCatapultAttack, exportToExcel, flipChest, importFromExcel, mobileAction,
             openBonusChestSelection, openQuestionEditor, promptQuestionSelection,
             removeEditorRow, removeSetupCastle, resetToDefaultQuestions, retryJoinCastleSelect, saveEditorChanges,
             selectCastleAndConnect, selectQuestion, showMobileScreen, startGame, submitAnswer, toggleFullscreen,

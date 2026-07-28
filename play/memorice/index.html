@@ -5,6 +5,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Memorice en Clase</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -280,6 +284,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
         <button class="btn btn-secondary" id="saveSetBtn">💾 Guardar set</button>
         <button class="btn btn-secondary" id="loadSetBtn">📂 Cargar set</button>
         <input type="file" id="setInput" accept=".json,application/json" style="display:none">
+        <span id="aiGenerateBtnContainer" style="display:inline-block;"></span>
       </div>
     </div>
 
@@ -361,6 +366,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 
 <script type="module">
 import { initGameSync, saveGameData, saveGameDataDebounced } from "../shared/game-storage.js";
+import { renderAIButton } from "../shared/ai-questions.js";
 /* ============================================================
    MEMORICE EN CLASE — un solo archivo, sin servidor.
    ============================================================ */
@@ -381,6 +387,32 @@ let teamNamesCustom = (SAVED_MEMORICE && typeof SAVED_MEMORICE.teamNamesCustom==
 function persistSetup(){
   return saveGameData('memorice', CURRENT_UID, { images: images, mode: mode, teamCount: teamCount, teamNamesCustom: teamNamesCustom });
 }
+
+renderAIButton(document.getElementById('aiGenerateBtnContainer'), {
+  uid: CURRENT_UID,
+  game: 'memorice',
+  defaultCount: 8,
+  className: 'btn btn-secondary',
+  onGenerated(data){
+    const list = (data && Array.isArray(data.labels))
+      ? data.labels.map(function(s){ return String(s).trim(); }).filter(Boolean)
+      : [];
+    if(!list.length) return;
+    let j = 0;
+    images.forEach(function(im){
+      if(j < list.length && (!im.label || !im.label.trim())){
+        im.label = list[j];
+        j++;
+      }
+    });
+    renderThumbs();
+    persistSetup();
+    if(j < list.length){
+      const rest = list.slice(j);
+      alert('Palabras sugeridas por la IA (busca o toma fotos para estas, no había suficientes imágenes sin etiqueta):\n\n' + rest.join('\n'));
+    }
+  }
+});
 function persistSetupDebounced(){
   return saveGameDataDebounced('memorice', CURRENT_UID, { images: images, mode: mode, teamCount: teamCount, teamNamesCustom: teamNamesCustom }, 700);
 }

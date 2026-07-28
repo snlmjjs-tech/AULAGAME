@@ -5,6 +5,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FIGHT!!! 3D</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -279,6 +283,7 @@
       </label>
       <button class="btn small secondary" id="exportExcel">📤 Exportar Excel</button>
       <button class="btn small" id="addRowBtn">➕ Agregar pregunta</button>
+      <span id="aiGenerateBtnContainer" style="display:inline-block;"></span>
     </div>
     <div class="table-wrap">
     <table id="editTable">
@@ -346,6 +351,7 @@ import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 import { refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
 import { pintarQR } from "../shared/qr-inline.js";
 import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
+import { renderAIButton } from "../shared/ai-questions.js";
 /* ============================================================
    FIGHT!!! 3D - English Numbers Battle
    Single-file HTML educational game (Three.js r128)
@@ -364,6 +370,25 @@ if(!ES_ALUMNO){
     initGameSync('robotfight', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
   });
   SAVED_ROBOTFIGHT = _r.saved; CURRENT_UID = _r.uid;
+  renderAIButton(document.getElementById('aiGenerateBtnContainer'), {
+    uid: CURRENT_UID,
+    game: 'robotfight',
+    defaultCount: 10,
+    className: 'btn small secondary',
+    onGenerated(data){
+      const items=(data&&Array.isArray(data.questions))?data.questions:[];
+      if(!items.length) return;
+      items.forEach(item=>{
+        questionBank.push({
+          number: String(item.number != null ? item.number : ''),
+          correct: String(item.correct != null ? item.correct : ''),
+          wrong: [String(item.wrong && item.wrong[0] != null ? item.wrong[0] : ''), String(item.wrong && item.wrong[1] != null ? item.wrong[1] : '')]
+        });
+      });
+      renderEditTable();
+      toast('✨ '+items.length+' pregunta'+(items.length===1?'':'s')+' generada'+(items.length===1?'':'s')+' — revísalas y presiona "Guardar y jugar"');
+    }
+  });
 }
 
 /* questionBank es un array de objetos (cada uno con un campo "wrong" que es un

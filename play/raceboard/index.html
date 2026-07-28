@@ -5,6 +5,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kart Race</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -567,6 +571,7 @@
       <button class="btn-ghost small" id="exportExcelBtn">📥 Exportar a Excel</button>
       <button class="btn-ghost small" id="importExcelBtn">📤 Importar desde Excel</button>
       <input type="file" id="importExcelInput" accept=".xlsx,.xls" class="hidden">
+      <span id="aiGenerateBtnContainer" style="display:inline-block;"></span>
     </div>
     <p style="font-size:12px; color:#888; margin-top:-10px;">El Excel debe tener una pregunta por fila, en la primera columna (puedes usar el botón "Exportar" para obtener una plantilla con tus preguntas actuales).</p>
 
@@ -601,6 +606,7 @@ import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 import { refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
 import { pintarQR } from "../shared/qr-inline.js";
 import { mostrarTutorial, mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
+import { renderAIButton } from "../shared/ai-questions.js";
 /* ================= CONFIG ================= */
 const TOTAL_TILES = 31;
 const KART_COLORS = [
@@ -674,6 +680,19 @@ if(!ES_ALUMNO){
     initGameSync('raceboard', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
   });
   SAVED_RACE = _r.saved; CURRENT_UID = _r.uid;
+  renderAIButton(document.getElementById('aiGenerateBtnContainer'), {
+    uid: CURRENT_UID,
+    game: 'raceboard',
+    defaultCount: 12,
+    className: 'btn-ghost small',
+    onGenerated(data){
+      const items=(data&&Array.isArray(data.questions))?data.questions:[];
+      if(!items.length) return;
+      items.forEach(q=>{ if(typeof q==='string' && q.trim()) questions.push(q); });
+      renderEditorList();
+      toast('✨ '+items.length+' pregunta'+(items.length===1?'':'s')+' generada'+(items.length===1?'':'s')+' — revísalas y presiona "Guardar y cerrar"');
+    }
+  });
 }
 
 let questions = (SAVED_RACE && Array.isArray(SAVED_RACE.questions) && SAVED_RACE.questions.length)

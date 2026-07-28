@@ -5,6 +5,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>¿Quién Es El Impostor? — Juego de Clase Editable</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
@@ -476,6 +480,7 @@
       </p>
       <div class="toolbar">
         <button class="btn btn-gold btn-sm" id="loadExampleBtn">📥 Cargar ejemplo (Inglés)</button>
+        <span id="aiGenerateBtnContainer" style="display:inline-block;"></span>
         <button class="btn btn-primary btn-sm" id="exportExcelBtn">📊 Exportar a Excel</button>
         <button class="btn btn-ghost btn-sm" id="importExcelBtn">📤 Importar desde Excel</button>
         <input type="file" id="importExcelFile" accept=".xlsx,.xls" style="display:none;">
@@ -582,6 +587,7 @@ import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 import { refSala, escuchar, escribir, eliminar, marcaTiempo, idJugador } from "../shared/live-room.js";
 import { pintarQR } from "../shared/qr-inline.js";
 import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
+import { renderAIButton } from "../shared/ai-questions.js";
 
 /* ================= MODO QR: alumno vs. profesor ================= */
 const _paramsImpostor = new URLSearchParams(location.search);
@@ -618,6 +624,13 @@ if(!ES_ALUMNO){
     initGameSync('impostor', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
   });
   SAVED_IMPOSTOR = _r.saved; CURRENT_UID = _r.uid;
+  renderAIButton(document.getElementById("aiGenerateBtnContainer"), {
+    uid: CURRENT_UID,
+    game: "impostor",
+    defaultCount: 3,
+    className: "btn btn-primary btn-sm",
+    onGenerated: onAIGenerated
+  });
 }
 
 const savedRounds = SAVED_IMPOSTOR && Array.isArray(SAVED_IMPOSTOR.rounds) ? SAVED_IMPOSTOR.rounds : null;
@@ -634,6 +647,30 @@ function persist(){
   saveGameData('impostor', CURRENT_UID, { rounds: state.rounds, closing: state.closing }).then(function(ok){
     if(ok) toast('✓ Guardado y sincronizado');
   });
+}
+
+/* Agrega las rondas generadas por IA a state.rounds (mismo formato que "Nueva ronda" /
+   "Cargar ejemplo"), refresca la lista para que el profesor pueda revisar y editar cada
+   ronda normalmente, y autoguarda — igual que hace cualquier otra edición en este juego. */
+function onAIGenerated(data){
+  if(!data || !Array.isArray(data.rounds) || !data.rounds.length) return;
+  const newRounds = data.rounds.map(function(r){
+    const words = blankWords();
+    if(r.words) COLORS.forEach(function(c){ words[c.key] = r.words[c.key] || ''; });
+    return {
+      id: uid(),
+      title: r.title || 'Nueva ronda',
+      impostorCount: 1,
+      impostorMode: 'random',
+      manualImpostors: [],
+      words: words
+    };
+  });
+  state.rounds.push(...newRounds);
+  ui.activeRoundId = newRounds[0].id;
+  renderRoundList();
+  persist();
+  toast('✨ ' + newRounds.length + ' ronda(s) generadas — revísalas y edítalas si quieres');
 }
 
 let ui = {

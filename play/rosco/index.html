@@ -5,6 +5,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rosco de Palabras - Mr. Núñez</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root{
@@ -572,6 +576,7 @@
     <div class="edit-tabs" id="editTabs"><!-- filled by JS --></div>
     <div class="edit-list" id="editList"><!-- filled by JS --></div>
     <div class="edit-actions">
+      <span id="aiGenerateBtnContainer" style="display:inline-block;"></span>
       <button class="edit-action-btn reset-btn" id="resetQuestionsBtn">RESTABLECER ESTE EQUIPO</button>
       <button class="edit-action-btn export-btn" id="exportQuestionsBtn">⬇ EXPORTAR A EXCEL</button>
       <label class="edit-action-btn import-btn" for="importQuestionsInput">⬆ IMPORTAR DE EXCEL</label>
@@ -636,6 +641,7 @@
 <script type="module">
 import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 import { crearSala, refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
+import { renderAIButton } from "../shared/ai-questions.js";
 
 /* ================= MODO QR: alumno vs. profesor ================= */
 const _paramsRosco = new URLSearchParams(location.search);
@@ -687,6 +693,15 @@ if(!ES_ALUMNO){
     initGameSync('rosco', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
   });
   SAVED_ROSCO = _r.saved; CURRENT_UID = _r.uid;
+  renderAIButton(document.getElementById('aiGenerateBtnContainer'), {
+    uid: CURRENT_UID, game: 'rosco', fixedCount: 26, className: 'edit-action-btn',
+    onGenerated(data){
+      if(!data || !Array.isArray(data.clues) || data.clues.length !== 26) return;
+      draftClues[editingTeamIdx] = data.clues.slice();
+      buildEditList(editingTeamIdx);
+      toast('✨ Pistas generadas. Revísalas y guarda cuando estés conforme.');
+    }
+  });
 }
 
 /* Firestore no admite arrays anidados (array dentro de array), así que TEAM_CLUES

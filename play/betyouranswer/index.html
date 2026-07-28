@@ -5,6 +5,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BET YOUR ANSWER</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Poppins:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -443,6 +447,7 @@ import { initGameSync, saveGameData } from "../shared/game-storage.js";
 import { refSala, escuchar, escribir, eliminar, marcaTiempo, idJugador } from "../shared/live-room.js";
 import { pintarQR } from "../shared/qr-inline.js";
 import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
+import { renderAIButton } from "../shared/ai-questions.js";
 /* ============================================================
    BET YOUR ANSWER — juego digital interactivo
    ============================================================ */
@@ -929,6 +934,7 @@ function openAdmin(){
         <input type="file" id="importFile" accept=".xlsx,.xls" style="display:none;">
       </label>
       <button class="btn btn-small btn-outline" id="resetAllBtn">↺ Reiniciar tablero (desmarcar usadas)</button>
+      <span id="aiGenerateBtnContainer" style="display:inline-block;"></span>
     </div>
     <div class="admin-list" id="adminList"></div>
   `;
@@ -942,6 +948,46 @@ function openAdmin(){
     renderBoard();
     toast('Tablero reiniciado');
   });
+  renderAIButtonInAdmin();
+}
+
+/* El panel admin se re-renderiza (innerHTML) cada vez que se abre, así que el
+   contenedor del botón de IA se recrea también — hay que volver a insertar el
+   botón cada vez, sin duplicar listeners (renderAIButton crea un <button> nuevo
+   dentro del contenedor nuevo, así que no hay riesgo de duplicación). */
+function renderAIButtonInAdmin(){
+  const container = document.getElementById('aiGenerateBtnContainer');
+  if(!container) return;
+  renderAIButton(container, {
+    uid: CURRENT_UID,
+    game: 'betyouranswer',
+    defaultCount: 10,
+    className: 'btn btn-small btn-gold',
+    onGenerated: onAIGenerated
+  });
+}
+
+/* Vuelca las preguntas de trivia generadas por IA en gameData.questions (con
+   próximos ids consecutivos) y refresca la lista del admin para que el profesor
+   pueda revisarlas/editarlas antes de presionar "Guardar cambios" (el guardado
+   real sigue ocurriendo solo con ese botón, igual que con las preguntas manuales). */
+function onAIGenerated(data){
+  if(!data || !Array.isArray(data.questions) || !data.questions.length) return;
+  let nextId = Math.max(0, ...gameData.questions.map(q=>q.id)) + 1;
+  data.questions.forEach(function(item){
+    gameData.questions.push({
+      id: nextId++,
+      type: 'trivia',
+      value: 10000,
+      question: item.question || '',
+      answer: item.answer || '',
+      explanation: item.explanation || '',
+      used: false
+    });
+  });
+  renderAdminList();
+  renderBoard();
+  toast('✨ ' + data.questions.length + ' pregunta(s) generadas — revísalas y presiona "Guardar cambios"');
 }
 
 function tagFor(type){

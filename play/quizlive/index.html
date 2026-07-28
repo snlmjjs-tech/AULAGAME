@@ -19,6 +19,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>QuizLive · Teacher Seba</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <!-- ============================================================
      QUIZLIVE — Quiz interactivo en vivo estilo Kahoot
      · El profesor crea preguntas (quiz, V/F, ordenar, respuesta corta y larga)
@@ -286,6 +290,7 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
     <button class="btn small amarillo" onclick="exportExcel()">📤 Exportar Excel</button>
     <button class="btn small amarillo" onclick="document.getElementById('fileExcel').click()">📥 Importar Excel</button>
     <input type="file" id="fileExcel" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)">
+    <span id="aiGenerateBtnContainer" style="display:inline-block;"></span>
   </div>
   <div class="card">
     <div class="row">
@@ -493,6 +498,7 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
 import { loadGameData, saveGameData, saveGameDataDebounced } from "../shared/game-storage.js";
 import { crearCodigoCorto } from "../shared/short-links.js";
 import { registrarPinExterno } from "../shared/live-room.js";
+import { renderAIButton } from "../shared/ai-questions.js";
 
 const _isPinJoin = !!new URLSearchParams(location.search).get("pin");
 // Un alumno que entra con ?pin=... no tiene sesión de profesor: no se toca
@@ -500,6 +506,27 @@ const _isPinJoin = !!new URLSearchParams(location.search).get("pin");
 const { saved: SAVED_QUIZLIVE, uid: CURRENT_UID } = _isPinJoin
   ? { saved: null, uid: null }
   : await loadGameData('quizlive');
+
+if(!_isPinJoin){
+  renderAIButton(document.getElementById('aiGenerateBtnContainer'), {
+    uid: CURRENT_UID,
+    game: 'quizlive',
+    defaultCount: 10,
+    className: 'btn small amarillo',
+    onGenerated(data){
+      const items=(data&&Array.isArray(data.questions))?data.questions:[];
+      if(!items.length) return;
+      items.forEach(item=>{
+        state.questions.push({
+          type:'quiz', text:item.text, time:20, points:1000,
+          options:Array.isArray(item.options)?item.options:[], correct:item.correct
+        });
+      });
+      renderQList(); autoSave();
+      toast('✨ '+items.length+' pregunta'+(items.length===1?'':'s')+' generada'+(items.length===1?'':'s')+' — revísalas antes de usarlas');
+    }
+  });
+}
 
 /* ============================================================
    ✏️ OPCIONAL: pega aquí tu configuración de Firebase para que

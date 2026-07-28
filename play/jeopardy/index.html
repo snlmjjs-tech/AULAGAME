@@ -5,6 +5,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jeopardy 🎯</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
@@ -288,6 +292,7 @@ footer.credit{text-align:center; color:var(--muted); font-size:.75rem; padding:2
         <input type="file" id="importFile" accept=".xlsx,.xls" style="display:none;">
       </label>
       <button class="btn" id="backToSetupBtn">⬅️ Volver</button>
+      <span id="aiGenerateBtnContainer" style="display:inline-block;"></span>
     </div>
     <table class="qtable" id="qtable"></table>
   </div>
@@ -349,6 +354,7 @@ import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 import { refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
 import { pintarQR } from "../shared/qr-inline.js";
 import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
+import { renderAIButton } from "../shared/ai-questions.js";
 
 /* ================= MODO QR: alumno vs. profesor ================= */
 const _paramsJeopardy = new URLSearchParams(location.search);
@@ -418,6 +424,12 @@ if(!ES_ALUMNO){
     initGameSync('jeopardy', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
   });
   SAVED_JEOPARDY = _r.saved; CURRENT_UID = _r.uid;
+  renderAIButton(document.getElementById("aiGenerateBtnContainer"), {
+    uid: CURRENT_UID,
+    game: "jeopardy",
+    className: "btn btn-gold",
+    onGenerated: onAIGenerated
+  });
 }
 
 /* Valida que lo guardado tenga la forma esperada antes de usarlo; si no, cae a los defaults. */
@@ -447,6 +459,19 @@ function persistQuestions(){
   saveGameData('jeopardy', CURRENT_UID, { questions: QUESTIONS, bonusQuestions: BONUS_QUESTIONS }).then(function(ok){
     if(ok) toast('✓ Guardado y sincronizado');
   });
+}
+
+/* Vuelca las preguntas generadas por IA en el tablero y las preguntas bonus,
+   igual que hace la importación desde Excel: reemplaza el set completo, refresca
+   la tabla del editor (donde el profesor puede seguir editando cada celda) y
+   guarda de inmediato siguiendo el mismo patrón de autoguardado del editor. */
+function onAIGenerated(data){
+  if(!data) return;
+  if(Array.isArray(data.questions) && data.questions.length) QUESTIONS = data.questions;
+  if(Array.isArray(data.bonusQuestions) && data.bonusQuestions.length) BONUS_QUESTIONS = data.bonusQuestions;
+  renderEditorTable();
+  persistQuestions();
+  alert("✅ Preguntas generadas con IA. Revísalas y edítalas en la tabla si lo necesitas.");
 }
 
 /* =========================================================

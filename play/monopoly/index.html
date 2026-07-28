@@ -5,6 +5,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MONOPOLY · Verbs & Questions Edition</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root{
@@ -544,6 +548,7 @@ import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 import { refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
 import { pintarQR } from "../shared/qr-inline.js";
 import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
+import { renderAIButton } from "../shared/ai-questions.js";
 
 /* ================= MODO QR: alumno vs. profesor ================= */
 const _paramsMonopoly = new URLSearchParams(location.search);
@@ -1461,6 +1466,7 @@ function editorModal(){
         <button class="btn small" id="expXlsx">⬇ Exportar a Excel</button>
         <button class="btn small secondary" id="impXlsx">⬆ Importar desde Excel</button>
         <input type="file" id="impFile" accept=".xlsx,.xls" style="display:none;">
+        <span id="aiGenerateBtnContainer" style="display:inline-block;"></span>
       </div>
     </div>
     <div class="btnrow">
@@ -1562,6 +1568,26 @@ function editorModal(){
     };
     reader.readAsArrayBuffer(file);
   };
+
+  const aiBtnContainer = el.querySelector('#aiGenerateBtnContainer');
+  if(aiBtnContainer){
+    aiBtnContainer.innerHTML = '';
+    renderAIButton(aiBtnContainer, {
+      uid: CURRENT_UID,
+      game: 'monopoly',
+      defaultCount: 16,
+      className: 'btn small',
+      onGenerated(data){
+        const list = (data && Array.isArray(data.questions)) ? data.questions : [];
+        if(!list.length) return;
+        const ta = el.querySelector('#editQ');
+        if(!ta) return;
+        const newLines = list.map(function(q){ return String(q).trim() + ' | 3000 | 3000'; });
+        ta.value = (ta.value.trim() ? ta.value.trim() + '\n' : '') + newLines.join('\n');
+      }
+    });
+  }
+
   return el;
 }
 

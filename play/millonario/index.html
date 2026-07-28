@@ -5,6 +5,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Millonario Quiz | Trivia de Verbos</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -732,6 +736,7 @@ p{margin:0;}
       <div class="q-list" id="qList"></div>
       <p class="subtitle" style="text-align:center; margin-bottom:14px;">El Excel debe tener las columnas: <strong>Pregunta</strong>, <strong>Opción A</strong>, <strong>Opción B</strong>, <strong>Opción C</strong>, <strong>Opción D</strong> y <strong>Respuesta Correcta (A/B/C/D)</strong>.</p>
       <div class="editor-toolbar">
+        <span id="aiGenerateBtnContainer" style="display:inline-block;"></span>
         <button class="btn btn-primary" id="btnAddQuestion">+ Nueva pregunta</button>
         <button class="btn btn-secondary" id="btnExport">⬇ Exportar (Excel)</button>
         <label class="btn btn-secondary" for="importFile" style="margin:0;">⬆ Importar (Excel)</label>
@@ -988,6 +993,7 @@ p{margin:0;}
 import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 import { crearSala, refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
 import { mostrarTutorial, mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
+import { renderAIButton } from "../shared/ai-questions.js";
 
 /* ================= MODO QR: alumno vs. profesor ================= */
 const _paramsMillonario = new URLSearchParams(location.search);
@@ -1023,6 +1029,24 @@ if(!ES_ALUMNO){
     initGameSync('millonario', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
   });
   SAVED_MILLONARIO = _r.saved; CURRENT_UID = _r.uid;
+}
+
+function handleAIGeneratedMillonario(data){
+  if(!data || !Array.isArray(data.questions) || !data.questions.length) return;
+  const cleaned = data.questions
+    .filter(q => q && q.prompt && Array.isArray(q.options) && q.options.length===4 && Number.isInteger(q.correct) && q.correct>=0 && q.correct<=3)
+    .map(q => ({ prompt: q.prompt, options: q.options.slice(0,4), correct: q.correct, type: state.editorTab==="culture" ? "culture" : "custom" }));
+  if(!cleaned.length){ toast('La IA no devolvió preguntas válidas. Intenta de nuevo.', true); return; }
+  showImportChoice(cleaned.length).then(function(choice){
+    if(choice==="replace"){ if(state.editorTab==="culture"){ state.cultureQuestions = cleaned; } else { state.allQuestions = cleaned; } }
+    else if(choice==="append"){ if(state.editorTab==="culture"){ state.cultureQuestions = state.cultureQuestions.concat(cleaned); } else { state.allQuestions = state.allQuestions.concat(cleaned); } }
+    else { return; }
+    renderEditor();
+    showToast("Preguntas generadas con IA agregadas ✅");
+    saveGameData('millonario', CURRENT_UID, { allQuestions: state.allQuestions, cultureQuestions: state.cultureQuestions }).then(function(ok){
+      if(ok) toast('✓ Guardado y sincronizado');
+    });
+  });
 }
 
 /* ============================= STATE ============================= */
@@ -1115,6 +1139,10 @@ function playClick(){ beep(500,0,0.05,"square",0.05); }
 /* ============================= HOME NAV ============================= */
 $("btnGoPlayers").addEventListener("click", ()=>{ ensureAudio(); playClick(); buildPlayerInputs(); showScreen("players"); });
 $("btnGoEditor").addEventListener("click", ()=>{ ensureAudio(); playClick(); renderEditor(); showScreen("editor"); });
+renderAIButton(document.getElementById('aiGenerateBtnContainer'), {
+  uid: CURRENT_UID, game: 'millonario', defaultCount: 10, className: 'btn btn-primary',
+  onGenerated: handleAIGeneratedMillonario
+});
 $("btnBackHome1").addEventListener("click", ()=>{ playClick(); showScreen("home"); });
 $("btnBackHome2").addEventListener("click", ()=>{ playClick(); showScreen("home"); });
 $("btnHomeFromResult").addEventListener("click", ()=>{ playClick(); showScreen("home"); });

@@ -1,0 +1,10 @@
+name = "aulagame-ai-questions"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+[vars]
+FIREBASE_PROJECT_ID = "aulagame-4c019"
+
+# Secretos (NO van aquí, se cargan con `wrangler secret put`):
+#   ANTHROPIC_API_KEY            -> tu clave de api.anthropic.com
+#   FIREBASE_SERVICE_ACCOUNT_JSON -> el JSON completo de la cuenta de servicio de Firebase
