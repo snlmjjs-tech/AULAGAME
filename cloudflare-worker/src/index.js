@@ -79,7 +79,7 @@ async function getGoogleAccessToken(env) {
   const header = { alg: "RS256", typ: "JWT" };
   const claim = {
     iss: sa.client_email,
-    scope: "https://www.googleapis.com/auth/datastore.readonly",
+    scope: "https://www.googleapis.com/auth/datastore",
     aud: "https://oauth2.googleapis.com/token",
     exp: now + 3600,
     iat: now,

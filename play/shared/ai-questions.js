@@ -21,7 +21,7 @@ import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebase
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 // Reemplaza esta URL por la que te entregue `wrangler deploy` (ver cloudflare-worker/README.md).
-const AI_WORKER_URL = "https://aulagame-ai-questions.TU-SUBDOMINIO.workers.dev/generate";
+const AI_WORKER_URL = "https://aulagame-ai-questions.aulagame-snlmjjs.workers.dev/generate";
 
 export const PREMIUM_WHATSAPP_LINK =
   "https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame.";
