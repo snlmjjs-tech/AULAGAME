@@ -352,7 +352,7 @@
                             <button id="bonus-btn" onclick="openBonusChestSelection()" class="px-4 py-3.5 bg-gradient-to-r from-purple-800 to-indigo-950 hover:from-purple-700 hover:to-indigo-900 border-2 border-purple-400 text-white rounded-xl text-sm md:text-base font-medieval tracking-wider shadow-xl flex items-center gap-2 transition duration-200">
                                 🎁 COFRE DE RECURSOS
                             </button>
-                            <button onclick="promptQuestionSelection()" class="rpg-btn px-6 py-4 text-base md:text-lg font-medieval text-white font-bold rounded-xl flex items-center gap-2 shadow-lg">
+                            <button id="responder-pregunta-btn" onclick="promptQuestionSelection()" class="rpg-btn px-6 py-4 text-base md:text-lg font-medieval text-white font-bold rounded-xl flex items-center gap-2 shadow-lg">
                                 📜 RESPONDER PREGUNTA
                             </button>
                         </div>
@@ -1168,6 +1168,11 @@
             log: [],
             kingMoods: [],
             superBombActive: false,
+            // true en cuanto el castillo de turno ya respondió su pregunta (correcta o
+            // incorrecta) y hasta que nextTurn() pase el turno. Evita que, mientras se
+            // resuelve el ataque o se espera el "Continuar", el mismo castillo pueda
+            // volver a pulsar "RESPONDER PREGUNTA" y acaparar todos los turnos.
+            turnConsumed: false,
         };
 
         const LOCAL_STORAGE_KEY = "battle_castle_3d_save";
@@ -1298,6 +1303,16 @@
                 bonusBtn.disabled = false;
                 bonusBtn.classList.remove("opacity-25", "opacity-40", "cursor-not-allowed");
                 bonusBtn.innerHTML = "🎁 COFRE DE RECURSOS";
+            }
+
+            // El botón de responder solo tiene sentido si el castillo de turno aún no
+            // jugó su pregunta esta ronda (ver guarda en promptQuestionSelection).
+            const responderBtn = document.getElementById("responder-pregunta-btn");
+            if (responderBtn) {
+                const canAnswer = !gameState.turnConsumed && gameState.status === 'playing';
+                responderBtn.disabled = !canAnswer;
+                responderBtn.classList.toggle("opacity-40", !canAnswer);
+                responderBtn.classList.toggle("cursor-not-allowed", !canAnswer);
             }
 
             // Actualizar Ránking Lateral
@@ -1485,6 +1500,7 @@
             gameState.currentTurn = 0;
             gameState.usedQuestions = [];
             gameState.status = "playing";
+            gameState.turnConsumed = false;
             gameState.log = [];
             gameState.kingMoods = new Array(gameState.castles.length).fill("idle");
 
@@ -1518,7 +1534,8 @@
             }
 
             gameState.kingMoods[gameState.currentTurn] = "idle";
-            gameState.superBombActive = false; 
+            gameState.superBombActive = false;
+            gameState.turnConsumed = false;
 
             logAction(`Siguiente turno: <strong class="text-white">${upcomingCastle.name}</strong>`, "info");
             updateUI();
@@ -1596,8 +1613,17 @@
          * J. SISTEMA GRAMATICAL DE PREGUNTAS Y TEMPORIZADORES
          *************************************************************/
         function promptQuestionSelection() {
+            // El castillo de turno ya respondió su pregunta y está esperando resolver el
+            // ataque (o que se le pase el turno): sin esta guarda podía volver a pulsar
+            // "RESPONDER PREGUNTA" y acaparar todos los turnos sin que rotara al resto
+            // de los castillos.
+            if (gameState.turnConsumed || gameState.status !== 'playing') {
+                logAction('⚠️ Terminad primero el turno actual (elegid objetivo o pasad turno) antes de responder otra pregunta.', 'warning');
+                return;
+            }
+
             sound.playClick();
-            
+
             const questions = getActiveQuestions();
             const total = questions.length;
             const grid = document.getElementById("pergaminos-grid-selection");
@@ -1694,12 +1720,13 @@
             // — eso dejaba el modal de "tiempo agotado" tapando un ataque ya ganado.
             if (!gameState.activeQuestion) return;
             gameState.activeQuestion = null;
+            gameState.turnConsumed = true;
 
             sound.playIncorrect();
             closeModal('modal-pregunta');
 
             const activeCastle = gameState.castles[gameState.currentTurn];
-            gameState.kingMoods[gameState.currentTurn] = "incorrect"; 
+            gameState.kingMoods[gameState.currentTurn] = "incorrect";
             gameState.usedQuestions.push(gameState.selectedQuestionNum);
 
             logAction(`⏳ ¡Tiempo agotado para <strong class="text-white">${activeCastle.name}</strong>! Se le escapó la oportunidad.`, "danger");
@@ -1716,6 +1743,7 @@
             if (!gameState.activeQuestion) return;
             const q = gameState.activeQuestion;
             gameState.activeQuestion = null;
+            gameState.turnConsumed = true;
 
             clearInterval(gameState.timerInterval);
             closeModal('modal-pregunta');
