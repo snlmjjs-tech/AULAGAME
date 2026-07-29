@@ -1688,9 +1688,16 @@
         }
 
         function handleTimeout() {
+            // Guarda contra condición de carrera: si el jugador ya alcanzó a responder
+            // justo cuando el temporizador llegaba a 0 (submitAnswer ya limpió
+            // activeQuestion), no proceses un segundo desenlace para la misma pregunta
+            // — eso dejaba el modal de "tiempo agotado" tapando un ataque ya ganado.
+            if (!gameState.activeQuestion) return;
+            gameState.activeQuestion = null;
+
             sound.playIncorrect();
             closeModal('modal-pregunta');
-            
+
             const activeCastle = gameState.castles[gameState.currentTurn];
             gameState.kingMoods[gameState.currentTurn] = "incorrect"; 
             gameState.usedQuestions.push(gameState.selectedQuestionNum);
@@ -1703,10 +1710,16 @@
         }
 
         function submitAnswer(selected) {
+            // Misma guarda que handleTimeout(): si el temporizador ya resolvió esta
+            // pregunta (activeQuestion ya es null), ignora un clic tardío en vez de
+            // procesar dos desenlaces contradictorios para la misma pregunta.
+            if (!gameState.activeQuestion) return;
+            const q = gameState.activeQuestion;
+            gameState.activeQuestion = null;
+
             clearInterval(gameState.timerInterval);
             closeModal('modal-pregunta');
 
-            const q = gameState.activeQuestion;
             const activeCastle = gameState.castles[gameState.currentTurn];
             gameState.usedQuestions.push(gameState.selectedQuestionNum);
 
