@@ -27,8 +27,7 @@
      QUIZLIVE — Quiz interactivo en vivo estilo Kahoot
      · El profesor crea preguntas (quiz, V/F, ordenar, respuesta corta y larga)
      · Los estudiantes se conectan EN VIVO con un PIN desde cualquier dispositivo
-     · Requiere Firebase (gratis). Pega tu configuración más abajo o usa el
-       botón "Conexión" dentro del juego.
+     · Usa el proyecto Firebase fijo definido en FIREBASE_CONFIG_FIJA (ver script al final)
      ============================================================ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -260,7 +259,6 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
       <button class="btn big azul" onclick="go('scr-join')">🙋 Soy Estudiante</button>
     </div>
     <div class="row" style="justify-content:center">
-      <button class="btn small gris" onclick="openConfig()">⚙️ Conexión (Firebase)</button>
       <button class="btn small ghost" onclick="openModal('modal-help')">❓ ¿Cómo funciona?</button>
     </div>
     <p class="muted" id="fbStatus" style="font-weight:700"></p>
@@ -439,37 +437,12 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
   </div>
 </div>
 
-<!-- ================= MODAL: CONFIG FIREBASE ================= -->
-<div class="modal-bg" id="modal-config">
-  <div class="modal">
-    <h3>⚙️ Conexión en vivo (Firebase)</h3>
-    <p class="muted" style="font-weight:600;margin-bottom:8px">Pega aquí el objeto <code>firebaseConfig</code> de tu proyecto (formato JSON). Se guarda en este navegador.</p>
-    <textarea id="cfgText" style="min-height:160px;font-family:monospace;font-weight:600" placeholder='{
-  "apiKey": "AIza…",
-  "authDomain": "tu-proyecto.firebaseapp.com",
-  "databaseURL": "https://tu-proyecto-default-rtdb.firebaseio.com",
-  "projectId": "tu-proyecto"
-}'></textarea>
-    <div class="row" style="margin-top:16px;justify-content:flex-end">
-      <button class="btn small ghost" onclick="openModal('modal-help')">¿Cómo obtengo esto?</button>
-      <button class="btn gris" onclick="closeModal('modal-config')">Cerrar</button>
-      <button class="btn verde" onclick="saveConfig()">Conectar</button>
-    </div>
-  </div>
-</div>
-
 <!-- ================= MODAL: AYUDA ================= -->
 <div class="modal-bg" id="modal-help">
   <div class="modal">
     <h3>❓ Cómo funciona QuizLive</h3>
     <div class="help-steps">
-      <p><b>Modo en vivo (estilo Kahoot):</b> el profesor proyecta esta página, los estudiantes abren la <u>misma página</u> en sus celulares (súbela a tu sitio o hosting) y entran con el PIN.</p>
-      <br>
-      <p><b>Configuración inicial (una sola vez, gratis):</b></p>
-      <p>1. Entra a <code>console.firebase.google.com</code> y crea un proyecto.</p>
-      <p>2. En el menú: <b>Compilación → Realtime Database → Crear base de datos</b> (elige "modo de prueba").</p>
-      <p>3. En <b>Descripción general → ⚙️ Configuración del proyecto → Tus apps → Web (&lt;/&gt;)</b>, registra una app y copia el objeto <code>firebaseConfig</code>.</p>
-      <p>4. Pégalo en <b>⚙️ Conexión</b> aquí en QuizLive. ¡Listo!</p>
+      <p><b>Modo en vivo (estilo Kahoot):</b> tú proyectas esta página y cada estudiante entra desde su propio celular o computador (escaneando el QR o con el PIN en aulagame.cl) para responder en vivo.</p>
       <br>
       <p><b>Tipos de pregunta:</b> Quiz con figuras de colores (▲◆●■), Verdadero/Falso, Ordenar, Respuesta corta (se corrige sola) y Respuesta larga (el profesor asigna los puntos en vivo).</p>
       <p><b>Excel:</b> puedes exportar la plantilla, editar las preguntas en Excel y volver a importarlas. Las <b>imágenes</b> de las preguntas no viajan en el Excel; los <b>videos de YouTube</b> sí (columna Video).</p>
@@ -499,6 +472,7 @@ import { loadGameData, saveGameData, saveGameDataDebounced } from "../shared/gam
 import { crearCodigoCorto } from "../shared/short-links.js";
 import { registrarPinExterno } from "../shared/live-room.js";
 import { renderAIButton } from "../shared/ai-questions.js";
+import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
 
 const _isPinJoin = !!new URLSearchParams(location.search).get("pin");
 // Un alumno que entra con ?pin=... no tiene sesión de profesor: no se toca
@@ -528,11 +502,6 @@ if(!_isPinJoin){
   });
 }
 
-/* ============================================================
-   ✏️ OPCIONAL: pega aquí tu configuración de Firebase para que
-   quede fija en el archivo (así los estudiantes no configuran nada).
-   Si la dejas en null, puedes configurarla con el botón ⚙️ Conexión.
-   ============================================================ */
 const FIREBASE_CONFIG_FIJA = {
   apiKey: "AIzaSyCnqRftB5jLIqt-_0s6yvzFCjpUEfrcwXc",
   authDomain: "quizlive-seba.firebaseapp.com",
@@ -541,6 +510,15 @@ const FIREBASE_CONFIG_FIJA = {
   storageBucket: "quizlive-seba.firebasestorage.app",
   messagingSenderId: "516664063313",
   appId: "1:516664063313:web:71d2e6d30fcd1c8ae20f70"
+};
+
+const TUTORIAL_QUIZLIVE_PROFE = {
+  titulo: '¿Cómo funciona QuizLive? 🎮',
+  pasos: [
+    'Funciona como Kahoot: tú proyectas las preguntas y cada estudiante responde desde su propio dispositivo.',
+    'Se puede jugar desde el celular o el computador, no hay que instalar nada.',
+    'Los estudiantes entran de dos formas: escaneando el código QR que aparece al iniciar el juego, o entrando a <b>aulagame.cl</b> y escribiendo el PIN de la sala en el cuadro "🔑 ¿Tienes el PIN de la sala?" de la página principal.'
+  ]
 };
 
 /* ================= UTILIDADES ================= */
@@ -882,14 +860,9 @@ function importExcel(inp){
   rd.readAsArrayBuffer(file);
 }
 /* ================= FIREBASE ================= */
-function loadSavedConfig(){
-  if(FIREBASE_CONFIG_FIJA) return FIREBASE_CONFIG_FIJA;
-  try{ const s=localStorage.getItem('quizlive_fb'); if(s) return JSON.parse(s); }catch(e){}
-  return null;
-}
 function initFB(cfg){
   if(typeof firebase==='undefined'){
-    $('#fbStatus').innerHTML='🔴 Sin internet o red bloqueada: no cargó Firebase. Recarga la página con conexión.';
+    $('#fbStatus').innerHTML='🔴 Sin internet o la red bloqueó la conexión. Recarga la página.';
     return false;
   }
   try{
@@ -897,34 +870,12 @@ function initFB(cfg){
     state.db=firebase.database();
     $('#fbStatus').innerHTML='🟢 Conexión en vivo lista';
     return true;
-  }catch(e){ $('#fbStatus').innerHTML='🔴 Error en la configuración de Firebase'; return false; }
-}
-function openConfig(){
-  const c=loadSavedConfig();
-  $('#cfgText').value=c?JSON.stringify(c,null,2):'';
-  openModal('modal-config');
-}
-function saveConfig(){
-  const raw=$('#cfgText').value.trim();
-  if(!raw) return toast('⚠️ Pega la configuración primero');
-  // acepta JSON puro o el formato JS que entrega Firebase: const firebaseConfig = {...};
-  let cfg=null;
-  try{ cfg=JSON.parse(raw); }catch(e){
-    try{ const m=raw.match(/\{[\s\S]*\}/); if(m) cfg=(new Function('return ('+m[0]+')'))(); }catch(e2){}
-  }
-  if(!cfg||typeof cfg!=='object') return toast('⚠️ Formato no válido. Pega el objeto {...} completo');
-  if(!cfg.databaseURL){
-    if(cfg.projectId) cfg.databaseURL='https://'+cfg.projectId+'-default-rtdb.firebaseio.com';
-    else return toast('⚠️ Falta databaseURL o projectId');
-  }
-  try{ localStorage.setItem('quizlive_fb',JSON.stringify(cfg)); }catch(e){}
-  if(initFB(cfg)){ closeModal('modal-config'); toast('🟢 ¡Conectado!'); }
+  }catch(e){ $('#fbStatus').innerHTML='🔴 No se pudo conectar. Recarga la página.'; return false; }
 }
 function requireDB(){
   if(state.db) return true;
-  const c=loadSavedConfig();
-  if(c&&initFB(c)) return true;
-  openConfig(); toast('Configura la conexión primero (es gratis) — mira ❓ ¿Cómo funciona?');
+  if(initFB(FIREBASE_CONFIG_FIJA)) return true;
+  toast('⚠️ No se pudo conectar. Revisa tu conexión a internet y recarga la página.');
   return false;
 }
 function clearListeners(){ state.listeners.forEach(({ref,ev,fn})=>{try{ref.off(ev,fn);}catch(e){}}); state.listeners=[]; }
@@ -1348,9 +1299,8 @@ function localReveal(){
   // entrada directa por QR: la URL trae ?pin=123456
   const urlPin=new URLSearchParams(location.search).get('pin');
   if(urlPin&&/^\d{6}$/.test(urlPin)){ $('#joinPin').value=urlPin; go('scr-join'); setTimeout(()=>$('#joinName').focus(),300); }
-  const c=loadSavedConfig();
-  if(c) initFB(c);
-  else $('#fbStatus').innerHTML='⚪ Modo en vivo sin configurar — toca ⚙️ Conexión (solo el profesor, una vez)';
+  else if(!_isPinJoin){ mostrarTutorialSiPrimeraVez('quizlive_profe', TUTORIAL_QUIZLIVE_PROFE); }
+  initFB(FIREBASE_CONFIG_FIJA);
   document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m&&m.id!=='modal-confirm') m.classList.remove('open'); }));
 })();
 
@@ -1361,9 +1311,9 @@ function localReveal(){
 Object.assign(window, {
   autoSave, cancelLive, clearImg, closeModal, delQ, delQuizLib, dupQuiz, exportExcel,
   go, gradeSet, hostEndQuestion, hostNext, hostStartGame, importExcel, joinGame,
-  localNext, localReveal, moveQ, musicStop, newQuiz, openConfig, openLibrary,
+  localNext, localReveal, moveQ, musicStop, newQuiz, openLibrary,
   openModal, openQuestionModal, openQuiz, orderPick, orderRemove, orderReset,
-  pickImg, renderTypeFields, saveConfig, saveQuestion, startLive, startLocal,
+  pickImg, renderTypeFields, saveQuestion, startLive, startLocal,
   stuAnswer, toggleMusic
 });
 </script>

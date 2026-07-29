@@ -12,9 +12,11 @@
 //   });
 //
 // El botón se auto-actualiza: mientras se resuelve el plan del profesor no muestra nada,
-// luego muestra "✨ Generar con IA" (premium) o "🔒 Función Premium" (gratis, con link a
-// WhatsApp). Nunca guarda nada solo: siempre entrega las preguntas generadas a onGenerated
-// para que el propio juego las vuelque en su editor y el profesor las revise antes de guardar.
+// luego muestra "✨ Generar con IA" (premium, activo) o el mismo texto con "🔒 " delante
+// (gratis: al tocarlo se explica qué función se está perdiendo y se ofrece WhatsApp para
+// pasarse a Premium). Nunca guarda nada solo: siempre entrega las preguntas generadas a
+// onGenerated para que el propio juego las vuelque en su editor y el profesor las revise
+// antes de guardar.
 
 import { firebaseConfig } from "../../firebase-config.js";
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
@@ -151,9 +153,33 @@ function openAIGeneratorModal({ uid, game, defaultCount, fixedCount, extraFields
   });
 }
 
+/** Muestra un mensaje claro (no un botón "premium" genérico) explicando qué función
+ * se está bloqueando y ofrece contactar por WhatsApp para pasarse a Premium. */
+function showPremiumUpsellModal() {
+  injectModalStyle();
+  const overlay = document.createElement("div");
+  overlay.className = "ai-q-overlay";
+  overlay.innerHTML = `
+    <div class="ai-q-modal">
+      <h3>🔒 Generador con IA</h3>
+      <p class="ai-q-sub">Hazte Premium para usar el generador de preguntas con IA.</p>
+      <div class="ai-q-actions">
+        <button class="ai-q-btn ai-q-btn-ghost" id="ai-q-upsell-close">Cerrar</button>
+        <a class="ai-q-btn ai-q-btn-primary" id="ai-q-upsell-wa" href="${PREMIUM_WHATSAPP_LINK}"
+           target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;">💬 Hazte Premium</a>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  function close() { overlay.remove(); }
+  overlay.querySelector("#ai-q-upsell-close").addEventListener("click", close);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+}
+
 /**
  * Inserta en `container` el botón de generación con IA, ya resuelto según el plan del
- * profesor (premium: botón activo; gratis: botón con candado que invita a upgrade).
+ * profesor (premium: botón activo; gratis: mismo botón con candado, que explica qué
+ * función se está perdiendo y ofrece contactar por WhatsApp para pasarse a Premium).
  *
  * options:
  *   uid          — uid del profesor (CURRENT_UID del juego)
@@ -187,10 +213,10 @@ export function renderAIButton(container, options) {
         if (data && onGenerated) onGenerated(data);
       };
     } else {
-      btn.textContent = "🔒 Función Premium";
+      btn.textContent = "🔒 " + (label || "✨ Generar con IA");
       if (!className) btn.style.background = "#8a8a8a";
       btn.onclick = () => {
-        window.open(PREMIUM_WHATSAPP_LINK, "_blank", "noopener");
+        showPremiumUpsellModal();
       };
     }
   });
