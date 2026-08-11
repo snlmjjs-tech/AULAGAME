@@ -136,18 +136,18 @@
   .entrar-sala-inner button:active{ transform:translateY(2px); box-shadow:0 2px 0 var(--turquesa-dark); }
   .entrar-sala-msg{ max-width:1180px; margin:8px auto 0; padding:0 40px; text-align:center; font-size:13px; color:var(--rosa); font-weight:700; }
 
-  .banner{ position:relative; max-width:1180px; margin: 30px auto 0; padding: 0 40px; }
+  .banner{ position:relative; max-width:1180px; margin: 16px auto 0; padding: 0 40px; }
   .banner-inner{
     position:relative;
     background: linear-gradient(120deg, var(--panel), var(--noche-alta));
     border: 2px solid var(--linea);
     border-radius: 24px;
-    padding: 28px 32px;
-    display:flex; flex-direction:column; align-items:center; gap:20px;
+    padding: 16px 22px;
+    display:flex; flex-direction:column; align-items:center; gap:12px;
     overflow:hidden;
   }
   .hero-botones{ display:flex; flex-wrap:wrap; justify-content:center; gap:12px; width:100%; }
-  .hero-botones .btn{ flex: 0 0 auto; padding: 13px 26px; font-size:14.5px; }
+  .hero-botones .btn{ flex: 0 0 auto; padding: 11px 24px; font-size:14.5px; }
 
   /* ============ TUTORIAL CARRUSEL ============ */
   .tutorial-carrusel{
@@ -160,12 +160,12 @@
   }
   .tc-track{
     position:relative;
-    min-height: 340px;
+    min-height: 210px;
   }
   .tc-slide{
     position:absolute; inset:0;
-    display:flex; align-items:center; justify-content:center; gap:40px;
-    padding: 28px 26px;
+    display:flex; align-items:center; justify-content:center; gap:22px;
+    padding: 14px 22px;
     opacity:0;
     transform: translateY(16px) scale(0.97);
     transition: opacity .7s ease, transform .7s ease;
@@ -175,42 +175,42 @@
     opacity:1; transform: translateY(0) scale(1);
     pointer-events:auto;
   }
-  .tc-slide-bookend{ flex-direction:column; text-align:center; gap:14px; }
-  .tc-logo{ max-width: 140px; max-height:90px; width:auto; height:auto; object-fit:contain; }
+  .tc-slide-bookend{ flex-direction:column; text-align:center; gap:8px; }
+  .tc-logo{ max-width: 100px; max-height:64px; width:auto; height:auto; object-fit:contain; }
   .tc-open-text{
     font-family:'Baloo 2', cursive; font-weight:800;
-    font-size: clamp(19px, 2.6vw, 26px); margin:0; color: var(--texto);
+    font-size: clamp(17px, 2.4vw, 23px); margin:0; color: var(--texto);
   }
   .tc-close-text{
     font-family:'Baloo 2', cursive; font-weight:800;
-    font-size: clamp(20px, 2.8vw, 28px); margin:0; color: var(--celeste-tc, #5fd4ff);
+    font-size: clamp(18px, 2.6vw, 25px); margin:0; color: var(--celeste-tc, #5fd4ff);
   }
 
   .tc-slide-step{ text-align:left; }
-  .tc-step-texto{ flex: 1 1 340px; max-width:560px; }
+  .tc-step-texto{ flex: 1 1 320px; max-width:520px; }
   .tc-num{
     display:flex; align-items:center; justify-content:center;
-    width:52px; height:52px; border-radius:50%;
+    width:38px; height:38px; border-radius:50%;
     background: var(--acento, var(--amarillo));
     color: var(--tinta);
-    font-family:'Baloo 2', cursive; font-weight:800; font-size:24px;
-    box-shadow: 0 4px 0 rgba(0,0,0,0.25);
-    margin-bottom:14px;
+    font-family:'Baloo 2', cursive; font-weight:800; font-size:18px;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.25);
+    margin-bottom:8px;
   }
   .tc-step-texto h3{
     font-family:'Baloo 2', cursive; font-weight:800;
-    font-size: clamp(19px, 2.4vw, 25px); margin:0 0 8px; color: var(--texto); line-height:1.15;
+    font-size: clamp(17px, 2.2vw, 22px); margin:0 0 5px; color: var(--texto); line-height:1.15;
   }
   .tc-step-texto p{
-    margin:0; color: var(--texto-suave); font-size:14.5px; font-weight:600; line-height:1.5;
+    margin:0; color: var(--texto-suave); font-size:13.5px; font-weight:600; line-height:1.42;
   }
   .tc-step-imagen{
-    flex: 1 1 300px; max-width:420px;
+    flex: 1 1 220px; max-width:250px;
     display:flex; align-items:center; justify-content:center;
     background: var(--tinta);
     border: 2px solid var(--linea);
-    border-radius: 18px;
-    box-shadow: 0 10px 0 rgba(0,0,0,0.3);
+    border-radius: 16px;
+    box-shadow: 0 7px 0 rgba(0,0,0,0.3);
     overflow:hidden;
     aspect-ratio: 4 / 3;
   }
@@ -222,13 +222,13 @@
       repeating-linear-gradient(135deg, rgba(139,124,255,0.28) 0 10px, rgba(139,124,255,0.08) 10px 20px),
       var(--tinta);
   }
-  .tc-qr-placeholder .tc-qr-icono{ font-size:44px; }
+  .tc-qr-placeholder .tc-qr-icono{ font-size:32px; }
   .tc-qr-placeholder .tc-qr-texto{
-    font-family:'Baloo 2', cursive; font-weight:800; font-size:14px; color: var(--texto);
+    font-family:'Baloo 2', cursive; font-weight:800; font-size:12.5px; color: var(--texto);
     background: rgba(23,18,51,0.7); padding:4px 12px; border-radius:10px;
   }
 
-  .tc-dots{ display:flex; align-items:center; justify-content:center; gap:8px; padding: 16px 0 20px; }
+  .tc-dots{ display:flex; align-items:center; justify-content:center; gap:8px; padding: 8px 0 12px; }
   .tc-dot{
     width:10px; height:10px; border-radius:6px;
     background: rgba(242,236,255,0.25);
@@ -236,12 +236,12 @@
   }
 
   @media (max-width: 640px){
-    .tc-track{ min-height: 420px; }
-    .tc-slide{ flex-direction:column; gap:18px; padding: 26px 24px; text-align:center; }
+    .tc-track{ min-height: 340px; }
+    .tc-slide{ flex-direction:column; gap:10px; padding: 16px 18px; text-align:center; }
     .tc-slide-step{ text-align:center; }
     .tc-step-texto{ max-width:none; }
-    .tc-num{ margin:0 auto 12px; }
-    .tc-step-imagen{ max-width:220px; }
+    .tc-num{ margin:0 auto 6px; }
+    .tc-step-imagen{ max-width:170px; }
   }
 
   .cupos{
@@ -280,9 +280,9 @@
 
   /* ============ MAIN ============ */
   main{ max-width:1180px; margin:0 auto; padding: 10px 40px 100px; }
-  section{ margin-top: 52px; }
+  section{ margin-top: 28px; }
 
-  .section-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:24px; }
+  .section-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
   .sticker{
     display:inline-block;
     font-family:'Space Mono', monospace; font-size:11px; font-weight:700;
@@ -674,8 +674,8 @@
   @media (max-width: 640px){
     header{ padding: 14px 20px; }
     .wordmark{ font-size:20px; }
-    .banner{ padding: 20px 20px 0; }
-    .banner-inner{ padding: 26px 24px; }
+    .banner{ padding: 12px 20px 0; margin-top:10px; }
+    .banner-inner{ padding: 14px 16px; gap:10px; }
     main{ padding: 10px 20px 70px; }
     .btn-header-whatsapp{ padding:9px 12px; }
     .btn-header-whatsapp .txt-whatsapp{ display:none; }
