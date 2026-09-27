@@ -704,7 +704,7 @@
 <div class="entrar-sala-bar">
   <form class="entrar-sala-inner" id="form-entrar-sala">
     <label for="input-codigo-sala">🔑 ¿Tienes el PIN de la sala?</label>
-    <input type="text" id="input-codigo-sala" placeholder="Ej: 123456" maxlength="6" autocomplete="off" inputmode="numeric" pattern="[0-9]*">
+    <input type="text" id="input-codigo-sala" placeholder="Ej: 123456" maxlength="8" autocomplete="off">
     <button type="submit">Entrar a sala ▶</button>
   </form>
   <p class="entrar-sala-msg oculto" id="entrar-sala-msg"></p>
@@ -1259,6 +1259,10 @@
     var msgEl = document.getElementById("entrar-sala-msg");
     var submitBtn = e.target.querySelector("button[type=submit]");
     var pin = document.getElementById("input-codigo-sala").value.trim().replace(/\s+/g, "");
+    if(pin.toUpperCase() === "INCOGAME"){
+      location.href = "https://snlmjjs-tech.github.io/incosafgame/";
+      return;
+    }
     if(!/^\d{4,6}$/.test(pin)){
       msgEl.textContent = "Ese PIN no parece válido. Revisa que esté bien escrito (ej: 123456).";
       msgEl.classList.remove("oculto");
