@@ -9,6 +9,8 @@
 
 const ALLOWED_ORIGINS = [
   "https://aulagames.teacherseba.com",
+  "https://aulagame.cl",
+  "https://www.aulagame.cl",
 ];
 const LOCALHOST_RE = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
@@ -65,6 +67,21 @@ async function importServiceAccountKey(pem) {
   return crypto.subtle.importKey("pkcs8", bytes.buffer, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
 }
 
+const CF_EDGE_ERROR_CODES = new Set([520, 521, 522, 523, 524, 525, 526, 527]);
+
+/** Cloudflare Workers ocasionalmente devuelve un 520-527 sintético (generado por el
+ * propio edge de Cloudflare, no por el origen real) para subrequests a Google que en
+ * realidad habrían funcionado. Reintenta un par de veces antes de darse por vencido. */
+async function fetchWithRetry(url, options, attempts = 3) {
+  let lastRes;
+  for (let i = 0; i < attempts; i++) {
+    lastRes = await fetch(url, options);
+    if (!CF_EDGE_ERROR_CODES.has(lastRes.status)) return lastRes;
+    if (i < attempts - 1) await new Promise((r) => setTimeout(r, 250 * (i + 1)));
+  }
+  return lastRes;
+}
+
 async function getGoogleAccessToken(env) {
   const now = Math.floor(Date.now() / 1000);
   if (cachedGoogleToken && cachedGoogleToken.expiresAt > now + 60) return cachedGoogleToken.token;
@@ -89,7 +106,7 @@ async function getGoogleAccessToken(env) {
   const signature = await crypto.subtle.sign({ name: "RSASSA-PKCS1-v1_5" }, key, new TextEncoder().encode(signInput));
   const jwt = `${signInput}.${base64url(signature)}`;
 
-  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+  const tokenRes = await fetchWithRetry("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: `grant_type=${encodeURIComponent("urn:ietf:params:oauth:grant-type:jwt-bearer")}&assertion=${encodeURIComponent(jwt)}`,
@@ -104,7 +121,7 @@ async function getGoogleAccessToken(env) {
 async function checkIsPremium(env, uid) {
   const token = await getGoogleAccessToken(env);
   const projectId = env.FIREBASE_PROJECT_ID || "aulagame-4c019";
-  const res = await fetch(
+  const res = await fetchWithRetry(
     `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/profes/${encodeURIComponent(uid)}`,
     { headers: { Authorization: "Bearer " + token } }
   );

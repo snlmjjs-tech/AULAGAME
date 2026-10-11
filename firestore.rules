@@ -39,5 +39,12 @@ service cloud.firestore {
         && request.resource.data.paramValor is string;
       allow update, delete: if false;
     }
+
+    // Intranet de Inglés: clases publicadas por el profe (link y/o imagen).
+    // No hay Firebase Authentication real en esta intranet (login propio con
+    // clave numérica), así que se deja abierto igual que storage.rules.
+    match /clasesIngles/{claseId} {
+      allow read, write: if true;
+    }
   }
 }

@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "aulagame-4c019"
-  }
+  },
+  "targets": {
+    "aulagame-4c019": {
+      "hosting": {
+        "main": [
+          "aulagame-4c019"
+        ],
+        "intranet": [
+          "aulagame-intranet"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

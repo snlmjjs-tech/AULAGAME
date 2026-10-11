@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clases de Inglés — Intranet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board:#1E3D2F;
+    --board-dark:#152C21;
+    --chalk:#F5F1E6;
+    --paper:#FBF8F0;
+    --paper-line:#E4DCC6;
+    --ink:#2B2B2E;
+    --tiza:#E8B84B;
+    --tiza-dark:#C99A2E;
+    --pink:#D97A93;
+    --shadow: 0 10px 30px rgba(0,0,0,.25);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;min-height:100vh;}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    color:var(--ink);
+    background:var(--board);
+    background-image:
+      radial-gradient(circle at 20% 15%, rgba(255,255,255,.03), transparent 40%),
+      radial-gradient(circle at 80% 85%, rgba(255,255,255,.03), transparent 40%);
+    min-height:100vh;
+  }
+  .hidden{display:none !important;}
+  h1,h2,h3{font-family:'Kalam',cursive;}
+  button{font-family:'Inter',system-ui,sans-serif;cursor:pointer;border:none;}
+  button:focus-visible, input:focus-visible, [tabindex]:focus-visible{
+    outline:3px solid var(--tiza); outline-offset:2px;
+  }
+
+  /* ---------- LOGIN (pizarrón) ---------- */
+  #login-screen{
+    min-height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    padding:24px;
+  }
+  .board-frame{
+    width:100%; max-width:560px;
+    background:linear-gradient(180deg, var(--board), var(--board-dark));
+    border:14px solid #6B4A2F;
+    border-radius:10px;
+    box-shadow:var(--shadow), inset 0 0 60px rgba(0,0,0,.35);
+    padding:40px 32px 32px;
+    position:relative;
+  }
+  .board-frame::before{
+    content:"";
+    position:absolute; inset:8px;
+    border:1px dashed rgba(255,255,255,.08);
+    border-radius:4px;
+    pointer-events:none;
+  }
+  .board-title{
+    color:var(--chalk);
+    font-size:2.1rem;
+    text-align:center;
+    margin:0 0 4px;
+    text-shadow:0 0 8px rgba(255,255,255,.15);
+    letter-spacing:.5px;
+  }
+  .board-sub{
+    color:rgba(245,241,230,.65);
+    text-align:center; font-size:.85rem;
+    margin:0 0 28px;
+    font-family:'JetBrains Mono',monospace;
+    text-transform:uppercase; letter-spacing:2px;
+  }
+  .roll-call{
+    display:flex; flex-direction:column; gap:10px;
+    margin-bottom:6px;
+  }
+  .roll-btn{
+    background:transparent;
+    border:2px solid rgba(245,241,230,.25);
+    border-radius:8px;
+    color:var(--chalk);
+    font-family:'Kalam',cursive;
+    font-size:1.3rem;
+    padding:12px 18px;
+    text-align:left;
+    display:flex; align-items:center; justify-content:space-between;
+    transition:.15s ease;
+  }
+  .roll-btn:hover{ border-color:var(--tiza); background:rgba(232,184,74,.08); transform:translateX(3px); }
+  .roll-btn.active{ border-color:var(--tiza); background:rgba(232,184,74,.12); }
+  .roll-btn .chevron{ opacity:.5; font-family:'Inter'; font-size:1rem; }
+  .roll-btn[data-role="profe"]{ border-style:dashed; }
+
+  .clave-box{
+    margin-top:18px;
+    max-height:0;
+    overflow:hidden;
+    transition:max-height .25s ease;
+  }
+  .clave-box.open{ max-height:160px; }
+  .clave-inner{ padding-top:6px; }
+  .clave-label{
+    color:rgba(245,241,230,.7);
+    font-family:'JetBrains Mono',monospace;
+    font-size:.75rem;
+    text-transform:uppercase; letter-spacing:1.5px;
+    margin-bottom:8px; display:block;
+  }
+  .clave-row{ display:flex; gap:10px; }
+  #clave-input{
+    flex:1;
+    background:rgba(245,241,230,.06);
+    border:none;
+    border-bottom:2px solid var(--tiza);
+    color:var(--chalk);
+    font-family:'JetBrains Mono',monospace;
+    font-size:1.1rem;
+    letter-spacing:4px;
+    padding:10px 8px;
+  }
+  #clave-input::placeholder{ color:rgba(245,241,230,.3); letter-spacing:normal; }
+  #entrar-btn{
+    background:var(--tiza);
+    color:var(--board-dark);
+    font-weight:700;
+    border-radius:6px;
+    padding:0 22px;
+    font-size:.95rem;
+  }
+  #entrar-btn:hover{ background:var(--tiza-dark); }
+  .error-msg{
+    color:var(--pink);
+    font-family:'Kalam',cursive;
+    font-size:1rem;
+    margin-top:10px;
+    opacity:0;
+    transform:translateX(0);
+  }
+  .error-msg.shake{
+    opacity:1;
+    animation:shake .4s ease;
+  }
+  @keyframes shake{
+    0%,100%{transform:translateX(0);}
+    25%{transform:translateX(-6px);}
+    75%{transform:translateX(6px);}
+  }
+
+  /* ---------- APP (corcho / cuaderno) ---------- */
+  #app-screen{ min-height:100vh; background:var(--paper); display:none; }
+  #app-screen.active{ display:block; }
+  .topbar{
+    background:var(--board);
+    color:var(--chalk);
+    padding:16px 24px;
+    display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 3px 12px rgba(0,0,0,.2);
+  }
+  .topbar h1{ margin:0; font-size:1.4rem; }
+  .topbar .who{ font-family:'JetBrains Mono',monospace; font-size:.75rem; opacity:.7; }
+  .logout-btn{
+    background:transparent; border:1px solid rgba(245,241,230,.35);
+    color:var(--chalk); padding:8px 14px; border-radius:6px; font-size:.85rem;
+  }
+  .logout-btn:hover{ border-color:var(--tiza); color:var(--tiza); }
+
+  main{ max-width:920px; margin:0 auto; padding:32px 20px 80px; }
+  .section-label{
+    font-family:'JetBrains Mono',monospace;
+    text-transform:uppercase; letter-spacing:2px; font-size:.75rem;
+    color:#8A8267; margin:0 0 14px;
+  }
+
+  /* corcho card = pinned note */
+  .pin-card{
+    background:var(--paper);
+    background-image:repeating-linear-gradient(var(--paper) 0px, var(--paper) 27px, var(--paper-line) 28px);
+    border:1px solid #E7E0CB;
+    border-radius:3px;
+    box-shadow:0 8px 20px rgba(0,0,0,.12);
+    padding:22px 22px 18px;
+    position:relative;
+    margin-bottom:28px;
+  }
+  .pin-card::before{
+    content:"";
+    position:absolute; top:-9px; left:26px;
+    width:16px; height:16px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #F2A5A5, #C0392B);
+    box-shadow:0 3px 4px rgba(0,0,0,.35);
+  }
+  .pin-card h2{ margin:0 0 4px; font-size:1.5rem; color:var(--ink); }
+  .pin-date{ font-family:'JetBrains Mono',monospace; font-size:.75rem; color:#9A9376; margin-bottom:14px; display:block;}
+  .video-frame{
+    position:relative; width:100%; padding-top:56.25%;
+    background:#0d0d0d; border-radius:6px; overflow:hidden; margin-top:10px;
+  }
+  .video-frame iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+
+  .tipo-badge{
+    display:inline-block; background:var(--tiza); color:var(--board-dark);
+    font-family:'JetBrains Mono',monospace; font-size:.68rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:1px; padding:3px 10px; border-radius:20px;
+    margin-bottom:10px;
+  }
+  .open-link-btn{
+    display:inline-flex; align-items:center; gap:8px;
+    margin-top:16px; background:var(--board); color:var(--chalk);
+    padding:13px 22px; border-radius:6px; text-decoration:none;
+    font-weight:600; font-size:.95rem;
+  }
+  .open-link-btn:hover{ background:var(--board-dark); }
+  .mini-tipo{ font-size:.85rem; margin-right:4px; }
+
+  .empty-note{
+    font-family:'Kalam',cursive; font-size:1.2rem; color:#9A9376;
+    text-align:center; padding:30px 10px;
+  }
+
+  .history-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:16px; }
+  .mini-pin{
+    background:var(--paper); border:1px solid #E7E0CB; border-radius:4px;
+    padding:14px 14px 12px; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,.08);
+    transition:.15s ease; text-align:left;
+  }
+  .mini-pin:hover{ transform:translateY(-3px); box-shadow:0 8px 16px rgba(0,0,0,.14); }
+  .mini-pin h3{ margin:0 0 4px; font-size:1.05rem; }
+  .mini-pin span{ font-family:'JetBrains Mono',monospace; font-size:.7rem; color:#9A9376; }
+  .mini-pin .del{
+    float:right; background:none; color:var(--pink); font-size:.85rem;
+    font-family:'Inter'; opacity:.7;
+  }
+  .mini-pin .del:hover{ opacity:1; text-decoration:underline; }
+
+  /* form publicar (profe) */
+  .publish-card{
+    background:#fff; border:1px solid #E7E0CB; border-radius:8px;
+    padding:22px; box-shadow:0 6px 16px rgba(0,0,0,.08); margin-bottom:32px;
+  }
+  .publish-card h2{ margin:0 0 16px; font-size:1.3rem; }
+  .field{ margin-bottom:14px; }
+  .field label{
+    display:block; font-family:'JetBrains Mono',monospace; font-size:.72rem;
+    text-transform:uppercase; letter-spacing:1px; color:#8A8267; margin-bottom:6px;
+  }
+  .field input{
+    width:100%; padding:10px 12px; border:1.5px solid #DDD5BC; border-radius:6px;
+    font-size:.95rem; font-family:'Inter';
+  }
+  .field input:focus{ border-color:var(--tiza-dark); }
+  .publish-btn{
+    background:var(--board); color:var(--chalk); padding:11px 22px;
+    border-radius:6px; font-weight:600; font-size:.9rem;
+  }
+  .publish-btn:hover{ background:var(--board-dark); }
+  .status-msg{ font-size:.85rem; margin-top:10px; font-family:'JetBrains Mono',monospace; }
+  .status-msg.ok{ color:#2E7D46; }
+  .status-msg.err{ color:#C0392B; }
+
+  .sync-banner{
+    background:#FFF3D6; color:#7A5B12; border:1px solid #F0D690;
+    font-size:.8rem; padding:10px 16px; border-radius:6px; margin-bottom:20px;
+    font-family:'JetBrains Mono',monospace;
+  }
+
+  footer{ text-align:center; color:#B5AE93; font-size:.75rem; padding:20px; font-family:'JetBrains Mono',monospace;}
+
+  @media (max-width:480px){
+    .board-title{ font-size:1.6rem; }
+    .roll-btn{ font-size:1.1rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="login-screen">
+  <div class="board-frame">
+    <h1 class="board-title">Clases de Inglés 🇬🇧</h1>
+    <p class="board-sub">Pase de lista — elige tu nombre</p>
+
+    <div class="roll-call" id="roll-call"></div>
+
+    <div class="clave-box" id="clave-box">
+      <div class="clave-inner">
+        <span class="clave-label">Clave de acceso</span>
+        <div class="clave-row">
+          <input type="password" id="clave-input" placeholder="••••" inputmode="numeric" maxlength="6">
+          <button id="entrar-btn">Entrar</button>
+        </div>
+        <p class="error-msg" id="error-msg">Esa clave no es correcta. Intenta de nuevo.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app-screen">
+  <div class="topbar">
+    <div>
+      <h1 id="saludo">Hola</h1>
+      <span class="who" id="who-label"></span>
+    </div>
+    <button class="logout-btn" id="logout-btn">Salir</button>
+  </div>
+
+  <main>
+    <div class="sync-banner hidden" id="sync-banner">
+      ⚠️ Firebase no está configurado todavía — las clases se guardan solo en este navegador (modo local de prueba). Revisa la parte de arriba del archivo HTML para conectar Firestore y que todos los alumnos vean lo mismo desde cualquier dispositivo.
+    </div>
+
+    <!-- Panel profesor -->
+    <div id="panel-profe" class="hidden">
+      <div class="publish-card">
+        <h2>📌 Publicar nueva clase</h2>
+        <div class="field">
+          <label for="input-titulo">Título de la clase</label>
+          <input type="text" id="input-titulo" placeholder="Ej: Simple Past — Unidad 4">
+        </div>
+        <div class="field">
+          <label for="input-url">Link de la clase (YouTube, Google Drive, Kahoot, o cualquier otro)</label>
+          <input type="text" id="input-url" placeholder="https://...">
+        </div>
+        <button class="publish-btn" id="publish-btn">Publicar clase</button>
+        <p class="status-msg hidden" id="publish-status"></p>
+      </div>
+
+      <p class="section-label">Todas las clases publicadas</p>
+      <div id="profe-history" class="history-grid"></div>
+    </div>
+
+    <!-- Panel alumno -->
+    <div id="panel-alumno" class="hidden">
+      <p class="section-label">Clase más reciente</p>
+      <div id="clase-actual"></div>
+
+      <p class="section-label">Clases anteriores</p>
+      <div id="alumno-history" class="history-grid"></div>
+    </div>
+  </main>
+
+  <footer>Intranet de Inglés · Instituto Comercial Alberto Valenzuela Llanos</footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script>
+/* =========================================================================
+   CONFIGURA AQUÍ TU FIREBASE (el mismo proyecto que usas para AulaGame
+   funciona perfecto: solo usará una colección nueva "clasesIngles").
+   Ve a Firebase Console > Configuración del proyecto > tus apps > SDK config
+   y pega los valores abajo.
+   ========================================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyD91ABYd2MLq5GAYW51afqbVIpPJZxu7dU",
+  authDomain: "aulagame-4c019.firebaseapp.com",
+  databaseURL: "https://aulagame-4c019-default-rtdb.firebaseio.com",
+  projectId: "aulagame-4c019",
+  storageBucket: "aulagame-4c019.firebasestorage.app",
+  messagingSenderId: "1049740023587",
+  appId: "1:1049740023587:web:8d3523cb83be178a1a1e96"
+};
+
+let db = null;
+let firebaseOK = false;
+try {
+  if (firebaseConfig.apiKey !== "TU_API_KEY") {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    firebaseOK = true;
+  }
+} catch (e) {
+  console.warn("Firebase no se pudo inicializar, usando modo local:", e);
+}
+
+/* ---------------- Credenciales ---------------- */
+const USERS = [
+  { id: "alfonzo", nombre: "Alfonzo", clave: "1212", role: "alumno" },
+  { id: "maxi",    nombre: "Maxi",    clave: "1414", role: "alumno" },
+  { id: "bruno",   nombre: "Bruno",   clave: "1616", role: "alumno" },
+  { id: "profe",   nombre: "Profe Seba", clave: "000", role: "profe" }
+];
+
+let selectedUser = null;
+let currentUser = JSON.parse(sessionStorage.getItem("ingles_user") || "null");
+
+/* ---------------- Render roll call ---------------- */
+const rollCall = document.getElementById("roll-call");
+USERS.forEach(u => {
+  const btn = document.createElement("button");
+  btn.className = "roll-btn";
+  btn.dataset.role = u.role;
+  btn.innerHTML = `<span>${u.role === "profe" ? "👩‍🏫 " : "🧑‍🎓 "}${u.nombre}</span><span class="chevron">›</span>`;
+  btn.addEventListener("click", () => selectUser(u, btn));
+  rollCall.appendChild(btn);
+});
+
+const claveBox = document.getElementById("clave-box");
+const claveInput = document.getElementById("clave-input");
+const errorMsg = document.getElementById("error-msg");
+
+function selectUser(u, btn) {
+  selectedUser = u;
+  document.querySelectorAll(".roll-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  claveBox.classList.add("open");
+  errorMsg.classList.remove("shake");
+  claveInput.value = "";
+  claveInput.focus();
+}
+
+document.getElementById("entrar-btn").addEventListener("click", tryLogin);
+claveInput.addEventListener("keydown", e => { if (e.key === "Enter") tryLogin(); });
+
+function tryLogin() {
+  if (!selectedUser) return;
+  if (claveInput.value.trim() === selectedUser.clave) {
+    currentUser = selectedUser;
+    sessionStorage.setItem("ingles_user", JSON.stringify(currentUser));
+    enterApp();
+  } else {
+    errorMsg.classList.remove("shake");
+    void errorMsg.offsetWidth;
+    errorMsg.classList.add("shake");
+  }
+}
+
+document.getElementById("logout-btn").addEventListener("click", () => {
+  sessionStorage.removeItem("ingles_user");
+  location.reload();
+});
+
+/* ---------------- App ---------------- */
+function enterApp() {
+  document.getElementById("login-screen").classList.add("hidden");
+  const app = document.getElementById("app-screen");
+  app.classList.add("active");
+
+  document.getElementById("saludo").textContent = `Hola, ${currentUser.nombre.split(" ")[0]} 👋`;
+  document.getElementById("who-label").textContent =
+    currentUser.role === "profe" ? "PANEL DEL PROFESOR" : "ALUMNO";
+
+  if (!firebaseOK) document.getElementById("sync-banner").classList.remove("hidden");
+
+  if (currentUser.role === "profe") {
+    document.getElementById("panel-profe").classList.remove("hidden");
+    initProfe();
+  } else {
+    document.getElementById("panel-alumno").classList.remove("hidden");
+    initAlumno();
+  }
+}
+
+if (currentUser) enterApp();
+
+/* ---------------- Utilidades video ---------------- */
+function getYoutubeId(url) {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=)([^&]+)/,
+    /(?:youtu\.be\/)([^?&]+)/,
+    /(?:youtube\.com\/embed\/)([^?&]+)/
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+function getDriveId(url) {
+  const patterns = [
+    /drive\.google\.com\/file\/d\/([^/?]+)/,
+    /drive\.google\.com\/open\?id=([^&]+)/,
+    /[?&]id=([^&]+)/
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+function getEmbedInfo(url) {
+  const yt = getYoutubeId(url);
+  if (yt) return { type: "youtube", embedUrl: `https://www.youtube.com/embed/${yt}` };
+  if (/drive\.google\.com/.test(url)) {
+    const id = getDriveId(url);
+    if (id) return { type: "drive", embedUrl: `https://drive.google.com/file/d/${id}/preview` };
+  }
+  return { type: "other", embedUrl: null };
+}
+function tipoLabel(type) {
+  return type === "youtube" ? "▶ YouTube" : type === "drive" ? "📁 Google Drive" : "🔗 Enlace";
+}
+function tipoIcon(type) {
+  return type === "youtube" ? "▶️" : type === "drive" ? "📁" : "🔗";
+}
+function fmtDate(ts) {
+  const d = ts instanceof Date ? ts : new Date(ts);
+  return d.toLocaleDateString("es-CL", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+/* ---------------- Capa de datos (Firestore o localStorage) ---------------- */
+const LOCAL_KEY = "ingles_clases_local";
+
+function getLocalClases() {
+  return JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]");
+}
+function saveLocalClases(arr) {
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(arr));
+}
+
+async function publicarClase(titulo, url) {
+  if (!/^https?:\/\//i.test(url.trim())) {
+    throw new Error("El link debe empezar con http:// o https://");
+  }
+  const registro = { titulo, url, fecha: Date.now() };
+
+  if (firebaseOK) {
+    await db.collection("clasesIngles").add({
+      titulo, url,
+      fecha: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } else {
+    const arr = getLocalClases();
+    arr.unshift({ id: String(Date.now()), ...registro });
+    saveLocalClases(arr);
+  }
+}
+
+async function eliminarClase(id) {
+  if (firebaseOK) {
+    await db.collection("clasesIngles").doc(id).delete();
+  } else {
+    const arr = getLocalClases().filter(c => c.id !== id);
+    saveLocalClases(arr);
+  }
+}
+
+function escucharClases(callback) {
+  if (firebaseOK) {
+    return db.collection("clasesIngles").orderBy("fecha", "desc")
+      .onSnapshot(snap => {
+        const arr = snap.docs.map(doc => {
+          const d = doc.data();
+          return {
+            id: doc.id,
+            titulo: d.titulo,
+            url: d.url,
+            fecha: d.fecha ? d.fecha.toDate() : new Date()
+          };
+        });
+        callback(arr);
+      });
+  } else {
+    callback(getLocalClases());
+    return () => {};
+  }
+}
+
+/* ---------------- Panel profe ---------------- */
+function initProfe() {
+  const status = document.getElementById("publish-status");
+  document.getElementById("publish-btn").addEventListener("click", async () => {
+    const titulo = document.getElementById("input-titulo").value.trim();
+    const url = document.getElementById("input-url").value.trim();
+    status.classList.remove("hidden", "ok", "err");
+    if (!titulo || !url) {
+      status.textContent = "Completa el título y el link antes de publicar.";
+      status.classList.add("err");
+      return;
+    }
+    try {
+      await publicarClase(titulo, url);
+      document.getElementById("input-titulo").value = "";
+      document.getElementById("input-url").value = "";
+      status.textContent = "✓ Clase publicada.";
+      status.classList.add("ok");
+    } catch (e) {
+      status.textContent = e.message || "Ocurrió un error al publicar.";
+      status.classList.add("err");
+    }
+  });
+
+  escucharClases(renderProfeHistory);
+}
+
+function renderProfeHistory(clases) {
+  const wrap = document.getElementById("profe-history");
+  wrap.innerHTML = "";
+  if (!clases.length) {
+    wrap.innerHTML = `<p class="empty-note">Todavía no has publicado ninguna clase.</p>`;
+    return;
+  }
+  clases.forEach(c => {
+    const div = document.createElement("div");
+    div.className = "mini-pin";
+    const info = getEmbedInfo(c.url);
+    div.innerHTML = `
+      <button class="del" data-id="${c.id}">Eliminar</button>
+      <h3><span class="mini-tipo">${tipoIcon(info.type)}</span>${escapeHtml(c.titulo)}</h3>
+      <span>${fmtDate(c.fecha)}</span>`;
+    div.querySelector(".del").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (confirm(`¿Eliminar "${c.titulo}"?`)) await eliminarClase(c.id);
+    });
+    div.addEventListener("click", () => window.open(c.url, "_blank"));
+    wrap.appendChild(div);
+  });
+}
+
+/* ---------------- Panel alumno ---------------- */
+function initAlumno() {
+  let todasLasClases = [];
+  let seleccionadaId = null;
+
+  escucharClases(clases => {
+    todasLasClases = clases;
+    if (!seleccionadaId || !clases.some(c => c.id === seleccionadaId)) {
+      seleccionadaId = clases[0] ? clases[0].id : null;
+    }
+    renderVistaAlumno();
+  });
+
+  function renderVistaAlumno() {
+    const actual = todasLasClases.find(c => c.id === seleccionadaId) || null;
+    renderClaseActual(actual);
+    renderAlumnoHistory(todasLasClases.filter(c => c.id !== seleccionadaId), c => {
+      seleccionadaId = c.id;
+      renderVistaAlumno();
+    });
+  }
+}
+
+function renderClaseActual(clase) {
+  const wrap = document.getElementById("clase-actual");
+  if (!clase) {
+    wrap.innerHTML = `<div class="pin-card"><p class="empty-note">Tu profe todavía no ha publicado ninguna clase. Vuelve pronto 📚</p></div>`;
+    return;
+  }
+  const info = getEmbedInfo(clase.url);
+  const media = info.embedUrl
+    ? `<div class="video-frame"><iframe src="${info.embedUrl}" title="${escapeHtml(clase.titulo)}" allow="autoplay; fullscreen" allowfullscreen></iframe></div>`
+    : `<a class="open-link-btn" href="${clase.url}" target="_blank" rel="noopener">Abrir enlace ↗</a>`;
+  wrap.innerHTML = `
+    <div class="pin-card">
+      <span class="tipo-badge">${tipoLabel(info.type)}</span>
+      <h2>${escapeHtml(clase.titulo)}</h2>
+      <span class="pin-date">${fmtDate(clase.fecha)}</span>
+      ${media}
+    </div>`;
+}
+
+function renderAlumnoHistory(clases, onSelect) {
+  const wrap = document.getElementById("alumno-history");
+  wrap.innerHTML = "";
+  if (!clases.length) {
+    wrap.innerHTML = `<p class="empty-note">Aún no hay clases anteriores.</p>`;
+    return;
+  }
+  clases.forEach(c => {
+    const div = document.createElement("div");
+    div.className = "mini-pin";
+    const info = getEmbedInfo(c.url);
+    div.innerHTML = `<h3><span class="mini-tipo">${tipoIcon(info.type)}</span>${escapeHtml(c.titulo)}</h3><span>${fmtDate(c.fecha)}</span>`;
+    div.addEventListener("click", () => onSelect(c));
+    wrap.appendChild(div);
+  });
+}
+
+function escapeHtml(str) {
+  const d = document.createElement("div");
+  d.textContent = str;
+  return d.innerHTML;
+}
+</script>
+</body>
+</html>
