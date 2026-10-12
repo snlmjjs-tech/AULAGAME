@@ -34,216 +34,363 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.14.1/firebase-app-compat.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.14.1/firebase-database-compat.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+/* =====================================================================
+   QuizLive · sistema de diseño (Apple-like, apple-design + emil-design-eng
+   + taste/soft + impeccable). Ver _referencia/DESIGN-quizlive.md.
+   ===================================================================== */
 :root{
-  --bg:#2b1660; --bg2:#3a2180; --panel:#41288f; --panel2:#4f33a6;
-  --ink:#ffffff; --ink-dim:#cdbdf5; --line:rgba(255,255,255,.14);
-  --rojo:#e21b3c; --azul:#1368ce; --amarillo:#ffa602; --verde:#26890c;
-  --morado:#7b3ff2; --oro:#ffd23f;
-  --r:18px; --sh:0 10px 0 rgba(0,0,0,.28);
+  color-scheme:dark;
   font-size:16px;
+  --bg:#06070d;
+  --ink:#f5f5f7; --ink-2:rgba(245,245,247,.72); --ink-3:rgba(245,245,247,.54);
+  --hair:rgba(255,255,255,.10); --hair-2:rgba(255,255,255,.20);
+  --card:rgba(255,255,255,.058); --shell:rgba(255,255,255,.04);
+  --surface:rgba(255,255,255,.075); --surface-2:rgba(255,255,255,.12); --field:rgba(255,255,255,.085);
+  --glass:rgba(22,23,34,.62); --glass-strong:rgba(26,27,40,.86);
+  --sheet:#15161f;
+  --accent:#2b8cff; --accent-btn:#0a64d8; --accent-soft:rgba(43,140,255,.20);
+  --ok:#34d36a; --bad:#ff5a50;
+  --red:#d81b36; --blue:#1d6ff2; --yellow:#f5b000; --green:#17a34a; --purple:#8e5cf6;
+  --red-ink:#ff8394; --blue-ink:#7db3ff; --yellow-ink:#ffd45c; --green-ink:#62dd8c; --purple-ink:#bda1ff;
+  --btn-red:#c81e36; --btn-green:#117a37;
+  --oro:#ffd60a;
+  /* alias de compatibilidad: estilos inline que el JS del juego sigue generando */
+  --ink-dim:var(--ink-2); --panel:var(--card); --panel2:var(--surface-2); --line:var(--hair); --morado:var(--purple);
+  --mesh:
+    radial-gradient(52% 46% at 10% 6%, rgba(29,111,242,.42), transparent 62%),
+    radial-gradient(46% 42% at 94% 10%, rgba(216,27,54,.30), transparent 62%),
+    radial-gradient(50% 44% at 86% 98%, rgba(245,176,0,.17), transparent 64%),
+    radial-gradient(44% 44% at 4% 94%, rgba(23,163,74,.22), transparent 64%);
+  --ring-shell:0 0 0 1px var(--hair), 0 0 0 7px var(--shell), 0 0 0 8px var(--hair);
+  --lift:0 40px 70px -38px rgba(0,0,0,.85);
+  --ease:cubic-bezier(.32,.72,0,1);
+  --spring:cubic-bezier(.34,1.38,.64,1);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Plus Jakarta Sans",system-ui,"Segoe UI",sans-serif;
 }
+@supports (transition-timing-function:linear(0,1)){ :root{ --spring:linear(0, 0.0231, 0.0828, 0.1666, 0.2642, 0.3675, 0.4705, 0.5687, 0.6591, 0.7399, 0.8101, 0.8696, 0.9186, 0.9578, 0.9882, 1.0109, 1.0269, 1.0374, 1.0434, 1.0458, 1.0456, 1.0434, 1.0399, 1.0356, 1.0309, 1.0262, 1.0216, 1.0172, 1.0133, 1.0099, 1.007, 1.0046, 1.0026, 1.001, 1); } }
+
+@media (prefers-color-scheme:light){
+  :root{
+    color-scheme:light;
+    --bg:#f2f2f6;
+    --ink:#1d1d1f; --ink-2:rgba(29,29,31,.70); --ink-3:rgba(29,29,31,.58);
+    --hair:rgba(0,0,0,.09); --hair-2:rgba(0,0,0,.16);
+    --card:rgba(255,255,255,.86); --shell:rgba(255,255,255,.55);
+    --surface:rgba(0,0,0,.045); --surface-2:rgba(0,0,0,.075); --field:rgba(0,0,0,.05);
+    --glass:rgba(255,255,255,.68); --glass-strong:rgba(255,255,255,.9);
+    --sheet:#ffffff;
+    --accent:#0071e3; --accent-btn:#0071e3; --accent-soft:rgba(0,113,227,.12);
+    --ok:#1a8f3c; --bad:#d70015;
+    --red-ink:#c4162d; --blue-ink:#0b57c9; --yellow-ink:#8a5a00; --green-ink:#0e7a31; --purple-ink:#6a3fd1;
+    --oro:#9a5b00;
+    --mesh:
+      radial-gradient(52% 46% at 10% 6%, rgba(29,111,242,.20), transparent 62%),
+      radial-gradient(46% 42% at 94% 10%, rgba(216,27,54,.14), transparent 62%),
+      radial-gradient(50% 44% at 86% 98%, rgba(245,176,0,.18), transparent 64%),
+      radial-gradient(44% 44% at 4% 94%, rgba(23,163,74,.14), transparent 64%);
+    --lift:0 36px 60px -36px rgba(30,30,60,.35);
+  }
+}
+
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
+html,body{min-height:100%}
+html{-webkit-text-size-adjust:100%;scrollbar-color:rgba(128,128,140,.45) transparent;scrollbar-width:thin}
 body{
-  font-family:'Nunito',system-ui,sans-serif;color:var(--ink);
-  background:radial-gradient(1200px 700px at 20% -10%,#4b2ba0 0%,var(--bg) 55%),var(--bg);
-  min-height:100vh;overflow-x:hidden;
+  font-family:var(--font);font-size:1rem;line-height:1.5;letter-spacing:-.011em;
+  color:var(--ink);background:var(--bg);min-height:100dvh;overflow-x:hidden;
+  accent-color:var(--accent);caret-color:var(--accent);-webkit-tap-highlight-color:transparent;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
 }
-/* fondo de formas flotantes (firma visual) */
-.shapes-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+::selection{background:var(--accent-soft);color:inherit}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(128,128,140,.4);border-radius:999px;border:3px solid transparent;background-clip:content-box}
+
+/* fondo: malla estática (sin movimiento a pantalla completa) + grano fijo.
+   #shapesBg sigue recibiendo, vía JS, 14 <span> de figuras flotantes (firma
+   visual heredada): se deja la malla nueva como fondo y se conserva la regla
+   de esas figuras (muy baja opacidad) para que el JS no truene y coexistan. */
+.shapes-bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:var(--mesh),var(--bg)}
 .shapes-bg span{position:absolute;font-size:64px;opacity:.07;animation:float 14s linear infinite}
 @keyframes float{0%{transform:translateY(105vh) rotate(0)}100%{transform:translateY(-15vh) rotate(340deg)}}
-@media (prefers-reduced-motion:reduce){.shapes-bg span{animation:none;top:auto!important;bottom:-200px}}
+body::after{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.035;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
 
-h1,h2,h3,.display{font-family:'Baloo 2',cursive;letter-spacing:.3px}
-.screen{display:none;position:relative;z-index:1;min-height:100vh;padding:22px;max-width:1100px;margin:0 auto}
-.screen.active{display:block}
-.center-col{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:92vh;gap:18px;text-align:center}
-
-.logo{font-family:'Baloo 2';font-size:clamp(2.6rem,7vw,4.4rem);font-weight:800;line-height:1}
-.logo .sh{display:inline-block;transform:translateY(4px)}
-.logo .c1{color:var(--rojo)}.logo .c2{color:var(--azul)}.logo .c3{color:var(--amarillo)}.logo .c4{color:#3fd158}
-.tagline{color:var(--ink-dim);font-weight:600}
-
-.btn{
-  font-family:'Baloo 2';font-weight:700;font-size:1.05rem;color:#fff;
-  border:none;border-radius:var(--r);padding:14px 26px;cursor:pointer;
-  background:var(--morado);box-shadow:var(--sh);transition:transform .08s, box-shadow .08s, filter .15s;
-  display:inline-flex;align-items:center;gap:10px;justify-content:center;
-}
-.btn:hover{filter:brightness(1.1)}
-.btn:active{transform:translateY(6px);box-shadow:0 4px 0 rgba(0,0,0,.28)}
-.btn:focus-visible{outline:3px solid var(--oro);outline-offset:3px}
-.btn.big{font-size:1.35rem;padding:18px 38px}
-.btn.rojo{background:var(--rojo)}.btn.azul{background:var(--azul)}
-.btn.verde{background:var(--verde)}.btn.amarillo{background:var(--amarillo);color:#3a2a00}
-.btn.gris{background:#5d5480}.btn.oro{background:var(--oro);color:#4a3600}
-.btn.ghost{background:transparent;box-shadow:none;border:2px solid var(--line);color:var(--ink-dim)}
-.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
-.btn.small{font-size:.9rem;padding:8px 16px;border-radius:12px;box-shadow:0 5px 0 rgba(0,0,0,.28)}
-
-.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:0 14px 34px rgba(0,0,0,.30)}
+h1,h2,h3,.display{font-family:var(--font);font-weight:800;letter-spacing:-.035em;line-height:1.05;text-wrap:balance}
+.i{width:1.25em;height:1.25em;fill:currentColor;flex-shrink:0;display:inline-block;vertical-align:-.22em}
+.muted{color:var(--ink-2)}
 .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-.grow{flex:1}
-.muted{color:var(--ink-dim)}
-.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
-.topbar h2{font-size:1.7rem}
+.grow{flex:1}.spacer{flex:1}
+b{font-weight:700}
+
+/* ===== pantallas y entrada ===== */
+.screen{display:none;position:relative;z-index:2;min-height:100dvh;padding:22px;max-width:1100px;margin:0 auto}
+.screen.active{display:block}
+.center-col{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100dvh - 44px);gap:clamp(18px,3.2vh,30px);text-align:center}
+@keyframes rise{from{opacity:0;transform:translateY(16px);filter:blur(5px)}to{opacity:1;transform:none;filter:none}}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes tileIn{from{opacity:0;transform:translateY(22px) scale(.84)}to{opacity:1;transform:none}}
+.screen.active>*:not(.center-col),.screen.active>.center-col>*{animation:rise .8s var(--ease) both}
+.screen.active>*:nth-child(2),.screen.active>.center-col>*:nth-child(2){animation-delay:.07s}
+.screen.active>*:nth-child(3),.screen.active>.center-col>*:nth-child(3){animation-delay:.14s}
+.screen.active>*:nth-child(4),.screen.active>.center-col>*:nth-child(4){animation-delay:.21s}
+.screen.active>*:nth-child(5),.screen.active>.center-col>*:nth-child(5){animation-delay:.28s}
+.screen.active>.center-col>*:nth-child(n+6){animation-delay:.34s}
+
+/* ===== marca ===== */
+.logo{display:flex;gap:clamp(8px,2.2vw,16px);justify-content:center;margin-bottom:clamp(6px,1.6vh,14px);font-family:var(--font);font-weight:800;letter-spacing:-.045em;line-height:.95;font-size:clamp(2.6rem,7vw,4.4rem);flex-wrap:wrap;align-items:center}
+.logo .sh{width:clamp(44px,11vw,70px);aspect-ratio:1;border-radius:27%;display:grid;place-items:center;color:#fff;font-size:.5em;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.42),inset 0 -2px 0 rgba(0,0,0,.14),0 24px 34px -18px var(--tsh);
+  animation:tileIn .9s var(--spring) both}
+.logo .c1{--tsh:rgba(216,27,54,.75);background:linear-gradient(180deg,#ff5d70,#d81b36);rotate:-7deg;animation-delay:.04s}
+.logo .c2{--tsh:rgba(29,111,242,.75);background:linear-gradient(180deg,#3b8bff,#1458d6);rotate:4deg;animation-delay:.12s}
+.logo .c3{--tsh:rgba(245,176,0,.7);background:linear-gradient(180deg,#ffd24d,#f2a900);color:#2a1c00;rotate:-3deg;animation-delay:.20s}
+.logo .c4{--tsh:rgba(23,163,74,.7);background:linear-gradient(180deg,#2fc765,#12853c);rotate:6deg;animation-delay:.28s}
+.logo span{color:var(--ink-2);font-weight:700}
+.tagline{color:var(--ink-2);font-size:clamp(1.05rem,2.6vw,1.3rem);font-weight:500;max-width:38ch;line-height:1.4;text-wrap:balance;letter-spacing:-.018em}
+
+/* ===== botones ===== */
+.btn{
+  font-family:var(--font);font-weight:650;font-size:.97rem;letter-spacing:-.012em;color:#fff;border:none;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  padding:13px 22px;border-radius:999px;background:var(--accent-btn);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.26),0 14px 24px -14px rgba(10,100,216,.9);
+  transition:transform .45s var(--ease),filter .2s,background .25s,box-shadow .3s;
+  -webkit-user-select:none;user-select:none;touch-action:manipulation}
+.btn:hover{filter:brightness(1.1)}
+.btn:active{transform:scale(.965);transition-duration:.09s}
+.btn:focus-visible,.icon-btn:focus-visible,.ans:focus-visible,.av:focus-visible,.chip:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.btn:disabled{opacity:.4;cursor:not-allowed;filter:none;transform:none}
+.btn.rojo{background:var(--btn-red);box-shadow:inset 0 1px 0 rgba(255,255,255,.24),0 14px 24px -14px rgba(200,30,54,.9)}
+.btn.azul{background:var(--accent-btn)}
+.btn.verde{background:var(--btn-green);box-shadow:inset 0 1px 0 rgba(255,255,255,.24),0 14px 24px -14px rgba(17,122,55,.9)}
+.btn.amarillo{background:#ffc21a;color:#2a1c00;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 14px 24px -14px rgba(245,176,0,.8)}
+.btn.oro{background:#f5f5f7;color:#111;box-shadow:inset 0 1px 0 #fff,0 18px 30px -16px rgba(255,255,255,.5)}
+@media (prefers-color-scheme:light){.btn.oro{background:#1d1d1f;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 18px 30px -16px rgba(0,0,0,.6)}}
+.btn.gris{background:var(--surface-2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--hair)}
+.btn.ghost{background:transparent;color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--hair-2)}
+.btn.small{font-size:.86rem;padding:9px 16px;gap:7px}
+.btn.big{font-size:1.1rem;padding:15px 30px}
+.icon-btn{width:38px;height:38px;border-radius:50%;border:none;cursor:pointer;display:inline-grid;place-items:center;
+  background:var(--surface-2);color:var(--ink);transition:transform .4s var(--ease),background .2s;flex-shrink:0;font-size:1rem}
+.icon-btn:hover{background:var(--hair-2)}
+.icon-btn:active{transform:scale(.9);transition-duration:.08s}
+
+/* ===== barra superior (vidrio flotante) ===== */
+.topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 auto 22px;padding:8px 10px 8px 8px;
+  border-radius:30px;background:var(--glass);border:1px solid var(--hair);
+  -webkit-backdrop-filter:blur(26px) saturate(180%);backdrop-filter:blur(26px) saturate(180%);
+  box-shadow:0 18px 40px -26px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.07)}
+@media (min-width:641px){.topbar{position:sticky;top:12px;z-index:20}}
+.topbar h2{font-size:1.15rem;font-weight:750;letter-spacing:-.025em;padding:0 6px}
 .spacer{flex:1}
 
+/* ===== tarjetas con doble bisel ===== */
+.card{background:var(--card);border-radius:28px;padding:clamp(18px,3vw,28px);margin:8px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),var(--ring-shell),var(--lift)}
+
+/* ===== formularios ===== */
 input[type=text],input[type=number],textarea,select{
-  width:100%;font-family:'Nunito';font-weight:700;font-size:1rem;color:#2a1758;
-  background:#fff;border:none;border-radius:14px;padding:13px 16px;
-}
+  width:100%;font-family:var(--font);font-weight:550;font-size:1rem;letter-spacing:-.012em;color:var(--ink);
+  background:var(--field);border:1px solid transparent;border-radius:16px;padding:13px 16px;
+  transition:border-color .2s,box-shadow .25s var(--ease),background .2s}
+input::placeholder,textarea::placeholder{color:var(--ink-3);font-weight:500}
+input:focus-visible,textarea:focus-visible,select:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
 textarea{resize:vertical;min-height:90px}
-input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--oro)}
-label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.6px}
+label.fld{display:block;font-weight:650;font-size:.86rem;color:var(--ink-2);margin:16px 0 7px;letter-spacing:-.005em}
+#quizTitle{font-size:1.35rem;font-weight:750;letter-spacing:-.03em;padding:12px 16px}
+input[type=radio]{width:22px;height:22px;cursor:pointer}
 
-/* ===== lista de preguntas (editor) ===== */
-.qlist{display:flex;flex-direction:column;gap:12px;margin-top:14px}
-.qitem{display:flex;align-items:center;gap:14px;background:var(--panel2);border-radius:16px;padding:14px 16px;border:1px solid var(--line)}
-.qitem .num{font-family:'Baloo 2';font-size:1.2rem;color:var(--oro);min-width:34px}
-.qitem .qtxt{flex:1;font-weight:700}
-.badge{font-size:.72rem;font-weight:800;letter-spacing:.5px;padding:4px 10px;border-radius:999px;text-transform:uppercase}
-.badge.quiz{background:var(--rojo)}.badge.vf{background:var(--azul)}
-.badge.orden{background:var(--amarillo);color:#3a2a00}.badge.corta{background:var(--verde)}
-.badge.larga{background:var(--morado)}
-.icon-btn{background:rgba(255,255,255,.12);border:none;color:#fff;border-radius:10px;width:38px;height:38px;font-size:1rem;cursor:pointer}
-.icon-btn:hover{background:rgba(255,255,255,.25)}
+/* ===== lista agrupada (preguntas y biblioteca) ===== */
+.qlist{display:flex;flex-direction:column;margin-top:10px}
+.qitem{display:flex;align-items:center;gap:14px;padding:15px 4px;border-top:1px solid var(--hair)}
+.qitem:first-child{border-top:none}
+.qitem .num{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);font-weight:750;font-size:.9rem;font-variant-numeric:tabular-nums;color:var(--ink-2);flex-shrink:0}
+.qitem .qtxt{flex:1;font-weight:600;letter-spacing:-.016em}
+.badge{font-size:.72rem;font-weight:750;padding:3px 10px;border-radius:999px;letter-spacing:0;background:var(--surface-2);color:var(--ink-2)}
+.badge.quiz{background:color-mix(in srgb,var(--red) 20%,transparent);color:var(--red-ink)}
+.badge.vf{background:color-mix(in srgb,var(--blue) 22%,transparent);color:var(--blue-ink)}
+.badge.orden{background:color-mix(in srgb,var(--yellow) 24%,transparent);color:var(--yellow-ink)}
+.badge.corta{background:color-mix(in srgb,var(--green) 22%,transparent);color:var(--green-ink)}
+.badge.larga{background:color-mix(in srgb,var(--purple) 24%,transparent);color:var(--purple-ink)}
 
-/* ===== grilla de alternativas estilo Kahoot ===== */
-.ans-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%}
+/* ===== alternativas estilo Kahoot ===== */
+.ans-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,1.6vw,16px);width:100%}
 .ans{
-  border:none;border-radius:16px;min-height:96px;padding:16px 18px;cursor:pointer;
-  display:flex;align-items:center;gap:14px;color:#fff;font-family:'Nunito';font-weight:800;
-  font-size:clamp(1rem,2.4vw,1.35rem);text-align:left;box-shadow:var(--sh);
-  transition:transform .08s,filter .12s,opacity .3s;
-}
-.ans:hover{filter:brightness(1.12)}
-.ans:active{transform:translateY(6px);box-shadow:0 4px 0 rgba(0,0,0,.28)}
-.ans:focus-visible{outline:4px solid #fff;outline-offset:2px}
-.ans .shape{font-size:2rem;line-height:1;flex-shrink:0;text-shadow:0 2px 0 rgba(0,0,0,.25)}
-.ans.a0{background:var(--rojo)}.ans.a1{background:var(--azul)}
-.ans.a2{background:var(--amarillo);color:#3a2a00}.ans.a3{background:var(--verde)}
-.ans.dim{opacity:.22;pointer-events:none}
-.ans.win{outline:5px solid #fff;animation:pulse .8s ease infinite alternate}
-@keyframes pulse{from{transform:scale(1)}to{transform:scale(1.03)}}
-.ans .pct{margin-left:auto;font-family:'Baloo 2';font-size:1.3rem}
+  --t1:#ff4d63;--t2:#d81b36;--tsh:rgba(216,27,54,.7);
+  border:none;border-radius:28px;min-height:clamp(92px,17vh,150px);padding:18px 24px;cursor:pointer;
+  display:flex;align-items:center;gap:18px;color:#fff;font-family:var(--font);font-weight:700;letter-spacing:-.025em;line-height:1.2;
+  font-size:clamp(1.2rem,2.6vw,1.75rem);text-align:left;
+  background:linear-gradient(180deg,var(--t1),var(--t2));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.36),inset 0 -3px 0 rgba(0,0,0,.13),0 26px 36px -22px var(--tsh);
+  transition:transform .5s var(--ease),filter .25s,opacity .4s,box-shadow .3s;
+  animation:tileIn .7s var(--spring) both}
+.ans-grid .ans:nth-child(2){animation-delay:.05s}.ans-grid .ans:nth-child(3){animation-delay:.1s}.ans-grid .ans:nth-child(4){animation-delay:.15s}
+button.ans:hover{filter:brightness(1.07);transform:translateY(-2px)}
+button.ans:active{transform:scale(.97);transition-duration:.08s}
+.ans .shape{font-size:2.1rem;line-height:1;flex-shrink:0;display:grid;place-items:center;text-shadow:0 2px 0 rgba(0,0,0,.2)}
+.ans.a0{--t1:#ff5d70;--t2:#d81b36;--tsh:rgba(216,27,54,.7)}
+.ans.a1{--t1:#3b8bff;--t2:#1458d6;--tsh:rgba(29,111,242,.7)}
+.ans.a2{--t1:#ffd24d;--t2:#f2a900;--tsh:rgba(245,176,0,.65);color:#2a1c00}
+.ans.a3{--t1:#2fc765;--t2:#12853c;--tsh:rgba(23,163,74,.65)}
+.ans.dim{opacity:.26;filter:saturate(.5);pointer-events:none;transform:scale(.985)}
+.ans.win{box-shadow:inset 0 0 0 4px rgba(255,255,255,.95),0 30px 44px -22px var(--tsh);transform:scale(1.02)}
+.ans .pct{margin-left:auto;font-size:1.4rem;font-weight:800;font-variant-numeric:tabular-nums}
 
-/* ===== pantalla de pregunta (host) ===== */
-.qheader{background:#fff;color:#22104f;border-radius:18px;padding:20px 26px;text-align:center;
-  font-family:'Baloo 2';font-weight:700;font-size:clamp(1.3rem,3.4vw,2.1rem);box-shadow:0 10px 24px rgba(0,0,0,.3)}
-.hud{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:20px 0;flex-wrap:wrap}
-.timer{
-  width:96px;height:96px;border-radius:50%;background:var(--amarillo);color:#3a2a00;
-  display:flex;align-items:center;justify-content:center;font-family:'Baloo 2';
-  font-size:2.4rem;font-weight:800;box-shadow:0 8px 0 rgba(0,0,0,.28);flex-shrink:0;
-}
-.timer.low{background:var(--rojo);color:#fff;animation:pulse .5s infinite alternate}
-.answers-count{text-align:center}
-.answers-count .n{font-family:'Baloo 2';font-size:2.6rem;line-height:1}
-.pin-chip{background:#fff;color:#22104f;border-radius:14px;padding:8px 18px;font-family:'Baloo 2';font-weight:800;font-size:1.2rem}
+/* ===== pregunta (anfitrión) ===== */
+.qheader{text-align:center;font-weight:800;font-size:clamp(1.6rem,4.4vw,3rem);letter-spacing:-.035em;line-height:1.1;text-wrap:balance;padding:6px 8px;color:var(--ink)}
+.hud{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:4px 0 14px;flex-wrap:wrap}
+.pin-chip{background:var(--glass);border:1px solid var(--hair);border-radius:999px;padding:8px 18px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.01em;
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
+.answers-count{text-align:center;line-height:1}
+.answers-count .n{font-size:2.5rem;font-weight:800;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.answers-count .muted{font-size:.8rem;font-weight:600;margin-top:4px}
+@property --p{syntax:'<number>';inherits:true;initial-value:1}
+.timer{--tc:var(--oro);position:relative;display:grid;place-items:center;width:92px;height:92px;flex-shrink:0;
+  font-size:2.1rem;font-weight:800;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.timer::before{content:"";position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(var(--tc) calc(var(--p)*360deg),var(--surface-2) 0);
+  -webkit-mask:radial-gradient(farthest-side,#0000 calc(100% - 8px),#000 calc(100% - 7px));mask:radial-gradient(farthest-side,#0000 calc(100% - 8px),#000 calc(100% - 7px))}
+.timer.low{--tc:var(--bad);color:var(--bad)}
 
 /* ===== lobby ===== */
-.pin-hero{background:#fff;color:#22104f;border-radius:26px;padding:26px 40px;display:inline-block;box-shadow:0 16px 40px rgba(0,0,0,.35)}
-.pin-hero .lbl{font-weight:800;letter-spacing:2px;font-size:.85rem;color:#6b5aa8;text-transform:uppercase}
-.pin-hero .pin{font-family:'Baloo 2';font-size:clamp(3rem,9vw,5.2rem);font-weight:800;letter-spacing:8px;line-height:1}
-.players-wrap{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:8px}
-.ptag{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:10px 20px;font-weight:800;animation:pop .3s ease}
-@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.pin-hero{background:var(--card);border-radius:30px;padding:24px clamp(26px,5vw,44px);text-align:center;display:flex;flex-direction:column;justify-content:center;margin:8px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),var(--ring-shell),var(--lift)}
+.pin-hero .lbl,.qr-hero .lbl{font-size:.9rem;font-weight:650;color:var(--ink-2)}
+.pin-hero .pin{font-size:clamp(3.4rem,11vw,6.4rem);font-weight:800;letter-spacing:.05em;line-height:1;margin-top:6px;font-variant-numeric:tabular-nums;padding-left:.05em}
+.qr-hero{background:#fff;color:#1d1d1f;border-radius:30px;padding:18px 18px 14px;display:flex;flex-direction:column;align-items:center;gap:10px;
+  box-shadow:var(--ring-shell),var(--lift);margin:8px}
+.qr-hero .lbl{color:#515154}
+.qr-hero img,.qr-hero canvas{border-radius:10px;display:block}
+.link-corto{display:flex;align-items:center;gap:8px;background:#f2f2f6;border:1px solid rgba(0,0,0,.09);border-radius:999px;padding:7px 8px 7px 16px;margin-top:2px}
+.link-corto span{font-weight:650;font-size:.92rem;letter-spacing:-.01em;color:#1d1d1f}
+.link-corto button{background:var(--accent-btn);color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-size:13px;cursor:pointer;flex-shrink:0;transition:filter .2s}
+.link-corto button:hover{filter:brightness(1.15)}
+.players-wrap{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:760px}
+.ptag{background:var(--surface-2);border:1px solid var(--hair);border-radius:999px;padding:8px 18px 8px 10px;font-weight:650;display:inline-flex;align-items:center;gap:8px;animation:pop .6s var(--spring)}
+.ptag .pav{font-size:1.5rem;line-height:1}
 
 /* ===== podio ===== */
-.podium{display:flex;align-items:flex-end;justify-content:center;gap:14px;margin:26px 0}
-.pod{width:min(28vw,190px);border-radius:18px 18px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:14px;animation:rise .9s ease}
-@keyframes rise{from{height:0!important;opacity:0}to{opacity:1}}
-.pod .medal{font-size:2.4rem}
-.pod .nm{font-family:'Baloo 2';font-size:1.15rem;padding:0 8px;text-align:center;word-break:break-word}
-.pod .pt{font-weight:800;color:rgba(255,255,255,.85)}
-.pod.p1{height:230px;background:linear-gradient(180deg,#ffd23f,#e0a400);color:#4a3600}
-.pod.p2{height:180px;background:linear-gradient(180deg,#c9d6ea,#8fa3c4);color:#20304d}
-.pod.p3{height:140px;background:linear-gradient(180deg,#e8955d,#b05e22);color:#3d1e00}
-.ranking{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
-.rk{display:flex;gap:12px;background:var(--panel2);border-radius:12px;padding:10px 16px;font-weight:800}
-.rk .pos{color:var(--oro);min-width:30px}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:12px;margin:26px 0 10px}
+.pod{width:min(29vw,190px);border-radius:26px 26px 6px 6px;display:flex;flex-direction:column;align-items:center;padding-top:16px;gap:2px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 30px 40px -28px rgba(0,0,0,.8);animation:rise 1s var(--ease) both}
+.pod .medal{font-size:2.2rem;line-height:1}
+.pod .nm{font-weight:750;font-size:1.1rem;padding:0 10px;text-align:center;word-break:break-word;letter-spacing:-.02em}
+.pod .pt{font-weight:650;opacity:.8;font-variant-numeric:tabular-nums;font-size:.92rem}
+.pod.p1{height:250px;background:linear-gradient(180deg,#ffe27a,#e3a500);color:#3a2800;animation-delay:.25s}
+.pod.p2{height:196px;background:linear-gradient(180deg,#e3e9f4,#98a6c0);color:#1b2740;animation-delay:.1s}
+.pod.p3{height:150px;background:linear-gradient(180deg,#f0b58a,#b86a2c);color:#3a1d00;animation-delay:.4s}
+.ranking{max-width:560px;margin:0 auto;display:flex;flex-direction:column}
+.rk{text-align:left;display:flex;gap:14px;align-items:center;padding:12px 6px;border-top:1px solid var(--hair);font-weight:650;font-variant-numeric:tabular-nums}
+.rk:first-child{border-top:none}
+.rk .pos{color:var(--oro);min-width:30px;font-weight:800}
 
 /* ===== estudiante ===== */
-.stu-shell{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px;min-height:92vh;justify-content:center}
+.stu-shell{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px;min-height:calc(100dvh - 44px);justify-content:center}
 .stu-status{text-align:center}
-.stu-status .emoji{font-size:4rem;display:block;margin-bottom:10px}
-.scorebar{display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.25);border-radius:14px;padding:10px 16px;font-weight:800}
-.feedback{border-radius:22px;padding:34px 22px;text-align:center;animation:pop .35s ease}
-.feedback.ok{background:var(--verde)}
-.feedback.bad{background:var(--rojo)}
-.feedback.wait{background:var(--panel2)}
-.feedback h2{font-size:2rem}
-.feedback .pts{font-family:'Baloo 2';font-size:1.4rem;margin-top:6px}
+.stu-status .emoji{font-size:3.4rem;display:block;margin-bottom:10px;line-height:1}
+.scorebar{display:flex;justify-content:space-between;align-items:center;background:var(--glass);border:1px solid var(--hair);border-radius:999px;padding:10px 20px;font-weight:700;font-variant-numeric:tabular-nums;
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
+.feedback{border-radius:32px;padding:38px 22px;text-align:center;animation:pop .6s var(--spring);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 30px 44px -28px rgba(0,0,0,.7)}
+.feedback.ok{background:linear-gradient(180deg,#2fc765,#12853c);color:#fff}
+.feedback.bad{background:linear-gradient(180deg,#ff5d70,#c81e36);color:#fff}
+.feedback.wait{background:var(--card);box-shadow:var(--ring-shell),var(--lift)}
+.feedback h2{font-size:1.9rem}
+.feedback .pts{font-size:1.35rem;font-weight:750;font-variant-numeric:tabular-nums;opacity:.95;margin-top:6px}
 
 /* ===== ordenar ===== */
 .order-pool,.order-out{display:flex;flex-direction:column;gap:10px}
-.chip{background:#fff;color:#22104f;border:none;border-radius:14px;padding:14px 16px;font-weight:800;font-size:1.05rem;cursor:pointer;text-align:left;box-shadow:0 6px 0 rgba(0,0,0,.25);display:flex;gap:10px;align-items:center}
-.chip:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.25)}
-.chip .ix{background:var(--morado);color:#fff;border-radius:8px;min-width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-family:'Baloo 2'}
-.order-out .chip{background:var(--oro)}
-.order-out:empty::after{content:"Toca las opciones en el orden correcto ↑";display:block;text-align:center;color:var(--ink-dim);font-weight:700;padding:14px;border:2px dashed var(--line);border-radius:14px}
+.chip{background:var(--surface-2);color:var(--ink);border:1px solid var(--hair);border-radius:20px;padding:14px 16px;font-family:var(--font);font-weight:650;font-size:1.05rem;letter-spacing:-.015em;cursor:pointer;text-align:left;
+  display:flex;gap:12px;align-items:center;transition:transform .4s var(--ease),background .2s}
+.chip:hover{background:var(--hair-2)}
+.chip:active{transform:scale(.975);transition-duration:.08s}
+.chip .ix{background:var(--accent-btn);color:#fff;border-radius:50%;min-width:28px;height:28px;display:grid;place-items:center;font-weight:800;font-size:.85rem;font-variant-numeric:tabular-nums}
+.order-out .chip{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
+.order-out:empty::after{content:"Toca las opciones en el orden correcto";display:block;text-align:center;color:var(--ink-3);font-weight:600;padding:16px;border:1.5px dashed var(--hair-2);border-radius:20px}
 
-/* ===== revisión respuestas abiertas ===== */
-.rev-item{background:var(--panel2);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
-.rev-item .who{font-weight:800;color:var(--oro)}
-.rev-item .txt{background:rgba(255,255,255,.1);border-radius:10px;padding:10px 12px;white-space:pre-wrap}
+/* ===== revisión de respuestas largas ===== */
+.rev-item{background:var(--surface);border:1px solid var(--hair);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
+.rev-item .who{font-weight:750}
+.rev-item .txt{background:var(--field);border-radius:14px;padding:12px 14px;white-space:pre-wrap}
 .rev-item .row{gap:8px}
-.rev-item .btn.sel{outline:3px solid #fff}
+.rev-item .btn.sel{box-shadow:0 0 0 3px var(--ink)}
 
-/* ===== modales ===== */
-.modal-bg{position:fixed;inset:0;background:rgba(10,4,30,.75);display:none;align-items:center;justify-content:center;z-index:50;padding:18px}
-.modal-bg.open{display:flex}
-.modal{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:24px;width:min(680px,100%);max-height:88vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.5)}
-.modal h3{font-size:1.5rem;margin-bottom:6px}
-.opt-row{display:flex;gap:10px;align-items:center;margin-bottom:10px}
-.opt-row .shape-tag{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#fff;flex-shrink:0}
-.opt-row input[type=radio]{width:22px;height:22px;accent-color:var(--oro);cursor:pointer;flex-shrink:0}
-.st0{background:var(--rojo)}.st1{background:var(--azul)}.st2{background:var(--amarillo);color:#3a2a00}.st3{background:var(--verde)}
-.help-steps{line-height:1.7;font-weight:600}
-.help-steps b{color:var(--oro)}
-.help-steps code{background:rgba(0,0,0,.3);padding:2px 6px;border-radius:6px;font-size:.85em}
-.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(120px);background:#fff;color:#22104f;font-weight:800;padding:14px 24px;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.4);transition:transform .3s;z-index:99;max-width:90vw;text-align:center}
-.toast.show{transform:translateX(-50%) translateY(0)}
-.bar{height:10px;background:rgba(255,255,255,.15);border-radius:999px;overflow:hidden;margin-top:14px}
-.bar i{display:block;height:100%;background:var(--oro);border-radius:999px;transition:width 1s linear}
-.stat-bars{display:flex;gap:14px;align-items:flex-end;justify-content:center;height:150px;margin:18px 0}
-.stat-bars .sb{width:70px;border-radius:10px 10px 0 0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;color:#fff;font-weight:800;transition:height .6s ease;min-height:26px}
-/* ===== avatares ===== */
+/* ===== hojas modales ===== */
+.modal-bg{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(5,6,12,.5);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%)}
+.modal-bg.open{display:flex;animation:fade .35s var(--ease)}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes sheetIn{from{opacity:0;transform:translateY(24px) scale(.965);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
+.modal{background:var(--sheet);border-radius:32px;padding:clamp(22px,4vw,32px);width:min(660px,100%);max-height:90dvh;overflow-y:auto;
+  box-shadow:0 0 0 1px var(--hair),0 50px 100px -30px rgba(0,0,0,.75);animation:sheetIn .6s var(--spring)}
+.modal h3{font-size:1.6rem;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.opt-row{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.opt-row .shape-tag{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;color:#fff;flex-shrink:0;font-size:1.3rem;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.opt-row input[type=radio]{width:22px;height:22px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.st0{background:linear-gradient(180deg,#ff5d70,#d81b36)}.st1{background:linear-gradient(180deg,#3b8bff,#1458d6)}
+.st2{background:linear-gradient(180deg,#ffd24d,#f2a900);color:#2a1c00!important}.st3{background:linear-gradient(180deg,#2fc765,#12853c)}
+.help-steps{line-height:1.65;font-weight:500;color:var(--ink-2)}
+.help-steps b{color:var(--ink);font-weight:700}
+.help-steps p+p{margin-top:8px}
+.help-steps code{background:var(--surface-2);padding:2px 7px;border-radius:7px;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.86em}
+
+/* ===== toast (vidrio, desde arriba) ===== */
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 16px);transform:translate(-50%,-180%);z-index:99;max-width:min(92vw,520px);text-align:center;
+  background:var(--glass-strong);color:var(--ink);border:1px solid var(--hair-2);border-radius:999px;padding:12px 22px;font-weight:650;font-size:.95rem;letter-spacing:-.012em;
+  -webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);box-shadow:0 24px 50px -20px rgba(0,0,0,.6);
+  transition:transform .6s var(--spring)}
+.toast.show{transform:translate(-50%,0)}
+
+/* ===== varios ===== */
 .avatar-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:4px}
-.av{font-size:1.7rem;background:rgba(255,255,255,.12);border:2px solid transparent;border-radius:14px;padding:8px 0;cursor:pointer;transition:transform .1s}
-.av:hover{transform:scale(1.12)}
-.av.sel{background:var(--oro);border-color:#fff;transform:scale(1.12)}
-.ptag .pav{font-size:1.3rem;margin-right:4px}
-/* ===== imagen de pregunta ===== */
-.qimg{display:block;max-width:min(520px,92%);max-height:36vh;margin:14px auto 0;border-radius:16px;box-shadow:0 12px 28px rgba(0,0,0,.4);object-fit:contain;background:#fff}
+.av{font-size:1.7rem;line-height:1;background:var(--surface);border:2px solid transparent;border-radius:18px;padding:9px 0;cursor:pointer;transition:transform .45s var(--spring),background .2s}
+.av:hover{transform:scale(1.1)}
+.av.sel{background:var(--accent-soft);border-color:var(--accent);transform:scale(1.08)}
+.qimg{display:block;max-width:min(520px,92%);max-height:36vh;margin:14px auto 0;border-radius:24px;box-shadow:0 0 0 1px var(--hair),0 30px 50px -28px rgba(0,0,0,.8);object-fit:contain;background:#fff}
 .img-prev{position:relative;display:inline-block;margin-top:10px}
-.img-prev img{max-width:220px;max-height:140px;border-radius:12px;display:block}
-/* ===== música ===== */
-#musicBtn{position:fixed;top:14px;right:14px;z-index:30;display:none}
-/* ===== video de YouTube ===== */
-.ytwrap{position:relative;width:min(680px,100%);margin:14px auto 0;padding-top:min(56.25%,382px);border-radius:16px;overflow:hidden;box-shadow:0 12px 28px rgba(0,0,0,.4)}
+.img-prev img{max-width:220px;max-height:140px;border-radius:16px;display:block;box-shadow:0 0 0 1px var(--hair)}
+/* #musicBtn conserva texto con emoji (el JS hace textContent='🔊 Música'/'🔇 Música'),
+   por eso es una píldora de vidrio y no un botón-ícono circular. */
+#musicBtn{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);right:14px;z-index:30;display:none;
+  border-radius:999px;padding:10px 18px;font-size:.86rem;
+  background:var(--glass);border:1px solid var(--hair);color:var(--ink);
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 14px 30px -18px rgba(0,0,0,.6)}
+.ytwrap{position:relative;width:min(680px,100%);margin:14px auto 0;padding-top:min(56.25%,382px);border-radius:26px;overflow:hidden;box-shadow:0 0 0 1px var(--hair),0 36px 60px -30px rgba(0,0,0,.85)}
 .ytwrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-/* ===== QR del lobby ===== */
-.qr-hero{background:#fff;color:#22104f;border-radius:26px;padding:20px 22px 14px;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
-.qr-hero .lbl{font-weight:800;letter-spacing:2px;font-size:.85rem;color:#6b5aa8;text-transform:uppercase}
-.qr-hero img,.qr-hero canvas{border-radius:8px}
-.link-corto{display:flex;align-items:center;gap:8px;background:#f1edfb;border:2px solid #d8cdf5;border-radius:12px;padding:8px 12px;margin-top:2px}
-.link-corto span{font-family:'Baloo 2';font-weight:800;font-size:1.05rem;letter-spacing:1px;color:#22104f}
-.link-corto button{background:#22104f;color:#fff;border:none;border-radius:8px;width:30px;height:30px;font-size:14px;cursor:pointer;flex-shrink:0}
-.link-corto button:hover{filter:brightness(1.2)}
-@media(max-width:640px){
-  .ans-grid{grid-template-columns:1fr}
-  .ans{min-height:76px}
-  .timer{width:72px;height:72px;font-size:1.8rem}
+
+/* ===== responsive ===== */
+@media (max-width:640px){
   .screen{padding:14px}
+  .ans-grid{grid-template-columns:1fr}
+  .ans{min-height:78px;padding:14px 20px;border-radius:24px}
+  .timer{width:70px;height:70px;font-size:1.65rem}
+  .pod{width:30vw}.pod.p1{height:210px}.pod.p2{height:165px}.pod.p3{height:130px}
+  .topbar{border-radius:26px}
+  .modal-bg{align-items:flex-end;padding:0}
+  .modal{border-radius:30px 30px 0 0;width:100%;max-height:92dvh;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));animation-name:sheetUp}
+  @keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+}
+
+/* ===== accesibilidad: movimiento, transparencia y contraste ===== */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}
+  .screen.active>*:not(.center-col),.screen.active>.center-col>*{animation:fade .25s ease both!important}
+  .shapes-bg span{animation:none!important;top:auto!important;bottom:-200px}
+}
+@media (prefers-reduced-transparency:reduce){
+  .topbar,.toast,.pin-chip,.scorebar,#musicBtn,.modal-bg{-webkit-backdrop-filter:none;backdrop-filter:none}
+  .topbar,.toast,.pin-chip,.scorebar,#musicBtn{background:var(--sheet)}
+  .modal-bg{background:rgba(5,6,12,.82)}
+}
+@media (prefers-contrast:more) and (prefers-color-scheme:dark){
+  :root{--hair:rgba(255,255,255,.34);--hair-2:rgba(255,255,255,.5);--ink-2:var(--ink);--ink-3:var(--ink)}
+  .card,.modal{box-shadow:0 0 0 2px var(--hair-2)}
 }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-caret-left" viewBox="0 0 256 256"><path d="M164.24,203.76a6,6,0,1,1-8.48,8.48l-80-80a6,6,0,0,1,0-8.48l80-80a6,6,0,0,1,8.48,8.48L88.49,128Z"/></symbol><symbol id="i-plus" viewBox="0 0 256 256"><path d="M222,128a6,6,0,0,1-6,6H134v82a6,6,0,0,1-12,0V134H40a6,6,0,0,1,0-12h82V40a6,6,0,0,1,12,0v82h82A6,6,0,0,1,222,128Z"/></symbol><symbol id="i-question" viewBox="0 0 256 256"><path d="M138,180a10,10,0,1,1-10-10A10,10,0,0,1,138,180ZM128,74c-21,0-38,15.25-38,34v4a6,6,0,0,0,12,0v-4c0-12.13,11.66-22,26-22s26,9.87,26,22-11.66,22-26,22a6,6,0,0,0-6,6v8a6,6,0,0,0,12,0v-2.42c18.11-2.58,32-16.66,32-33.58C166,89.25,149,74,128,74Zm102,54A102,102,0,1,1,128,26,102.12,102.12,0,0,1,230,128Zm-12,0a90,90,0,1,0-90,90A90.1,90.1,0,0,0,218,128Z"/></symbol><symbol id="i-upload-simple" viewBox="0 0 256 256"><path d="M222,144v64a6,6,0,0,1-6,6H40a6,6,0,0,1-6-6V144a6,6,0,0,1,12,0v58H210V144a6,6,0,0,1,12,0ZM92.24,76.24,122,46.49V144a6,6,0,0,0,12,0V46.49l29.76,29.75a6,6,0,0,0,8.48-8.48l-40-40a6,6,0,0,0-8.48,0l-40,40a6,6,0,0,0,8.48,8.48Z"/></symbol><symbol id="i-download-simple" viewBox="0 0 256 256"><path d="M222,144v64a6,6,0,0,1-6,6H40a6,6,0,0,1-6-6V144a6,6,0,0,1,12,0v58H210V144a6,6,0,0,1,12,0Zm-98.24,4.24a6,6,0,0,0,8.48,0l40-40a6,6,0,0,0-8.48-8.48L134,129.51V32a6,6,0,0,0-12,0v97.51L92.24,99.76a6,6,0,0,0-8.48,8.48Z"/></symbol><symbol id="i-broadcast" viewBox="0 0 256 256"><path d="M128,90a38,38,0,1,0,38,38A38,38,0,0,0,128,90Zm0,64a26,26,0,1,1,26-26A26,26,0,0,1,128,154Zm78-26a77.74,77.74,0,0,1-19.86,52,6,6,0,0,1-8.94-8,65.93,65.93,0,0,0,0-88,6,6,0,1,1,8.94-8A77.74,77.74,0,0,1,206,128ZM67.18,102.31A65.93,65.93,0,0,0,78.8,172a6,6,0,0,1-.47,8.47,6,6,0,0,1-8.47-.47,77.93,77.93,0,0,1,0-104,6,6,0,1,1,8.94,8A66.21,66.21,0,0,0,67.18,102.31ZM246,128a117.71,117.71,0,0,1-33.71,82.58,6,6,0,0,1-8.58-8.4,105.88,105.88,0,0,0,0-148.36,6,6,0,0,1,8.58-8.4A117.71,117.71,0,0,1,246,128ZM52.29,202.18a6,6,0,0,1-8.58,8.4,117.92,117.92,0,0,1,0-165.16,6,6,0,1,1,8.58,8.4,105.88,105.88,0,0,0,0,148.36Z"/></symbol><symbol id="i-monitor-play" viewBox="0 0 256 256"><path d="M163.33,115l-48-32A6,6,0,0,0,106,88v64a6,6,0,0,0,9.33,5l48-32a6,6,0,0,0,0-10ZM118,140.79V99.21L149.18,120ZM208,42H48A22,22,0,0,0,26,64V176a22,22,0,0,0,22,22H208a22,22,0,0,0,22-22V64A22,22,0,0,0,208,42Zm10,134a10,10,0,0,1-10,10H48a10,10,0,0,1-10-10V64A10,10,0,0,1,48,54H208a10,10,0,0,1,10,10Zm-52,48a6,6,0,0,1-6,6H96a6,6,0,0,1,0-12h64A6,6,0,0,1,166,224Z"/></symbol><symbol id="i-device-mobile" viewBox="0 0 256 256"><path d="M176,18H80A22,22,0,0,0,58,40V216a22,22,0,0,0,22,22h96a22,22,0,0,0,22-22V40A22,22,0,0,0,176,18ZM70,62H186V194H70ZM80,30h96a10,10,0,0,1,10,10V50H70V40A10,10,0,0,1,80,30Zm96,196H80a10,10,0,0,1-10-10V206H186v10A10,10,0,0,1,176,226Z"/></symbol><symbol id="i-check" viewBox="0 0 256 256"><path d="M228.24,76.24l-128,128a6,6,0,0,1-8.48,0l-56-56a6,6,0,0,1,8.48-8.48L96,191.51,219.76,67.76a6,6,0,0,1,8.48,8.48Z"/></symbol><symbol id="i-x" viewBox="0 0 256 256"><path d="M204.24,195.76a6,6,0,1,1-8.48,8.48L128,136.49,60.24,204.24a6,6,0,0,1-8.48-8.48L119.51,128,51.76,60.24a6,6,0,0,1,8.48-8.48L128,119.51l67.76-67.75a6,6,0,0,1,8.48,8.48L136.49,128Z"/></symbol><symbol id="i-image" viewBox="0 0 256 256"><path d="M216,42H40A14,14,0,0,0,26,56V200a14,14,0,0,0,14,14H216a14,14,0,0,0,14-14V56A14,14,0,0,0,216,42ZM40,54H216a2,2,0,0,1,2,2V163.57L188.53,134.1a14,14,0,0,0-19.8,0l-21.42,21.42L101.9,110.1a14,14,0,0,0-19.8,0L38,154.2V56A2,2,0,0,1,40,54ZM38,200V171.17l52.58-52.58a2,2,0,0,1,2.84,0L176.83,202H40A2,2,0,0,1,38,200Zm178,2H193.8l-38-38,21.41-21.42a2,2,0,0,1,2.83,0l38,38V200A2,2,0,0,1,216,202ZM146,100a10,10,0,1,1,10,10A10,10,0,0,1,146,100Z"/></symbol><symbol id="i-skip-forward" viewBox="0 0 256 256"><path d="M200,34a6,6,0,0,0-6,6v72.84L71.37,36.14a14,14,0,0,0-14.21-.37A13.69,13.69,0,0,0,50,47.88V208.12a13.69,13.69,0,0,0,7.16,12.11,14,14,0,0,0,14.21-.37L194,143.17V216a6,6,0,0,0,12,0V40A6,6,0,0,0,200,34Zm-6.88,95.56L65,209.69a2,2,0,0,1-2,.05,1.79,1.79,0,0,1-1-1.62V47.88a1.79,1.79,0,0,1,1-1.62A2.1,2.1,0,0,1,64,46a2,2,0,0,1,1,.31l128.12,80.13a1.82,1.82,0,0,1,0,3.12Z"/></symbol><symbol id="i-eye" viewBox="0 0 256 256"><path d="M245.48,125.57c-.34-.78-8.66-19.23-27.24-37.81C201,70.54,171.38,50,128,50S55,70.54,37.76,87.76c-18.58,18.58-26.9,37-27.24,37.81a6,6,0,0,0,0,4.88c.34.77,8.66,19.22,27.24,37.8C55,185.47,84.62,206,128,206s73-20.53,90.24-37.75c18.58-18.58,26.9-37,27.24-37.8A6,6,0,0,0,245.48,125.57ZM128,194c-31.38,0-58.78-11.42-81.45-33.93A134.77,134.77,0,0,1,22.69,128,134.56,134.56,0,0,1,46.55,95.94C69.22,73.42,96.62,62,128,62s58.78,11.42,81.45,33.94A134.56,134.56,0,0,1,233.31,128C226.94,140.21,195,194,128,194Zm0-112a46,46,0,1,0,46,46A46.06,46.06,0,0,0,128,82Zm0,80a34,34,0,1,1,34-34A34,34,0,0,1,128,162Z"/></symbol><symbol id="i-copy" viewBox="0 0 256 256"><path d="M216,34H88a6,6,0,0,0-6,6V82H40a6,6,0,0,0-6,6V216a6,6,0,0,0,6,6H168a6,6,0,0,0,6-6V174h42a6,6,0,0,0,6-6V40A6,6,0,0,0,216,34ZM162,210H46V94H162Zm48-48H174V88a6,6,0,0,0-6-6H94V46H210Z"/></symbol><symbol id="i-arrow-counter-clockwise" viewBox="0 0 256 256"><path d="M222,128a94,94,0,0,1-92.74,94H128a93.43,93.43,0,0,1-64.5-25.65,6,6,0,1,1,8.24-8.72A82,82,0,1,0,70,70l-.19.19L39.44,98H72a6,6,0,0,1,0,12H24a6,6,0,0,1-6-6V56a6,6,0,0,1,12,0V90.34L61.63,61.4A94,94,0,0,1,222,128Z"/></symbol><symbol id="i-arrow-right" viewBox="0 0 256 256"><path d="M220.24,132.24l-72,72a6,6,0,0,1-8.48-8.48L201.51,134H40a6,6,0,0,1,0-12H201.51L139.76,60.24a6,6,0,0,1,8.48-8.48l72,72A6,6,0,0,1,220.24,132.24Z"/></symbol></defs></svg>
 <div class="shapes-bg" id="shapesBg"></div>
 <button class="btn small gris" id="musicBtn" onclick="toggleMusic()">🔊 Música</button>
 
@@ -251,30 +398,30 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
 <section class="screen active" id="scr-home">
   <div class="center-col">
     <div>
-      <div class="logo"><span class="sh c1">▲</span><span class="sh c2">◆</span><span class="sh c3">●</span><span class="sh c4">■</span><br>Quiz<span style="color:var(--oro)">Live</span></div>
-      <p class="tagline">Crea, proyecta y juega en vivo · Los estudiantes se conectan con un PIN</p>
+      <div class="logo"><span class="sh c1">▲</span><span class="sh c2">◆</span><span class="sh c3">●</span><span class="sh c4">■</span><br>Quiz<span>Live</span></div>
+      <p class="tagline">Crea, proyecta y juega en vivo. Tus estudiantes se unen con un PIN o escaneando un QR.</p>
     </div>
     <div class="row" style="justify-content:center">
-      <button class="btn big rojo" onclick="openLibrary()">🎓 Soy el Profesor</button>
-      <button class="btn big azul" onclick="go('scr-join')">🙋 Soy Estudiante</button>
+      <button class="btn big rojo" onclick="openLibrary()">Soy el Profesor</button>
+      <button class="btn big azul" onclick="go('scr-join')">Soy Estudiante</button>
     </div>
     <div class="row" style="justify-content:center">
-      <button class="btn small ghost" onclick="openModal('modal-help')">❓ ¿Cómo funciona?</button>
+      <button class="btn small ghost" onclick="openModal('modal-help')"><svg class="i" aria-hidden="true"><use href="#i-question"/></svg> ¿Cómo funciona?</button>
     </div>
-    <p class="muted" id="fbStatus" style="font-weight:700"></p>
+    <p class="muted" id="fbStatus" style="font-weight:600;font-size:.9rem"></p>
   </div>
 </section>
 
 <!-- ================= BIBLIOTECA (MIS QUIZZES) ================= -->
 <section class="screen" id="scr-library">
   <div class="topbar">
-    <button class="icon-btn" onclick="go('scr-home')" title="Inicio">←</button>
-    <h2>📚 Mis Quizzes</h2>
+    <button class="icon-btn" onclick="go('scr-home')" title="Inicio" aria-label="Inicio"><svg class="i" aria-hidden="true"><use href="#i-caret-left"/></svg></button>
+    <h2>Mis quizzes</h2>
     <span class="spacer"></span>
-    <button class="btn verde" onclick="newQuiz()">＋ Nuevo quiz</button>
+    <button class="btn verde" onclick="newQuiz()"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg> Nuevo quiz</button>
   </div>
   <div class="card">
-    <p class="muted" style="font-weight:700;margin-bottom:6px">Tus quizzes se guardan automáticamente en tu cuenta y sincronizan entre dispositivos. Usa 📤 Exportar Excel dentro de cada quiz como respaldo adicional.</p>
+    <p class="muted" style="font-size:.92rem;margin-bottom:8px">Tus quizzes se guardan automáticamente en tu cuenta y sincronizan entre dispositivos. Usa Exportar Excel dentro de cada quiz como respaldo adicional.</p>
     <div class="qlist" id="libList"></div>
   </div>
 </section>
@@ -282,11 +429,11 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
 <!-- ================= EDITOR (PROFESOR) ================= -->
 <section class="screen" id="scr-editor">
   <div class="topbar">
-    <button class="icon-btn" onclick="openLibrary()" title="Volver">←</button>
-    <h2>Editor de preguntas</h2>
+    <button class="icon-btn" onclick="openLibrary()" title="Volver" aria-label="Volver"><svg class="i" aria-hidden="true"><use href="#i-caret-left"/></svg></button>
+    <h2>Editor</h2>
     <span class="spacer"></span>
-    <button class="btn small amarillo" onclick="exportExcel()">📤 Exportar Excel</button>
-    <button class="btn small amarillo" onclick="document.getElementById('fileExcel').click()">📥 Importar Excel</button>
+    <button class="btn small amarillo" onclick="exportExcel()"><svg class="i" aria-hidden="true"><use href="#i-download-simple"/></svg> Exportar Excel</button>
+    <button class="btn small amarillo" onclick="document.getElementById('fileExcel').click()"><svg class="i" aria-hidden="true"><use href="#i-upload-simple"/></svg> Importar Excel</button>
     <input type="file" id="fileExcel" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)">
     <span id="aiGenerateBtnContainer" style="display:inline-block;"></span>
   </div>
@@ -296,35 +443,35 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
         <label class="fld" style="margin-top:0">Título del quiz</label>
         <input type="text" id="quizTitle" placeholder="Ej: Irregular Verbs – Unit 3" value="Mi Quiz" oninput="autoSave()">
       </div>
-      <button class="btn verde" onclick="openQuestionModal(-1)" style="align-self:flex-end">＋ Agregar pregunta</button>
+      <button class="btn verde" onclick="openQuestionModal(-1)" style="align-self:flex-end"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg> Agregar pregunta</button>
     </div>
     <div class="qlist" id="qList"></div>
   </div>
-  <div class="row" style="justify-content:center;margin-top:22px">
-    <button class="btn big oro" onclick="startLive()">📡 Iniciar juego EN VIVO</button>
-    <button class="btn big gris" onclick="startLocal()">📽️ Modo local (sin conexión)</button>
+  <div class="row" style="justify-content:center;margin-top:36px">
+    <button class="btn big oro" onclick="startLive()">Iniciar juego en vivo <svg class="i" aria-hidden="true"><use href="#i-broadcast"/></svg></button>
+    <button class="btn big gris" onclick="startLocal()"><svg class="i" aria-hidden="true"><use href="#i-monitor-play"/></svg> Modo local</button>
   </div>
-  <p class="muted" style="text-align:center;margin-top:10px">En vivo: los estudiantes entran con un PIN desde sus dispositivos · Local: solo proyección</p>
+  <p class="muted" style="text-align:center;margin-top:12px;font-size:.92rem">En vivo: los estudiantes entran con PIN o QR desde sus dispositivos. Local: solo proyección, sin conexión.</p>
 </section>
 
 <!-- ================= LOBBY (HOST) ================= -->
 <section class="screen" id="scr-lobby">
   <div class="center-col">
     <h2 class="display" style="font-size:2rem" id="lobbyTitle">Mi Quiz</h2>
-    <p class="muted" style="font-weight:700">Entra en esta misma página, toca <b style="color:#fff">“Soy Estudiante”</b> y usa el PIN:</p>
+    <p class="muted">Entra en esta misma página, toca <b>“Soy Estudiante”</b> y usa el PIN, o escanea el código QR.</p>
     <div class="row" style="justify-content:center;align-items:stretch">
       <div class="pin-hero"><div class="lbl">PIN del juego</div><div class="pin" id="pinShow">000000</div></div>
-      <div class="qr-hero" id="qrHero"><div id="qrBox"></div><div class="lbl">📱 Escanea y entra</div>
+      <div class="qr-hero" id="qrHero"><div id="qrBox"></div><div class="lbl"><svg class="i" aria-hidden="true"><use href="#i-device-mobile"/></svg> Escanea y entra</div>
         <div class="link-corto" id="linkCortoBox" style="display:none">
           <span id="linkCortoTexto"></span>
-          <button type="button" id="btnCopiarLinkCorto" title="Copiar link">⧉</button>
+          <button type="button" id="btnCopiarLinkCorto" title="Copiar link"><svg class="i" aria-hidden="true" style="width:14px;height:14px"><use href="#i-copy"/></svg></button>
         </div>
       </div>
     </div>
     <h3 id="playerCount" class="display">0 jugadores conectados</h3>
     <div class="players-wrap" id="playersWrap"></div>
     <div class="row">
-      <button class="btn big verde" id="btnStartGame" onclick="hostStartGame()" disabled>🚀 ¡Comenzar!</button>
+      <button class="btn big verde" id="btnStartGame" onclick="hostStartGame()" disabled>¡Comenzar! <svg class="i" aria-hidden="true"><use href="#i-arrow-right"/></svg></button>
       <button class="btn gris" onclick="cancelLive()">Cancelar</button>
     </div>
   </div>
@@ -343,19 +490,19 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
   <div id="hostImg"></div>
   <div id="hostBody" style="margin-top:20px"></div>
   <div class="row" style="justify-content:center;margin-top:24px">
-    <button class="btn amarillo" id="btnSkip" onclick="hostEndQuestion()">⏭ Terminar tiempo</button>
-    <button class="btn big verde" id="btnNext" onclick="hostNext()" style="display:none">Siguiente ▶</button>
+    <button class="btn amarillo" id="btnSkip" onclick="hostEndQuestion()"><svg class="i" aria-hidden="true"><use href="#i-skip-forward"/></svg> Terminar tiempo</button>
+    <button class="btn big verde" id="btnNext" onclick="hostNext()" style="display:none">Siguiente <svg class="i" aria-hidden="true"><use href="#i-arrow-right"/></svg></button>
   </div>
 </section>
 
 <!-- ================= PODIO ================= -->
 <section class="screen" id="scr-podium">
   <div class="center-col">
-    <h1 class="display" style="font-size:2.6rem">🏆 ¡Resultados finales!</h1>
+    <h1 class="display" style="font-size:clamp(2.2rem,6vw,3.6rem)">Resultados finales</h1>
     <div class="podium" id="podiumWrap"></div>
     <div class="ranking" id="rankingWrap" style="width:100%"></div>
     <div class="row">
-      <button class="btn oro" onclick="location.reload()">🔁 Nuevo juego</button>
+      <button class="btn oro" onclick="location.reload()"><svg class="i" aria-hidden="true"><use href="#i-arrow-counter-clockwise"/></svg> Nuevo juego</button>
     </div>
   </div>
 </section>
@@ -363,17 +510,17 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
 <!-- ================= UNIRSE (ESTUDIANTE) ================= -->
 <section class="screen" id="scr-join">
   <div class="stu-shell">
-    <div style="text-align:center"><div class="logo" style="font-size:2.4rem">Quiz<span style="color:var(--oro)">Live</span></div></div>
+    <div style="text-align:center"><div class="logo" style="font-size:2.6rem">Quiz<span>Live</span></div></div>
     <div class="card">
       <label class="fld" style="margin-top:0">PIN del juego</label>
-      <input type="text" id="joinPin" inputmode="numeric" maxlength="6" placeholder="123456" style="text-align:center;font-size:1.6rem;letter-spacing:6px;font-family:'Baloo 2'">
+      <input type="text" id="joinPin" inputmode="numeric" maxlength="6" placeholder="123456" style="text-align:center;font-size:1.8rem;letter-spacing:.3em;font-weight:800;font-variant-numeric:tabular-nums">
       <label class="fld">Tu nombre</label>
       <input type="text" id="joinName" maxlength="18" placeholder="Ej: Cata M.">
-      <label class="fld">Elige tu animal 🐾</label>
+      <label class="fld">Elige tu animal</label>
       <div class="avatar-grid" id="avatarGrid"></div>
-      <button class="btn big azul" style="width:100%;margin-top:18px" onclick="joinGame()">Entrar ▶</button>
+      <button class="btn big azul" style="width:100%;margin-top:20px;justify-content:space-between" onclick="joinGame()">Entrar <svg class="i" aria-hidden="true"><use href="#i-arrow-right"/></svg></button>
     </div>
-    <button class="btn small ghost" onclick="go('scr-home')">← Volver</button>
+    <button class="btn small ghost" onclick="go('scr-home')"><svg class="i" aria-hidden="true"><use href="#i-caret-left"/></svg> Volver</button>
   </div>
 </section>
 
@@ -396,8 +543,8 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
   <div id="locImg"></div>
   <div id="locBody" style="margin-top:20px"></div>
   <div class="row" style="justify-content:center;margin-top:24px">
-    <button class="btn amarillo" id="locReveal" onclick="localReveal()">👁 Mostrar respuesta</button>
-    <button class="btn big verde" id="locNext" onclick="localNext()" style="display:none">Siguiente ▶</button>
+    <button class="btn amarillo" id="locReveal" onclick="localReveal()"><svg class="i" aria-hidden="true"><use href="#i-eye"/></svg> Mostrar respuesta</button>
+    <button class="btn big verde" id="locNext" onclick="localNext()" style="display:none">Siguiente <svg class="i" aria-hidden="true"><use href="#i-arrow-right"/></svg></button>
     <button class="btn small gris" onclick="musicStop();go('scr-editor')">Salir</button>
   </div>
 </section>
@@ -408,11 +555,11 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
     <h3 id="qModalTitle">Nueva pregunta</h3>
     <label class="fld">Tipo de pregunta</label>
     <select id="qType" onchange="renderTypeFields()">
-      <option value="quiz">🎯 Quiz (alternativas de colores)</option>
-      <option value="vf">✅ Verdadero o Falso</option>
-      <option value="orden">🔢 Ordenar</option>
-      <option value="corta">✏️ Respuesta corta</option>
-      <option value="larga">📝 Respuesta larga (revisión del profesor)</option>
+      <option value="quiz">Quiz (alternativas de colores)</option>
+      <option value="vf">Verdadero o Falso</option>
+      <option value="orden">Ordenar</option>
+      <option value="corta">Respuesta corta</option>
+      <option value="larga">Respuesta larga (revisión del profesor)</option>
     </select>
     <label class="fld">Pregunta</label>
     <textarea id="qText" placeholder="Escribe la pregunta aquí…"></textarea>
@@ -422,8 +569,8 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
     </div>
     <label class="fld">Imagen (opcional)</label>
     <div class="row">
-      <button class="btn small azul" onclick="document.getElementById('qImgFile').click()">🖼 Adjuntar imagen</button>
-      <button class="btn small gris" id="btnClearImg" onclick="clearImg()" style="display:none">✖ Quitar</button>
+      <button class="btn small azul" onclick="document.getElementById('qImgFile').click()"><svg class="i" aria-hidden="true"><use href="#i-image"/></svg> Adjuntar imagen</button>
+      <button class="btn small gris" id="btnClearImg" onclick="clearImg()" style="display:none"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg> Quitar</button>
     </div>
     <input type="file" id="qImgFile" accept="image/*" style="display:none" onchange="pickImg(this)">
     <div class="img-prev" id="imgPrev"></div>
@@ -432,7 +579,7 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
     <div id="typeFields"></div>
     <div class="row" style="margin-top:20px;justify-content:flex-end">
       <button class="btn gris" onclick="closeModal('modal-q')">Cancelar</button>
-      <button class="btn verde" onclick="saveQuestion()">💾 Guardar</button>
+      <button class="btn verde" onclick="saveQuestion()"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg> Guardar</button>
     </div>
   </div>
 </div>
@@ -440,13 +587,13 @@ label.fld{display:block;font-weight:800;font-size:.85rem;color:var(--ink-dim);ma
 <!-- ================= MODAL: AYUDA ================= -->
 <div class="modal-bg" id="modal-help">
   <div class="modal">
-    <h3>❓ Cómo funciona QuizLive</h3>
+    <h3><svg class="i" aria-hidden="true"><use href="#i-question"/></svg> Cómo funciona QuizLive</h3>
     <div class="help-steps">
       <p><b>Modo en vivo (estilo Kahoot):</b> tú proyectas esta página y cada estudiante entra desde su propio celular o computador (escaneando el QR o con el PIN en aulagame.cl) para responder en vivo.</p>
       <br>
       <p><b>Tipos de pregunta:</b> Quiz con figuras de colores (▲◆●■), Verdadero/Falso, Ordenar, Respuesta corta (se corrige sola) y Respuesta larga (el profesor asigna los puntos en vivo).</p>
       <p><b>Excel:</b> puedes exportar la plantilla, editar las preguntas en Excel y volver a importarlas. Las <b>imágenes</b> de las preguntas no viajan en el Excel; los <b>videos de YouTube</b> sí (columna Video).</p>
-      <p><b>📚 Mis Quizzes:</b> tus quizzes se guardan solos en tu cuenta y sincronizan entre dispositivos (crea uno por curso, duplícalos y adáptalos). También puedes llevarlos a otra cuenta con Exportar/Importar Excel.</p>
+      <p><b>Mis quizzes:</b> tus quizzes se guardan solos en tu cuenta y sincronizan entre dispositivos (crea uno por curso, duplícalos y adáptalos). También puedes llevarlos a otra cuenta con Exportar/Importar Excel.</p>
     </div>
     <div class="row" style="margin-top:16px;justify-content:flex-end">
       <button class="btn verde" onclick="closeModal('modal-help')">Entendido</button>
