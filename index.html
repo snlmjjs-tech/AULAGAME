@@ -6,7 +6,8 @@
 <title>AULAGAMES — Plataforma de juegos didácticos</title>
 <meta name="description" content="AULAGAMES: plataforma de juegos didácticos hecha por profes, para profes. Duplica, personaliza y juega en clase con QR o modo sala.">
 <meta name="author" content="Sebastián Núñez López">
-<meta name="theme-color" content="#1A1040">
+<meta name="theme-color" content="#1A1040" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F2F2F6" media="(prefers-color-scheme: light)">
 <meta property="og:title" content="AULAGAMES — Plataforma de juegos didácticos">
 <meta property="og:description" content="Duplica, personaliza y juega en clase. Trivia, tableros y juegos 3D con QR o modo sala.">
 <meta property="og:type" content="website">
@@ -15,9 +16,10 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Baloo+2:wght@600;700;800&family=Nunito+Sans:wght@400;600;700;800&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Baloo+2:wght@600;700;800&family=Nunito+Sans:wght@400;600;700;800&family=Space+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
+    color-scheme: dark;
     --noche: #1A1040;
     --noche-alta: #241956;
     --panel: #2B1E63;
@@ -32,6 +34,52 @@
     --turquesa: #2EE6C8;  --turquesa-dark: #0FA98F;
     --violeta: #7C5CFF;   --violeta-dark: #4E33C4;
     --naranja: #FF8A3D;   --naranja-dark: #C95F14;
+
+    /* ==== sistema "Apple glass" (igual a play/quizlive/index.html) ==== */
+    --bg:#06070d;
+    --ink:#f5f5f7; --ink-2:rgba(245,245,247,.72); --ink-3:rgba(245,245,247,.54);
+    --hair:rgba(255,255,255,.10); --hair-2:rgba(255,255,255,.20);
+    --card:rgba(255,255,255,.058); --shell:rgba(255,255,255,.04);
+    --surface:rgba(255,255,255,.075); --surface-2:rgba(255,255,255,.12); --field:rgba(255,255,255,.085);
+    --glass:rgba(22,23,34,.62); --glass-strong:rgba(26,27,40,.86);
+    --sheet:#15161f;
+    --accent:#2b8cff; --accent-btn:#0a64d8; --accent-soft:rgba(43,140,255,.20);
+    --ok:#34d36a; --bad:#ff5a50;
+    --ring-shell:0 0 0 1px var(--hair), 0 0 0 7px var(--shell), 0 0 0 8px var(--hair);
+    --lift:0 40px 70px -38px rgba(0,0,0,.85);
+    --ease:cubic-bezier(.32,.72,0,1);
+    --spring:cubic-bezier(.34,1.38,.64,1);
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Plus Jakarta Sans",system-ui,"Segoe UI",sans-serif;
+  }
+  @supports (transition-timing-function:linear(0,1)){
+    :root{ --spring:linear(0, 0.0231, 0.0828, 0.1666, 0.2642, 0.3675, 0.4705, 0.5687, 0.6591, 0.7399, 0.8101, 0.8696, 0.9186, 0.9578, 0.9882, 1.0109, 1.0269, 1.0374, 1.0434, 1.0458, 1.0456, 1.0434, 1.0399, 1.0356, 1.0309, 1.0262, 1.0216, 1.0172, 1.0133, 1.0099, 1.007, 1.0046, 1.0026, 1.001, 1); }
+  }
+
+  @media (prefers-color-scheme: light){
+    :root{
+      color-scheme: light;
+      /* tokens legacy — mismas variables, valores claros (ningún selector cambia) */
+      --noche: #F2F2F6;
+      --noche-alta: #E7E7EF;
+      --panel: #FFFFFF;
+      --tinta: #FDFBF6;
+      --crema: #FFFFFF;
+      --texto: #1D1D1F;
+      --texto-suave: rgba(29,29,31,.62);
+      --linea: rgba(0,0,0,.10);
+
+      /* sistema Apple glass en claro */
+      --bg:#f2f2f6;
+      --ink:#1d1d1f; --ink-2:rgba(29,29,31,.70); --ink-3:rgba(29,29,31,.58);
+      --hair:rgba(0,0,0,.09); --hair-2:rgba(0,0,0,.16);
+      --card:rgba(255,255,255,.86); --shell:rgba(255,255,255,.55);
+      --surface:rgba(0,0,0,.045); --surface-2:rgba(0,0,0,.075); --field:rgba(0,0,0,.05);
+      --glass:rgba(255,255,255,.68); --glass-strong:rgba(255,255,255,.9);
+      --sheet:#ffffff;
+      --accent:#0071e3; --accent-btn:#0071e3; --accent-soft:rgba(0,113,227,.12);
+      --ok:#1a8f3c; --bad:#d70015;
+      --lift:0 36px 60px -36px rgba(30,30,60,.35);
+    }
   }
   *{ box-sizing:border-box; }
   html,body{ margin:0; padding:0; }
@@ -45,69 +93,85 @@
     min-height:100vh;
     overflow-x:hidden;
   }
+  @media (prefers-color-scheme: light){
+    body{
+      background-image:
+        radial-gradient(ellipse 70% 45% at 50% -10%, rgba(124,92,255,0.10), transparent 60%),
+        radial-gradient(ellipse 45% 35% at 90% 105%, rgba(255,77,141,0.08), transparent 60%);
+    }
+  }
   ::selection{ background: var(--amarillo); color: var(--tinta); }
   :focus-visible{ outline: 3px solid var(--amarillo); outline-offset: 3px; border-radius: 6px; }
 
   .oculto{ display:none !important; }
+  .i{ width:1.25em; height:1.25em; fill:currentColor; flex-shrink:0; display:inline-block; vertical-align:-.22em; }
 
   /* ============ HEADER ============ */
   header{
-    position:sticky; top:0; z-index:20;
+    position:sticky; top:14px; z-index:20;
     display:flex; align-items:center; justify-content:space-between;
-    padding: 16px 40px;
-    background: rgba(26,16,64,0.85);
-    backdrop-filter: blur(10px);
-    border-bottom:1px solid var(--linea);
+    padding: 14px 40px;
+    margin: 14px 24px 0;
+    border-radius: 24px;
+    background: var(--glass);
+    border: 1px solid var(--hair);
+    -webkit-backdrop-filter: blur(26px) saturate(180%);
+    backdrop-filter: blur(26px) saturate(180%);
+    box-shadow: 0 18px 40px -26px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.07);
+  }
+  @media (prefers-reduced-transparency: reduce){
+    header{ background: var(--sheet); backdrop-filter:none; -webkit-backdrop-filter:none; }
   }
   .wordmark{
     font-family:'Bungee', cursive;
-    font-size: 26px;
+    font-size: 24px;
     letter-spacing: 1px;
-    color: var(--crema);
-    text-shadow: 3px 3px 0 var(--rosa), 6px 6px 0 rgba(46,230,200,0.55);
+    color: var(--texto);
+    text-shadow: 0 2px 10px rgba(255,77,141,.35);
     line-height:1;
   }
   .wordmark small{
     display:block;
-    font-family:'Nunito Sans', sans-serif;
+    font-family: var(--font);
     font-weight:700; font-size:10.5px; letter-spacing:2.5px;
     text-transform:uppercase; color: var(--texto-suave);
     text-shadow:none; margin-top:6px;
   }
-  .user-area{ display:flex; align-items:center; gap:14px; }
+  .user-area{ display:flex; align-items:center; gap:10px; }
   .avatar-btn{
     display:flex; align-items:center; gap:10px;
-    background: var(--panel); border:2px solid var(--linea); color: var(--texto);
-    padding: 7px 16px 7px 7px; border-radius: 40px; cursor:pointer;
-    font-family:'Nunito Sans', sans-serif; font-size:14px; font-weight:800;
-    transition: border-color .2s, transform .15s;
+    background: var(--surface-2); border:1px solid var(--hair); color: var(--texto);
+    padding: 6px 16px 6px 6px; border-radius: 999px; cursor:pointer;
+    font-family: var(--font); font-size:14px; font-weight:650;
+    transition: transform .4s var(--ease), background .2s;
   }
-  .avatar-btn:hover{ border-color: var(--turquesa); transform: translateY(-1px); }
+  .avatar-btn:hover{ background: var(--hair-2); transform: translateY(-1px); }
+  .avatar-btn:active{ transform: scale(.97); transition-duration:.08s; }
   .btn-header-login{
-    background: var(--amarillo); color: var(--tinta);
-    border:none; border-radius:40px;
-    padding: 10px 22px;
-    font-family:'Nunito Sans', sans-serif; font-weight:800; font-size:14px;
+    background: var(--accent-btn); color: #fff;
+    border:none; border-radius:999px;
+    padding: 11px 22px;
+    font-family: var(--font); font-weight:650; font-size:14px;
     cursor:pointer;
-    box-shadow: 0 4px 0 var(--amarillo-dark);
-    transition: transform .15s ease, filter .15s ease, box-shadow .1s ease;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.26), 0 14px 24px -14px rgba(10,100,216,.9);
+    transition: transform .45s var(--ease), filter .2s, box-shadow .3s;
   }
-  .btn-header-login:hover{ filter:brightness(1.07); transform: translateY(-1px); }
-  .btn-header-login:active{ transform: translateY(3px); box-shadow: 0 1px 0 var(--amarillo-dark); }
+  .btn-header-login:hover{ filter:brightness(1.1); }
+  .btn-header-login:active{ transform: scale(.965); transition-duration:.09s; }
   .btn-header-whatsapp{
-    display:inline-flex; align-items:center; gap:6px;
+    display:inline-flex; align-items:center; gap:7px;
     background:#25D366; color:#08321c; text-decoration:none;
-    border:none; border-radius:40px;
-    padding: 9px 18px;
-    font-family:'Nunito Sans', sans-serif; font-weight:800; font-size:13.5px;
+    border:none; border-radius:999px;
+    padding: 10px 18px;
+    font-family: var(--font); font-weight:650; font-size:13.5px;
     cursor:pointer;
-    box-shadow: 0 4px 0 #1aa64d;
-    transition: transform .15s ease, filter .15s ease, box-shadow .1s ease;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 14px 24px -14px rgba(37,211,102,.6);
+    transition: transform .45s var(--ease), filter .2s, box-shadow .3s;
   }
-  .btn-header-whatsapp:hover{ filter:brightness(1.08); transform: translateY(-1px); }
-  .btn-header-whatsapp:active{ transform: translateY(3px); box-shadow: 0 1px 0 #1aa64d; }
+  .btn-header-whatsapp:hover{ filter:brightness(1.08); }
+  .btn-header-whatsapp:active{ transform: scale(.965); transition-duration:.09s; }
   .avatar-circle{
-    width:32px; height:32px; border-radius:50%;
+    width:30px; height:30px; border-radius:50%;
     background: var(--turquesa); color: var(--tinta);
     display:flex; align-items:center; justify-content:center;
     font-size:13px; font-weight:800;
@@ -116,45 +180,55 @@
   /* ============ ENTRAR A SALA (código corto) ============ */
   .entrar-sala-bar{ max-width:1180px; margin:18px auto 0; padding:0 40px; }
   .entrar-sala-inner{
-    background: var(--tinta); border:2px dashed var(--turquesa);
-    border-radius:16px; padding:14px 22px;
+    background: var(--card); border:none;
+    border-radius:28px; padding:16px 24px; margin:8px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.07), var(--ring-shell), var(--lift);
     display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;
   }
-  .entrar-sala-inner label{ font-weight:800; font-size:14.5px; color:var(--texto); }
-  .entrar-sala-inner input{
-    background: var(--panel); border:2px solid var(--linea); color:var(--texto);
-    border-radius:10px; padding:10px 14px; font-size:15px; font-weight:700;
-    letter-spacing:1px; text-transform:uppercase; width:150px; text-align:center;
-    font-family:inherit;
+  .entrar-sala-inner label{
+    display:inline-flex; align-items:center; gap:7px;
+    font-family: var(--font); font-weight:650; font-size:14.5px; color:var(--texto);
   }
+  .entrar-sala-inner input{
+    background: var(--field); border:1px solid transparent; color:var(--texto);
+    border-radius:16px; padding:12px 14px; font-size:15px; font-weight:650;
+    letter-spacing:1px; text-transform:uppercase; width:150px; text-align:center;
+    font-family: var(--font); font-variant-numeric: tabular-nums;
+    transition: border-color .2s, box-shadow .25s var(--ease), background .2s;
+  }
+  .entrar-sala-inner input:focus-visible{ outline:none; border-color:var(--accent); box-shadow:0 0 0 4px var(--accent-soft); }
   .entrar-sala-inner input::placeholder{ color:var(--texto-suave); text-transform:none; letter-spacing:normal; font-weight:600; }
   .entrar-sala-inner button{
-    background: var(--turquesa); color:var(--tinta); border:none; border-radius:10px;
-    padding:11px 20px; font-weight:800; font-size:14.5px; cursor:pointer;
-    box-shadow:0 4px 0 var(--turquesa-dark); font-family:inherit;
+    background: var(--accent-btn); color:#fff; border:none; border-radius:999px;
+    padding:13px 22px; font-weight:650; font-size:14.5px; cursor:pointer;
+    font-family: var(--font);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.26), 0 14px 24px -14px rgba(10,100,216,.9);
+    transition: transform .45s var(--ease), filter .2s, box-shadow .3s;
   }
-  .entrar-sala-inner button:active{ transform:translateY(2px); box-shadow:0 2px 0 var(--turquesa-dark); }
-  .entrar-sala-msg{ max-width:1180px; margin:8px auto 0; padding:0 40px; text-align:center; font-size:13px; color:var(--rosa); font-weight:700; }
+  .entrar-sala-inner button:hover{ filter:brightness(1.1); }
+  .entrar-sala-inner button:active{ transform:scale(.965); transition-duration:.09s; box-shadow: inset 0 1px 0 rgba(255,255,255,.26), 0 14px 24px -14px rgba(10,100,216,.9); }
+  .entrar-sala-msg{ max-width:1180px; margin:8px auto 0; padding:0 40px; text-align:center; font-size:13px; color:var(--bad); font-weight:700; }
 
   .banner{ position:relative; max-width:1180px; margin: 16px auto 0; padding: 0 40px; }
   .banner-inner{
     position:relative;
-    background: linear-gradient(120deg, var(--panel), var(--noche-alta));
-    border: 2px solid var(--linea);
-    border-radius: 24px;
-    padding: 16px 22px;
+    background: var(--card);
+    border:none;
+    border-radius: 28px;
+    padding: 18px 22px; margin:8px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.07), var(--ring-shell), var(--lift);
     display:flex; flex-direction:column; align-items:center; gap:12px;
     overflow:hidden;
   }
   .hero-botones{ display:flex; flex-wrap:wrap; justify-content:center; gap:12px; width:100%; }
-  .hero-botones .btn{ flex: 0 0 auto; padding: 11px 24px; font-size:14.5px; }
+  .hero-botones .btn{ flex: 0 0 auto; padding: 13px 24px; font-size:14.5px; }
 
   /* ============ TUTORIAL CARRUSEL ============ */
   .tutorial-carrusel{
     position:relative;
     width:100%;
-    background: #171233;
-    border: 2px solid var(--linea);
+    background: var(--surface);
+    border: 1px solid var(--hair);
     border-radius: 20px;
     overflow:hidden;
   }
@@ -178,12 +252,12 @@
   .tc-slide-bookend{ flex-direction:column; text-align:center; gap:8px; }
   .tc-logo{ max-width: 100px; max-height:64px; width:auto; height:auto; object-fit:contain; }
   .tc-open-text{
-    font-family:'Baloo 2', cursive; font-weight:800;
+    font-family: var(--font); font-weight:800; letter-spacing:-.02em;
     font-size: clamp(17px, 2.4vw, 23px); margin:0; color: var(--texto);
   }
   .tc-close-text{
-    font-family:'Baloo 2', cursive; font-weight:800;
-    font-size: clamp(18px, 2.6vw, 25px); margin:0; color: var(--celeste-tc, #5fd4ff);
+    font-family: var(--font); font-weight:800; letter-spacing:-.02em;
+    font-size: clamp(18px, 2.6vw, 25px); margin:0; color: var(--accent);
   }
 
   .tc-slide-step{ text-align:left; }
@@ -193,12 +267,12 @@
     width:38px; height:38px; border-radius:50%;
     background: var(--acento, var(--amarillo));
     color: var(--tinta);
-    font-family:'Baloo 2', cursive; font-weight:800; font-size:18px;
-    box-shadow: 0 3px 0 rgba(0,0,0,0.25);
+    font-family: var(--font); font-weight:800; font-size:18px;
+    box-shadow: 0 10px 18px -10px rgba(0,0,0,.5);
     margin-bottom:8px;
   }
   .tc-step-texto h3{
-    font-family:'Baloo 2', cursive; font-weight:800;
+    font-family: var(--font); font-weight:800; letter-spacing:-.02em;
     font-size: clamp(17px, 2.2vw, 22px); margin:0 0 5px; color: var(--texto); line-height:1.15;
   }
   .tc-step-texto p{
@@ -207,10 +281,10 @@
   .tc-step-imagen{
     flex: 1 1 220px; max-width:250px;
     display:flex; align-items:center; justify-content:center;
-    background: var(--tinta);
-    border: 2px solid var(--linea);
+    background: var(--surface);
+    border: 1px solid var(--hair);
     border-radius: 16px;
-    box-shadow: 0 7px 0 rgba(0,0,0,0.3);
+    box-shadow: var(--lift);
     overflow:hidden;
     aspect-ratio: 4 / 3;
   }
@@ -220,19 +294,20 @@
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
     background:
       repeating-linear-gradient(135deg, rgba(139,124,255,0.28) 0 10px, rgba(139,124,255,0.08) 10px 20px),
-      var(--tinta);
+      var(--surface);
   }
-  .tc-qr-placeholder .tc-qr-icono{ font-size:32px; }
+  .tc-qr-placeholder .tc-qr-icono{ font-size:32px; display:flex; }
+  .tc-qr-placeholder .tc-qr-icono .i{ width:32px; height:32px; }
   .tc-qr-placeholder .tc-qr-texto{
-    font-family:'Baloo 2', cursive; font-weight:800; font-size:12.5px; color: var(--texto);
-    background: rgba(23,18,51,0.7); padding:4px 12px; border-radius:10px;
+    font-family: var(--font); font-weight:700; font-size:12.5px; color: var(--texto);
+    background: var(--glass-strong); padding:4px 12px; border-radius:10px;
   }
 
   .tc-dots{ display:flex; align-items:center; justify-content:center; gap:8px; padding: 8px 0 12px; }
   .tc-dot{
     width:10px; height:10px; border-radius:6px;
-    background: rgba(242,236,255,0.25);
-    transition: width .4s ease, background-color .4s ease;
+    background: var(--hair-2);
+    transition: width .4s var(--ease), background-color .4s ease;
   }
 
   @media (max-width: 640px){
@@ -295,7 +370,7 @@
   }
   .sticker.turq{ background: var(--turquesa); color: var(--tinta); box-shadow: 0 3px 0 var(--turquesa-dark); transform: rotate(1.5deg); }
   .section-head h2{
-    font-family:'Baloo 2', cursive; font-weight:800;
+    font-family: var(--font); font-weight:800; letter-spacing:-.03em;
     font-size: clamp(24px, 3vw, 32px); margin:0; line-height:1.1;
   }
   .plan-gratuito{
@@ -334,9 +409,9 @@
   }
 
   .count-pill{
-    font-family:'Space Mono', monospace; font-size:12px;
-    background: var(--tinta); border:2px solid var(--linea);
-    padding: 7px 16px; border-radius: 30px; color: var(--texto-suave); white-space:nowrap;
+    font-family: var(--font); font-size:12px; font-weight:650;
+    background: var(--surface-2); border:1px solid var(--hair);
+    padding: 7px 16px; border-radius: 999px; color: var(--texto-suave); white-space:nowrap;
   }
 
   .grid{
@@ -348,19 +423,18 @@
   /* ============ CARDS ============ */
   .kard{
     --c: var(--violeta); --c-dark: var(--violeta-dark); --c-ink: #fff;
-    background: var(--panel);
-    border: 2px solid var(--linea);
-    border-radius: 20px;
+    background: var(--card);
+    border:none;
+    border-radius: 28px;
     overflow:hidden;
     display:flex; flex-direction:column;
-    box-shadow: 0 6px 0 rgba(0,0,0,0.35);
-    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, opacity .25s ease;
-    animation: aparecer .45s ease backwards;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.07), var(--ring-shell), var(--lift);
+    transition: transform .4s var(--ease), box-shadow .3s;
+    animation: aparecer .45s var(--ease) backwards;
   }
   .kard:hover{
-    transform: translateY(-5px) rotate(-0.6deg);
-    border-color: var(--c);
-    box-shadow: 0 12px 0 rgba(0,0,0,0.35);
+    transform: translateY(-4px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.07), var(--ring-shell), 0 46px 76px -36px rgba(0,0,0,.9);
   }
   @keyframes aparecer{
     from{ opacity:0; transform: translateY(16px) scale(0.97); }
@@ -378,57 +452,57 @@
   .kard-top{
     position:relative;
     height: 104px;
-    background: var(--c);
-    background-image: radial-gradient(rgba(255,255,255,0.28) 1.6px, transparent 1.6px);
-    background-size: 16px 16px;
+    background: linear-gradient(180deg, var(--c), var(--c-dark));
+    background-image: linear-gradient(180deg, var(--c), var(--c-dark)), radial-gradient(rgba(255,255,255,0.28) 1.6px, transparent 1.6px);
+    background-size: auto, 16px 16px;
     display:flex; align-items:center; justify-content:center;
   }
   .kard-icon{
-    font-size: 44px; filter: drop-shadow(0 4px 0 rgba(0,0,0,0.22));
+    font-size: 44px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.25));
     display:flex; align-items:center; justify-content:center;
   }
   .chip{
     position:absolute; top:10px; right:10px;
-    font-family:'Space Mono', monospace; font-size:10px; font-weight:700;
+    font-family: var(--font); font-size:10px; font-weight:700;
     letter-spacing:0.5px; text-transform:uppercase;
-    background: var(--tinta); color: var(--texto);
-    padding: 4px 10px; border-radius: 20px;
+    background: rgba(0,0,0,.35); color: #fff;
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    padding: 4px 10px; border-radius: 999px;
   }
   .kard-body{ padding: 16px 18px 18px; display:flex; flex-direction:column; gap:9px; flex:1; }
-  .kard-title{ font-family:'Baloo 2', cursive; font-weight:700; font-size:17.5px; line-height:1.25; }
-  .kard-meta{ font-family:'Space Mono', monospace; font-size:11px; color: var(--texto-suave); }
+  .kard-title{ font-family: var(--font); font-weight:750; letter-spacing:-.02em; font-size:17.5px; line-height:1.25; }
+  .kard-meta{ font-family: var(--font); font-weight:600; font-size:11px; color: var(--texto-suave); }
   .kard-desc{ margin:0; font-size:13.5px; color: var(--texto-suave); font-weight:600; line-height:1.55; flex:1; }
 
   .btn{
-    border:none; border-radius: 12px;
-    font-family:'Nunito Sans', sans-serif; font-weight:800; font-size:13.5px;
-    padding: 11px 12px; cursor:pointer;
+    border:none; border-radius: 999px;
+    font-family: var(--font); font-weight:650; font-size:13.5px; letter-spacing:-.01em;
+    padding: 12px 14px; cursor:pointer;
     display:flex; align-items:center; justify-content:center; gap:7px;
     text-decoration:none; text-align:center;
-    transition: transform .1s ease, box-shadow .1s ease, filter .15s ease, border-color .15s ease, color .15s ease;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 14px 22px -14px rgba(0,0,0,.6);
+    transition: transform .45s var(--ease), box-shadow .3s, filter .2s, color .15s, background .2s;
   }
-  .btn:active{ transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,0.4) !important; }
-  .btn:hover{ filter: brightness(1.07); }
+  .btn:active{ transform: scale(.965); transition-duration:.09s; }
+  .btn:hover{ filter: brightness(1.08); }
 
   .btn-jugar{
-    background: var(--amarillo); color: var(--tinta);
-    box-shadow: 0 5px 0 var(--amarillo-dark); flex:1;
+    background: var(--accent-btn); color: #fff;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.26), 0 14px 24px -14px rgba(10,100,216,.9); flex:1;
   }
   .btn-editar{
-    background: var(--tinta); color: var(--texto);
-    border: 2px solid var(--linea);
-    box-shadow: 0 5px 0 rgba(0,0,0,0.4); flex:1;
+    background: var(--surface-2); color: var(--texto);
+    box-shadow: inset 0 0 0 1px var(--hair); flex:1;
   }
   .btn-mini{
-    background: var(--tinta); color: var(--texto);
-    border: 2px solid var(--linea);
-    box-shadow: 0 5px 0 rgba(0,0,0,0.4);
+    background: var(--surface-2); color: var(--texto);
+    box-shadow: inset 0 0 0 1px var(--hair);
     flex: 0 0 46px;
   }
-  .btn-mini.peligro:hover{ border-color: var(--rosa); color: var(--rosa); filter:none; }
+  .btn-mini.peligro:hover{ color: var(--rosa); filter:none; }
   .btn-dup{
-    background: var(--c); color: var(--c-ink);
-    box-shadow: 0 5px 0 var(--c-dark);
+    background: linear-gradient(180deg, var(--c), var(--c-dark)); color: var(--c-ink);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 14px 24px -14px color-mix(in srgb, var(--c-dark) 70%, transparent);
     width:100%;
   }
   .kard-actions{ display:flex; gap:9px; margin-top:4px; }
@@ -436,41 +510,47 @@
   .anuncio{
     position:relative;
     background: linear-gradient(135deg, var(--amarillo), var(--naranja));
-    border-radius: 26px;
-    padding: 44px 44px 38px;
+    border-radius: 28px;
+    padding: 44px 44px 38px; margin:8px;
     overflow:hidden;
     display:flex; align-items:center; justify-content:space-between; gap:28px; flex-wrap:wrap;
-    box-shadow: 0 10px 0 var(--naranja-dark);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.3), var(--ring-shell), var(--lift);
   }
   .anuncio-cerrar{
     position:absolute; top:14px; right:16px;
     background: rgba(0,0,0,0.15); border:none; color: var(--tinta);
-    width:28px; height:28px; border-radius:50%;
-    font-size:14px; line-height:1; cursor:pointer;
+    width:30px; height:30px; border-radius:50%;
+    cursor:pointer;
     display:flex; align-items:center; justify-content:center;
-    transition: background .15s ease;
+    transition: background .2s, transform .4s var(--ease);
   }
   .anuncio-cerrar:hover{ background: rgba(0,0,0,0.28); }
+  .anuncio-cerrar:active{ transform: scale(.9); }
+  .anuncio-cerrar .i{ width:14px; height:14px; }
   .anuncio-badge{
     position:absolute; top:20px; left:24px;
-    font-family:'Space Mono', monospace; font-size:11px; font-weight:800;
-    letter-spacing:1px; text-transform:uppercase;
+    display:inline-flex; align-items:center; gap:6px;
+    font-family: var(--font); font-size:11px; font-weight:800;
+    letter-spacing:.5px; text-transform:uppercase;
     background: var(--tinta); color:#fff;
-    padding:6px 14px; border-radius:8px;
+    padding:6px 14px; border-radius:999px;
   }
+  .anuncio-badge .i{ width:12px; height:12px; }
   .anuncio-texto{
     margin:0; flex:1 1 420px; max-width:640px;
     color: var(--tinta); font-size:15.5px; font-weight:700; line-height:1.65;
+    display:flex; align-items:flex-start; gap:10px;
   }
+  .anuncio-texto .i{ width:22px; height:22px; margin-top:2px; flex-shrink:0; }
   .anuncio-texto strong{ font-size:19px; }
   .anuncio .btn-whatsapp{
     background: var(--tinta); color:#fff;
-    box-shadow: 0 5px 0 rgba(0,0,0,0.45);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 14px 24px -14px rgba(0,0,0,.6);
     padding:16px 28px; font-size:15px;
   }
   .btn-whatsapp{
     background:#25D366; color:#08321c;
-    box-shadow: 0 5px 0 #1aa64d;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 14px 24px -14px rgba(37,211,102,.6);
     white-space:nowrap; flex-shrink:0;
     padding: 13px 22px; font-size:14.5px;
   }
@@ -520,22 +600,22 @@
   .c-naranja{  --c: var(--naranja);  --c-dark: var(--naranja-dark);  --c-ink: var(--tinta); }
 
   .kard-vacia{
-    border: 3px dashed var(--linea);
+    border: 2px dashed var(--hair-2);
     background: transparent;
     box-shadow:none;
     align-items:center; justify-content:center; text-align:center;
     padding: 30px 22px; gap:10px; cursor:pointer;
     color: var(--texto-suave); min-height: 270px;
   }
-  .kard-vacia:hover{ border-color: var(--amarillo); color: var(--texto); transform: translateY(-5px); box-shadow:none; }
+  .kard-vacia:hover{ border-color: var(--accent); color: var(--texto); transform: translateY(-4px); box-shadow:none; }
   .kard-vacia .mas{
     width:52px; height:52px; border-radius:50%;
-    border: 3px dashed var(--texto-suave);
+    border: 2px dashed var(--hair-2);
     display:flex; align-items:center; justify-content:center;
-    font-family:'Baloo 2', cursive; font-size:28px; font-weight:800;
+    font-family: var(--font); font-size:28px; font-weight:800;
   }
-  .kard-vacia:hover .mas{ border-color: var(--amarillo); color: var(--amarillo); }
-  .kard-vacia strong{ font-family:'Baloo 2', cursive; font-size:17px; }
+  .kard-vacia:hover .mas{ border-color: var(--accent); color: var(--accent); }
+  .kard-vacia strong{ font-family: var(--font); font-weight:750; font-size:17px; }
   .kard-vacia small{ font-size:12.5px; font-weight:600; max-width:190px; line-height:1.5; }
 
   footer{
@@ -672,10 +752,14 @@
   }
 
   @media (max-width: 640px){
-    header{ padding: 14px 20px; }
+    header{ padding: 12px 18px; margin: 10px 12px 0; border-radius:20px; }
     .wordmark{ font-size:20px; }
+    .user-area{ gap:8px; }
+    .btn-header-login{ padding:10px 16px; }
     .banner{ padding: 12px 20px 0; margin-top:10px; }
-    .banner-inner{ padding: 14px 16px; gap:10px; }
+    .banner-inner{ padding: 16px 14px; gap:10px; }
+    .entrar-sala-inner{ padding:14px 16px; }
+    .anuncio{ padding: 30px 24px 28px; }
     main{ padding: 10px 20px 70px; }
     .btn-header-whatsapp{ padding:9px 12px; }
     .btn-header-whatsapp .txt-whatsapp{ display:none; }
@@ -687,10 +771,21 @@
 </head>
 <body>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-whatsapp" viewBox="0 0 256 256"><path d="M128,28a100,100,0,0,0-86,151L28,228a8,8,0,0,0,9.8,9.8L85,224A100,100,0,1,0,128,28Zm0,184a84,84,0,0,1-42.9-11.8,8,8,0,0,0-6.4-.7L48,211l11.5-30.7a8,8,0,0,0-.7-6.4A84,84,0,1,1,128,212Z"/><circle cx="90" cy="128" r="10"/><circle cx="128" cy="128" r="10"/><circle cx="166" cy="128" r="10"/></symbol>
+<symbol id="i-key" viewBox="0 0 256 256"><circle cx="70" cy="128" r="46" fill="none" stroke="currentColor" stroke-width="16"/><line x1="116" y1="128" x2="220" y2="128" stroke="currentColor" stroke-width="16" stroke-linecap="round"/><line x1="170" y1="128" x2="170" y2="160" stroke="currentColor" stroke-width="16" stroke-linecap="round"/><line x1="200" y1="128" x2="200" y2="152" stroke="currentColor" stroke-width="16" stroke-linecap="round"/></symbol>
+<symbol id="i-device-mobile" viewBox="0 0 256 256"><path d="M176,18H80A22,22,0,0,0,58,40V216a22,22,0,0,0,22,22h96a22,22,0,0,0,22-22V40A22,22,0,0,0,176,18ZM70,62H186V194H70ZM80,30h96a10,10,0,0,1,10,10V50H70V40A10,10,0,0,1,80,30Zm96,196H80a10,10,0,0,1-10-10V206H186v10A10,10,0,0,1,176,226Z"/></symbol>
+<symbol id="i-game-controller" viewBox="0 0 256 256"><rect x="28" y="96" width="200" height="88" rx="44" fill="none" stroke="currentColor" stroke-width="16"/><line x1="80" y1="118" x2="80" y2="162" stroke="currentColor" stroke-width="14" stroke-linecap="round"/><line x1="58" y1="140" x2="102" y2="140" stroke="currentColor" stroke-width="14" stroke-linecap="round"/><circle cx="168" cy="128" r="10" fill="currentColor"/><circle cx="196" cy="152" r="10" fill="currentColor"/></symbol>
+<symbol id="i-sparkle" viewBox="0 0 256 256"><path d="M128,20 L142,100 L222,114 L142,128 L128,208 L114,128 L34,114 L114,100 Z"/></symbol>
+<symbol id="i-arrow-down" viewBox="0 0 256 256"><path d="M128,40 v150" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"/><path d="M74,146 L128,200 L182,146" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-rocket" viewBox="0 0 256 256"><path d="M128,26 L160,80 L160,150 Q160,170 128,182 Q96,170 96,150 L96,80 Z"/><circle cx="128" cy="92" r="14" fill="#ffffff" opacity="0.9"/><path d="M96,120 L56,168 L96,160 Z"/><path d="M160,120 L200,168 L160,160 Z"/><path d="M112,182 Q128,212 144,182 Q128,196 112,182 Z"/></symbol>
+<symbol id="i-x" viewBox="0 0 256 256"><path d="M204.24,195.76a6,6,0,1,1-8.48,8.48L128,136.49,60.24,204.24a6,6,0,0,1-8.48-8.48L119.51,128,51.76,60.24a6,6,0,0,1,8.48-8.48L128,119.51l67.76-67.75a6,6,0,0,1,8.48,8.48L136.49,128Z"/></symbol>
+</defs></svg>
+
 <header>
   <div class="wordmark">AULAGAMES<small>Plataforma de juegos didácticos</small></div>
   <div class="user-area">
-    <a class="btn-header-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20saber%20m%C3%A1s%20sobre%20AulaGame." target="_blank" rel="noopener">💬 <span class="txt-whatsapp">WhatsApp</span></a>
+    <a class="btn-header-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20saber%20m%C3%A1s%20sobre%20AulaGame." target="_blank" rel="noopener"><svg class="i" aria-hidden="true"><use href="#i-whatsapp"/></svg> <span class="txt-whatsapp">WhatsApp</span></a>
     <button class="btn-header-login" id="btn-iniciar-sesion" type="button">Iniciar sesión</button>
     <button class="avatar-btn oculto" id="btn-cuenta" type="button">
       <span class="avatar-circle" id="avatar-circle">P</span>
@@ -703,7 +798,7 @@
 
 <div class="entrar-sala-bar">
   <form class="entrar-sala-inner" id="form-entrar-sala">
-    <label for="input-codigo-sala">🔑 ¿Tienes el PIN de la sala?</label>
+    <label for="input-codigo-sala"><svg class="i" aria-hidden="true"><use href="#i-key"/></svg> ¿Tienes el PIN de la sala?</label>
     <input type="text" id="input-codigo-sala" placeholder="Ej: 123456" maxlength="8" autocomplete="off">
     <button type="submit">Entrar a sala ▶</button>
   </form>
@@ -772,7 +867,7 @@
           </div>
           <div class="tc-step-imagen">
             <div class="tc-qr-placeholder">
-              <span class="tc-qr-icono" aria-hidden="true">📱</span>
+              <span class="tc-qr-icono" aria-hidden="true"><svg class="i"><use href="#i-device-mobile"/></svg></span>
               <span class="tc-qr-texto">Conectar celulares</span>
             </div>
           </div>
@@ -793,7 +888,7 @@
       </div>
     </div>
     <div class="hero-botones">
-      <button class="btn btn-jugar" id="btn-hero-crear" type="button">🎮 Crear mi primer juego</button>
+      <button class="btn btn-jugar" id="btn-hero-crear" type="button"><svg class="i" aria-hidden="true"><use href="#i-game-controller"/></svg> Crear mi primer juego</button>
     </div>
   </div>
 </div>
@@ -866,12 +961,12 @@
     </div>
 
     <div class="tutorial-vacio oculto" id="tutorial-vacio">
-      <span class="tutorial-vacio-emoji">👋</span>
+      <span class="tutorial-vacio-emoji"><svg class="i" aria-hidden="true"><use href="#i-sparkle"/></svg></span>
       <div>
         <strong>Aún no tienes juegos</strong>
         <p>Elige una plantilla de abajo y duplícala para personalizarla con tu clase.</p>
       </div>
-      <span class="tutorial-vacio-flecha" aria-hidden="true">↓</span>
+      <span class="tutorial-vacio-flecha" aria-hidden="true"><svg class="i" aria-hidden="true"><use href="#i-arrow-down"/></svg></span>
     </div>
 
     <div class="grid" id="grid-mis-juegos">
@@ -887,12 +982,12 @@
 
   <section aria-label="Aviso de lanzamiento y contacto por WhatsApp" id="seccion-anuncio">
     <div class="anuncio">
-      <button type="button" class="anuncio-cerrar" id="btn-anuncio-cerrar" aria-label="Cerrar aviso">✕</button>
+      <button type="button" class="anuncio-cerrar" id="btn-anuncio-cerrar" aria-label="Cerrar aviso"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button>
       <span class="conf" style="top:14px; right:26%;" aria-hidden="true">🎉</span>
       <span class="conf" style="bottom:14px; right:8%; animation-delay:1.6s;" aria-hidden="true">⭐</span>
-      <span class="anuncio-badge">✨ Recién comenzando</span>
-      <p class="anuncio-texto">🚀 <strong>¡Bienvenido a AulaGame!</strong> Gracias por ser uno de los primeros profesores en probar la plataforma. El plan gratuito permite crear 2 juegos. Si necesitas más juegos o quieres acceder a funciones exclusivas, escríbeme directamente por WhatsApp para pasarte a Premium. Siempre estaré disponible para ayudarte.</p>
-      <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">💬 Hablar por WhatsApp</a>
+      <span class="anuncio-badge"><svg class="i" aria-hidden="true"><use href="#i-sparkle"/></svg> Recién comenzando</span>
+      <p class="anuncio-texto"><svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg> <span><strong>¡Bienvenido a AulaGame!</strong> Gracias por ser uno de los primeros profesores en probar la plataforma. El plan gratuito permite crear 2 juegos. Si necesitas más juegos o quieres acceder a funciones exclusivas, escríbeme directamente por WhatsApp para pasarte a Premium. Siempre estaré disponible para ayudarte.</span></p>
+      <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener"><svg class="i" aria-hidden="true"><use href="#i-whatsapp"/></svg> Hablar por WhatsApp</a>
     </div>
   </section>
 
