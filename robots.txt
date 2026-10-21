@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /intranet/
+Disallow: /play/
+
+Sitemap: https://aulagame.cl/sitemap.xml
