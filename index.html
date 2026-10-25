@@ -51,6 +51,7 @@
     --noche-alta: #241956;
     --panel: #2B1E63;
     --tinta: #1C1240;
+    --tinta-fija: #1a1033;
     --crema: #FFF7EC;
     --texto: #F2ECFF;
     --texto-suave: #B8AEE0;
@@ -127,7 +128,7 @@
         radial-gradient(ellipse 45% 35% at 90% 105%, rgba(255,77,141,0.08), transparent 60%);
     }
   }
-  ::selection{ background: var(--amarillo); color: var(--tinta); }
+  ::selection{ background: var(--amarillo); color: var(--tinta-fija); }
   :focus-visible{ outline: 3px solid var(--amarillo); outline-offset: 3px; border-radius: 6px; }
 
   .oculto{ display:none !important; }
@@ -199,7 +200,7 @@
   .btn-header-whatsapp:active{ transform: scale(.965); transition-duration:.09s; }
   .avatar-circle{
     width:30px; height:30px; border-radius:50%;
-    background: var(--turquesa); color: var(--tinta);
+    background: var(--turquesa); color: var(--tinta-fija);
     display:flex; align-items:center; justify-content:center;
     font-size:13px; font-weight:800;
   }
@@ -293,7 +294,7 @@
     display:flex; align-items:center; justify-content:center;
     width:38px; height:38px; border-radius:50%;
     background: var(--acento, var(--amarillo));
-    color: var(--tinta);
+    color: var(--tinta-fija);
     font-family: var(--font); font-weight:800; font-size:18px;
     box-shadow: 0 10px 18px -10px rgba(0,0,0,.5);
     margin-bottom:8px;
@@ -363,7 +364,7 @@
     background: var(--amarillo);
     box-shadow: 0 3px 0 var(--amarillo-dark);
     display:flex; align-items:center; justify-content:center;
-    font-size:13px; color:var(--tinta); font-weight:800;
+    font-size:13px; color:var(--tinta-fija); font-weight:800;
   }
   .ficha.libre{
     background: transparent; box-shadow:none;
@@ -395,7 +396,7 @@
     box-shadow: 0 3px 0 var(--rosa-dark);
     margin-bottom:10px;
   }
-  .sticker.turq{ background: var(--turquesa); color: var(--tinta); box-shadow: 0 3px 0 var(--turquesa-dark); transform: rotate(1.5deg); }
+  .sticker.turq{ background: var(--turquesa); color: var(--tinta-fija); box-shadow: 0 3px 0 var(--turquesa-dark); transform: rotate(1.5deg); }
   .section-head h2{
     font-family: var(--font); font-weight:800; letter-spacing:-.03em;
     font-size: clamp(24px, 3vw, 32px); margin:0; line-height:1.1;
@@ -409,11 +410,11 @@
   .plan-gratuito.lleno{ border-color: var(--rosa); }
   .plan-gratuito.premium{ border-color: var(--amarillo); }
   .plan-gratuito .badge-premium{
-    background: var(--amarillo); color: var(--tinta); font-weight:800;
+    background: var(--amarillo); color: var(--tinta-fija); font-weight:800;
     padding:5px 12px; border-radius:20px; font-size:12.5px; white-space:nowrap;
   }
   .badge-premium-header{
-    background: var(--amarillo); color: var(--tinta); font-weight:800;
+    background: var(--amarillo); color: var(--tinta-fija); font-weight:800;
     padding:3px 10px; border-radius:20px; font-size:11px; white-space:nowrap; margin-left:4px;
   }
   .plan-gratuito .btn-whatsapp{ padding:9px 16px; font-size:12.5px; flex-shrink:0; }
@@ -559,19 +560,19 @@
     display:inline-flex; align-items:center; gap:6px;
     font-family: var(--font); font-size:11px; font-weight:800;
     letter-spacing:.5px; text-transform:uppercase;
-    background: var(--tinta); color:#fff;
+    background: var(--tinta-fija); color:#fff;
     padding:6px 14px; border-radius:999px;
   }
   .anuncio-badge .i{ width:12px; height:12px; }
   .anuncio-texto{
     margin:0; flex:1 1 420px; max-width:640px;
-    color: var(--tinta); font-size:15.5px; font-weight:700; line-height:1.65;
+    color: var(--tinta-fija); font-size:15.5px; font-weight:700; line-height:1.65;
     display:flex; align-items:flex-start; gap:10px;
   }
   .anuncio-texto .i{ width:22px; height:22px; margin-top:2px; flex-shrink:0; }
   .anuncio-texto strong{ font-size:19px; }
   .anuncio .btn-whatsapp{
-    background: var(--tinta); color:#fff;
+    background: var(--tinta-fija); color:#fff;
     box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 14px 24px -14px rgba(0,0,0,.6);
     padding:16px 28px; font-size:15px;
   }
@@ -598,7 +599,7 @@
   .paso-num{
     position:absolute; top:-14px; left:20px;
     width:28px; height:28px; border-radius:50%;
-    background: var(--amarillo); color: var(--tinta);
+    background: var(--amarillo); color: var(--tinta-fija);
     font-family:'Space Mono', monospace; font-weight:800; font-size:13px;
     display:flex; align-items:center; justify-content:center;
     box-shadow: 0 3px 0 var(--amarillo-dark);
@@ -621,10 +622,10 @@
   .btn-proximamente:hover{ border-color: var(--amarillo); color: var(--texto); filter:none; }
 
   .c-rosa{     --c: var(--rosa);     --c-dark: var(--rosa-dark);     --c-ink:#fff; }
-  .c-amarillo{ --c: var(--amarillo); --c-dark: var(--amarillo-dark); --c-ink: var(--tinta); }
-  .c-turquesa{ --c: var(--turquesa); --c-dark: var(--turquesa-dark); --c-ink: var(--tinta); }
+  .c-amarillo{ --c: var(--amarillo); --c-dark: var(--amarillo-dark); --c-ink: var(--tinta-fija); }
+  .c-turquesa{ --c: var(--turquesa); --c-dark: var(--turquesa-dark); --c-ink: var(--tinta-fija); }
   .c-violeta{  --c: var(--violeta);  --c-dark: var(--violeta-dark);  --c-ink:#fff; }
-  .c-naranja{  --c: var(--naranja);  --c-dark: var(--naranja-dark);  --c-ink: var(--tinta); }
+  .c-naranja{  --c: var(--naranja);  --c-dark: var(--naranja-dark);  --c-ink: var(--tinta-fija); }
 
   .kard-vacia{
     border: 2px dashed var(--hair-2);
@@ -1049,7 +1050,7 @@
     <div class="grid">
 
       <article class="kard c-rosa">
-        <div class="kard-top"><span class="kard-icon"><svg width="66" height="78" viewBox="0 0 100 100" fill="none"><rect x="24" y="8" width="52" height="84" rx="11" fill="#fff"/><rect x="31" y="18" width="38" height="56" rx="5" fill="var(--tinta)" opacity="0.14"/><circle cx="50" cy="84" r="3.2" fill="var(--tinta)" opacity="0.3"/><text x="50" y="57" font-size="34" font-weight="800" text-anchor="middle" fill="var(--tinta)" font-family="'Baloo 2','Segoe UI',sans-serif">?</text><path d="M14 26 l2.6 5.4 6-.5-4.5 4.1 1.3 5.9-5.4-3-5.4 3 1.3-5.9-4.5-4.1 6 .5z" fill="#fff"/><path d="M85 52 l2 4.1 4.6-.4-3.4 3.1 1 4.5-4.2-2.3-4.2 2.3 1-4.5-3.4-3.1 4.6.4z" fill="#fff"/></svg></span><span class="chip">📱 Código QR</span></div>
+        <div class="kard-top"><span class="kard-icon"><svg width="66" height="78" viewBox="0 0 100 100" fill="none"><rect x="24" y="8" width="52" height="84" rx="11" fill="#fff"/><rect x="31" y="18" width="38" height="56" rx="5" fill="var(--tinta-fija)" opacity="0.14"/><circle cx="50" cy="84" r="3.2" fill="var(--tinta-fija)" opacity="0.3"/><text x="50" y="57" font-size="34" font-weight="800" text-anchor="middle" fill="var(--tinta-fija)" font-family="'Baloo 2','Segoe UI',sans-serif">?</text><path d="M14 26 l2.6 5.4 6-.5-4.5 4.1 1.3 5.9-5.4-3-5.4 3 1.3-5.9-4.5-4.1 6 .5z" fill="#fff"/><path d="M85 52 l2 4.1 4.6-.4-3.4 3.1 1 4.5-4.2-2.3-4.2 2.3 1-4.5-3.4-3.1 4.6.4z" fill="#fff"/></svg></span><span class="chip">📱 Código QR</span></div>
         <div class="kard-body">
           <div class="kard-title">QuizLive</div>
           <p class="kard-desc">Trivia en vivo estilo Kahoot: los alumnos entran desde su celular con un código.</p>
@@ -1058,7 +1059,7 @@
       </article>
 
       <article class="kard c-naranja">
-        <div class="kard-top"><span class="kard-icon"><svg width="78" height="78" viewBox="0 0 100 100" fill="none"><rect x="9" y="48" width="19" height="32" rx="2" fill="#fff"/><polygon points="9,48 28,48 18.5,36" fill="#fff"/><rect x="16.5" y="27" width="4" height="10" fill="#fff"/><polygon points="20.5,27 20.5,33 29,30" fill="var(--tinta)"/><rect x="73" y="48" width="19" height="32" rx="2" fill="#fff" opacity="0.85"/><polygon points="73,48 92,48 82.5,36" fill="#fff" opacity="0.85"/><rect x="80.5" y="27" width="4" height="10" fill="#fff" opacity="0.85"/><polygon points="84.5,27 84.5,33 93,30" fill="var(--tinta)"/><rect x="30" y="40" width="40" height="40" rx="2" fill="#fff"/><rect x="30" y="35" width="7" height="7" fill="#fff"/><rect x="43.5" y="35" width="7" height="7" fill="#fff"/><rect x="57" y="35" width="7" height="7" fill="#fff"/><rect x="63" y="35" width="7" height="7" fill="#fff"/><path d="M44 80 V65 a6 6 0 0 1 12 0 V80 Z" fill="var(--tinta)"/><rect x="48.5" y="20" width="3" height="15" fill="#fff"/><polygon points="51.5,20 51.5,27.5 62,24" fill="var(--tinta)"/></svg></span><span class="chip">📱 QR + 📽️ Sala</span></div>
+        <div class="kard-top"><span class="kard-icon"><svg width="78" height="78" viewBox="0 0 100 100" fill="none"><rect x="9" y="48" width="19" height="32" rx="2" fill="#fff"/><polygon points="9,48 28,48 18.5,36" fill="#fff"/><rect x="16.5" y="27" width="4" height="10" fill="#fff"/><polygon points="20.5,27 20.5,33 29,30" fill="var(--tinta-fija)"/><rect x="73" y="48" width="19" height="32" rx="2" fill="#fff" opacity="0.85"/><polygon points="73,48 92,48 82.5,36" fill="#fff" opacity="0.85"/><rect x="80.5" y="27" width="4" height="10" fill="#fff" opacity="0.85"/><polygon points="84.5,27 84.5,33 93,30" fill="var(--tinta-fija)"/><rect x="30" y="40" width="40" height="40" rx="2" fill="#fff"/><rect x="30" y="35" width="7" height="7" fill="#fff"/><rect x="43.5" y="35" width="7" height="7" fill="#fff"/><rect x="57" y="35" width="7" height="7" fill="#fff"/><rect x="63" y="35" width="7" height="7" fill="#fff"/><path d="M44 80 V65 a6 6 0 0 1 12 0 V80 Z" fill="var(--tinta-fija)"/><rect x="48.5" y="20" width="3" height="15" fill="#fff"/><polygon points="51.5,20 51.5,27.5 62,24" fill="var(--tinta-fija)"/></svg></span><span class="chip">📱 QR + 📽️ Sala</span></div>
         <div class="kard-body">
           <div class="kard-title">Battle Castle 3D</div>
           <p class="kard-desc">Batalla de castillos en 3D: cada equipo lanza el misil desde su celular al castillo que elija.</p>
@@ -1067,7 +1068,7 @@
       </article>
 
       <article class="kard c-turquesa">
-        <div class="kard-top"><span class="kard-icon"><svg width="78" height="78" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="37" fill="none" stroke="#fff" stroke-width="7" stroke-dasharray="7 6"/><circle cx="50" cy="11" r="12" fill="#fff"/><text x="50" y="16" font-size="15" font-weight="800" text-anchor="middle" fill="var(--tinta)" font-family="'Baloo 2','Segoe UI',sans-serif">A</text><circle cx="89" cy="50" r="12" fill="var(--tinta)"/><text x="89" y="55" font-size="15" font-weight="800" text-anchor="middle" fill="#fff" font-family="'Baloo 2','Segoe UI',sans-serif">Z</text><circle cx="50" cy="89" r="4" fill="#fff" opacity="0.6"/><circle cx="11" cy="50" r="4" fill="#fff" opacity="0.6"/></svg></span><span class="chip">📱 Código QR</span></div>
+        <div class="kard-top"><span class="kard-icon"><svg width="78" height="78" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="37" fill="none" stroke="#fff" stroke-width="7" stroke-dasharray="7 6"/><circle cx="50" cy="11" r="12" fill="#fff"/><text x="50" y="16" font-size="15" font-weight="800" text-anchor="middle" fill="var(--tinta-fija)" font-family="'Baloo 2','Segoe UI',sans-serif">A</text><circle cx="89" cy="50" r="12" fill="var(--tinta-fija)"/><text x="89" y="55" font-size="15" font-weight="800" text-anchor="middle" fill="#fff" font-family="'Baloo 2','Segoe UI',sans-serif">Z</text><circle cx="50" cy="89" r="4" fill="#fff" opacity="0.6"/><circle cx="11" cy="50" r="4" fill="#fff" opacity="0.6"/></svg></span><span class="chip">📱 Código QR</span></div>
         <div class="kard-body">
           <div class="kard-title">Rosco de Palabras</div>
           <p class="kard-desc">Pasapalabra clásico: vocabulario letra por letra contra el reloj.</p>
@@ -1076,7 +1077,7 @@
       </article>
 
       <article class="kard c-violeta">
-        <div class="kard-top"><span class="kard-icon"><svg width="80" height="80" viewBox="0 0 100 100" fill="none"><path d="M14 46 a36 22 0 0 1 72 0 Z" fill="#fff"/><rect x="14" y="46" width="72" height="36" rx="7" fill="#fff"/><rect x="14" y="58" width="72" height="5" fill="var(--tinta)" opacity="0.18"/><rect x="36" y="30" width="6" height="30" fill="var(--tinta)" opacity="0.18"/><rect x="58" y="30" width="6" height="34" fill="var(--tinta)" opacity="0.18"/><circle cx="50" cy="58" r="8" fill="var(--tinta)"/><rect x="47.5" y="54" width="5" height="10" rx="1.2" fill="#fff"/><circle cx="19" cy="30" r="9" fill="var(--tinta)"/><circle cx="81" cy="28" r="7" fill="#fff" stroke="var(--tinta)" stroke-width="2.2"/></svg></span><span class="chip">📱 Código QR</span></div>
+        <div class="kard-top"><span class="kard-icon"><svg width="80" height="80" viewBox="0 0 100 100" fill="none"><path d="M14 46 a36 22 0 0 1 72 0 Z" fill="#fff"/><rect x="14" y="46" width="72" height="36" rx="7" fill="#fff"/><rect x="14" y="58" width="72" height="5" fill="var(--tinta-fija)" opacity="0.18"/><rect x="36" y="30" width="6" height="30" fill="var(--tinta-fija)" opacity="0.18"/><rect x="58" y="30" width="6" height="34" fill="var(--tinta-fija)" opacity="0.18"/><circle cx="50" cy="58" r="8" fill="var(--tinta-fija)"/><rect x="47.5" y="54" width="5" height="10" rx="1.2" fill="#fff"/><circle cx="19" cy="30" r="9" fill="var(--tinta-fija)"/><circle cx="81" cy="28" r="7" fill="#fff" stroke="var(--tinta-fija)" stroke-width="2.2"/></svg></span><span class="chip">📱 Código QR</span></div>
         <div class="kard-body">
           <div class="kard-title">Escalera Millonaria</div>
           <p class="kard-desc">Preguntas en escalera de dificultad con comodines, editable para cualquier materia.</p>
@@ -1085,7 +1086,7 @@
       </article>
 
       <article class="kard c-amarillo">
-        <div class="kard-top"><span class="kard-icon"><svg width="80" height="80" viewBox="0 0 100 100" fill="none"><rect x="14" y="14" width="72" height="72" rx="8" fill="#fff"/><rect x="14" y="14" width="72" height="16" fill="var(--tinta)" opacity="0.15"/><rect x="14" y="70" width="72" height="16" fill="var(--tinta)" opacity="0.15"/><rect x="14" y="14" width="16" height="72" fill="var(--tinta)" opacity="0.15"/><rect x="70" y="14" width="16" height="72" fill="var(--tinta)" opacity="0.15"/><circle cx="40" cy="50" r="7" fill="var(--tinta)"/><rect x="37" y="44" width="6" height="6" rx="1" fill="var(--tinta)"/><circle cx="62" cy="58" r="7" fill="#fff" stroke="var(--tinta)" stroke-width="2.5"/></svg></span><span class="chip">📽️ Modo sala</span></div>
+        <div class="kard-top"><span class="kard-icon"><svg width="80" height="80" viewBox="0 0 100 100" fill="none"><rect x="14" y="14" width="72" height="72" rx="8" fill="#fff"/><rect x="14" y="14" width="72" height="16" fill="var(--tinta-fija)" opacity="0.15"/><rect x="14" y="70" width="72" height="16" fill="var(--tinta-fija)" opacity="0.15"/><rect x="14" y="14" width="16" height="72" fill="var(--tinta-fija)" opacity="0.15"/><rect x="70" y="14" width="16" height="72" fill="var(--tinta-fija)" opacity="0.15"/><circle cx="40" cy="50" r="7" fill="var(--tinta-fija)"/><rect x="37" y="44" width="6" height="6" rx="1" fill="var(--tinta-fija)"/><circle cx="62" cy="58" r="7" fill="#fff" stroke="var(--tinta-fija)" stroke-width="2.5"/></svg></span><span class="chip">📽️ Modo sala</span></div>
         <div class="kard-body">
           <div class="kard-title">Magnates de San Fernando</div>
           <p class="kard-desc">Tablero temático local: se proyecta y se juega con turnos por grupo.</p>
@@ -1094,7 +1095,7 @@
       </article>
 
       <article class="kard c-rosa">
-        <div class="kard-top"><span class="kard-icon"><svg width="78" height="78" viewBox="0 0 100 100" fill="none"><path d="M50 14c-16 0-27 13-27 30v28a9 9 0 0 0 9 9h36a9 9 0 0 0 9-9V44c0-17-11-30-27-30z" fill="#fff"/><rect x="33" y="46" width="34" height="14" rx="7" fill="var(--tinta)" opacity="0.85"/><circle cx="76" cy="70" r="13" fill="none" stroke="var(--tinta)" stroke-width="5"/><line x1="85" y1="79" x2="94" y2="88" stroke="var(--tinta)" stroke-width="5" stroke-linecap="round"/></svg></span><span class="chip">📱 Código QR</span></div>
+        <div class="kard-top"><span class="kard-icon"><svg width="78" height="78" viewBox="0 0 100 100" fill="none"><path d="M50 14c-16 0-27 13-27 30v28a9 9 0 0 0 9 9h36a9 9 0 0 0 9-9V44c0-17-11-30-27-30z" fill="#fff"/><rect x="33" y="46" width="34" height="14" rx="7" fill="var(--tinta-fija)" opacity="0.85"/><circle cx="76" cy="70" r="13" fill="none" stroke="var(--tinta-fija)" stroke-width="5"/><line x1="85" y1="79" x2="94" y2="88" stroke="var(--tinta-fija)" stroke-width="5" stroke-linecap="round"/></svg></span><span class="chip">📱 Código QR</span></div>
         <div class="kard-body">
           <div class="kard-title">Descubre al Impostor</div>
           <p class="kard-desc">Misiones de vocabulario con impostor incluido: ideal para repasos rápidos.</p>
@@ -1103,7 +1104,7 @@
       </article>
 
       <article class="kard c-turquesa">
-        <div class="kard-top"><span class="kard-icon"><svg width="78" height="78" viewBox="0 0 100 100" fill="none"><g transform="rotate(8 64 36)"><rect x="42" y="14" width="44" height="44" rx="9" fill="#fff"/><circle cx="54" cy="26" r="3.4" fill="var(--tinta)"/><circle cx="74" cy="26" r="3.4" fill="var(--tinta)"/><circle cx="54" cy="46" r="3.4" fill="var(--tinta)"/><circle cx="74" cy="46" r="3.4" fill="var(--tinta)"/><circle cx="64" cy="36" r="3.4" fill="var(--tinta)"/></g><ellipse cx="26" cy="78" rx="18" ry="6" fill="var(--tinta)" opacity="0.85"/><ellipse cx="26" cy="72" rx="18" ry="6" fill="#fff"/><ellipse cx="26" cy="66" rx="18" ry="6" fill="var(--tinta)" opacity="0.85"/><ellipse cx="26" cy="60" rx="18" ry="6" fill="#fff"/></svg></span><span class="chip">📱 Código QR</span></div>
+        <div class="kard-top"><span class="kard-icon"><svg width="78" height="78" viewBox="0 0 100 100" fill="none"><g transform="rotate(8 64 36)"><rect x="42" y="14" width="44" height="44" rx="9" fill="#fff"/><circle cx="54" cy="26" r="3.4" fill="var(--tinta-fija)"/><circle cx="74" cy="26" r="3.4" fill="var(--tinta-fija)"/><circle cx="54" cy="46" r="3.4" fill="var(--tinta-fija)"/><circle cx="74" cy="46" r="3.4" fill="var(--tinta-fija)"/><circle cx="64" cy="36" r="3.4" fill="var(--tinta-fija)"/></g><ellipse cx="26" cy="78" rx="18" ry="6" fill="var(--tinta-fija)" opacity="0.85"/><ellipse cx="26" cy="72" rx="18" ry="6" fill="#fff"/><ellipse cx="26" cy="66" rx="18" ry="6" fill="var(--tinta-fija)" opacity="0.85"/><ellipse cx="26" cy="60" rx="18" ry="6" fill="#fff"/></svg></span><span class="chip">📱 Código QR</span></div>
         <div class="kard-body">
           <div class="kard-title">Bet Your Answer</div>
           <p class="kard-desc">Trivia con apuestas de puntos: la tensión sube en la recta final.</p>
@@ -1112,7 +1113,7 @@
       </article>
 
       <article class="kard c-violeta">
-        <div class="kard-top"><span class="kard-icon"><svg width="76" height="76" viewBox="0 0 100 100" fill="none"><rect x="30" y="14" width="10" height="12" fill="#fff"/><circle cx="35" cy="12" r="4" fill="#fff"/><rect x="22" y="26" width="36" height="30" rx="7" fill="#fff"/><rect x="30" y="36" width="7" height="9" rx="2" fill="var(--tinta)"/><rect x="43" y="36" width="7" height="9" rx="2" fill="var(--tinta)"/><rect x="26" y="56" width="28" height="26" rx="5" fill="#fff" opacity="0.85"/><rect x="6" y="58" width="14" height="24" rx="6" fill="var(--tinta)" transform="rotate(-25 13 70)"/><circle cx="8" cy="55" r="9" fill="var(--tinta)"/><rect x="56" y="60" width="12" height="20" rx="5" fill="#fff" opacity="0.85"/></svg></span><span class="chip">📱 Código QR</span></div>
+        <div class="kard-top"><span class="kard-icon"><svg width="76" height="76" viewBox="0 0 100 100" fill="none"><rect x="30" y="14" width="10" height="12" fill="#fff"/><circle cx="35" cy="12" r="4" fill="#fff"/><rect x="22" y="26" width="36" height="30" rx="7" fill="#fff"/><rect x="30" y="36" width="7" height="9" rx="2" fill="var(--tinta-fija)"/><rect x="43" y="36" width="7" height="9" rx="2" fill="var(--tinta-fija)"/><rect x="26" y="56" width="28" height="26" rx="5" fill="#fff" opacity="0.85"/><rect x="6" y="58" width="14" height="24" rx="6" fill="var(--tinta-fija)" transform="rotate(-25 13 70)"/><circle cx="8" cy="55" r="9" fill="var(--tinta-fija)"/><rect x="56" y="60" width="12" height="20" rx="5" fill="#fff" opacity="0.85"/></svg></span><span class="chip">📱 Código QR</span></div>
         <div class="kard-body">
           <div class="kard-title">Robot Fight</div>
           <p class="kard-desc">Duelo de robots por respuestas correctas: ritmo rápido y muy visual.</p>
@@ -1121,7 +1122,7 @@
       </article>
 
       <article class="kard c-amarillo">
-        <div class="kard-top"><span class="kard-icon"><svg width="78" height="78" viewBox="0 0 100 100" fill="none"><rect x="20" y="14" width="6" height="72" rx="2" fill="#fff"/><rect x="26" y="16" width="8" height="8" fill="#fff"/><rect x="42" y="16" width="8" height="8" fill="#fff"/><rect x="34" y="24" width="8" height="8" fill="#fff"/><rect x="50" y="24" width="8" height="8" fill="#fff"/><rect x="26" y="32" width="8" height="8" fill="#fff"/><rect x="42" y="32" width="8" height="8" fill="#fff"/><rect x="34" y="16" width="8" height="8" fill="var(--tinta)"/><rect x="50" y="16" width="8" height="8" fill="var(--tinta)"/><rect x="26" y="24" width="8" height="8" fill="var(--tinta)"/><rect x="42" y="24" width="8" height="8" fill="var(--tinta)"/><rect x="58" y="24" width="8" height="8" fill="var(--tinta)"/><rect x="34" y="32" width="8" height="8" fill="var(--tinta)"/><path d="M14 88c14-10 26 8 40-2s22-14 34-4" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.6"/></svg></span><span class="chip">📽️ Modo sala</span></div>
+        <div class="kard-top"><span class="kard-icon"><svg width="78" height="78" viewBox="0 0 100 100" fill="none"><rect x="20" y="14" width="6" height="72" rx="2" fill="#fff"/><rect x="26" y="16" width="8" height="8" fill="#fff"/><rect x="42" y="16" width="8" height="8" fill="#fff"/><rect x="34" y="24" width="8" height="8" fill="#fff"/><rect x="50" y="24" width="8" height="8" fill="#fff"/><rect x="26" y="32" width="8" height="8" fill="#fff"/><rect x="42" y="32" width="8" height="8" fill="#fff"/><rect x="34" y="16" width="8" height="8" fill="var(--tinta-fija)"/><rect x="50" y="16" width="8" height="8" fill="var(--tinta-fija)"/><rect x="26" y="24" width="8" height="8" fill="var(--tinta-fija)"/><rect x="42" y="24" width="8" height="8" fill="var(--tinta-fija)"/><rect x="58" y="24" width="8" height="8" fill="var(--tinta-fija)"/><rect x="34" y="32" width="8" height="8" fill="var(--tinta-fija)"/><path d="M14 88c14-10 26 8 40-2s22-14 34-4" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.6"/></svg></span><span class="chip">📽️ Modo sala</span></div>
         <div class="kard-body">
           <div class="kard-title">Race Board</div>
           <p class="kard-desc">Carrera por equipos en tablero: se avanza respondiendo bien.</p>
@@ -1130,7 +1131,7 @@
       </article>
 
       <article class="kard c-naranja">
-        <div class="kard-top"><span class="kard-icon"><svg width="78" height="78" viewBox="0 0 100 100" fill="none"><rect x="14" y="14" width="34" height="34" rx="4" fill="#fff"/><rect x="52" y="14" width="34" height="34" rx="4" fill="#fff" opacity="0.8"/><rect x="14" y="52" width="34" height="34" rx="4" fill="#fff" opacity="0.8"/><rect x="52" y="52" width="34" height="34" rx="4" fill="var(--tinta)"/><text x="31" y="38" font-size="18" font-weight="800" text-anchor="middle" fill="var(--tinta)" font-family="'Baloo 2','Segoe UI',sans-serif">?</text><text x="69" y="76" font-size="18" font-weight="800" text-anchor="middle" fill="#fff" font-family="'Baloo 2','Segoe UI',sans-serif">?</text></svg></span><span class="chip">📽️ Modo sala</span></div>
+        <div class="kard-top"><span class="kard-icon"><svg width="78" height="78" viewBox="0 0 100 100" fill="none"><rect x="14" y="14" width="34" height="34" rx="4" fill="#fff"/><rect x="52" y="14" width="34" height="34" rx="4" fill="#fff" opacity="0.8"/><rect x="14" y="52" width="34" height="34" rx="4" fill="#fff" opacity="0.8"/><rect x="52" y="52" width="34" height="34" rx="4" fill="var(--tinta-fija)"/><text x="31" y="38" font-size="18" font-weight="800" text-anchor="middle" fill="var(--tinta-fija)" font-family="'Baloo 2','Segoe UI',sans-serif">?</text><text x="69" y="76" font-size="18" font-weight="800" text-anchor="middle" fill="#fff" font-family="'Baloo 2','Segoe UI',sans-serif">?</text></svg></span><span class="chip">📽️ Modo sala</span></div>
         <div class="kard-body">
           <div class="kard-title">Jeopardy</div>
           <p class="kard-desc">Tablero de categorías y puntajes al estilo clásico: perfecto para repasar unidades completas.</p>
@@ -1139,7 +1140,7 @@
       </article>
 
       <article class="kard c-rosa">
-        <div class="kard-top"><span class="kard-icon"><svg width="78" height="78" viewBox="0 0 100 100" fill="none"><g transform="rotate(-6 50 50)"><rect x="24" y="24" width="52" height="52" rx="10" fill="#fff"/><circle cx="38" cy="38" r="4" fill="var(--tinta)"/><circle cx="62" cy="38" r="4" fill="var(--tinta)"/><circle cx="38" cy="62" r="4" fill="var(--tinta)"/><circle cx="62" cy="62" r="4" fill="var(--tinta)"/></g><path d="M34 22 Q30 8 22 14 Q26 18 26 26 Z" fill="var(--tinta)"/><path d="M66 22 Q70 8 78 14 Q74 18 74 26 Z" fill="var(--tinta)"/></svg></span><span class="chip">📱 QR + 📽️ Sala</span></div>
+        <div class="kard-top"><span class="kard-icon"><svg width="78" height="78" viewBox="0 0 100 100" fill="none"><g transform="rotate(-6 50 50)"><rect x="24" y="24" width="52" height="52" rx="10" fill="#fff"/><circle cx="38" cy="38" r="4" fill="var(--tinta-fija)"/><circle cx="62" cy="38" r="4" fill="var(--tinta-fija)"/><circle cx="38" cy="62" r="4" fill="var(--tinta-fija)"/><circle cx="62" cy="62" r="4" fill="var(--tinta-fija)"/></g><path d="M34 22 Q30 8 22 14 Q26 18 26 26 Z" fill="var(--tinta-fija)"/><path d="M66 22 Q70 8 78 14 Q74 18 74 26 Z" fill="var(--tinta-fija)"/></svg></span><span class="chip">📱 QR + 📽️ Sala</span></div>
         <div class="kard-body">
           <div class="kard-title">Evil Game</div>
           <p class="kard-desc">Trivia con giros y penalizaciones: cada equipo tira el dado desde su propio celular.</p>
@@ -1148,7 +1149,7 @@
       </article>
 
       <article class="kard c-turquesa">
-        <div class="kard-top"><span class="kard-icon"><svg width="78" height="78" viewBox="0 0 100 100" fill="none"><g transform="rotate(-8 31 45)"><rect x="14" y="22" width="34" height="46" rx="7" fill="var(--tinta)"/><circle cx="31" cy="35" r="3" fill="#fff" opacity="0.5"/><circle cx="31" cy="45" r="3" fill="#fff" opacity="0.5"/><circle cx="31" cy="55" r="3" fill="#fff" opacity="0.5"/></g><g transform="rotate(8 69 45)"><rect x="52" y="22" width="34" height="46" rx="7" fill="#fff"/><path d="M69 32 l3.6 7.4 8.2.7-6.1 5.6 1.8 8.1L69 49.6l-7.5 4.2 1.8-8.1-6.1-5.6 8.2-.7z" fill="var(--tinta)"/></g></svg></span><span class="chip">📽️ Modo sala</span></div>
+        <div class="kard-top"><span class="kard-icon"><svg width="78" height="78" viewBox="0 0 100 100" fill="none"><g transform="rotate(-8 31 45)"><rect x="14" y="22" width="34" height="46" rx="7" fill="var(--tinta-fija)"/><circle cx="31" cy="35" r="3" fill="#fff" opacity="0.5"/><circle cx="31" cy="45" r="3" fill="#fff" opacity="0.5"/><circle cx="31" cy="55" r="3" fill="#fff" opacity="0.5"/></g><g transform="rotate(8 69 45)"><rect x="52" y="22" width="34" height="46" rx="7" fill="#fff"/><path d="M69 32 l3.6 7.4 8.2.7-6.1 5.6 1.8 8.1L69 49.6l-7.5 4.2 1.8-8.1-6.1-5.6 8.2-.7z" fill="var(--tinta-fija)"/></g></svg></span><span class="chip">📽️ Modo sala</span></div>
         <div class="kard-body">
           <div class="kard-title">Memorice</div>
           <p class="kard-desc">El clásico juego de memoria por parejas: se proyecta y se juega por turnos entre equipos.</p>

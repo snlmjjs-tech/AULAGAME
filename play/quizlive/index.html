@@ -268,8 +268,12 @@ button.ans:active{transform:scale(.97);transition-duration:.08s}
 .link-corto button{background:var(--accent-btn);color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-size:13px;cursor:pointer;flex-shrink:0;transition:filter .2s}
 .link-corto button:hover{filter:brightness(1.15)}
 .players-wrap{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:760px}
-.ptag{background:var(--surface-2);border:1px solid var(--hair);border-radius:999px;padding:8px 18px 8px 10px;font-weight:650;display:inline-flex;align-items:center;gap:8px;animation:pop .6s var(--spring)}
+.ptag{background:var(--surface-2);border:1px solid var(--hair);border-radius:999px;padding:8px 10px 8px 10px;font-weight:650;display:inline-flex;align-items:center;gap:8px;animation:pop .6s var(--spring)}
 .ptag .pav{font-size:1.5rem;line-height:1}
+.ptag .kick{width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.2);color:inherit;cursor:pointer;display:inline-grid;place-items:center;font-size:.75rem;line-height:1;flex-shrink:0;padding:0}
+.ptag .kick:hover{background:var(--btn-red);color:#fff}
+.rk .kick{width:30px;height:30px;border-radius:50%;border:none;background:var(--btn-red);color:#fff;cursor:pointer;display:inline-grid;place-items:center;font-size:.8rem;flex-shrink:0;padding:0}
+.rk .kick:hover{filter:brightness(1.15)}
 
 /* ===== podio ===== */
 .podium{display:flex;align-items:flex-end;justify-content:center;gap:12px;margin:26px 0 10px}
@@ -358,6 +362,11 @@ button.ans:active{transform:scale(.97);transition-duration:.08s}
   -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 14px 30px -18px rgba(0,0,0,.6)}
 .ytwrap{position:relative;width:min(680px,100%);margin:14px auto 0;padding-top:min(56.25%,382px);border-radius:26px;overflow:hidden;box-shadow:0 0 0 1px var(--hair),0 36px 60px -30px rgba(0,0,0,.85)}
 .ytwrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.yt-mount-box{position:absolute;inset:0}
+.yt-loading,.yt-fallback{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:var(--panel2,#1a1340);color:var(--texto,#fff);text-align:center;padding:16px;font-weight:650}
+.yt-spin{width:30px;height:30px;border-radius:50%;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;animation:ytspin .8s linear infinite}
+@keyframes ytspin{to{transform:rotate(360deg)}}
+.yt-fallback p{margin:0;max-width:420px}
 
 /* ===== responsive ===== */
 @media (max-width:640px){
@@ -482,6 +491,7 @@ button.ans:active{transform:scale(.97);transition-duration:.08s}
   <div class="hud">
     <span class="pin-chip">PIN <span id="pinSmall"></span></span>
     <span class="display" id="hostQNum" style="font-size:1.2rem"></span>
+    <button class="icon-btn" title="Ver jugadores / expulsar" onclick="openPlayersPanel()" style="background:var(--surface-2)">👥</button>
     <span class="spacer"></span>
     <div class="answers-count"><div class="n" id="hostAnsCount">0</div><div class="muted">respuestas</div></div>
     <div class="timer" id="hostTimer">–</div>
@@ -515,7 +525,7 @@ button.ans:active{transform:scale(.97);transition-duration:.08s}
       <label class="fld" style="margin-top:0">PIN del juego</label>
       <input type="text" id="joinPin" inputmode="numeric" maxlength="6" placeholder="123456" style="text-align:center;font-size:1.8rem;letter-spacing:.3em;font-weight:800;font-variant-numeric:tabular-nums">
       <label class="fld">Tu nombre</label>
-      <input type="text" id="joinName" maxlength="18" placeholder="Ej: Cata M.">
+      <input type="text" id="joinName" maxlength="20" placeholder="Ej: Cata M.">
       <label class="fld">Elige tu animal</label>
       <div class="avatar-grid" id="avatarGrid"></div>
       <button class="btn big azul" style="width:100%;margin-top:20px;justify-content:space-between" onclick="joinGame()">Entrar <svg class="i" aria-hidden="true"><use href="#i-arrow-right"/></svg></button>
@@ -575,7 +585,11 @@ button.ans:active{transform:scale(.97);transition-duration:.08s}
     <input type="file" id="qImgFile" accept="image/*" style="display:none" onchange="pickImg(this)">
     <div class="img-prev" id="imgPrev"></div>
     <label class="fld">Video de YouTube (opcional)</label>
-    <input type="text" id="qYt" placeholder="Pega el link del video (ej: https://youtu.be/…)">
+    <input type="text" id="qYt" placeholder="Pega el link del video (ej: https://youtu.be/…)" oninput="toggleYtRange()">
+    <div class="row" id="qYtRange" style="display:none">
+      <div class="grow"><label class="fld">Inicio (seg, opcional)</label><input type="number" id="qYtStart" min="0" placeholder="0"></div>
+      <div class="grow"><label class="fld">Fin (seg, opcional)</label><input type="number" id="qYtEnd" min="0" placeholder="Hasta el final"></div>
+    </div>
     <div id="typeFields"></div>
     <div class="row" style="margin-top:20px;justify-content:flex-end">
       <button class="btn gris" onclick="closeModal('modal-q')">Cancelar</button>
@@ -613,6 +627,17 @@ button.ans:active{transform:scale(.97);transition-duration:.08s}
   </div>
 </div>
 
+<!-- ================= MODAL: JUGADORES / EXPULSAR ================= -->
+<div class="modal-bg" id="modal-players">
+  <div class="modal" style="max-width:480px">
+    <h3>👥 Jugadores conectados</h3>
+    <div class="ranking" id="playersModalList" style="margin-top:10px"></div>
+    <div class="row" style="margin-top:20px;justify-content:flex-end">
+      <button class="btn gris" onclick="closeModal('modal-players')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script type="module">
 import { loadGameData, saveGameData, saveGameDataDebounced } from "../shared/game-storage.js";
@@ -620,6 +645,7 @@ import { crearCodigoCorto } from "../shared/short-links.js";
 import { registrarPinExterno } from "../shared/live-room.js";
 import { renderAIButton } from "../shared/ai-questions.js";
 import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
+import { parseYouTubeId, checkEmbeddable, mountYouTubePlayer } from "../shared/youtube.js";
 
 const _isPinJoin = !!new URLSearchParams(location.search).get("pin");
 // Un alumno que entra con ?pin=... no tiene sesión de profesor: no se toca
@@ -675,6 +701,47 @@ const SHAPE_NAMES = ['Triángulo rojo','Rombo azul','Círculo amarillo','Cuadrad
 const TYPE_LABEL = {quiz:'Quiz', vf:'V / F', orden:'Ordenar', corta:'R. corta', larga:'R. larga'};
 const esc = t => String(t??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm = t => String(t??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+
+/* ================= FILTRO Y SANEO DE NOMBRES ================= */
+// Lista editable de palabras bloqueadas al unirse a una sala (espa\u00f1ol e ingl\u00e9s).
+// Se comparan ya normalizadas (sin tildes/may\u00fasculas/espacios/s\u00edmbolos y con
+// los reemplazos "leet" resueltos, ver normNameKey) \u2014 agrega o quita palabras aqu\u00ed.
+const BLOCKED_WORDS = [
+  // Espa\u00f1ol
+  'mierda','puta','puto','putas','putos','maricon','marica','maraco','pendejo','pendeja',
+  'imbecil','idiota','estupido','estupida','cabron','cabrona','zorra','perra',
+  'culero','culera','verga','pene','vagina','concha','conchatumadre','chucha',
+  'huevon','huevona','weon','weona','gonorrea','cagada','mojon','polla',
+  'violador','violacion','nazi','hitler','pedofilo','trolo','ql','ctm',
+  // Ingl\u00e9s
+  'fuck','shit','bitch','asshole','bastard','cunt','dick','pussy','cock','nigger',
+  'nigga','faggot','fag','whore','slut','rape','rapist','retard','retarded'
+];
+const LEET_MAP = {'0':'o','1':'i','3':'e','4':'a','5':'s','7':'t','8':'b','@':'a','$':'s'};
+// Clave de comparaci\u00f3n: sin tildes/may\u00fasculas, n\u00fameros-leet convertidos a letra,
+// y solo [a-z] (fuera espacios y s\u00edmbolos) \u2014 para pillar "p3n3" o "m1erda".
+function normNameKey(s){
+  let x = String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  x = x.split('').map(ch => LEET_MAP[ch] !== undefined ? LEET_MAP[ch] : ch).join('');
+  return x.replace(/[^a-z]/g,'');
+}
+function nameIsBlocked(nameKey){ return BLOCKED_WORDS.some(w => nameKey.includes(w)); }
+// Quita emojis/s\u00edmbolos raros, deja letras/n\u00fameros/espacio/."-" y recorta a 20 car.
+function sanitizeName(raw){
+  let s = String(raw||'').normalize('NFC');
+  s = s.replace(/[\u{1F1E6}-\u{1FAFF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\ufe0f\u200d]/gu,'');
+  s = s.replace(/[^\p{L}\p{N} .'\-]/gu,'');
+  s = s.replace(/\s+/g,' ').trim();
+  if(s.length > 20) s = s.slice(0,20).trim();
+  return s;
+}
+// Id estable por dispositivo/navegador (sobrevive recargas y pesta\u00f1as nuevas).
+function getDeviceId(){
+  const KEY='aulagame_quizlive_device';
+  let id=localStorage.getItem(KEY);
+  if(!id){ id=(crypto.randomUUID?crypto.randomUUID():(String(Date.now())+Math.random().toString(16).slice(2))); localStorage.setItem(KEY,id); }
+  return id;
+}
 const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
 
 function go(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); $('#'+id).classList.add('active'); window.scrollTo(0,0);
@@ -756,11 +823,11 @@ function toggleMusic(){
 const state={
   questions:[], editing:-1,
   db:null, pin:null, gameRef:null,
-  role:null, playerId:null, playerName:null,
+  role:null, playerId:null, playerName:null, inGame:false,
   qIndex:-1, timerH:null, timeLeft:0,
   answered:{}, players:{}, current:null,
   stuAnswered:false, stuQStart:0, orderSel:[],
-  localRevealed:false, listeners:[]
+  localRevealed:false, listeners:[], currentYtPlayer:null
 };
 
 /* ================= PREGUNTAS DE EJEMPLO ================= */
@@ -857,12 +924,27 @@ function autoSave(){
 }
 
 /* ================= VIDEO DE YOUTUBE ================= */
-function parseYT(u){
-  const m=String(u||'').match(/(?:youtu\.be\/|v=|embed\/|shorts\/|live\/)([A-Za-z0-9_-]{11})/);
-  return m?m[1]:null;
+// Pinta imagen (si hay) + reproductor robusto de YouTube (si hay) dentro de
+// `container`. Destruye el reproductor anterior para no acumular iframes.
+function renderMediaInto(container, img, ytId, ytOpts){
+  if(state.currentYtPlayer){ try{ state.currentYtPlayer.destroy(); }catch(e){} state.currentYtPlayer=null; }
+  container.innerHTML = imgHTML(img);
+  if(ytId){
+    const wrap=document.createElement('div'); wrap.className='ytwrap';
+    const mountEl=document.createElement('div');
+    wrap.appendChild(mountEl);
+    container.appendChild(wrap);
+    state.currentYtPlayer = mountYouTubePlayer(mountEl, ytId, ytOpts||{});
+  }
 }
-function ytHTML(id){
-  return id?`<div class="ytwrap"><iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0" title="Video" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>`:'';
+// Botón "Ver video" del estudiante: se reemplaza a sí mismo por el reproductor.
+function playStudentVideo(btn, ytId, start, end){
+  const wrap=document.createElement('div'); wrap.className='ytwrap';
+  const mountEl=document.createElement('div');
+  wrap.appendChild(mountEl);
+  btn.replaceWith(wrap);
+  if(state.currentYtPlayer){ try{ state.currentYtPlayer.destroy(); }catch(e){} }
+  state.currentYtPlayer = mountYouTubePlayer(mountEl, ytId, {start:start||undefined, end:end||undefined});
 }
 
 /* ================= EDITOR ================= */
@@ -895,8 +977,12 @@ function openQuestionModal(i){
   $('#qPoints').value=q?q.points:1000;
   state.editImg=q&&q.img?q.img:null; paintImgPrev();
   $('#qYt').value=q&&q.yt?('https://youtu.be/'+q.yt):'';
+  $('#qYtStart').value=q&&q.ytStart?q.ytStart:'';
+  $('#qYtEnd').value=q&&q.ytEnd?q.ytEnd:'';
+  toggleYtRange();
   renderTypeFields(q); openModal('modal-q');
 }
+function toggleYtRange(){ $('#qYtRange').style.display=$('#qYt').value.trim()?'':'none'; }
 function renderTypeFields(q){
   if(q instanceof Event) q=null;
   q = q || (state.editing>=0 && state.questions[state.editing] && state.questions[state.editing].type===$('#qType').value ? state.questions[state.editing] : null);
@@ -926,7 +1012,7 @@ function renderTypeFields(q){
   }
   w.innerHTML=h;
 }
-function saveQuestion(){
+async function saveQuestion(){
   const t=$('#qType').value, text=$('#qText').value.trim();
   const time=Math.max(5,Math.min(240,parseInt($('#qTime').value)||20));
   const points=Math.max(50,Math.min(5000,parseInt($('#qPoints').value)||1000));
@@ -934,7 +1020,20 @@ function saveQuestion(){
   const q={type:t,text,time,points};
   if(state.editImg) q.img=state.editImg;
   const ytRaw=$('#qYt').value.trim();
-  if(ytRaw){ const yt=parseYT(ytRaw); if(!yt) return toast('⚠️ Ese link de YouTube no es válido'); q.yt=yt; }
+  if(ytRaw){
+    const yt=parseYouTubeId(ytRaw);
+    if(!yt) return toast('⚠️ Ese link de YouTube no es válido');
+    const start=parseInt($('#qYtStart').value)||0, end=parseInt($('#qYtEnd').value)||0;
+    if(end&&end<=start) return toast('⚠️ El fin del video debe ser mayor que el inicio');
+    const btnGuardar=$('#modal-q .btn.verde'); const prevTxt=btnGuardar?btnGuardar.textContent:'';
+    if(btnGuardar){ btnGuardar.disabled=true; btnGuardar.textContent='Validando video…'; }
+    const check=await checkEmbeddable(yt);
+    if(btnGuardar){ btnGuardar.disabled=false; btnGuardar.textContent=prevTxt; }
+    if(check.ok===false) return toast('⚠️ '+check.reason+'. Prueba con otro video.');
+    q.yt=yt;
+    if(start) q.ytStart=start;
+    if(end) q.ytEnd=end;
+  }
   if(t==='quiz'){
     q.options=[]; for(let i=0;i<4;i++){ const v=$('#opt'+i).value.trim(); q.options.push(v); }
     while(q.options.length&&!q.options[q.options.length-1]) q.options.pop();
@@ -959,17 +1058,17 @@ function saveQuestion(){
 
 /* ================= EXCEL (SheetJS) ================= */
 function exportExcel(){
-  const rows=[['Tipo (quiz/vf/orden/corta/larga)','Pregunta','Tiempo (seg)','Puntos','OpciónA','OpciónB','OpciónC','OpciónD','OpciónE','OpciónF','Correcta','Video (YouTube)']];
+  const rows=[['Tipo (quiz/vf/orden/corta/larga)','Pregunta','Tiempo (seg)','Puntos','OpciónA','OpciónB','OpciónC','OpciónD','OpciónE','OpciónF','Correcta','Video (YouTube)','Video inicio (seg)','Video fin (seg)']];
   state.questions.forEach(q=>{
     let a='',b='',c='',d='',e='',f='',corr='';
     if(q.type==='quiz'){ [a,b,c,d]=[q.options[0]||'',q.options[1]||'',q.options[2]||'',q.options[3]||'']; corr=['A','B','C','D'][q.correct]; }
     if(q.type==='vf'){ corr=q.correct===0?'V':'F'; }
     if(q.type==='orden'){ [a,b,c,d,e,f]=[0,1,2,3,4,5].map(i=>q.options[i]||''); corr='(orden = A→F)'; }
     if(q.type==='corta'){ corr=q.accepted.join(' | '); }
-    rows.push([q.type,q.text,q.time,q.points,a,b,c,d,e,f,corr,q.yt?('https://youtu.be/'+q.yt):'']);
+    rows.push([q.type,q.text,q.time,q.points,a,b,c,d,e,f,corr,q.yt?('https://youtu.be/'+q.yt):'',q.ytStart||'',q.ytEnd||'']);
   });
   const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:10},{wch:50},{wch:8},{wch:8},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:22},{wch:28}];
+  ws['!cols']=[{wch:10},{wch:50},{wch:8},{wch:8},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:22},{wch:28},{wch:14},{wch:14}];
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Preguntas');
   XLSX.writeFile(wb,'quizlive_preguntas.xlsx'); toast('📤 Excel exportado');
 }
@@ -988,7 +1087,8 @@ function importExcel(inp){
         const points=Math.max(50,Math.min(5000,parseInt(r[3])||1000));
         const ops=[4,5,6,7,8,9].map(i=>r[i]!=null?String(r[i]).trim():'').filter(Boolean);
         const corr=r[10]!=null?String(r[10]).trim():'';
-        const yt=parseYT(r[11]);
+        const yt=parseYouTubeId(r[11]);
+        const ytStart=parseInt(r[12])||0, ytEnd=parseInt(r[13])||0;
         let nq=null;
         if(type==='quiz'&&ops.length>=2){ const ci={a:0,b:1,c:2,d:3}[norm(corr)]??0;
           nq={type:'quiz',text,time,points,options:ops.slice(0,4),correct:Math.min(ci,ops.length-1)}; }
@@ -996,7 +1096,7 @@ function importExcel(inp){
         else if(type==='orden'&&ops.length>=2){ nq={type:'orden',text,time,points,options:ops}; }
         else if(type==='corta'&&corr){ nq={type:'corta',text,time,points,accepted:corr.split('|').map(s=>s.trim()).filter(Boolean)}; }
         else if(type==='larga'){ nq={type:'larga',text,time,points}; }
-        if(nq){ if(yt) nq.yt=yt; out.push(nq); }
+        if(nq){ if(yt) nq.yt=yt; if(yt&&ytStart) nq.ytStart=ytStart; if(yt&&ytEnd&&ytEnd>ytStart) nq.ytEnd=ytEnd; out.push(nq); }
       });
       if(!out.length) return toast('⚠️ No se encontraron preguntas válidas');
       state.questions.length=0; state.questions.push(...out); // mantiene la referencia del quiz guardado
@@ -1066,12 +1166,13 @@ function startLive(){
     registrarPinExterno(state.pin, 'quizlive', '/play/quizlive/', 'pin').catch(function(){});
     listen(state.gameRef.child('players'),'value',snap=>{
       state.players=snap.val()||{};
-      const arr=Object.values(state.players);
+      const entries=Object.entries(state.players);
       const prev=$('#playersWrap').children.length;
-      $('#playerCount').textContent=arr.length+(arr.length===1?' jugador conectado':' jugadores conectados');
-      $('#playersWrap').innerHTML=arr.map(p=>'<span class="ptag"><span class="pav">'+esc(p.avatar||'🐾')+'</span>'+esc(p.name)+'</span>').join('');
-      $('#btnStartGame').disabled=!arr.length;
-      if(arr.length>prev) sfx.join();
+      $('#playerCount').textContent=entries.length+(entries.length===1?' jugador conectado':' jugadores conectados');
+      $('#playersWrap').innerHTML=entries.map(([pid,p])=>'<span class="ptag"><span class="pav">'+esc(p.avatar||'🐾')+'</span>'+esc(p.name)+'<button class="kick" title="Expulsar" onclick="confirmKick(\''+pid+'\')">✕</button></span>').join('');
+      $('#btnStartGame').disabled=!entries.length;
+      if(entries.length>prev) sfx.join();
+      if($('#modal-players').classList.contains('open')) renderPlayersModal();
     });
     musicStart('lobby');
     go('scr-lobby');
@@ -1082,6 +1183,31 @@ function startLive(){
   });
 }
 function cancelLive(){ askConfirm('Cancelar juego','Se cerrará la sala y se desconectará a los estudiantes.',()=>{ musicStop(); clearListeners(); if(state.gameRef) state.gameRef.remove(); go('scr-editor'); }); }
+
+/* ================= EXPULSAR JUGADORES ================= */
+function openPlayersPanel(){ renderPlayersModal(); openModal('modal-players'); }
+function renderPlayersModal(){
+  const w=$('#playersModalList'); if(!w) return;
+  const entries=Object.entries(state.players||{});
+  w.innerHTML = entries.length
+    ? entries.map(([pid,p])=>`<div class="rk"><span class="grow">${esc(p.avatar||'🐾')} ${esc(p.name)}</span><span>${p.score||0} pts</span><button class="kick" title="Expulsar" onclick="confirmKick('${pid}')">✕</button></div>`).join('')
+    : '<p class="muted" style="text-align:center;padding:10px">Nadie conectado todavía</p>';
+}
+function confirmKick(pid){
+  const p=state.players&&state.players[pid]; if(!p) return;
+  askConfirm('¿Expulsar a '+p.name+'?','No podrá volver a entrar a esta sala con el mismo nombre ni desde este dispositivo.',()=>kickPlayer(pid));
+}
+function kickPlayer(pid){
+  const p=state.players&&state.players[pid]; if(!p||!state.gameRef) return;
+  const upd={};
+  upd['players/'+pid]=null;
+  if(state.qIndex>=0) upd['answers/'+state.qIndex+'/'+pid]=null;
+  const banId=state.gameRef.child('kicked').push().key;
+  upd['kicked/'+banId]={ nameKey:p.nameKey||normNameKey(p.name), deviceId:p.deviceId||null, name:p.name, at:firebase.database.ServerValue.TIMESTAMP };
+  state.gameRef.update(upd);
+  toast('🚫 '+p.name+' fue expulsado de la sala');
+  sfx.click();
+}
 
 function hostStartGame(){ sfx.start(); musicStart('q'); state.qIndex=-1; hostNext(); }
 
@@ -1094,6 +1220,8 @@ function hostNext(){
   const pub={i:state.qIndex, n:state.questions.length, type:q.type, text:q.text, time:q.time};
   if(q.img) pub.img=q.img;
   if(q.yt) pub.yt=q.yt;
+  if(q.ytStart) pub.ytStart=q.ytStart;
+  if(q.ytEnd) pub.ytEnd=q.ytEnd;
   if(q.type==='quiz') pub.options=q.options;
   if(q.type==='vf') pub.options=['Verdadero','Falso'];
   if(q.type==='orden'){ pub.options=shuffle(q.options); state.current.shuffled=pub.options; }
@@ -1102,7 +1230,7 @@ function hostNext(){
   // pintar host
   $('#hostQNum').textContent='Pregunta '+(state.qIndex+1)+' de '+state.questions.length;
   $('#hostQText').textContent=q.text;
-  $('#hostImg').innerHTML=imgHTML(q.img)+ytHTML(q.yt);
+  renderMediaInto($('#hostImg'), q.img, q.yt, {start:q.ytStart, end:q.ytEnd});
   $('#hostAnsCount').textContent='0';
   $('#btnNext').style.display='none'; $('#btnSkip').style.display='';
   renderHostBody(q,pub);
@@ -1268,28 +1396,45 @@ function renderPodium(arr){
 
 /* ================= ESTUDIANTE ================= */
 function joinGame(){
-  const pin=$('#joinPin').value.trim(), name=$('#joinName').value.trim();
+  const pin=$('#joinPin').value.trim();
+  const name=sanitizeName($('#joinName').value);
   if(pin.length!==6) return toast('⚠️ El PIN tiene 6 dígitos');
   if(!name) return toast('⚠️ Escribe tu nombre');
+  const nameKey=normNameKey(name);
+  if(!nameKey) return toast('⚠️ Escribe un nombre válido');
+  if(nameIsBlocked(nameKey)) return toast('🚫 Ese nombre no está permitido, elige otro');
   if(!requireDB()) return;
+  const deviceId=getDeviceId();
   const ref=state.db.ref('quizlive/'+pin);
   ref.child('status').once('value').then(snap=>{
     if(!snap.exists()) return toast('⚠️ No existe un juego con ese PIN');
-    state.role='student'; state.pin=pin; state.gameRef=ref;
-    state.playerName=name;
-    state.playerId='p'+Math.random().toString(36).slice(2,10);
-    const me=ref.child('players/'+state.playerId);
-    me.set({name, avatar:state.avatar||AVATARS[0], score:0});
-    me.onDisconnect().remove();
-    $('#stuName').textContent=(state.avatar||AVATARS[0])+' '+name;
-    listen(ref,'value',stuRender);
-    go('scr-student'); sfx.join();
+    return ref.child('kicked').once('value').then(kSnap=>{
+      const kicked=kSnap.val()||{};
+      const banned=Object.values(kicked).some(k=>(k.deviceId&&k.deviceId===deviceId)||(k.nameKey&&k.nameKey===nameKey));
+      if(banned) return toast('🚫 No puedes volver a entrar a esta sala');
+      state.role='student'; state.pin=pin; state.gameRef=ref;
+      state.playerName=name;
+      state.playerId='p'+Math.random().toString(36).slice(2,10);
+      state.inGame=true;
+      const me=ref.child('players/'+state.playerId);
+      me.set({name, nameKey, deviceId, avatar:state.avatar||AVATARS[0], score:0});
+      me.onDisconnect().remove();
+      $('#stuName').textContent=(state.avatar||AVATARS[0])+' '+name;
+      listen(ref,'value',stuRender);
+      go('scr-student'); sfx.join();
+    });
   }).catch(()=>toast('⚠️ Error de conexión'));
 }
 function stuRender(snap){
   const g=snap.val();
   const w=$('#stuBody');
   if(!g){ w.innerHTML='<div class="feedback wait"><h2>El juego terminó</h2><p class="muted">El profesor cerró la sala.</p></div>'; return; }
+  if(state.inGame && !(g.players&&g.players[state.playerId])){
+    state.inGame=false; clearListeners();
+    toast('🚫 El profesor te sacó de la partida');
+    go('scr-join');
+    return;
+  }
   const me=(g.players||{})[state.playerId]||{score:0};
   $('#stuScore').textContent=(me.score||0)+' pts';
   const st=g.status;
@@ -1333,7 +1478,7 @@ function stuRenderQuestion(c){
   const w=$('#stuBody');
   let h=`<div class="qheader" style="font-size:1.1rem;padding:14px">${esc(c.text)}</div>
     ${c.img?'<img class="qimg" style="max-height:26vh" src="'+c.img+'" alt="">':''}
-    ${c.yt?`<button class="btn small azul" style="margin:10px auto 0" onclick="this.outerHTML=ytHTML('${c.yt}')">🎬 Ver video</button>`:''}
+    ${c.yt?`<button class="btn small azul" style="margin:10px auto 0" onclick="playStudentVideo(this,'${c.yt}',${c.ytStart||0},${c.ytEnd||0})">🎬 Ver video</button>`:''}
     <div class="row" style="justify-content:space-between;margin:12px 0"><b class="muted">Pregunta ${c.i+1} de ${c.n}</b><div class="timer" id="stuTimer" style="width:64px;height:64px;font-size:1.5rem">${c.time}</div></div>`;
   if(c.type==='quiz'){
     h+='<div class="ans-grid">'+c.options.map((o,i)=>`<button class="ans a${i}" onclick="stuAnswer(${i})"><span class="shape">${SHAPES[i]}</span><span>${esc(o)}</span></button>`).join('')+'</div>';
@@ -1404,7 +1549,7 @@ function localNext(){
   const q=state.questions[state.qIndex]; state.current=q; state.localRevealed=false;
   $('#locQNum').textContent='Pregunta '+(state.qIndex+1)+' de '+state.questions.length;
   $('#locQText').textContent=q.text;
-  $('#locImg').innerHTML=imgHTML(q.img)+ytHTML(q.yt);
+  renderMediaInto($('#locImg'), q.img, q.yt, {start:q.ytStart, end:q.ytEnd});
   $('#locNext').style.display='none'; $('#locReveal').style.display='';
   const w=$('#locBody');
   if(q.type==='quiz'){ w.innerHTML='<div class="ans-grid">'+q.options.map((o,i)=>`<div class="ans a${i}" data-i="${i}"><span class="shape">${SHAPES[i]}</span><span>${esc(o)}</span></div>`).join('')+'</div>'; }
@@ -1456,12 +1601,12 @@ function localReveal(){
 // en el scope global, así que los atributos onclick/onchange inline del HTML
 // necesitan que se re-expongan explícitamente en `window` para seguir funcionando.
 Object.assign(window, {
-  autoSave, cancelLive, clearImg, closeModal, delQ, delQuizLib, dupQuiz, exportExcel,
+  autoSave, cancelLive, clearImg, closeModal, confirmKick, delQ, delQuizLib, dupQuiz, exportExcel,
   go, gradeSet, hostEndQuestion, hostNext, hostStartGame, importExcel, joinGame,
   localNext, localReveal, moveQ, musicStop, newQuiz, openLibrary,
-  openModal, openQuestionModal, openQuiz, orderPick, orderRemove, orderReset,
-  pickImg, renderTypeFields, saveQuestion, startLive, startLocal,
-  stuAnswer, toggleMusic
+  openModal, openPlayersPanel, openQuestionModal, openQuiz, orderPick, orderRemove, orderReset,
+  pickImg, playStudentVideo, renderTypeFields, saveQuestion, startLive, startLocal,
+  stuAnswer, toggleMusic, toggleYtRange
 });
 </script>
 </body>
