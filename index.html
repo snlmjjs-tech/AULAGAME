@@ -417,6 +417,10 @@
     background: var(--amarillo); color: var(--tinta-fija); font-weight:800;
     padding:3px 10px; border-radius:20px; font-size:11px; white-space:nowrap; margin-left:4px;
   }
+  .badge-demo-header{
+    background: linear-gradient(135deg, var(--amarillo), var(--rosa)); color: var(--tinta-fija); font-weight:800;
+    padding:3px 10px; border-radius:20px; font-size:11px; white-space:nowrap; margin-left:4px;
+  }
   .plan-gratuito .btn-whatsapp{ padding:9px 16px; font-size:12.5px; flex-shrink:0; }
 
   .tutorial-vacio{
@@ -582,7 +586,19 @@
     white-space:nowrap; flex-shrink:0;
     padding: 13px 22px; font-size:14.5px;
   }
+  .modal-acciones{ flex-wrap:wrap; }
   .modal-acciones .btn-whatsapp{ flex:1; }
+  .modal-acciones .btn-demo-premium{ flex:1; }
+
+  .btn-demo-premium{
+    background: linear-gradient(135deg, var(--amarillo), var(--rosa)); color: var(--tinta-fija);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 14px 24px -14px rgba(255,77,141,.6);
+    white-space:normal; flex-shrink:0; font-weight:800; text-align:center; line-height:1.3;
+    flex-direction:column; gap:2px;
+    padding: 12px 20px; font-size:14px;
+  }
+  .btn-demo-premium small{ display:block; font-size:10.5px; font-weight:700; opacity:.85; margin-top:1px; }
+  .btn-demo-premium:disabled{ opacity:.65; cursor:default; }
 
   .pasos-grid{
     display:grid;
@@ -681,6 +697,31 @@
     font-size: 14px; font-weight: 600; line-height: 1.55;
   }
   .modal-caja p strong{ color: var(--texto); }
+
+  /* ============ ANUNCIO EMERGENTE PREMIUM (popup al cargar) ============ */
+  .anuncio-popup-cerrar{
+    position:fixed; top:18px; right:18px; z-index:71;
+    width:42px; height:42px; border-radius:50%;
+    background: var(--tinta-fija); color:#fff; border:3px solid var(--crema);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.45);
+    transition: transform .2s, filter .2s;
+  }
+  .anuncio-popup-cerrar .i{ width:18px; height:18px; }
+  .anuncio-popup-cerrar:hover{ filter:brightness(1.15); transform:scale(1.05); }
+  .anuncio-popup-caja{
+    display:flex; flex-direction:column; align-items:center; gap:14px;
+    width:92vw; max-width:460px; max-height:85vh;
+  }
+  .anuncio-popup-img{
+    flex:1 1 auto; min-height:0; max-width:100%; max-height:100%;
+    object-fit:contain; border-radius:18px; box-shadow:0 20px 60px rgba(0,0,0,.55);
+  }
+  .anuncio-popup-botones{
+    flex:0 0 auto; display:flex; gap:12px; flex-wrap:wrap; justify-content:center; width:100%;
+  }
+  .anuncio-popup-botones .btn{ flex:1 1 170px; }
+
   .campo-nombrar{
     display:flex; flex-direction:column; gap:6px; text-align:left;
     font-size:11.5px; font-weight:800; color: var(--texto-suave);
@@ -819,6 +860,7 @@
       <span class="avatar-circle" id="avatar-circle">P</span>
       <span id="avatar-email">Mi cuenta</span>
       <span class="badge-premium-header oculto" id="badge-premium-header">⭐ PREMIUM</span>
+      <span class="badge-demo-header oculto" id="badge-demo-header"></span>
     </button>
     <button class="btn btn-mini oculto" id="btn-salir" type="button" title="Cerrar sesión">⏻</button>
   </div>
@@ -980,12 +1022,18 @@
         <span class="sticker">Listos para la clase</span>
         <h2 id="mis-juegos">Mis juegos</h2>
       </div>
-      <span class="count-pill" id="pill-mis-juegos"></span>
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-demo-premium oculto" id="btn-demo-premium" type="button">🎁 Prueba una demo gratis<small>5 días de Premium</small></button>
+        <span class="count-pill" id="pill-mis-juegos"></span>
+      </div>
     </div>
 
     <div class="plan-gratuito oculto" id="plan-gratuito">
       <span id="plan-gratuito-texto"></span>
-      <a class="btn btn-whatsapp oculto" id="plan-gratuito-btn" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">💬 Pasarme a Premium</a>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-demo-premium oculto" id="plan-gratuito-demo" type="button">🎁 Probar demo (5 días)</button>
+        <a class="btn btn-whatsapp oculto" id="plan-gratuito-btn" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">💬 Pasarme a Premium</a>
+      </div>
     </div>
 
     <div class="tutorial-vacio oculto" id="tutorial-vacio">
@@ -1252,6 +1300,7 @@
     <div class="wordmark">AULAGAMES<small>Plataforma de juegos didácticos</small></div>
     <h3 id="login-titulo">Entrar a tu cuenta</h3>
     <p id="login-sub">Accede con tu correo y contraseña de profe.</p>
+    <p class="login-aviso-demo oculto" id="login-aviso-demo" style="background:var(--tinta); border:1.5px solid var(--amarillo); border-radius:10px; padding:9px 12px; font-size:12.5px; font-weight:700; margin:-6px 0 14px;"></p>
     <form id="form-login" novalidate>
       <label>Correo electrónico
         <input type="email" id="login-email" required autocomplete="email" placeholder="profe@escuela.com">
@@ -1299,7 +1348,22 @@
     <p>Tu plan gratuito permite guardar 2 juegos a la vez. Elimina uno para reemplazarlo, o escríbenos por WhatsApp para pasarte a Premium y crear todos los que quieras.</p>
     <div class="modal-acciones">
       <button class="btn btn-cancelar" id="btn-limite-cerrar">Cerrar</button>
+      <button class="btn btn-demo-premium oculto" id="btn-limite-demo" type="button">🎁 Probar demo (5 días)</button>
       <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">Quiero pasarme a Premium</a>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL CONFIRMAR DEMO PREMIUM ==================== -->
+<div class="modal-fondo oculto" id="modal-demo-confirmar">
+  <div class="modal-caja" role="dialog" aria-modal="true" aria-labelledby="demo-confirmar-titulo">
+    <div class="icono">🎁</div>
+    <h3 id="demo-confirmar-titulo">Activar demo Premium</h3>
+    <p>Vas a activar <strong>5 días de Premium gratis</strong> en tu cuenta. ¿Continuar?</p>
+    <p class="aviso-error oculto" id="demo-confirmar-error" style="color:var(--rosa); font-size:13px; margin:-14px 0 16px;"></p>
+    <div class="modal-acciones">
+      <button class="btn btn-cancelar" id="btn-demo-confirmar-cancelar">Cancelar</button>
+      <button class="btn btn-jugar" id="btn-demo-confirmar-si">Sí, activar</button>
     </div>
   </div>
 </div>
@@ -1322,6 +1386,20 @@
   </div>
 </div>
 
+<!-- ==================== ANUNCIO EMERGENTE PREMIUM (al cargar la página) ==================== -->
+<div class="modal-fondo oculto" id="modal-anuncio-premium">
+  <button type="button" class="anuncio-popup-cerrar" id="btn-anuncio-popup-cerrar" aria-label="Cerrar anuncio">
+    <svg class="i" aria-hidden="true"><use href="#i-x"/></svg>
+  </button>
+  <div class="anuncio-popup-caja" role="dialog" aria-modal="true" aria-label="Oferta AulaGame Premium">
+    <img class="anuncio-popup-img" src="img/anuncio-premium.webp" alt="AulaGame Premium: acceso a todas las plantillas, IA integrada para crear preguntas, actualizaciones incluidas y sin pagos mensuales.">
+    <div class="anuncio-popup-botones">
+      <button type="button" class="btn btn-demo-premium" id="btn-anuncio-popup-demo">🎁 Probar demo gratis (5 días)</button>
+      <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">💬 Quiero Premium por WhatsApp</a>
+    </div>
+  </div>
+</div>
+
 <div class="aviso-toast" id="aviso-toast" role="status" aria-live="polite"></div>
 
 <script type="module">
@@ -1337,6 +1415,8 @@
   import {
     getDatabase, ref as refRtdb, get as getRtdb
   } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+  import { calcularEstadoPremium, TRIAL_DIAS } from "./play/shared/premium-status.js";
+  import { activarDemoPremium } from "./play/shared/trial.js";
 
   var app = initializeApp(firebaseConfig);
   var auth = getAuth(app);
@@ -1346,14 +1426,26 @@
   // ---------- Estado ----------
   var CUPOS_PLAN_GRATIS = 2;
   var uidActual = null;
-  var planActual = "gratis"; // "gratis" | "premium" — se lee de profes/{uid}.plan al iniciar sesión
+  // Estado premium combinado (plan pagado o demo de 5 días activa) — se recalcula
+  // al leer profes/{uid} en cada inicio/cierre de sesión. Ver play/shared/premium-status.js.
+  var estadoActual = calcularEstadoPremium({});
 
-  function esPremium(){ return planActual === "premium"; }
+  function esPremium(){ return estadoActual.esPremium; }
   function totalCupos(){ return esPremium() ? Infinity : CUPOS_PLAN_GRATIS; }
 
   // ---------- Modal de login ----------
   var modalLogin = document.getElementById("modal-login");
-  function abrirLoginModal(){
+  var loginAvisoDemo = document.getElementById("login-aviso-demo");
+  // true mientras el login se abrió desde el botón de demo: al iniciar sesión con
+  // éxito, continúa automáticamente con la confirmación de activar la demo.
+  var demoPendienteTrasLogin = false;
+  function abrirLoginModal(mensaje){
+    if(typeof mensaje === "string" && mensaje){
+      loginAvisoDemo.textContent = mensaje;
+      loginAvisoDemo.classList.remove("oculto");
+    } else {
+      loginAvisoDemo.classList.add("oculto");
+    }
     modalLogin.classList.remove("oculto");
     document.getElementById("login-email").focus();
   }
@@ -1361,9 +1453,10 @@
     modalLogin.classList.add("oculto");
     formLogin.reset();
     ocultarErrorLogin();
+    loginAvisoDemo.classList.add("oculto");
   }
-  document.getElementById("btn-iniciar-sesion").addEventListener("click", abrirLoginModal);
-  document.getElementById("btn-hero-crear").addEventListener("click", abrirLoginModal);
+  document.getElementById("btn-iniciar-sesion").addEventListener("click", function(){ abrirLoginModal(); });
+  document.getElementById("btn-hero-crear").addEventListener("click", function(){ abrirLoginModal(); });
   document.getElementById("login-cerrar").addEventListener("click", cerrarLoginModal);
   modalLogin.addEventListener("click", function(e){
     if(e.target === modalLogin) cerrarLoginModal();
@@ -1520,7 +1613,13 @@
       ? createUserWithEmailAndPassword(auth, email, password)
       : signInWithEmailAndPassword(auth, email, password);
     accion
-      .then(function(){ cerrarLoginModal(); })
+      .then(function(){
+        cerrarLoginModal();
+        if(demoPendienteTrasLogin){
+          demoPendienteTrasLogin = false;
+          abrirModalDemoConfirmar();
+        }
+      })
       .catch(function(err){ mostrarErrorLogin(err.code); })
       .finally(function(){ loginSubmit.disabled = false; });
   });
@@ -1530,6 +1629,14 @@
   });
 
   // ---------- Cupos y contadores ----------
+  function actualizarBotonesDemo(){
+    var mostrar = estadoActual.puedeActivarDemo;
+    ["btn-demo-premium", "plan-gratuito-demo", "btn-limite-demo"].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.classList.toggle("oculto", !mostrar);
+    });
+  }
+
   function actualizarEstado(){
     var usados = document.querySelectorAll(".kard-mia").length;
     var cupos = totalCupos();
@@ -1539,17 +1646,30 @@
     var planTexto = document.getElementById("plan-gratuito-texto");
     var planBtn = document.getElementById("plan-gratuito-btn");
     var textoVacia = document.getElementById("texto-vacia");
+    var badgeDemo = document.getElementById("badge-demo-header");
 
-    document.getElementById("badge-premium-header").classList.toggle("oculto", !(uidActual && esPremium()));
+    document.getElementById("badge-premium-header").classList.toggle("oculto", !(uidActual && estadoActual.plan === "premium"));
+    if(uidActual && estadoActual.trialActiva){
+      badgeDemo.textContent = "DEMO · " + (estadoActual.diasRestantes === 1 ? "queda 1 día" : "quedan " + estadoActual.diasRestantes + " días");
+      badgeDemo.classList.remove("oculto");
+    } else {
+      badgeDemo.classList.add("oculto");
+    }
     document.getElementById("tutorial-vacio").classList.toggle("oculto", !(uidActual && usados === 0));
+    actualizarBotonesDemo();
 
     if(uidActual && esPremium()){
-      // Plan Premium: sin tope. Se muestra el banner en modo "confirmación",
-      // no como aviso de límite, para que quede claro que el plan ya está activo.
+      // Plan Premium (pagado o demo activa): sin tope. Se muestra el banner en modo
+      // "confirmación", no como aviso de límite, para que quede claro que ya está activo.
       document.getElementById("pill-mis-juegos").textContent = usados + " guardados";
       planGratuito.classList.remove("oculto", "lleno");
       planGratuito.classList.add("premium");
-      planTexto.innerHTML = '<span class="badge-premium">⭐ PREMIUM</span> Tienes juegos ilimitados. ¡Gracias por apoyar AulaGame!';
+      if(estadoActual.trialActiva){
+        planTexto.innerHTML = '<span class="badge-premium">🎁 DEMO PREMIUM</span> Tienes juegos ilimitados por ' +
+          (estadoActual.diasRestantes === 1 ? "1 día más" : estadoActual.diasRestantes + " días más") + ". ¡Disfrútala!";
+      } else {
+        planTexto.innerHTML = '<span class="badge-premium">⭐ PREMIUM</span> Tienes juegos ilimitados. ¡Gracias por apoyar AulaGame!';
+      }
       planBtn.classList.add("oculto");
       textoVacia.textContent = "Duplica una plantilla de abajo y guárdala aquí.";
       document.getElementById("kard-vacia").style.display = "";
@@ -1561,16 +1681,19 @@
 
     // Plan Gratuito: solo visible con sesión iniciada
     planGratuito.classList.toggle("oculto", !uidActual);
+    var demoTerminada = uidActual && estadoActual.trialUsado && !estadoActual.trialActiva;
     if(uidActual){
       if(libres > 0){
         planGratuito.classList.remove("lleno");
         planBtn.classList.add("oculto");
-        planTexto.textContent = "Plan Gratuito — Has creado " + usados + " de " + cupos + " juegos. Te "
+        planTexto.textContent = (demoTerminada ? "Tu demo Premium de 5 días terminó. " : "")
+          + "Plan Gratuito — Has creado " + usados + " de " + cupos + " juegos. Te "
           + (libres === 1 ? "queda 1 juego disponible." : "quedan " + libres + " juegos disponibles.");
       } else {
         planGratuito.classList.add("lleno");
         planBtn.classList.remove("oculto");
-        planTexto.textContent = "Llegaste al límite del plan gratuito (" + cupos + " juego" + (cupos === 1 ? "" : "s") + "). ¿Necesitas más?";
+        planTexto.textContent = (demoTerminada ? "Tu demo Premium de 5 días terminó y volviste al plan gratuito. " : "")
+          + "Llegaste al límite del plan gratuito (" + cupos + " juego" + (cupos === 1 ? "" : "s") + "). ¿Necesitas más?";
       }
     }
 
@@ -1602,16 +1725,18 @@
     var snap = await getDoc(ref);
     if(snap.exists()){
       var data = snap.data();
-      // Campo "plan": "premium" | "gratis". Si no existe (profes ya registrados
-      // antes de este cambio), se trata como "gratis" — no rompe a nadie.
-      planActual = data.plan === "premium" ? "premium" : "gratis";
+      // Calcula el estado premium combinado (plan pagado o demo de 5 días activa).
+      // Si la cuenta es de antes de este cambio (sin "plan"/"trialFin"), se trata
+      // como "gratis" sin demo usada — no rompe a nadie.
+      estadoActual = calcularEstadoPremium(data);
       if(Array.isArray(data.juegos)){
         var lista = data.juegos;
         if(migrarNombres(lista)) guardarJuegos(lista);
         return lista;
       }
+    } else {
+      estadoActual = calcularEstadoPremium({});
     }
-    planActual = "gratis";
     return [];
   }
 
@@ -1851,6 +1976,102 @@
     if(e.key === "Escape" && !modalLimite.classList.contains("oculto")) cerrarModalLimite();
   });
 
+  // ---------- Demo Premium gratis (5 días) ----------
+  var modalDemoConfirmar = document.getElementById("modal-demo-confirmar");
+  var demoConfirmarError = document.getElementById("demo-confirmar-error");
+  var btnDemoConfirmarSi = document.getElementById("btn-demo-confirmar-si");
+
+  function abrirModalDemoConfirmar(){
+    demoConfirmarError.classList.add("oculto");
+    demoConfirmarError.textContent = "";
+    btnDemoConfirmarSi.disabled = false;
+    btnDemoConfirmarSi.textContent = "Sí, activar";
+    modalDemoConfirmar.classList.remove("oculto");
+  }
+  function cerrarModalDemoConfirmar(){
+    modalDemoConfirmar.classList.add("oculto");
+  }
+  document.getElementById("btn-demo-confirmar-cancelar").addEventListener("click", cerrarModalDemoConfirmar);
+  modalDemoConfirmar.addEventListener("click", function(e){
+    if(e.target === modalDemoConfirmar) cerrarModalDemoConfirmar();
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && !modalDemoConfirmar.classList.contains("oculto")) cerrarModalDemoConfirmar();
+  });
+
+  btnDemoConfirmarSi.addEventListener("click", async function(){
+    if(!auth.currentUser) return;
+    demoConfirmarError.classList.add("oculto");
+    btnDemoConfirmarSi.disabled = true;
+    btnDemoConfirmarSi.textContent = "Activando…";
+    try{
+      var idToken = await auth.currentUser.getIdToken(true);
+      await activarDemoPremium(idToken);
+      // Relee el documento para tomar trialFin con la hora real del servidor.
+      var snap = await getDoc(doc(db, "profes", uidActual));
+      estadoActual = calcularEstadoPremium(snap.exists() ? snap.data() : {});
+      cerrarModalDemoConfirmar();
+      actualizarEstado();
+      mostrarAviso("🎁 ¡Tu demo Premium de " + TRIAL_DIAS + " días está activa!");
+    }catch(e){
+      demoConfirmarError.textContent = (e && e.message) || "No se pudo activar la demo. Intenta de nuevo.";
+      demoConfirmarError.classList.remove("oculto");
+      btnDemoConfirmarSi.disabled = false;
+      btnDemoConfirmarSi.textContent = "Sí, activar";
+    }
+  });
+
+  /** Punto de entrada común de todos los botones "Probar demo gratis" del sitio:
+   * sin sesión, pide iniciar sesión primero y retoma el flujo después de loguearse;
+   * con sesión, pide confirmación directo. */
+  function iniciarFlujoDemo(){
+    if(!auth.currentUser){
+      demoPendienteTrasLogin = true;
+      abrirLoginModal("Crea tu cuenta para activar tus " + TRIAL_DIAS + " días de Premium.");
+      return;
+    }
+    abrirModalDemoConfirmar();
+  }
+  ["btn-demo-premium", "plan-gratuito-demo", "btn-limite-demo", "btn-anuncio-popup-demo"].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.addEventListener("click", iniciarFlujoDemo);
+  });
+
+  // ---------- Anuncio emergente Premium (al cargar la página) ----------
+  var ANUNCIO_POPUP_STORAGE_KEY = "anuncio_premium_cerrado";
+  var modalAnuncioPremium = document.getElementById("modal-anuncio-premium");
+
+  function cerrarAnuncioPopup(){
+    modalAnuncioPremium.classList.add("oculto");
+    try{ sessionStorage.setItem(ANUNCIO_POPUP_STORAGE_KEY, "1"); }catch(e){}
+  }
+  document.getElementById("btn-anuncio-popup-cerrar").addEventListener("click", cerrarAnuncioPopup);
+  modalAnuncioPremium.addEventListener("click", function(e){
+    if(e.target === modalAnuncioPremium) cerrarAnuncioPopup();
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && !modalAnuncioPremium.classList.contains("oculto")) cerrarAnuncioPopup();
+  });
+  // El botón de demo dentro del popup también debe cerrarlo antes de continuar el flujo.
+  document.getElementById("btn-anuncio-popup-demo").addEventListener("click", function(){
+    modalAnuncioPremium.classList.add("oculto");
+    try{ sessionStorage.setItem(ANUNCIO_POPUP_STORAGE_KEY, "1"); }catch(e){}
+  });
+
+  var anuncioPopupYaDecidido = false;
+  /** Se llama una vez resuelto el estado de sesión/premium (al cargar y tras cada
+   * cambio de sesión). Muestra el popup una sola vez por visita — no vuelve a
+   * aparecer hasta abrir el navegador de nuevo (sessionStorage) — y nunca a
+   * profesores Premium o con la demo ya activa. */
+  function mostrarAnuncioPremiumSiCorresponde(){
+    if(anuncioPopupYaDecidido) return;
+    anuncioPopupYaDecidido = true;
+    var yaCerrado = false;
+    try{ yaCerrado = sessionStorage.getItem(ANUNCIO_POPUP_STORAGE_KEY) === "1"; }catch(e){}
+    if(yaCerrado || estadoActual.esPremium) return;
+    modalAnuncioPremium.classList.remove("oculto");
+  }
+
   // Pinta el estado inicial (sin sesión) de inmediato, sin esperar a Firebase
   renderMisJuegos();
 
@@ -1872,14 +2093,16 @@
           combinados.push(local);
         }
       });
-      var cupos = totalCupos();
-      if(combinados.length > cupos) combinados = combinados.slice(0, cupos);
+      // Nunca se recorta la lista: si el profesor tiene más juegos guardados que su
+      // cupo actual (ej. volvió al plan gratuito tras una demo o un Premium vencido),
+      // los conserva todos y puede verlos/jugarlos — solo se le bloquea crear nuevos
+      // mientras esté sobre el límite (ver duplicarJuego/abrirModalNombrar).
       misJuegos = combinados;
       renderMisJuegos();
       if(sinGuardar.length) guardarJuegos();
     } else {
       uidActual = null;
-      planActual = "gratis";
+      estadoActual = calcularEstadoPremium({});
       misJuegos = [];
       actualizarUISesion(null);
       renderMisJuegos();
@@ -1887,6 +2110,7 @@
       modoRegistro = false;
       actualizarTextosLogin();
     }
+    mostrarAnuncioPremiumSiCorresponde();
   });
 </script>
 

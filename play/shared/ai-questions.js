@@ -20,7 +20,10 @@
 
 import { firebaseConfig } from "../../firebase-config.js";
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { calcularEstadoPremium, TRIAL_DIAS } from "./premium-status.js";
+import { activarDemoPremium } from "./trial.js";
 
 // Reemplaza esta URL por la que te entregue `wrangler deploy` (ver cloudflare-worker/README.md).
 const AI_WORKER_URL = "https://aulagame-ai-questions.aulagame-snlmjjs.workers.dev/generate";
@@ -30,18 +33,29 @@ export const PREMIUM_WHATSAPP_LINK =
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-const planCache = {}; // uid -> Promise<boolean>, evita repetir la consulta a Firestore
+const estadoCache = {}; // uid -> Promise<estadoPremium>, evita repetir la consulta a Firestore
 
-/** Devuelve true si profes/{uid}.plan === "premium". Cachea el resultado por uid. */
-export function isPremiumTeacher(uid) {
-  if (!uid) return Promise.resolve(false);
-  if (!planCache[uid]) {
-    planCache[uid] = getDoc(doc(db, "profes", uid))
-      .then((snap) => (snap.exists() && snap.data().plan === "premium"))
-      .catch(() => false);
+/** Lee profes/{uid} y devuelve el estado premium combinado (plan o demo activa).
+ * Cachea el resultado por uid; invalidarCacheEstado(uid) lo refresca. */
+export function obtenerEstadoPremium(uid) {
+  if (!uid) return Promise.resolve(calcularEstadoPremium({}));
+  if (!estadoCache[uid]) {
+    estadoCache[uid] = getDoc(doc(db, "profes", uid))
+      .then((snap) => calcularEstadoPremium(snap.exists() ? snap.data() : {}))
+      .catch(() => calcularEstadoPremium({}));
   }
-  return planCache[uid];
+  return estadoCache[uid];
+}
+
+function invalidarCacheEstado(uid) {
+  delete estadoCache[uid];
+}
+
+/** Devuelve true si el profesor es premium (plan pagado o demo activa). */
+export function isPremiumTeacher(uid) {
+  return obtenerEstadoPremium(uid).then((estado) => estado.esPremium);
 }
 
 let modalStyleInjected = false;
@@ -153,9 +167,58 @@ function openAIGeneratorModal({ uid, game, defaultCount, fixedCount, extraFields
   });
 }
 
+/** Pide confirmación y activa la demo Premium de 5 días (el uid ya está logueado:
+ * esta función solo se llama desde páginas de editor que ya exigen sesión). */
+function abrirConfirmacionDemo(uid, onActivada) {
+  injectModalStyle();
+  const overlay = document.createElement("div");
+  overlay.className = "ai-q-overlay";
+  overlay.innerHTML = `
+    <div class="ai-q-modal">
+      <h3>🎁 Probar demo gratis</h3>
+      <p class="ai-q-sub">Vas a activar ${TRIAL_DIAS} días de Premium gratis. ¿Continuar?</p>
+      <div class="ai-q-error" id="ai-q-demo-error" style="display:none;"></div>
+      <div class="ai-q-actions">
+        <button class="ai-q-btn ai-q-btn-ghost" id="ai-q-demo-cancel">Cancelar</button>
+        <button class="ai-q-btn ai-q-btn-primary" id="ai-q-demo-go">Sí, activar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  function close() { overlay.remove(); }
+  overlay.querySelector("#ai-q-demo-cancel").addEventListener("click", close);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+
+  const errorBox = overlay.querySelector("#ai-q-demo-error");
+  const goBtn = overlay.querySelector("#ai-q-demo-go");
+  goBtn.addEventListener("click", async () => {
+    const user = auth.currentUser;
+    if (!user) {
+      errorBox.textContent = "Debes iniciar sesión primero.";
+      errorBox.style.display = "block";
+      return;
+    }
+    goBtn.disabled = true;
+    goBtn.innerHTML = '<span class="ai-q-spinner"></span> Activando...';
+    try {
+      const idToken = await user.getIdToken(true);
+      await activarDemoPremium(idToken);
+      invalidarCacheEstado(uid);
+      close();
+      if (onActivada) onActivada();
+    } catch (e) {
+      errorBox.textContent = e.message || "No se pudo activar la demo. Intenta de nuevo.";
+      errorBox.style.display = "block";
+      goBtn.disabled = false;
+      goBtn.textContent = "Sí, activar";
+    }
+  });
+}
+
 /** Muestra un mensaje claro (no un botón "premium" genérico) explicando qué función
- * se está bloqueando y ofrece contactar por WhatsApp para pasarse a Premium. */
-function showPremiumUpsellModal() {
+ * se está bloqueando, ofrece contactar por WhatsApp para pasarse a Premium y,
+ * si la cuenta todavía puede, probar la demo gratis de 5 días. */
+function showPremiumUpsellModal(uid, estado, onActivada) {
   injectModalStyle();
   const overlay = document.createElement("div");
   overlay.className = "ai-q-overlay";
@@ -163,10 +226,11 @@ function showPremiumUpsellModal() {
     <div class="ai-q-modal">
       <h3>🔒 Generador con IA</h3>
       <p class="ai-q-sub">Hazte Premium para usar el generador de preguntas con IA.</p>
-      <div class="ai-q-actions">
-        <button class="ai-q-btn ai-q-btn-ghost" id="ai-q-upsell-close">Cerrar</button>
+      <div class="ai-q-actions" style="flex-wrap:wrap;">
+        ${estado && estado.puedeActivarDemo ? `<button class="ai-q-btn ai-q-btn-primary" id="ai-q-upsell-demo" style="background:#ffb100;">🎁 Probar demo gratis (${TRIAL_DIAS} días)</button>` : ""}
         <a class="ai-q-btn ai-q-btn-primary" id="ai-q-upsell-wa" href="${PREMIUM_WHATSAPP_LINK}"
-           target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;">💬 Hazte Premium</a>
+           target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;background:#25D366;color:#08321c;">💬 Hazte Premium</a>
+        <button class="ai-q-btn ai-q-btn-ghost" id="ai-q-upsell-close">Cerrar</button>
       </div>
     </div>
   `;
@@ -174,6 +238,13 @@ function showPremiumUpsellModal() {
   function close() { overlay.remove(); }
   overlay.querySelector("#ai-q-upsell-close").addEventListener("click", close);
   overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  const demoBtn = overlay.querySelector("#ai-q-upsell-demo");
+  if (demoBtn) {
+    demoBtn.addEventListener("click", () => {
+      close();
+      abrirConfirmacionDemo(uid, onActivada);
+    });
+  }
 }
 
 /**
@@ -204,9 +275,9 @@ export function renderAIButton(container, options) {
   }
   container.appendChild(btn);
 
-  isPremiumTeacher(uid).then((premium) => {
+  function pintar(estado) {
     btn.disabled = false;
-    if (premium) {
+    if (estado.esPremium) {
       btn.textContent = label || "✨ Generar con IA";
       btn.onclick = async () => {
         const data = await openAIGeneratorModal({ uid, game, defaultCount, fixedCount, extraFields: options.extraFields });
@@ -216,10 +287,15 @@ export function renderAIButton(container, options) {
       btn.textContent = "🔒 " + (label || "✨ Generar con IA");
       if (!className) btn.style.background = "#8a8a8a";
       btn.onclick = () => {
-        showPremiumUpsellModal();
+        showPremiumUpsellModal(uid, estado, () => {
+          // Demo activada: refresca el botón sin recargar la página.
+          obtenerEstadoPremium(uid).then(pintar);
+        });
       };
     }
-  });
+  }
+
+  obtenerEstadoPremium(uid).then(pintar);
 
   return btn;
 }

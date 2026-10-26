@@ -67,3 +67,6 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+# Fuente original sin optimizar del anuncio Premium (se usa img/anuncio-premium.webp)
+img/anuncio-premium.png

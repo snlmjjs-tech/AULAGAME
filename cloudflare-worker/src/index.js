@@ -1,11 +1,16 @@
 // Cloudflare Worker: intermediario seguro entre AulaGame y la API de Anthropic (Claude)
-// para generar preguntas con IA. Solo disponible para profesores con plan Premium
-// (verificado en Firestore, en el servidor, nunca solo en el navegador).
+// para generar preguntas con IA, y activación segura de la demo Premium de 5 días.
+// Solo disponible para profesores con plan Premium o demo activa (verificado en
+// Firestore, en el servidor, nunca solo en el navegador).
 //
-// Endpoint: POST /generate
-// Body JSON: { uid, game, subject, count, extra? }
-// Respuesta OK:  { ok:true, data: <estructura específica del juego, ver GAME_CONFIG> }
-// Respuesta error: { ok:false, error: "mensaje legible", code?: "NOT_PREMIUM" }
+// Endpoints:
+//   POST /generate     Body JSON: { uid, game, subject, count, extra? }
+//                       Respuesta OK:  { ok:true, data: <estructura específica del juego> }
+//                       Respuesta error: { ok:false, error: "mensaje legible", code?: "..." }
+//
+//   POST /start-trial   Header: Authorization: Bearer <Firebase ID token>
+//                        Activa 5 días de Premium de prueba para la cuenta del token (una
+//                        sola vez por cuenta). Respuesta OK: { ok:true, trialFin: "<ISO>" }
 
 const ALLOWED_ORIGINS = [
   "https://aulagames.teacherseba.com",
@@ -17,6 +22,9 @@ const LOCALHOST_RE = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 const CLAUDE_MODEL = "claude-haiku-4-5-20251001";
 const ANTHROPIC_VERSION = "2023-06-01";
 
+const TRIAL_DIAS = 5;
+const TRIAL_AI_LIMITE = 10;
+
 function isAllowedOrigin(origin) {
   if (!origin) return false;
   return ALLOWED_ORIGINS.includes(origin) || LOCALHOST_RE.test(origin);
@@ -27,7 +35,7 @@ function corsHeaders(origin) {
   return {
     "Access-Control-Allow-Origin": allow,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
   };
@@ -46,8 +54,9 @@ function clamp(n, min, max) {
 }
 
 /* ======================================================================
- * A. VERIFICACIÓN DE PLAN PREMIUM EN FIRESTORE (server-side, vía cuenta
- *    de servicio de Firebase — nunca confía en lo que envía el navegador)
+ * A. CUENTA DE SERVICIO DE FIREBASE — acceso de servidor a Firestore
+ *    (lectura y escritura de profes/{uid}), nunca confía en lo que envía
+ *    el navegador. Usa OAuth2 con JWT firmado por la cuenta de servicio.
  * ====================================================================== */
 
 let cachedGoogleToken = null; // { token, expiresAt } — se reutiliza mientras el Worker esté "caliente"
@@ -117,23 +126,122 @@ async function getGoogleAccessToken(env) {
   return cachedGoogleToken.token;
 }
 
-/** Lee profes/{uid} en Firestore usando la cuenta de servicio y confirma plan === "premium". */
-async function checkIsPremium(env, uid) {
-  const token = await getGoogleAccessToken(env);
+/* ======================================================================
+ * B. LECTURA/ESCRITURA DE profes/{uid} EN FIRESTORE (REST, vía cuenta de
+ *    servicio — bypassa las reglas de seguridad igual que el Admin SDK).
+ * ====================================================================== */
+
+function parseFirestoreValue(v) {
+  if (v == null) return null;
+  if ("stringValue" in v) return v.stringValue;
+  if ("integerValue" in v) return parseInt(v.integerValue, 10);
+  if ("doubleValue" in v) return v.doubleValue;
+  if ("booleanValue" in v) return v.booleanValue;
+  if ("timestampValue" in v) return v.timestampValue;
+  if ("nullValue" in v) return null;
+  if ("arrayValue" in v) return (v.arrayValue.values || []).map(parseFirestoreValue);
+  if ("mapValue" in v) return parseFirestoreFields(v.mapValue.fields || {});
+  return null;
+}
+
+function parseFirestoreFields(fields) {
+  const out = {};
+  for (const k in fields) out[k] = parseFirestoreValue(fields[k]);
+  return out;
+}
+
+function profeDocUrl(env, uid) {
   const projectId = env.FIREBASE_PROJECT_ID || "aulagame-4c019";
-  const res = await fetchWithRetry(
-    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/profes/${encodeURIComponent(uid)}`,
-    { headers: { Authorization: "Bearer " + token } }
-  );
-  if (res.status === 404) return false;
+  return `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/profes/${encodeURIComponent(uid)}`;
+}
+
+/** Lee profes/{uid} completo. Devuelve {} si el documento todavía no existe. */
+async function getProfeDoc(env, uid) {
+  const token = await getGoogleAccessToken(env);
+  const res = await fetchWithRetry(profeDocUrl(env, uid), { headers: { Authorization: "Bearer " + token } });
+  if (res.status === 404) return {};
   if (!res.ok) throw new Error("Firestore respondió " + res.status + ": " + (await res.text()));
   const doc = await res.json();
-  const planVal = doc.fields && doc.fields.plan && doc.fields.plan.stringValue;
-  return planVal === "premium";
+  return parseFirestoreFields(doc.fields || {});
+}
+
+/** Escribe solo los campos indicados en profes/{uid} (merge por updateMask); crea el
+ * documento si todavía no existía. Nunca toca "juegos" ni otros campos no listados. */
+async function patchProfeDoc(env, uid, fieldsTyped) {
+  const token = await getGoogleAccessToken(env);
+  const maskParams = Object.keys(fieldsTyped)
+    .map((f) => `updateMask.fieldPaths=${encodeURIComponent(f)}`)
+    .join("&");
+  const res = await fetchWithRetry(`${profeDocUrl(env, uid)}?${maskParams}`, {
+    method: "PATCH",
+    headers: { Authorization: "Bearer " + token, "content-type": "application/json" },
+    body: JSON.stringify({ fields: fieldsTyped }),
+  });
+  if (!res.ok) throw new Error("Firestore PATCH respondió " + res.status + ": " + (await res.text()));
+  return res.json();
+}
+
+/** Calcula el estado "premium" combinado (plan pagado o demo de 5 días activa) a
+ * partir del documento profes/{uid}. */
+function estadoPremiumDesdeDoc(data) {
+  const plan = data.plan === "premium" ? "premium" : "gratis";
+  const trialFinMs = data.trialFin ? new Date(data.trialFin).getTime() : null;
+  const trialActiva = !!(trialFinMs && trialFinMs > Date.now());
+  const aiTrialUsos = typeof data.aiTrialUsos === "number" ? data.aiTrialUsos : 0;
+  return {
+    plan,
+    trialUsado: !!data.trialUsado,
+    trialActiva,
+    trialFinMs,
+    premium: plan === "premium" || trialActiva,
+    aiTrialUsos,
+  };
 }
 
 /* ======================================================================
- * B. CONFIGURACIÓN POR JUEGO — formato exacto que espera cada editor,
+ * C. VERIFICACIÓN DE TOKEN DE FIREBASE AUTH (para /start-trial) — nunca
+ *    confía en el uid que mande el navegador: lo obtiene del propio token
+ *    firmado por Google, verificado con las claves públicas de Firebase.
+ * ====================================================================== */
+
+import { importX509, jwtVerify, decodeProtectedHeader } from "jose";
+
+const FIREBASE_CERTS_URL =
+  "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
+
+let cachedFirebaseCerts = null; // { certs, expiresAt }
+
+async function getFirebaseCerts() {
+  const now = Date.now();
+  if (cachedFirebaseCerts && cachedFirebaseCerts.expiresAt > now) return cachedFirebaseCerts.certs;
+  const res = await fetchWithRetry(FIREBASE_CERTS_URL, {});
+  if (!res.ok) throw new Error("No se pudieron obtener las claves públicas de Firebase.");
+  const certs = await res.json();
+  const cacheControl = res.headers.get("cache-control") || "";
+  const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
+  const maxAgeMs = maxAgeMatch ? parseInt(maxAgeMatch[1], 10) * 1000 : 3600000;
+  cachedFirebaseCerts = { certs, expiresAt: now + Math.min(maxAgeMs, 6 * 3600000) };
+  return certs;
+}
+
+/** Verifica un Firebase Auth ID token (firma, emisor, audiencia y expiración) y
+ * devuelve el uid real del profesor dueño de la sesión. Lanza si no es válido. */
+async function verifyFirebaseIdToken(idToken, projectId) {
+  const certs = await getFirebaseCerts();
+  const { kid } = decodeProtectedHeader(idToken);
+  const cert = kid && certs[kid];
+  if (!cert) throw new Error("Token con clave desconocida o expirada.");
+  const publicKey = await importX509(cert, "RS256");
+  const { payload } = await jwtVerify(idToken, publicKey, {
+    issuer: `https://securetoken.google.com/${projectId}`,
+    audience: projectId,
+  });
+  if (!payload.sub || typeof payload.sub !== "string") throw new Error("Token sin identificador de usuario.");
+  return payload.sub;
+}
+
+/* ======================================================================
+ * D. CONFIGURACIÓN POR JUEGO — formato exacto que espera cada editor,
  *    instrucciones de generación y el "tool schema" que fuerza a Claude
  *    a devolver JSON estructurado válido (tool_choice forzado).
  * ====================================================================== */
@@ -502,7 +610,7 @@ const GAME_CONFIG = {
 };
 
 /* ======================================================================
- * C. HANDLER PRINCIPAL
+ * E. HANDLER PRINCIPAL
  * ====================================================================== */
 
 export default {
@@ -514,15 +622,67 @@ export default {
     }
 
     const url = new URL(request.url);
+    const projectId = env.FIREBASE_PROJECT_ID || "aulagame-4c019";
+
+    if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+      return json({ ok: false, error: "El servidor no tiene configurada la cuenta de servicio de Firebase." }, 500, origin);
+    }
+
+    /* ---------------- POST /start-trial ---------------- */
+    if (request.method === "POST" && url.pathname === "/start-trial") {
+      const authHeader = request.headers.get("Authorization") || "";
+      const match = authHeader.match(/^Bearer (.+)$/);
+      if (!match) {
+        return json({ ok: false, error: "Falta iniciar sesión para activar la demo." }, 401, origin);
+      }
+
+      let uid;
+      try {
+        uid = await verifyFirebaseIdToken(match[1], projectId);
+      } catch (e) {
+        console.error("Token de Firebase inválido:", e);
+        return json({ ok: false, error: "Tu sesión no es válida. Vuelve a iniciar sesión e intenta de nuevo." }, 401, origin);
+      }
+
+      let actual;
+      try {
+        actual = await getProfeDoc(env, uid);
+      } catch (e) {
+        console.error("Error leyendo profes/{uid} para start-trial:", e);
+        return json({ ok: false, error: "No se pudo verificar tu cuenta. Intenta de nuevo en unos segundos." }, 502, origin);
+      }
+
+      if (actual.plan === "premium") {
+        return json({ ok: false, code: "ALREADY_PREMIUM", error: "Tu cuenta ya tiene el plan Premium — no necesitas la demo." }, 409, origin);
+      }
+      if (actual.trialUsado) {
+        return json({ ok: false, code: "TRIAL_USED", error: "Esta cuenta ya usó su demo gratuita de 5 días anteriormente." }, 409, origin);
+      }
+
+      const ahoraMs = Date.now();
+      const trialFinMs = ahoraMs + TRIAL_DIAS * 24 * 60 * 60 * 1000;
+      try {
+        await patchProfeDoc(env, uid, {
+          trialUsado: { booleanValue: true },
+          trialInicio: { timestampValue: new Date(ahoraMs).toISOString() },
+          trialFin: { timestampValue: new Date(trialFinMs).toISOString() },
+          aiTrialUsos: { integerValue: "0" },
+        });
+      } catch (e) {
+        console.error("Error activando demo Premium:", e);
+        return json({ ok: false, error: "No se pudo activar la demo. Intenta de nuevo." }, 502, origin);
+      }
+
+      return json({ ok: true, trialFin: new Date(trialFinMs).toISOString() }, 200, origin);
+    }
+
+    /* ---------------- POST /generate ---------------- */
     if (request.method !== "POST" || url.pathname !== "/generate") {
-      return json({ ok: false, error: "Ruta no encontrada. Usa POST /generate." }, 404, origin);
+      return json({ ok: false, error: "Ruta no encontrada. Usa POST /generate o POST /start-trial." }, 404, origin);
     }
 
     if (!env.ANTHROPIC_API_KEY) {
       return json({ ok: false, error: "El servidor no tiene configurada la clave de la IA (ANTHROPIC_API_KEY)." }, 500, origin);
-    }
-    if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-      return json({ ok: false, error: "El servidor no tiene configurada la cuenta de servicio de Firebase." }, 500, origin);
     }
 
     let body;
@@ -540,16 +700,31 @@ export default {
       return json({ ok: false, error: "Falta indicar el tema o materia." }, 400, origin);
     }
 
-    let premium;
+    let perfil;
     try {
-      premium = await checkIsPremium(env, uid);
+      perfil = estadoPremiumDesdeDoc(await getProfeDoc(env, uid));
     } catch (e) {
       console.error("Error verificando plan premium:", e);
       return json({ ok: false, error: "No se pudo verificar tu plan en este momento. Intenta de nuevo en unos segundos." }, 502, origin);
     }
-    if (!premium) {
+    if (!perfil.premium) {
       return json(
         { ok: false, code: "NOT_PREMIUM", error: "Generar preguntas con IA es una función exclusiva para profesores con plan Premium." },
+        403,
+        origin
+      );
+    }
+
+    // Durante la demo (plan todavía "gratis" pero con trial activo) se limita la IA a
+    // un total de TRIAL_AI_LIMITE generaciones, para proteger el crédito de la API.
+    const enDemo = perfil.plan !== "premium" && perfil.trialActiva;
+    if (enDemo && perfil.aiTrialUsos >= TRIAL_AI_LIMITE) {
+      return json(
+        {
+          ok: false,
+          code: "TRIAL_AI_LIMIT",
+          error: `Ya usaste tus ${TRIAL_AI_LIMITE} generaciones con IA incluidas en la demo gratuita. Pásate a Premium para seguir generando sin límite.`,
+        },
         403,
         origin
       );
@@ -596,6 +771,16 @@ export default {
     if (!toolUse || !toolUse.input) {
       console.error("Respuesta de Anthropic sin tool_use:", JSON.stringify(data).slice(0, 500));
       return json({ ok: false, error: "La IA no devolvió un resultado con el formato esperado. Intenta de nuevo." }, 502, origin);
+    }
+
+    if (enDemo) {
+      try {
+        await patchProfeDoc(env, uid, { aiTrialUsos: { integerValue: String(perfil.aiTrialUsos + 1) } });
+      } catch (e) {
+        // No bloquea la respuesta al profesor por un fallo al contabilizar el uso;
+        // solo se registra para no perder la generación ya pagada a la API.
+        console.error("No se pudo incrementar aiTrialUsos:", e);
+      }
     }
 
     return json({ ok: true, data: toolUse.input }, 200, origin);

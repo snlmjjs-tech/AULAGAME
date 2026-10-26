@@ -7,14 +7,24 @@ service cloud.firestore {
     match /profes/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
 
-      // El campo "plan" ("gratis" | "premium") no lo puede tocar el propio
-      // profe desde el cliente — solo se activa a mano desde la consola de
-      // Firebase (que no pasa por estas reglas). Así nadie se auto-asigna
-      // premium editando la consola del navegador.
+      // Los campos "plan" ("gratis" | "premium"), "trialUsado" y "trialFin" no los
+      // puede tocar el propio profe desde el cliente — "plan" solo se activa a mano
+      // desde la consola de Firebase, y "trialUsado"/"trialFin" (demo Premium de 5
+      // días) solo los escribe el Cloudflare Worker (endpoint /start-trial) con la
+      // cuenta de servicio, que no pasa por estas reglas. Así nadie se auto-asigna
+      // premium ni se alarga la demo editando la consola del navegador.
       allow create: if request.auth != null && request.auth.uid == uid
-        && (!('plan' in request.resource.data) || request.resource.data.plan == 'gratis');
+        && (!('plan' in request.resource.data) || request.resource.data.plan == 'gratis')
+        && !('trialUsado' in request.resource.data)
+        && !('trialFin' in request.resource.data)
+        && !('trialInicio' in request.resource.data)
+        && !('aiTrialUsos' in request.resource.data);
       allow update: if request.auth != null && request.auth.uid == uid
-        && request.resource.data.get('plan', 'gratis') == resource.data.get('plan', 'gratis');
+        && request.resource.data.get('plan', 'gratis') == resource.data.get('plan', 'gratis')
+        && request.resource.data.get('trialUsado', false) == resource.data.get('trialUsado', false)
+        && request.resource.data.get('trialFin', null) == resource.data.get('trialFin', null)
+        && request.resource.data.get('trialInicio', null) == resource.data.get('trialInicio', null)
+        && request.resource.data.get('aiTrialUsos', 0) == resource.data.get('aiTrialUsos', 0);
       allow delete: if request.auth != null && request.auth.uid == uid;
 
       // Contenido editable de cada juego (preguntas, rondas, configuración...),
