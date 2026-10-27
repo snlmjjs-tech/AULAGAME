@@ -539,6 +539,21 @@
   }
   .kard-actions{ display:flex; gap:9px; margin-top:4px; }
 
+  /* Juego guardado fuera del cupo gratuito (Premium vencido): se conserva pero bloqueado */
+  .kard-mia.bloqueada .kard-top{ filter: grayscale(1) brightness(.7); }
+  .kard-mia.bloqueada .kard-title, .kard-mia.bloqueada .kard-meta{ opacity:.6; }
+  .kard-candado{
+    position:absolute; top:10px; right:10px;
+    font-family: var(--font); font-size:10px; font-weight:700;
+    letter-spacing:0.5px; text-transform:uppercase;
+    background: rgba(0,0,0,.55); color:#fff;
+    padding: 4px 10px; border-radius:999px;
+  }
+  .btn-desbloquear{
+    background: linear-gradient(180deg, #f5b301, #d48a00); color:#1d1300;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 14px 24px -14px rgba(180,110,0,.9); flex:1;
+  }
+
   .anuncio{
     position:relative;
     background: linear-gradient(135deg, var(--amarillo), var(--naranja));
@@ -1692,8 +1707,13 @@
       } else {
         planGratuito.classList.add("lleno");
         planBtn.classList.remove("oculto");
+        var bloqueados = document.querySelectorAll(".kard-mia.bloqueada").length;
         planTexto.textContent = (demoTerminada ? "Tu demo Premium de 5 días terminó y volviste al plan gratuito. " : "")
-          + "Llegaste al límite del plan gratuito (" + cupos + " juego" + (cupos === 1 ? "" : "s") + "). ¿Necesitas más?";
+          + (bloqueados > 0
+            ? "Tus " + cupos + " primeros juegos siguen gratis. "
+              + (bloqueados === 1 ? "El otro quedó bloqueado" : "Los otros " + bloqueados + " quedaron bloqueados")
+              + " (no se borró nada): hazte Premium para volver a usarlos."
+            : "Llegaste al límite del plan gratuito (" + cupos + " juego" + (cupos === 1 ? "" : "s") + "). ¿Necesitas más?");
       }
     }
 
@@ -1771,11 +1791,28 @@
 
   var misJuegos = [];
 
-  function crearKardMia(juego){
+  // bloqueado: el juego está fuera del cupo del plan actual (ej. terminó la demo
+  // Premium). Se conserva, pero solo se puede eliminar o pasarse a Premium.
+  function crearKardMia(juego, bloqueado){
     var art = document.createElement("article");
-    art.className = "kard " + juego.color + " kard-mia";
+    art.className = "kard " + juego.color + " kard-mia" + (bloqueado ? " bloqueada" : "");
     art.setAttribute("data-id", juego.id);
     art.setAttribute("data-nombre", juego.nombre);
+    if(bloqueado){
+      art.innerHTML =
+        '<div class="kard-top"><span class="kard-icon"></span><span class="kard-candado">🔒 Bloqueado</span></div>' +
+        '<div class="kard-body">' +
+          '<div class="kard-title"></div>' +
+          '<div class="kard-meta">Tu Premium terminó. Hazte Premium para volver a usarlo.</div>' +
+          '<div class="kard-actions">' +
+            '<a class="btn btn-desbloquear" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">⭐ Hazte Premium</a>' +
+            '<button class="btn btn-mini peligro btn-borrar" type="button" title="Eliminar">🗑</button>' +
+          '</div>' +
+        '</div>';
+      art.querySelector(".kard-icon").innerHTML = juego.icono || juego.emoji || "";
+      art.querySelector(".kard-title").textContent = juego.nombre;
+      return art;
+    }
     art.innerHTML =
       '<div class="kard-top"><span class="kard-icon"></span></div>' +
       '<div class="kard-body">' +
@@ -1800,8 +1837,11 @@
     var grid = document.getElementById("grid-mis-juegos");
     var kardVacia = document.getElementById("kard-vacia");
     grid.querySelectorAll(".kard-mia").forEach(function(k){ k.remove(); });
-    misJuegos.forEach(function(juego){
-      grid.insertBefore(crearKardMia(juego), kardVacia);
+    // misJuegos está en orden de creación: los primeros "cupos" quedan libres
+    // y el resto se bloquea (solo pasa sin Premium, ya que ahí el cupo es Infinity).
+    var cupos = uidActual ? totalCupos() : Infinity;
+    misJuegos.forEach(function(juego, i){
+      grid.insertBefore(crearKardMia(juego, i >= cupos), kardVacia);
     });
     actualizarEstado();
   }
@@ -1953,10 +1993,8 @@
     misJuegos = misJuegos.filter(function(j){ return j.id !== id; });
     guardarJuegos();
     kard.classList.add("saliendo");
-    setTimeout(function(){
-      kard.remove();
-      actualizarEstado();
-    }, 250);
+    // Se vuelve a renderizar para recalcular qué juegos quedan bloqueados
+    setTimeout(renderMisJuegos, 250);
   });
 
   // ---------- Límite de juegos gratuitos alcanzado (modal) ----------
@@ -2095,8 +2133,8 @@
       });
       // Nunca se recorta la lista: si el profesor tiene más juegos guardados que su
       // cupo actual (ej. volvió al plan gratuito tras una demo o un Premium vencido),
-      // los conserva todos y puede verlos/jugarlos — solo se le bloquea crear nuevos
-      // mientras esté sobre el límite (ver duplicarJuego/abrirModalNombrar).
+      // los conserva todos, pero solo los primeros (por orden de creación) se pueden
+      // usar; el resto queda bloqueado hasta que vuelva a Premium (ver renderMisJuegos).
       misJuegos = combinados;
       renderMisJuegos();
       if(sinGuardar.length) guardarJuegos();
