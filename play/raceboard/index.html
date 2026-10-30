@@ -25,7 +25,7 @@
     --ink:#1a1a2e;
     --cream:#FFF8E7;
     --panel:#ffffff;
-    --shadow: 0 6px 0 rgba(0,0,0,0.18);
+    --shadow: 0 5px 0 rgba(0,0,0,0.16), 0 10px 20px rgba(26,26,46,0.12);
   }
   *{box-sizing:border-box;}
   body{
@@ -38,6 +38,15 @@
     padding-bottom:40px;
   }
   h1,h2,h3, .title-font{ font-family:'Baloo 2', cursive; }
+  ::selection{ background:var(--yellow); color:var(--ink); }
+  :focus-visible{ outline:3px solid var(--blue); outline-offset:2px; border-radius:6px; }
+  ::-webkit-scrollbar{ width:10px; height:10px; }
+  ::-webkit-scrollbar-track{ background:#eef3f9; }
+  ::-webkit-scrollbar-thumb{ background:#c9d4e0; border-radius:8px; }
+  ::-webkit-scrollbar-thumb:hover{ background:#aebcce; }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
+  }
 
   header{
     background: linear-gradient(90deg, var(--red), var(--blue));
@@ -47,6 +56,16 @@
     position:relative;
     overflow:hidden;
   }
+  .header-controls{ position:absolute; top:12px; right:14px; z-index:5; display:flex; gap:8px; }
+  .header-icon-btn{
+    width:38px; height:38px; border-radius:50%;
+    background:rgba(0,0,0,0.22); border:1.5px solid rgba(255,255,255,0.35);
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    box-shadow:none; padding:0; transition:background .15s ease, transform .15s ease;
+  }
+  .header-icon-btn:hover{ background:rgba(0,0,0,0.34); transform:translateY(-1px); }
+  .header-icon-btn:active{ transform:translateY(0); }
+  .header-icon-btn svg{ width:19px; height:19px; }
   header h1{
     color:#fff;
     margin:0;
@@ -90,15 +109,19 @@
     padding:12px 20px;
     color:#fff;
     background:var(--blue);
-    box-shadow: 0 4px 0 var(--blue-dark);
-    transition: transform .08s ease, box-shadow .08s ease;
+    box-shadow: 0 4px 0 var(--blue-dark), 0 8px 16px rgba(2,104,158,0.22);
+    transition: transform .12s ease, box-shadow .12s ease;
   }
-  button:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--blue-dark); }
-  button.btn-red{ background:var(--red); box-shadow:0 4px 0 var(--red-dark); }
-  button.btn-green{ background:var(--green); box-shadow:0 4px 0 var(--green-dark); }
+  button:hover:not(:disabled){ transform:translateY(-1px); box-shadow:0 5px 0 var(--blue-dark), 0 10px 20px rgba(2,104,158,0.28); }
+  button:active:not(:disabled){ transform:translateY(3px); box-shadow:0 1px 0 var(--blue-dark); }
+  button.btn-red{ background:var(--red); box-shadow:0 4px 0 var(--red-dark), 0 8px 16px rgba(183,28,28,0.22); }
+  button.btn-red:hover:not(:disabled){ box-shadow:0 5px 0 var(--red-dark), 0 10px 20px rgba(183,28,28,0.28); }
+  button.btn-green{ background:var(--green); box-shadow:0 4px 0 var(--green-dark), 0 8px 16px rgba(44,138,48,0.22); }
+  button.btn-green:hover:not(:disabled){ box-shadow:0 5px 0 var(--green-dark), 0 10px 20px rgba(44,138,48,0.28); }
   button.btn-ghost{
-    background:#fff; color:var(--ink); box-shadow:0 4px 0 #ccc; border:2px solid #ddd;
+    background:#fff; color:var(--ink); box-shadow:0 4px 0 #ccc, 0 8px 16px rgba(26,26,46,0.08); border:2px solid #ddd;
   }
+  button.btn-ghost:hover:not(:disabled){ box-shadow:0 5px 0 #ccc, 0 10px 20px rgba(26,26,46,0.12); }
   button:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
   button.small{ padding:8px 14px; font-size:13px; }
 
@@ -126,10 +149,12 @@
   .player-count-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px;}
   .count-btn{
     width:44px;height:44px;border-radius:50%;
-    background:#eef3f9; color:var(--ink); box-shadow:0 3px 0 #c9d4e0;
+    background:#eef3f9; color:var(--ink); box-shadow:0 3px 0 #c9d4e0, 0 6px 12px rgba(26,26,46,0.1);
     font-size:18px; font-weight:800; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; transition:transform .12s ease, box-shadow .12s ease;
   }
-  .count-btn.active{ background:var(--green); color:#fff; box-shadow:0 3px 0 var(--green-dark);}
+  .count-btn:hover{ transform:translateY(-1px); }
+  .count-btn.active{ background:var(--green); color:#fff; box-shadow:0 3px 0 var(--green-dark), 0 6px 12px rgba(44,138,48,0.25);}
 
   .player-form{ display:grid; gap:12px; }
   .player-row{
@@ -146,7 +171,10 @@
   .color-dot{
     width:26px;height:26px;border-radius:50%;cursor:pointer;
     border:3px solid transparent;
+    box-shadow:0 2px 6px rgba(26,26,46,0.2);
+    transition:transform .12s ease;
   }
+  .color-dot:hover{ transform:scale(1.08); }
   .color-dot.selected{ border-color:var(--ink); transform:scale(1.15); }
 
   /* ---------- GAME SCREEN LAYOUT ---------- */
@@ -218,9 +246,10 @@
   #dice3d{
     width:80px;height:80px; margin:8px auto; background:#fff; border-radius:16px;
     border:3px solid var(--ink); display:flex; align-items:center; justify-content:center;
-    font-size:36px; font-family:'Baloo 2', cursive; box-shadow:0 4px 0 #999;
-    cursor:pointer; user-select:none;
+    font-size:36px; font-family:'Baloo 2', cursive; box-shadow:0 4px 0 #999, 0 8px 16px rgba(26,26,46,0.15);
+    cursor:pointer; user-select:none; transition:transform .12s ease;
   }
+  #dice3d:hover{ transform:translateY(-1px); }
   #dice3d.rolling{ animation: shake .08s infinite; }
   @keyframes shake{ 0%{transform:rotate(0)} 25%{transform:rotate(-8deg)} 75%{transform:rotate(8deg)} 100%{transform:rotate(0)} }
   .physical-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:8px; }
@@ -351,7 +380,7 @@
   }
   .student-roll-btn{
     width:100%; padding:24px; border-radius:16px; border:none; background:var(--red); color:#fff;
-    font-family:'Baloo 2', cursive; font-weight:800; font-size:22px; box-shadow:0 6px 0 var(--red-dark);
+    font-family:'Baloo 2', cursive; font-weight:800; font-size:22px; box-shadow:0 6px 0 var(--red-dark), 0 12px 22px rgba(183,28,28,0.25);
   }
   .student-roll-btn:disabled{ opacity:.4; }
 </style>
@@ -360,6 +389,9 @@
 
 <header>
   <div class="flag-strip"></div>
+  <div class="header-controls">
+    <button class="header-icon-btn" id="headerMuteBtn" title="Silenciar música" aria-label="Silenciar música"></button>
+  </div>
   <h1>🏁 KART RACE</h1>
   <p>Juego de tablero educativo — personalízalo con las preguntas de tu clase</p>
 </header>
@@ -1508,12 +1540,28 @@ function playVictoryJingle(){
   });
 }
 
+const ICON_SPEAKER_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 7 9 11 5 11 19 7 15 3 15 3 9" fill="currentColor" stroke="none"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18 6a8 8 0 0 1 0 12"/></svg>';
+const ICON_SPEAKER_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 7 9 11 5 11 19 7 15 3 15 3 9" fill="currentColor" stroke="none"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></svg>';
+
 const musicSwitch = document.getElementById('musicSwitch');
-musicSwitch.onclick = () => {
-  musicOn = !musicOn;
+const headerMuteBtn = document.getElementById('headerMuteBtn');
+
+function updateMusicUi(){
   musicSwitch.classList.toggle('on', musicOn);
+  headerMuteBtn.innerHTML = musicOn ? ICON_SPEAKER_ON : ICON_SPEAKER_OFF;
+  headerMuteBtn.title = musicOn ? 'Silenciar música' : 'Activar música';
+  headerMuteBtn.setAttribute('aria-label', headerMuteBtn.title);
+}
+
+function toggleMusic(){
+  musicOn = !musicOn;
+  updateMusicUi();
   if(musicOn){ startMusic(); } else { stopMusic(); }
-};
+}
+
+musicSwitch.onclick = toggleMusic;
+headerMuteBtn.onclick = toggleMusic;
+updateMusicUi();
 
 /* ================= QUESTION EDITOR ================= */
 const editorOverlay = document.getElementById('editorOverlay');
