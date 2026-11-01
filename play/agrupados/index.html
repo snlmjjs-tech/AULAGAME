@@ -175,6 +175,20 @@ select { width: auto; }
 body.paused .pause-badge { display: block; }
 .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 
+.rescue { width: min(640px, 100%); background: rgba(0,0,0,.35); border: 2px solid var(--brass-d); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.rescue h2 { margin: 0; font-size: 1.1rem; color: var(--brass); }
+.qcard { width: 100%; background: var(--cream); color: #2A1B02; border-radius: 14px; padding: 18px 20px; min-height: 90px; display: none; flex-direction: column; gap: 10px; align-items: center; justify-content: center; }
+.qcard.on { display: flex; }
+.qlabel { margin: 0; font-weight: 800; font-size: .95rem; color: #8a5a00; }
+.qtext { font-family: var(--display); font-size: clamp(1.3rem, 3.6vw, 2.2rem); line-height: 1.15; margin: 0; }
+.qans { margin: 0; font-weight: 800; color: #0d6b4d; font-size: 1.3rem; display: none; }
+.qans.on { display: block; }
+.qtimer { font-family: var(--display); font-size: 1.6rem; color: var(--coral); margin: 0; min-height: 1.6rem; }
+textarea.qbox { width: 100%; min-height: 130px; background: var(--night-3); color: var(--cream); border: 2px solid var(--brass-d); border-radius: 10px; padding: 10px; font: inherit; font-size: .95rem; resize: vertical; margin-top: 6px; }
+.settings-wide { grid-column: 1 / -1; }
+.mini { font-size: .9rem; padding: 8px 14px; box-shadow: none; border-radius: 10px; }
+#sResult > #rescue { order: 1; }
+#sResult > .row { order: 2; }
 @media (max-width: 560px) {
   body { font-size: 16px; }
   .grid { grid-template-columns: 1fr; }
@@ -226,12 +240,27 @@ body.paused .pause-badge { display: block; }
           <label for="sCount">Cuenta regresiva<small>segundos para formar grupos</small></label>
           <input type="number" id="sCount" min="5" max="90" value="20">
           <label for="sLang">Idioma en pantalla y voz</label>
-          <select id="sLang"><option value="es" selected>Español</option><option value="en">English</option><option value="both">English + Español</option></select>
+          <select id="sLang"><option value="en">English</option><option value="es">Español</option><option value="both">English + Español</option></select>
           <label for="sVoice">Voz que dice el número</label>
           <span class="check"><input type="checkbox" id="sVoice" checked> Activada</span>
+          <label for="sOut">Quedan fuera por ronda<small>0 = automático según el tamaño del grupo</small></label>
+          <input type="number" id="sOut" min="0" max="20" value="0">
+          <label for="sQOn">Preguntas de rescate<small>los que quedan fuera responden en su cuaderno</small></label>
+          <span class="check"><input type="checkbox" id="sQOn"> Activadas</span>
+          <label for="sQTime">Tiempo para responder<small>segundos, 0 = sin límite</small></label>
+          <input type="number" id="sQTime" min="0" max="300" value="30">
+          <div class="settings-wide">
+            <label for="sQs">Tus preguntas<small>una por línea: pregunta | respuesta</small></label>
+            <textarea class="qbox" id="sQs" spellcheck="false" placeholder="What is the past of go? | went&#10;How do you say “perro” in English? | dog"></textarea>
+            <div class="row" style="justify-content:flex-start;margin-top:8px">
+              <button class="btn ghost mini" type="button" id="btnQSample">Cargar ejemplo</button>
+              <button class="btn ghost mini" type="button" id="btnQHelp">Copiar instrucciones para generar preguntas con IA</button>
+            </div>
+            <small id="qCount">0 preguntas</small>
+          </div>
         </div>
       </details>
-
+      
     </section>
 
     <!-- SPIN -->
@@ -260,6 +289,24 @@ body.paused .pause-badge { display: block; }
     <section class="screen" id="sResult">
       <p class="big-msg" id="resMsg">Time’s up!</p>
       <p class="sub-msg" id="resSub">Check the groups.</p>
+      <div class="rescue" id="rescue" style="display:none">
+        <h2>Pregunta de rescate</h2>
+        <div class="row">
+          <button class="btn mini" id="btnQShow" type="button">Mostrar pregunta</button>
+          <button class="btn ghost mini" id="btnQAns" type="button" disabled>Ver respuesta</button>
+        </div>
+        <div class="qcard" id="qcard">
+          <p class="qlabel" id="qlabel"></p>
+          <p class="qtimer" id="qtimer"></p>
+          <p class="qtext" id="qtext"></p>
+          <p class="qans" id="qans"></p>
+        </div>
+        <div class="stepper" id="backBox">
+          <button id="backMinus" aria-label="Uno menos">−</button>
+          <span>Vuelven al juego:<br><b id="backVal">0</b></span>
+          <button id="backPlus" aria-label="Uno más">+</button>
+        </div>
+      </div>
       <div id="resTeacher" style="display:flex;flex-direction:column;align-items:center;gap:12px">
         <p class="hint" id="resHint"></p>
         <div class="stepper">
@@ -321,9 +368,7 @@ body.paused .pause-badge { display: block; }
     if (!ctx) {
       var AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return false;
-      ctx = new AC(); master = ctx.createGain(); master.gain.value = S.muted ? 0 : .9;
-      var comp = ctx.createDynamicsCompressor();
-      comp.threshold.value = -12; comp.knee.value = 6; comp.ratio.value = 6; comp.attack.value = .003; comp.release.value = .15;
+      ctx = new AC(); master = ctx.createGain(); master.gain.value = S.muted ? 0 : .9; var comp = ctx.createDynamicsCompressor(); comp.threshold.value = -12; comp.knee.value = 6; comp.ratio.value = 6; comp.attack.value = .003; comp.release.value = .15;
       master.connect(comp); comp.connect(ctx.destination);
     }
     if (ctx.state === "suspended" && !S.paused) ctx.resume();
@@ -475,6 +520,7 @@ body.paused .pause-badge { display: block; }
     c.musMin = num("#sMusMin", 8, 3, 60); c.musMax = Math.max(c.musMin, num("#sMusMax", 15, 3, 60));
     c.count = num("#sCount", 20, 5, 90);
     c.lang = $("#sLang").value; c.voice = $("#sVoice").checked;
+    c.out = num("#sOut", 0, 0, 20); c.qOn = $("#sQOn").checked; c.qTime = num("#sQTime", 30, 0, 300); c.qs = $("#sQs").value;
     return c;
   }
   function saveCfg(c) { try { localStorage.setItem("agrupados-cfg", JSON.stringify(c)); } catch (e) {} }
@@ -484,6 +530,7 @@ body.paused .pause-badge { display: block; }
       $("#sPlayers").value = c.players; $("#sMin").value = c.min; $("#sMax").value = c.max; $("#sOrder").value = c.order;
       $("#sMusMin").value = c.musMin; $("#sMusMax").value = c.musMax; $("#sCount").value = c.count;
       $("#sLang").value = c.lang; $("#sVoice").checked = !!c.voice;
+      $("#sOut").value = c.out || 0; $("#sQOn").checked = !!c.qOn; $("#sQTime").value = (c.qTime == null ? 30 : c.qTime); $("#sQs").value = c.qs || "";
     } catch (e) {}
   }
   loadCfg();
@@ -501,12 +548,74 @@ body.paused .pause-badge { display: block; }
   }
   function cur() { return S.rounds[S.idx]; }
 
+  /* ---------- rescue questions ---------- */
+  var qTimerId = null;
+  function parseQs(txt) {
+    return String(txt || "").split(/\r?\n/).map(function (l) {
+      l = l.trim(); if (!l || l.charAt(0) === "#") return null;
+      var i = l.indexOf("|");
+      return i < 0 ? { q: l, a: "" } : { q: l.slice(0, i).trim(), a: l.slice(i + 1).trim() };
+    }).filter(function (x) { return x && x.q; });
+  }
+  function updateQCount() {
+    var n = parseQs($("#sQs").value).length;
+    $("#qCount").textContent = n + (n === 1 ? " pregunta" : " preguntas");
+  }
+  function stopQTimer() { clearInterval(qTimerId); qTimerId = null; }
+  function startQTimer() {
+    stopQTimer();
+    var T = S.cfg.qTime;
+    if (!T) { $("#qtimer").textContent = ""; return; }
+    var end = performance.now() + T * 1000;
+    function upd() {
+      var left = Math.max(0, Math.ceil((end - performance.now()) / 1000));
+      $("#qtimer").textContent = left > 0 ? left + " s" : (S.cfg.lang === "en" ? "Time!" : "¡Tiempo!");
+      if (left <= 0) { stopQTimer(); sfxBuzz(); }
+    }
+    upd(); qTimerId = setInterval(upd, 250);
+  }
+  function setupRescue() {
+    var box = $("#rescue");
+    S.back = 0; S.qShown = false; S.curQ = null; stopQTimer();
+    $("#qcard").classList.remove("on"); $("#qans").classList.remove("on");
+    $("#btnQShow").textContent = "Mostrar pregunta";
+    $("#btnQAns").disabled = true; $("#btnQAns").textContent = "Ver respuesta";
+    $("#qtimer").textContent = ""; $("#backVal").textContent = 0;
+    if (!S.cfg.qOn) { box.style.display = "none"; return; }
+    box.style.display = "flex";
+    var q = S.deck && S.deck.length ? S.deck[S.idx % S.deck.length] : null;
+    S.curQ = q;
+    $("#btnQShow").disabled = !q;
+    $("#qtext").textContent = q ? q.q : "";
+    $("#qans").textContent = q ? (q.a ? "Respuesta: " + q.a : "(sin respuesta cargada)") : "";
+    $("#rescue h2").textContent = q ? "Pregunta de rescate" : "Pregunta de rescate (no hay preguntas cargadas)";
+    $("#backBox").style.display = S.players > 0 ? "inline-flex" : "none";
+  }
+  function toggleQ() {
+    if (!S.curQ) return;
+    S.qShown = !S.qShown;
+    var L = S.cfg.lang;
+    $("#qlabel").textContent = L === "es" ? "Pregunta de rescate" : (L === "both" ? "Rescue question · Pregunta de rescate" : "Rescue question");
+    $("#qcard").classList.toggle("on", S.qShown);
+    $("#btnQShow").textContent = S.qShown ? "Ocultar pregunta" : "Mostrar pregunta";
+    $("#btnQAns").disabled = !S.qShown;
+    if (S.qShown) startQTimer();
+    else { stopQTimer(); $("#qans").classList.remove("on"); $("#btnQAns").textContent = "Ver respuesta"; }
+  }
+  function toggleAns() {
+    var on = $("#qans").classList.toggle("on");
+    $("#btnQAns").textContent = on ? "Ocultar respuesta" : "Ver respuesta";
+  }
+  var SAMPLE = ["How many days are in a week? | seven", "What is the past of go? | went", "How do you say “perro” in English? | dog", "Spell the word “school” | s-c-h-o-o-l", "What is the opposite of hot? | cold", "Complete: She ___ (be) a teacher. | is"].join("\n");
+  var HELP = "Actúa como profesor/a de inglés. Crea 10 preguntas sobre el tema: [ESCRIBE EL TEMA], para estudiantes de nivel [ESCRIBE EL NIVEL]. Entrega solo la lista, una pregunta por línea, con la respuesta correcta después de una barra vertical, así:\nWhat is the past of go? | went\nSin numeración, sin títulos y sin texto extra. Las respuestas deben ser cortas, para escribir en un cuaderno.";
+
   /* ---------- flow ---------- */
   function startGame() {
     S.cfg = readCfg(); saveCfg(S.cfg);
     var sizes = []; for (var n = S.cfg.min; n <= S.cfg.max; n++) sizes.push(n);
     S.rounds = S.cfg.order === "rand" ? shuffle(sizes) : sizes;
     S.idx = 0; S.players = S.cfg.players; S.remaining = S.players;
+    S.deck = shuffle(parseQs(S.cfg.qs));
     ensureAudio(); startSpin();
   }
   function startSpin() {
@@ -558,14 +667,16 @@ body.paused .pause-badge { display: block; }
     var t = $("#resTeacher");
     if (S.players > 0) {
       t.style.display = "flex";
-      var min = S.remaining % n; S.out = min;
+      var min = S.remaining % n; S.out = S.cfg.out > 0 ? Math.min(S.cfg.out, S.remaining) : min;
       $("#outVal").textContent = S.out;
       $("#resHint").textContent = "Con " + S.remaining + " jugadores y grupos de " + n + ", quedan fuera al menos " + min + ". Ajusta si hubo grupos incompletos.";
     } else t.style.display = "none";
     $("#btnNext").textContent = last ? "Terminar" : "Siguiente ronda";
+    setupRescue();
   }
   function nextRound() {
-    if (S.players > 0) S.remaining = Math.max(0, S.remaining - S.out);
+    stopQTimer();
+    if (S.players > 0) S.remaining = Math.max(0, S.remaining - S.out + S.back);
     if (S.idx >= S.rounds.length - 1) return showFinal();
     S.idx++; startSpin();
   }
@@ -582,7 +693,7 @@ body.paused .pause-badge { display: block; }
     $("#finSub").textContent = sub;
     updateChips();
   }
-  function toMenu() { stopMusic(); stopSuspense(); cancelSpeech(); stopLoop(); S.paused = false; document.body.classList.remove("paused"); setPhase("title"); }
+  function toMenu() { stopQTimer(); stopMusic(); stopSuspense(); cancelSpeech(); stopLoop(); S.paused = false; document.body.classList.remove("paused"); setPhase("title"); }
 
   /* ---------- loop (pausable) ---------- */
   function runLoop() { stopLoop(); lastT = performance.now(); timer = setInterval(tick, 100); }
@@ -627,13 +738,30 @@ body.paused .pause-badge { display: block; }
   $("#btnAgain").addEventListener("click", startGame);
   $("#btnMenu").addEventListener("click", toMenu);
   $("#btnHome").addEventListener("click", toMenu);
+  $("#btnQShow").addEventListener("click", toggleQ);
+  $("#btnQAns").addEventListener("click", toggleAns);
+  $("#backMinus").addEventListener("click", function () { S.back = Math.max(0, S.back - 1); $("#backVal").textContent = S.back; });
+  $("#backPlus").addEventListener("click", function () { S.back = Math.min(S.out, S.back + 1); $("#backVal").textContent = S.back; });
+  $("#sQs").addEventListener("input", updateQCount);
+  $("#btnQSample").addEventListener("click", function () { $("#sQs").value = SAMPLE; $("#sQOn").checked = true; updateQCount(); });
+  $("#btnQHelp").addEventListener("click", function () {
+    var b = $("#btnQHelp");
+    function ok() { b.textContent = "¡Copiado! Pégalo en Claude"; setTimeout(function () { b.textContent = "Copiar instrucciones para generar preguntas con IA"; }, 2500); }
+    function fallback() {
+      var ta = document.createElement("textarea"); ta.value = HELP; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); ok(); } catch (e) { window.prompt("Copia este texto:", HELP); }
+      document.body.removeChild(ta);
+    }
+    try { navigator.clipboard.writeText(HELP).then(ok, fallback); } catch (e) { fallback(); }
+  });
+  updateQCount();
   $("#btnPause").addEventListener("click", togglePause);
   $("#btnMute").addEventListener("click", setMute);
   $("#btnFull").addEventListener("click", function () {
     try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch (e) {}
   });
-  $("#outMinus").addEventListener("click", function () { S.out = Math.max(0, S.out - 1); $("#outVal").textContent = S.out; });
-  $("#outPlus").addEventListener("click", function () { S.out = Math.min(S.remaining, S.out + 1); $("#outVal").textContent = S.out; });
+  $("#outMinus").addEventListener("click", function () { S.out = Math.max(0, S.out - 1); $("#outVal").textContent = S.out; S.back = Math.min(S.back, S.out); $("#backVal").textContent = S.back; });
+  $("#outPlus").addEventListener("click", function () { S.out = Math.min(S.remaining, S.out + 1); $("#outVal").textContent = S.out; S.back = Math.min(S.back, S.out); $("#backVal").textContent = S.back; });
   document.addEventListener("keydown", function (e) {
     var tag = (e.target.tagName || "").toLowerCase();
     if (tag === "input" || tag === "select" || tag === "textarea") return;
