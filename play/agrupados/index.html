@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agrupados · Warm-up game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --night: #12262B;
+  --night-2: #1B3B40;
+  --night-3: #0B181C;
+  --brass: #E6B34A;
+  --brass-d: #A97A1E;
+  --coral: #F2594B;
+  --cream: #FFF1D6;
+  --mint: #46D1A0;
+  --ink: #FFF1D6;
+  --muted: #B9C9C4;
+  --display: "Bowlby One", Impact, "Arial Black", sans-serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: dark;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0; height: 100%; overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 40%, transparent 40%, var(--night-3) 100%),
+    repeating-linear-gradient(90deg, var(--night) 0 64px, var(--night-2) 64px 128px);
+  color: var(--ink); font-family: var(--body); font-size: 18px;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--brass); outline-offset: 3px;
+}
+
+/* ---------- layout ---------- */
+#app { height: 100%; display: flex; flex-direction: column; }
+.topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 16px; min-height: 64px;
+}
+.chips, .tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.chip {
+  background: rgba(0,0,0,.35); border: 2px solid var(--brass-d); border-radius: 999px;
+  padding: 6px 14px; font-weight: 800; font-size: .95rem;
+}
+.chip[hidden] { display: none; }
+button.chip { color: inherit; cursor: pointer; }
+button.chip:hover { background: rgba(230,179,74,.2); }
+.icon-btn {
+  width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--brass-d);
+  background: rgba(0,0,0,.35); display: grid; place-items: center; font-size: 1.15rem;
+}
+.icon-btn:hover { background: rgba(230,179,74,.2); }
+body[data-phase="title"] .topbar .chips,
+body[data-phase="title"] #btnPause { visibility: hidden; }
+
+main { flex: 1; min-height: 0; position: relative; }
+.screen {
+  position: absolute; inset: 0; display: none; flex-direction: column; align-items: center;
+  justify-content: flex-start; text-align: center; padding: 8px 20px 24px; gap: 14px; overflow-y: auto;
+}
+.screen > :first-child { margin-top: auto; }
+.screen > :last-child { margin-bottom: auto; }
+body[data-phase="title"]  #sTitle,
+body[data-phase="spin"]   #sSpin,
+body[data-phase="count"]  #sCount,
+body[data-phase="result"] #sResult,
+body[data-phase="final"]  #sFinal { display: flex; }
+
+.btn {
+  background: var(--brass); color: #2A1B02; border: 0; border-radius: 14px;
+  padding: 14px 30px; font-weight: 800; font-size: 1.15rem;
+  box-shadow: 0 5px 0 var(--brass-d);
+}
+.btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--brass-d); }
+.btn.ghost { background: transparent; color: var(--ink); border: 2px solid var(--brass-d); box-shadow: none; }
+.btn.big { font-size: 1.5rem; padding: 18px 44px; }
+
+/* ---------- carousel ---------- */
+.carousel { --W: min(78vw, 46vh, 440px); position: relative; width: var(--W); height: calc(var(--W) * .8); flex: none; }
+.platform {
+  position: absolute; left: 0; top: calc(var(--W) * .5); width: var(--W); height: calc(var(--W) * .27);
+  border-radius: 50%; background: radial-gradient(ellipse at 50% 35%, #4a3515, #231a09);
+  border: 4px solid var(--brass-d); box-shadow: 0 18px 30px rgba(0,0,0,.45);
+}
+.pole {
+  position: absolute; top: calc(var(--W) * .2); width: 6px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--brass-d), var(--brass), var(--brass-d));
+  height: calc(var(--W) * var(--h)); left: calc(var(--W) * var(--x) - 3px);
+}
+.rider {
+  position: absolute; left: -11px; bottom: 6px; width: 28px; height: 18px; border-radius: 9px 9px 5px 5px;
+  background: var(--c); border: 2px solid rgba(0,0,0,.35);
+  animation: bob 1s ease-in-out infinite alternate; animation-delay: var(--d);
+}
+@keyframes bob { from { transform: translateY(0); } to { transform: translateY(calc(var(--W) * -.1)); } }
+.canopy { position: absolute; left: 0; top: 0; width: var(--W); height: var(--W); transform: scaleY(.42); transform-origin: top; z-index: 2; }
+.disc {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: repeating-conic-gradient(var(--coral) 0 15deg, var(--cream) 15deg 30deg);
+  border: 6px solid var(--brass); box-shadow: inset 0 0 0 10px rgba(0,0,0,.08);
+  animation: spin 5s linear infinite;
+}
+.disc .cap { position: absolute; left: 50%; top: 50%; width: 14%; height: 14%; margin: -7%; border-radius: 50%; background: var(--brass); border: 4px solid var(--brass-d); }
+.bulb {
+  position: absolute; left: 50%; top: 50%; width: 3.2%; height: 3.2%; margin: -1.6%; border-radius: 50%;
+  background: #FFF6C8; box-shadow: 0 0 10px 3px rgba(255,235,150,.9);
+  transform: rotate(var(--a)) translateY(-46%) ; transform-origin: center;
+}
+.disc .bulb { transform: rotate(var(--a)) translateY(calc(var(--W) * -.455)); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.flag { position: absolute; left: calc(50% - 2px); top: calc(var(--W) * -.1); width: 4px; height: calc(var(--W) * .14); background: var(--brass); z-index: 1; }
+.flag::after { content: ""; position: absolute; left: 4px; top: 0; border-left: 30px solid var(--coral); border-top: 10px solid transparent; border-bottom: 10px solid transparent; }
+.carousel.still .disc, .carousel.still .rider { animation-play-state: paused; }
+.carousel.title .disc, .carousel.title .rider { animation: none; }
+body.paused .disc, body.paused .rider { animation-play-state: paused; }
+
+/* ---------- texts ---------- */
+.wordmark { font-family: var(--display); font-size: clamp(3rem, 11vw, 7rem); line-height: .95; margin: 0; letter-spacing: .01em; color: var(--cream); text-shadow: 0 5px 0 var(--coral), 0 10px 24px rgba(0,0,0,.5); }
+.tagline { margin: 0; color: var(--muted); font-size: 1.1rem; max-width: 34ch; }
+.big-msg { font-family: var(--display); font-size: clamp(2rem, 6vw, 4rem); margin: 0; line-height: 1.05; }
+.sub-msg { margin: 0; color: var(--muted); font-size: 1.15rem; }
+.credit { color: var(--muted); font-size: .85rem; max-width: 52ch; margin: 6px 0 0; line-height: 1.4; }
+.credit a { color: var(--brass); }
+
+/* settings */
+details.settings { width: min(560px, 100%); text-align: left; background: rgba(0,0,0,.35); border: 2px solid var(--brass-d); border-radius: 16px; padding: 4px 16px; }
+details.settings summary { cursor: pointer; font-weight: 800; padding: 10px 0; list-style-position: inside; }
+.grid { display: grid; grid-template-columns: 1fr auto; gap: 10px 14px; align-items: center; padding: 4px 0 14px; }
+.grid label { font-weight: 600; }
+.grid small { display: block; color: var(--muted); font-weight: 400; }
+.pair { display: flex; align-items: center; gap: 6px; }
+input[type=number], select {
+  background: var(--night-3); color: var(--cream); border: 2px solid var(--brass-d); border-radius: 10px;
+  padding: 8px 10px; font: inherit; width: 84px; text-align: center;
+}
+select { width: auto; }
+.check { display: flex; align-items: center; gap: 8px; }
+.check input { width: 20px; height: 20px; accent-color: var(--brass); }
+
+/* count phase */
+.count-wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: clamp(16px, 4vw, 56px); width: 100%; }
+.announce { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.announce .label { font-size: clamp(1.2rem, 3vw, 1.8rem); font-weight: 800; margin: 0; }
+.announce .label2 { font-size: 1.1rem; color: var(--muted); margin: 0; }
+.digit { font-family: var(--display); font-size: clamp(7rem, 24vw, 15rem); line-height: .9; color: var(--brass); text-shadow: 0 6px 0 var(--brass-d), 0 14px 30px rgba(0,0,0,.5); }
+.slam .digit { animation: slam .45s cubic-bezier(.2,1.6,.4,1); }
+@keyframes slam { from { transform: scale(2.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.figs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 360px; min-height: 44px; }
+.fig { width: 30px; height: 40px; }
+.clock {
+  background: #1E0F08; border: 6px solid var(--brass); border-radius: 20px; padding: 6px 28px 2px;
+  box-shadow: 0 0 0 5px var(--brass-d), 0 20px 40px rgba(0,0,0,.5), inset 0 0 40px rgba(0,0,0,.6);
+}
+.clock .t { font-family: var(--display); font-size: clamp(6rem, 22vw, 13rem); line-height: 1.1; color: var(--cream); display: block; min-width: 2ch; text-align: center; text-shadow: 0 0 24px rgba(255,241,214,.35); }
+.clock.hot .t { color: var(--coral); animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+#sCount.over .clock .t { color: var(--coral); }
+
+/* stepper */
+.stepper { display: inline-flex; align-items: center; gap: 14px; background: rgba(0,0,0,.35); border: 2px solid var(--brass-d); border-radius: 16px; padding: 8px 16px; }
+.stepper b { font-family: var(--display); font-size: 2.2rem; min-width: 2.2ch; }
+.stepper button { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--brass-d); background: transparent; font-size: 1.5rem; font-weight: 800; }
+.hint { color: var(--muted); font-size: .95rem; margin: 0; max-width: 44ch; }
+
+.pause-badge { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); background: var(--coral); color: #fff; font-weight: 800; padding: 6px 18px; border-radius: 999px; display: none; z-index: 5; }
+body.paused .pause-badge { display: block; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+@media (max-width: 560px) {
+  body { font-size: 16px; }
+  .grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .disc, .rider, .clock.hot .t, .slam .digit { animation: none !important; }
+}
+</style>
+</head>
+<body data-phase="title">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="person" viewBox="0 0 24 32"><circle cx="12" cy="7" r="5.5" fill="currentColor"/><path d="M2 31c0-9 4-15 10-15s10 6 10 15z" fill="currentColor"/></symbol>
+</svg>
+
+<div id="app">
+  <header class="topbar">
+    <div class="chips">
+      <button class="chip" id="btnHome" type="button">← Menú principal</button>
+      <span class="chip" id="chipRound">Ronda 1 de 9</span>
+      <span class="chip" id="chipPlayers" hidden>Jugadores: 0</span>
+    </div>
+    <div class="tools">
+      <button class="icon-btn" id="btnPause" title="Pausar (barra espaciadora)" aria-label="Pausar">⏸</button>
+      <button class="icon-btn" id="btnMute" title="Silenciar" aria-label="Silenciar sonido">🔊</button>
+      <button class="icon-btn" id="btnFull" title="Pantalla completa" aria-label="Pantalla completa">⛶</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="pause-badge">En pausa</div>
+
+    <!-- TITLE -->
+    <section class="screen" id="sTitle">
+      <div class="carousel title" id="carTitle" aria-hidden="true"></div>
+      <h1 class="wordmark">Agrupados</h1>
+      <p class="tagline">Camina mientras suena la música. Cuando pare, forma el grupo que pida el número.</p>
+      <button class="btn big" id="btnStart">Jugar</button>
+      <details class="settings">
+        <summary>Ajustes del juego</summary>
+        <div class="grid">
+          <label for="sPlayers">Alumnos jugando<small>0 = no llevar la cuenta</small></label>
+          <input type="number" id="sPlayers" min="0" max="80" value="0">
+          <label>Tamaño de los grupos<small>de menor a mayor (2 a 20)</small></label>
+          <div class="pair"><input type="number" id="sMin" min="2" max="20" value="2" aria-label="Grupo mínimo"> a <input type="number" id="sMax" min="2" max="20" value="10" aria-label="Grupo máximo"></div>
+          <label for="sOrder">Orden de las rondas</label>
+          <select id="sOrder"><option value="asc">De menor a mayor</option><option value="rand">Al azar</option></select>
+          <label>Duración de la música<small>segundos, al azar entre ambos</small></label>
+          <div class="pair"><input type="number" id="sMusMin" min="3" max="60" value="8" aria-label="Música mínima"> a <input type="number" id="sMusMax" min="3" max="60" value="15" aria-label="Música máxima"></div>
+          <label for="sCount">Cuenta regresiva<small>segundos para formar grupos</small></label>
+          <input type="number" id="sCount" min="5" max="90" value="20">
+          <label for="sLang">Idioma en pantalla y voz</label>
+          <select id="sLang"><option value="es" selected>Español</option><option value="en">English</option><option value="both">English + Español</option></select>
+          <label for="sVoice">Voz que dice el número</label>
+          <span class="check"><input type="checkbox" id="sVoice" checked> Activada</span>
+        </div>
+      </details>
+
+    </section>
+
+    <!-- SPIN -->
+    <section class="screen" id="sSpin">
+      <div class="carousel" id="carSpin" aria-hidden="true"></div>
+      <p class="big-msg" id="spinMsg">Keep walking!</p>
+      <p class="sub-msg" id="spinSub"></p>
+      <button class="btn ghost" id="btnStop">Parar la música ahora</button>
+    </section>
+
+    <!-- COUNT -->
+    <section class="screen" id="sCount">
+      <div class="count-wrap">
+        <div class="announce" id="announce">
+          <p class="label" id="lbl1">Groups of</p>
+          <div class="digit" id="digit">3</div>
+          <p class="label" id="lblWord">three</p>
+          <p class="label2" id="lbl2"></p>
+          <div class="figs" id="figs" aria-hidden="true"></div>
+        </div>
+        <div class="clock" id="clock"><span class="t" id="clockT" aria-hidden="true">20</span></div>
+      </div>
+    </section>
+
+    <!-- RESULT -->
+    <section class="screen" id="sResult">
+      <p class="big-msg" id="resMsg">Time’s up!</p>
+      <p class="sub-msg" id="resSub">Check the groups.</p>
+      <div id="resTeacher" style="display:flex;flex-direction:column;align-items:center;gap:12px">
+        <p class="hint" id="resHint"></p>
+        <div class="stepper">
+          <button id="outMinus" aria-label="Uno menos">−</button>
+          <span>Quedan fuera:<br><b id="outVal">0</b></span>
+          <button id="outPlus" aria-label="Uno más">+</button>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn" id="btnNext">Siguiente ronda</button>
+      </div>
+    </section>
+
+    <!-- FINAL -->
+    <section class="screen" id="sFinal">
+      <div class="carousel title" id="carFinal" aria-hidden="true"></div>
+      <p class="big-msg" id="finMsg">Game over!</p>
+      <p class="sub-msg" id="finSub"></p>
+      <div class="row">
+        <button class="btn" id="btnAgain">Jugar otra vez</button>
+        <button class="btn ghost" id="btnMenu">Volver al menú</button>
+      </div>
+    </section>
+  </main>
+</div>
+<span class="sr-only" id="live" aria-live="polite" style="position:absolute;left:-9999px"></span>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); };
+
+  /* ---------- vocabulary ---------- */
+  var EN = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"];
+  var ES = ["", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez", "once", "doce", "trece", "catorce", "quince", "dieciséis", "diecisiete", "dieciocho", "diecinueve", "veinte"];
+  var FIG_COLORS = ["#F2594B", "#FFF1D6", "#E6B34A", "#46D1A0"];
+
+  /* ---------- state ---------- */
+  var S = { phase: "title", rounds: [], idx: 0, players: 0, remaining: 0, out: 0, elapsed: 0, spinMs: 0, lastSec: null, paused: false, muted: false, cfg: null };
+  var timer = null, lastT = 0;
+
+  /* ---------- carousel builder ---------- */
+  function buildCarousel(el) {
+    var h = '<div class="platform"></div><div class="flag"></div>';
+    var poles = [[.14, .50, .57], [.32, .50, .62], [.5, .50, .64], [.68, .50, .62], [.86, .50, .57]];
+    poles.forEach(function (p, i) {
+      h += '<div class="pole" style="--x:' + p[0] + ';--h:' + (p[2] - .2).toFixed(2) + '"><div class="rider" style="--c:' + FIG_COLORS[i % 4] + ';--d:-' + (i * .23).toFixed(2) + 's"></div></div>';
+    });
+    h += '<div class="canopy"><div class="disc"><div class="cap"></div>';
+    for (var i = 0; i < 18; i++) h += '<i class="bulb" style="--a:' + (i * 20) + 'deg"></i>';
+    h += '</div></div>';
+    el.innerHTML = h;
+  }
+  ["#carTitle", "#carSpin", "#carFinal"].forEach(function (s) { buildCarousel($(s)); });
+
+  /* ---------- audio ---------- */
+  var ctx = null, master = null, musicBus = null, musicTimer = null, musicWet = null, susBus = null, susTimer = null, susOscs = [];
+  function ensureAudio() {
+    if (!ctx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return false;
+      ctx = new AC(); master = ctx.createGain(); master.gain.value = S.muted ? 0 : .9; master.connect(ctx.destination);
+    }
+    if (ctx.state === "suspended" && !S.paused) ctx.resume();
+    return true;
+  }
+  function mtof(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+  function pluck(f, t, d, g, bus) {
+    [[1, g], [2, g * .35], [3, g * .12]].forEach(function (p) {
+      var o = ctx.createOscillator(), a = ctx.createGain();
+      o.type = "sine"; o.frequency.value = f * p[0];
+      a.gain.setValueAtTime(.0001, t); a.gain.exponentialRampToValueAtTime(p[1], t + .008); a.gain.exponentialRampToValueAtTime(.0001, t + d);
+      o.connect(a); a.connect(bus); o.start(t); o.stop(t + d + .05);
+    });
+  }
+  /* carousel organ voice: two detuned square waves, softened */
+  function organ(f, t, d, g, bus) {
+    [-4, 4].forEach(function (c) {
+      var o = ctx.createOscillator(), fl = ctx.createBiquadFilter(), a = ctx.createGain();
+      o.type = "square"; o.frequency.value = f; o.detune.value = c;
+      fl.type = "lowpass"; fl.frequency.value = 2600;
+      a.gain.setValueAtTime(.0001, t); a.gain.exponentialRampToValueAtTime(g * .5, t + .015);
+      a.gain.setValueAtTime(g * .4, t + Math.max(.02, d - .06)); a.gain.exponentialRampToValueAtTime(.0001, t + d + .04);
+      o.connect(fl); fl.connect(a); a.connect(bus); o.start(t); o.stop(t + d + .08);
+    });
+  }
+  /* cheerful fairground waltz, D major, 3/4 */
+  var BEAT = 60 / 160;
+  var MEL = [[69, 1], [74, 1], [78, 1], [81, 2], [78, 1], [76, 2], [73, 1], [74, 3],
+             [69, 1], [74, 1], [78, 1], [81, 2], [78, 1], [79, 1], [78, 1], [76, 1], [74, 3],
+             [71, 1], [74, 1], [79, 1], [79, 2], [76, 1], [78, 1], [76, 1], [74, 1], [73, 2], [69, 1],
+             [71, 1], [74, 1], [78, 1], [76, 2], [73, 1], [74, 1], [69, 1], [66, 1], [74, 2], [null, 1]];
+  var D = [38, [66, 69]], A = [45, [61, 64]], G = [43, [62, 67]], Bm = [47, [62, 66]];
+  var BASS = [D, D, A, D, D, D, A, D, G, G, D, A, Bm, A, D, D];
+  var EVENTS = [], LOOP_LEN = 48 * BEAT;
+  (function () {
+    var t = 0;
+    MEL.forEach(function (n) { if (n[0]) EVENTS.push({ t: t * BEAT, m: n[0], d: n[1] * BEAT * .95, g: .2 }); t += n[1]; });
+    BASS.forEach(function (b, i) {
+      EVENTS.push({ t: i * 3 * BEAT, m: b[0], d: BEAT * .55, g: .3, k: "b" });
+      [1, 2].forEach(function (k) { b[1].forEach(function (m) { EVENTS.push({ t: (i * 3 + k) * BEAT, m: m, d: BEAT * .4, g: .1, k: "b" }); }); });
+    });
+    EVENTS.sort(function (a, b) { return a.t - b.t; });
+  })();
+  function startMusic() {
+    if (!ensureAudio()) return;
+    stopMusic(true);
+    musicBus = ctx.createGain(); musicBus.gain.value = .55; musicBus.connect(master);
+    var dl = ctx.createDelay(1); dl.delayTime.value = .16;
+    var fb = ctx.createGain(); fb.gain.value = .22;
+    musicWet = ctx.createGain(); musicWet.gain.value = .3;
+    musicBus.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(musicWet); musicWet.connect(master);
+    var start = ctx.currentTime + .1, i = 0, bus = musicBus;
+    musicTimer = setInterval(function () {
+      while (true) {
+        var e = EVENTS[i % EVENTS.length], t = start + Math.floor(i / EVENTS.length) * LOOP_LEN + e.t;
+        if (t > ctx.currentTime + .3) break;
+        (e.k === "b" ? pluck : organ)(mtof(e.m), t, e.d, e.g, bus); i++;
+      }
+    }, 60);
+  }
+  function stopMusic(quick) {
+    clearInterval(musicTimer); musicTimer = null;
+    if (musicBus) {
+      var b = musicBus; musicBus = null;
+      b.gain.cancelScheduledValues(ctx.currentTime); b.gain.setTargetAtTime(0, ctx.currentTime, .01);
+      if (musicWet) { musicWet.gain.cancelScheduledValues(ctx.currentTime); musicWet.gain.setTargetAtTime(0, ctx.currentTime, .01); musicWet = null; }
+      setTimeout(function () { try { b.disconnect(); } catch (e) {} }, 400);
+    }
+  }
+  function sfxStop() {
+    if (!ensureAudio()) return;
+    var t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = "sawtooth"; o.frequency.setValueAtTime(900, t); o.frequency.exponentialRampToValueAtTime(70, t + .35);
+    g.gain.setValueAtTime(.22, t); g.gain.exponentialRampToValueAtTime(.001, t + .4);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + .45);
+    var bell = ctx.createOscillator(), bg = ctx.createGain(), b2 = ctx.createOscillator();
+    bell.type = "sine"; bell.frequency.value = 880; b2.type = "sine"; b2.frequency.value = 880 * 2.4;
+    bg.gain.setValueAtTime(.0001, t + .2); bg.gain.exponentialRampToValueAtTime(.3, t + .22); bg.gain.exponentialRampToValueAtTime(.0001, t + 1.6);
+    bell.connect(bg); b2.connect(bg); bg.connect(master); bell.start(t + .2); b2.start(t + .2); bell.stop(t + 1.7); b2.stop(t + 1.7);
+  }
+  function sfxTick(hot) {
+    if (!ensureAudio()) return;
+    var t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = "sine"; o.frequency.value = hot ? 1200 : 900;
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.25, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + .12);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + .15);
+  }
+  function sfxBuzz() {
+    if (!ensureAudio()) return;
+    var t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = "sawtooth"; o.frequency.value = 140;
+    g.gain.setValueAtTime(.28, t); g.gain.setValueAtTime(.28, t + .6); g.gain.exponentialRampToValueAtTime(.001, t + .85);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + .9);
+  }
+  function startSuspense(dur) {
+    if (!ensureAudio()) return;
+    stopSuspense();
+    var t = ctx.currentTime, bus = ctx.createGain();
+    bus.gain.setValueAtTime(.0001, t); bus.gain.exponentialRampToValueAtTime(.5, t + 1.5); bus.connect(master);
+    susBus = bus; susOscs = [];
+    [[55, "sawtooth", .10], [55.7, "sawtooth", .10], [82.4, "sine", .12]].forEach(function (p) {
+      var o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+      o.type = p[1]; o.frequency.setValueAtTime(p[0], t); o.frequency.linearRampToValueAtTime(p[0] * 1.5, t + dur);
+      f.type = "lowpass"; f.frequency.setValueAtTime(200, t); f.frequency.linearRampToValueAtTime(900, t + dur);
+      g.gain.value = p[2]; o.connect(f); f.connect(g); g.connect(bus); o.start(t); susOscs.push(o);
+    });
+    var hi = ctx.createOscillator(), hg = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+    hi.type = "sine"; hi.frequency.setValueAtTime(440, t); hi.frequency.linearRampToValueAtTime(880, t + dur);
+    hg.gain.value = .03; lfo.frequency.setValueAtTime(3, t); lfo.frequency.linearRampToValueAtTime(10, t + dur); lg.gain.value = .03;
+    lfo.connect(lg); lg.connect(hg.gain); hi.connect(hg); hg.connect(bus); hi.start(t); lfo.start(t); susOscs.push(hi, lfo);
+    function thump(at, g) {
+      var o = ctx.createOscillator(), a = ctx.createGain();
+      o.type = "sine"; o.frequency.setValueAtTime(70, at); o.frequency.exponentialRampToValueAtTime(35, at + .18);
+      a.gain.setValueAtTime(.0001, at); a.gain.exponentialRampToValueAtTime(g, at + .01); a.gain.exponentialRampToValueAtTime(.0001, at + .22);
+      o.connect(a); a.connect(bus); o.start(at); o.stop(at + .25);
+    }
+    var next = t + .3;
+    susTimer = setInterval(function () {
+      while (next < ctx.currentTime + .3) {
+        var k = Math.min(1, (next - t) / dur);
+        thump(next, .6); thump(next + .17, .4);
+        next += 1 - .5 * k;
+      }
+    }, 80);
+  }
+  function stopSuspense() {
+    clearInterval(susTimer); susTimer = null;
+    if (susBus && ctx) {
+      var b = susBus, o = susOscs; susBus = null; susOscs = [];
+      b.gain.cancelScheduledValues(ctx.currentTime); b.gain.setTargetAtTime(0, ctx.currentTime, .03);
+      setTimeout(function () { o.forEach(function (x) { try { x.stop(); } catch (e) {} }); try { b.disconnect(); } catch (e) {} }, 400);
+    }
+  }
+  function say(text, lang) {
+    if (!S.cfg.voice || S.muted || !("speechSynthesis" in window)) return;
+    try { var u = new SpeechSynthesisUtterance(text); u.lang = lang; u.rate = .95; window.speechSynthesis.speak(u); } catch (e) {}
+  }
+  function cancelSpeech() { try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {} }
+
+  /* ---------- settings ---------- */
+  function num(id, def, lo, hi) {
+    var v = parseInt($(id).value, 10); if (isNaN(v)) v = def; return Math.max(lo, Math.min(hi, v));
+  }
+  function readCfg() {
+    var c = {};
+    c.players = num("#sPlayers", 0, 0, 80);
+    c.min = num("#sMin", 2, 2, 20); c.max = Math.max(c.min, num("#sMax", 10, 2, 20));
+    c.order = $("#sOrder").value;
+    c.musMin = num("#sMusMin", 8, 3, 60); c.musMax = Math.max(c.musMin, num("#sMusMax", 15, 3, 60));
+    c.count = num("#sCount", 20, 5, 90);
+    c.lang = $("#sLang").value; c.voice = $("#sVoice").checked;
+    return c;
+  }
+  function saveCfg(c) { try { localStorage.setItem("agrupados-cfg", JSON.stringify(c)); } catch (e) {} }
+  function loadCfg() {
+    try {
+      var c = JSON.parse(localStorage.getItem("agrupados-cfg") || "null"); if (!c) return;
+      $("#sPlayers").value = c.players; $("#sMin").value = c.min; $("#sMax").value = c.max; $("#sOrder").value = c.order;
+      $("#sMusMin").value = c.musMin; $("#sMusMax").value = c.musMax; $("#sCount").value = c.count;
+      $("#sLang").value = c.lang; $("#sVoice").checked = !!c.voice;
+    } catch (e) {}
+  }
+  loadCfg();
+  S.cfg = readCfg();
+
+  /* ---------- helpers ---------- */
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function word(n, lang) { var w = (lang === "es" ? ES : EN)[n]; return w || String(n); }
+  function setPhase(p) { S.phase = p; document.body.dataset.phase = p; S.elapsed = 0; S.lastSec = null; }
+  function announce(s) { $("#live").textContent = s; }
+  function updateChips() {
+    $("#chipRound").textContent = "Ronda " + (S.idx + 1) + " de " + S.rounds.length;
+    var cp = $("#chipPlayers");
+    if (S.players > 0) { cp.hidden = false; cp.textContent = "Jugadores: " + S.remaining; } else cp.hidden = true;
+  }
+  function cur() { return S.rounds[S.idx]; }
+
+  /* ---------- flow ---------- */
+  function startGame() {
+    S.cfg = readCfg(); saveCfg(S.cfg);
+    var sizes = []; for (var n = S.cfg.min; n <= S.cfg.max; n++) sizes.push(n);
+    S.rounds = S.cfg.order === "rand" ? shuffle(sizes) : sizes;
+    S.idx = 0; S.players = S.cfg.players; S.remaining = S.players;
+    ensureAudio(); startSpin();
+  }
+  function startSpin() {
+    S.paused = false; document.body.classList.remove("paused"); $("#btnPause").textContent = "⏸";
+    setPhase("spin"); stopSuspense(); cancelSpeech();
+    $("#carSpin").classList.remove("still");
+    S.spinMs = (S.cfg.musMin + Math.random() * (S.cfg.musMax - S.cfg.musMin)) * 1000;
+    var L = S.cfg.lang;
+    $("#spinMsg").textContent = L === "es" ? "¡Caminen!" : "Keep walking!";
+    $("#spinSub").textContent = L === "both" ? "¡Caminen!" : "";
+    updateChips(); startMusic(); announce("Ronda " + (S.idx + 1));
+    runLoop();
+  }
+  function startCount() {
+    stopMusic(); sfxStop(); stopSuspense();
+    setTimeout(function () { if (S.phase === "count") startSuspense(Math.max(3, S.cfg.count - 1)); }, 900);
+    setPhase("count");
+    $("#carSpin").classList.add("still");
+    var n = cur(), L = S.cfg.lang;
+    $("#digit").textContent = n;
+    var en = "Groups of", es = "Grupos de";
+    $("#lbl1").textContent = L === "es" ? es : en;
+    $("#lblWord").textContent = word(n, L === "es" ? "es" : "en");
+    $("#lbl2").textContent = L === "both" ? es + " " + word(n, "es") : "";
+    var f = ""; for (var i = 0; i < n; i++) f += '<svg class="fig" style="color:' + FIG_COLORS[i % 4] + '"><use href="#person"/></svg>';
+    $("#figs").innerHTML = f;
+    var a = $("#announce"); a.classList.remove("slam"); void a.offsetWidth; a.classList.add("slam");
+    $("#sCount").classList.remove("over");
+    $("#clock").classList.remove("hot");
+    $("#clockT").textContent = String(S.cfg.count).padStart(2, "0");
+    setTimeout(function () {
+      if (S.phase !== "count") return;
+      if (L === "es") say("¡Grupos de " + word(n, "es") + "!", "es-CL");
+      else { say("Groups of " + word(n, "en") + "!", "en-US"); if (L === "both") say("Grupos de " + word(n, "es"), "es-CL"); }
+    }, 500);
+    announce("Grupos de " + n);
+  }
+  function endCount() {
+    stopSuspense(); sfxBuzz();
+    $("#sCount").classList.add("over");
+    setTimeout(function () { if (S.phase === "count") showResult(); }, 900);
+    S.elapsed = -99999999; // stop ticking until result shows
+  }
+  function showResult() {
+    setPhase("result");
+    var n = cur(), L = S.cfg.lang, last = S.idx >= S.rounds.length - 1;
+    $("#resMsg").textContent = L === "es" ? "¡Se acabó el tiempo!" : "Time’s up!";
+    $("#resSub").textContent = L === "es" ? "Revisen los grupos." : (L === "both" ? "Check the groups. · Revisen los grupos." : "Check the groups.");
+    var t = $("#resTeacher");
+    if (S.players > 0) {
+      t.style.display = "flex";
+      var min = S.remaining % n; S.out = min;
+      $("#outVal").textContent = S.out;
+      $("#resHint").textContent = "Con " + S.remaining + " jugadores y grupos de " + n + ", quedan fuera al menos " + min + ". Ajusta si hubo grupos incompletos.";
+    } else t.style.display = "none";
+    $("#btnNext").textContent = last ? "Terminar" : "Siguiente ronda";
+  }
+  function nextRound() {
+    if (S.players > 0) S.remaining = Math.max(0, S.remaining - S.out);
+    if (S.idx >= S.rounds.length - 1) return showFinal();
+    S.idx++; startSpin();
+  }
+  function showFinal() {
+    setPhase("final"); stopMusic(); stopSuspense(); cancelSpeech(); stopLoop();
+    var L = S.cfg.lang;
+    $("#finMsg").textContent = L === "es" ? "¡Fin del juego!" : "Game over!";
+    var sub = "";
+    if (S.players > 0) {
+      if (L === "es") sub = S.remaining + " sobrevivientes.";
+      else sub = S.remaining + " survivors.";
+      if (L === "both") sub += " · " + S.remaining + " sobrevivientes.";
+    } else sub = L === "es" ? "¡Buen trabajo, equipo!" : "Great job, team!";
+    $("#finSub").textContent = sub;
+    updateChips();
+  }
+  function toMenu() { stopMusic(); stopSuspense(); cancelSpeech(); stopLoop(); S.paused = false; document.body.classList.remove("paused"); setPhase("title"); }
+
+  /* ---------- loop (pausable) ---------- */
+  function runLoop() { stopLoop(); lastT = performance.now(); timer = setInterval(tick, 100); }
+  function stopLoop() { clearInterval(timer); timer = null; }
+  function tick() {
+    var now = performance.now(), dt = now - lastT; lastT = now;
+    if (S.paused) return;
+    S.elapsed += dt;
+    if (S.phase === "spin") {
+      if (S.elapsed >= S.spinMs) startCount();
+    } else if (S.phase === "count" && S.elapsed >= 0) {
+      var left = S.cfg.count - S.elapsed / 1000, sec = Math.max(0, Math.ceil(left));
+      if (sec !== S.lastSec) {
+        S.lastSec = sec;
+        $("#clockT").textContent = String(sec).padStart(2, "0");
+        var hot = sec <= 5 && sec > 0;
+        $("#clock").classList.toggle("hot", hot);
+        if (sec > 0) sfxTick(sec <= 5);
+      }
+      if (left <= 0) endCount();
+    }
+  }
+  function togglePause() {
+    if (S.phase !== "spin" && S.phase !== "count") return;
+    S.paused = !S.paused;
+    document.body.classList.toggle("paused", S.paused);
+    $("#btnPause").textContent = S.paused ? "▶" : "⏸";
+    if (ctx) { if (S.paused) ctx.suspend(); else ctx.resume(); }
+    try { if (S.paused) window.speechSynthesis.pause(); else window.speechSynthesis.resume(); } catch (e) {}
+    lastT = performance.now();
+  }
+  function setMute() {
+    S.muted = !S.muted; $("#btnMute").textContent = S.muted ? "🔇" : "🔊";
+    if (master) master.gain.value = S.muted ? 0 : .9;
+    if (S.muted) cancelSpeech();
+  }
+
+  /* ---------- events ---------- */
+  $("#btnStart").addEventListener("click", startGame);
+  $("#btnStop").addEventListener("click", function () { if (S.phase === "spin" && !S.paused) startCount(); });
+  $("#btnNext").addEventListener("click", nextRound);
+  $("#btnAgain").addEventListener("click", startGame);
+  $("#btnMenu").addEventListener("click", toMenu);
+  $("#btnHome").addEventListener("click", toMenu);
+  $("#btnPause").addEventListener("click", togglePause);
+  $("#btnMute").addEventListener("click", setMute);
+  $("#btnFull").addEventListener("click", function () {
+    try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch (e) {}
+  });
+  $("#outMinus").addEventListener("click", function () { S.out = Math.max(0, S.out - 1); $("#outVal").textContent = S.out; });
+  $("#outPlus").addEventListener("click", function () { S.out = Math.min(S.remaining, S.out + 1); $("#outVal").textContent = S.out; });
+  document.addEventListener("keydown", function (e) {
+    var tag = (e.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "select" || tag === "textarea") return;
+    if (e.code === "Space") {
+      if (tag === "button" || tag === "summary") return;
+      e.preventDefault();
+      if (S.phase === "title") startGame();
+      else if (S.phase === "spin" || S.phase === "count") togglePause();
+      else if (S.phase === "result") nextRound();
+      else if (S.phase === "final") startGame();
+    }
+  });
+  window.addEventListener("pagehide", function () { stopMusic(); stopSuspense(); cancelSpeech(); });
+})();
+</script>
+</body>
+</html>
