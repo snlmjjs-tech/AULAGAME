@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>El Colgado · AulaGame</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat+Brush&family=Patrick+Hand&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+:root{
+  --board:#1f3a34; --board-d:#162a26; --board-l:#2a4a42;
+  --chalk:#f4f1e6; --chalk-dim:#b9c4bd;
+  --yellow:#ffd25e; --pink:#ff8fa3; --mint:#7fe3c0; --blue:#8ec5ff;
+  --wood:#8b5e3c; --wood-d:#6b4529;
+  --ok:#7fe3c0; --no:#ff7b7b;
+  --display:'Caveat Brush','Patrick Hand',cursive;
+  --body:'Patrick Hand','Segoe UI',system-ui,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{
+  font-family:var(--body);font-size:20px;color:var(--chalk);
+  background:
+    radial-gradient(1200px 600px at 20% -10%,rgba(255,255,255,.07),transparent 60%),
+    radial-gradient(900px 500px at 100% 100%,rgba(0,0,0,.25),transparent 60%),
+    var(--board);
+  min-height:100vh;overflow-x:hidden;
+}
+body::before{ /* marco de madera */
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
+  border:10px solid var(--wood);border-image:linear-gradient(135deg,var(--wood),var(--wood-d)) 1;
+  box-shadow:inset 0 0 0 3px rgba(0,0,0,.25),inset 0 0 40px rgba(0,0,0,.35);
+}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.screen{display:none;min-height:100vh;padding:28px 26px 40px;max-width:1180px;margin:0 auto}
+.screen.on{display:block}
+h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;letter-spacing:.5px}
+h1{font-size:clamp(46px,8vw,92px);line-height:.95;color:var(--yellow);transform:rotate(-1.5deg);display:inline-block}
+h2{font-size:clamp(32px,5vw,48px);color:var(--yellow)}
+h3{font-size:28px;color:var(--mint)}
+.muted{color:var(--chalk-dim)}
+.sm{font-size:16px}
+
+/* botones tiza */
+.btn{
+  border:2.5px solid var(--chalk);background:transparent;border-radius:14px 10px 16px 9px;
+  padding:10px 20px;font-size:21px;transition:transform .12s,background .12s,color .12s;
+}
+.btn:hover{background:rgba(255,255,255,.08)}
+.btn:active{transform:scale(.96)}
+.btn.primary{background:var(--yellow);border-color:var(--yellow);color:#2a2a20;box-shadow:0 4px 0 #b78f1e}
+.btn.primary:hover{background:#ffdc7c}
+.btn.primary:active{transform:translateY(3px);box-shadow:0 1px 0 #b78f1e}
+.btn.pink{border-color:var(--pink);color:var(--pink)}
+.btn.mint{border-color:var(--mint);color:var(--mint)}
+.btn.sm{padding:6px 12px;font-size:17px}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.spread{justify-content:space-between}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.chip{border:2px dashed var(--chalk-dim);border-radius:999px;padding:3px 14px;font-size:18px}
+.chip.cat{border-color:var(--blue);color:var(--blue)}
+
+/* inicio */
+.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin:10px 0 30px}
+.hero p{max-width:440px;margin:10px 0 0;color:var(--chalk-dim)}
+.hero .hang{width:150px;height:auto;flex:none}
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.mode{
+  text-align:left;border:3px solid var(--chalk);border-radius:20px 12px 22px 10px;padding:22px 22px 24px;
+  background:rgba(0,0,0,.14);transition:transform .15s,border-color .15s;position:relative;
+}
+.mode:hover{transform:rotate(-.8deg) translateY(-3px)}
+.mode .ic{font-size:40px;display:block;margin-bottom:6px}
+.mode b{font-family:var(--display);font-size:32px;font-weight:400;display:block}
+.mode span.d{color:var(--chalk-dim);font-size:18px;display:block;margin-top:4px}
+.mode.m1{border-color:var(--yellow)} .mode.m1 b{color:var(--yellow)}
+.mode.m2{border-color:var(--pink)}   .mode.m2 b{color:var(--pink)}
+.mode.m3{border-color:var(--mint)}   .mode.m3 b{color:var(--mint)}
+.homebar{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px;align-items:center}
+.count{margin-left:auto}
+
+/* editor */
+.table{display:flex;flex-direction:column;gap:10px;margin:18px 0}
+.wrow{display:grid;grid-template-columns:34px 1.3fr 1fr 1fr 1fr .8fr 40px;gap:8px;align-items:center}
+.wrow.head{color:var(--blue);font-size:17px}
+.wrow .n{color:var(--chalk-dim);text-align:center}
+input[type=text],input[type=number],select{
+  width:100%;font:inherit;font-size:19px;color:var(--chalk);background:rgba(0,0,0,.25);
+  border:2px solid rgba(255,255,255,.28);border-radius:10px;padding:8px 10px;
+}
+input::placeholder{color:#7f918a}
+select option{color:#222}
+.xbtn{background:none;border:none;color:var(--pink);font-size:24px;padding:0}
+.hint-note{background:rgba(0,0,0,.2);border-left:4px solid var(--yellow);padding:10px 14px;border-radius:6px;margin:10px 0 0;font-size:18px}
+
+/* ajustes */
+.panel{background:rgba(0,0,0,.18);border:2px solid rgba(255,255,255,.2);border-radius:16px;padding:20px 22px;margin:16px 0}
+.field{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px dashed rgba(255,255,255,.15)}
+.field:last-child{border-bottom:none}
+.field select,.field input[type=number]{width:150px}
+.switch{appearance:none;width:52px;height:30px;border-radius:99px;border:2px solid var(--chalk);position:relative;cursor:pointer;background:transparent;flex:none}
+.switch::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:var(--chalk);transition:transform .15s}
+.switch:checked{background:var(--mint);border-color:var(--mint)}
+.switch:checked::after{transform:translateX(22px);background:#12302a}
+.teamsbox{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:10px}
+
+/* juego */
+.stage{display:grid;grid-template-columns:minmax(220px,330px) 1fr;gap:26px;align-items:start}
+.hang{width:100%;height:auto;max-width:340px}
+.hang .gal line{stroke:var(--wood);stroke-width:9;stroke-linecap:round;filter:brightness(1.25)}
+.hang .part{opacity:0;transition:opacity .25s}
+.hang .part.on{opacity:1}
+.hang .part *,.hang .part{stroke:var(--chalk);stroke-width:6;stroke-linecap:round;fill:none}
+.hang .part:nth-child(7),.hang .part:nth-child(8){stroke:var(--pink);stroke-width:4}
+.hang .part.pop{animation:pop .35s}
+@keyframes pop{0%{transform:translateY(-8px)}60%{transform:translateY(3px)}100%{transform:none}}
+.lives{display:flex;gap:6px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.life{width:16px;height:16px;border-radius:50%;background:var(--pink);border:2px solid var(--pink)}
+.life.lost{background:transparent;opacity:.4}
+.word{display:flex;flex-wrap:wrap;gap:6px 26px;justify-content:center;margin:6px 0 22px;min-height:76px}
+.wd{display:flex;gap:6px}
+.ch{
+  width:clamp(30px,5vw,52px);height:clamp(44px,7vw,68px);display:flex;align-items:flex-end;justify-content:center;
+  font-family:var(--display);font-size:clamp(34px,5.5vw,58px);line-height:1;padding-bottom:2px;
+  border-bottom:5px solid var(--chalk);color:var(--yellow);
+}
+.ch.sym{border-bottom-color:transparent;color:var(--chalk)}
+.ch.miss{color:var(--pink)}
+.ch.new{animation:drop .3s}
+@keyframes drop{from{transform:translateY(-16px);opacity:0}to{transform:none;opacity:1}}
+.hints{min-height:60px;margin:0 0 16px;display:flex;flex-direction:column;gap:6px;align-items:center}
+.hintline{background:rgba(0,0,0,.22);border-left:5px solid var(--blue);border-radius:6px;padding:7px 14px;font-size:21px;width:100%;max-width:640px}
+.kb{display:grid;grid-template-columns:repeat(auto-fit,minmax(54px,1fr));gap:8px;max-width:720px;margin:0 auto}
+.key{
+  font-family:var(--display);font-size:30px;line-height:1;padding:10px 0 8px;border-radius:12px 8px 14px 8px;
+  border:2.5px solid var(--chalk);background:rgba(255,255,255,.04);transition:transform .1s,background .1s;
+}
+.key:hover{background:rgba(255,255,255,.14)}
+.key:active{transform:scale(.92)}
+.key.ok{background:var(--ok);border-color:var(--ok);color:#10322a;pointer-events:none}
+.key.no{border-color:#667;color:#778;text-decoration:line-through;pointer-events:none;background:transparent}
+.key[disabled]{pointer-events:none}
+.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+.timer{font-family:var(--display);font-size:32px;color:var(--blue);min-width:60px;text-align:center}
+.timer.low{color:var(--no);animation:blink .6s infinite}
+@keyframes blink{50%{opacity:.4}}
+.teambar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.team{border:2.5px solid var(--chalk-dim);border-radius:14px;padding:6px 16px;display:flex;gap:10px;align-items:baseline;opacity:.65;transition:.2s}
+.team.turn{opacity:1;border-color:var(--yellow);background:rgba(255,210,94,.12);transform:scale(1.05)}
+.team b{font-family:var(--display);font-weight:400;font-size:26px}
+.team i{font-style:normal;color:var(--yellow);font-size:24px;font-family:var(--display)}
+.resultbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;padding:22px 24px 30px;text-align:center;
+  background:rgba(10,24,20,.94);border-top:4px solid var(--yellow);transform:translateY(110%);transition:transform .3s;
+}
+.resultbar.on{transform:none}
+.resultbar.lose{border-top-color:var(--pink)}
+.resultbar .big{font-family:var(--display);font-size:clamp(34px,6vw,56px);color:var(--yellow)}
+.resultbar.lose .big{color:var(--pink)}
+.resultbar .ans{font-size:26px;margin:4px 0 14px}
+
+/* sala (celulares) */
+.lobby{display:grid;grid-template-columns:auto 1fr;gap:30px;align-items:start}
+.qrbox{background:#fff;padding:14px;border-radius:16px;border:6px solid var(--yellow);width:max-content}
+.pin{font-family:var(--display);font-size:clamp(60px,10vw,112px);color:var(--yellow);line-height:1;letter-spacing:6px}
+.players{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.pl{border:2px solid var(--mint);color:var(--mint);border-radius:999px;padding:4px 16px;animation:drop .3s}
+.board{list-style:none;margin:0;padding:0;counter-reset:r}
+.board li{counter-increment:r;display:flex;justify-content:space-between;gap:10px;padding:6px 4px;border-bottom:1px dashed rgba(255,255,255,.2);font-size:22px}
+.board li::before{content:counter(r)".";color:var(--chalk-dim);width:30px}
+.board li span:nth-child(1){flex:1}
+.board li b{color:var(--yellow);font-family:var(--display);font-weight:400;font-size:26px}
+.board li:nth-child(1) span:nth-child(1){color:var(--yellow)}
+.feed{font-size:18px;color:var(--chalk-dim);min-height:50px;margin-top:10px}
+
+/* jugador (celular) */
+#player{max-width:560px;padding:20px 14px 30px}
+.pcard{text-align:center}
+.pcard input{font-size:28px;text-align:center;margin:8px 0}
+.pstat{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.pstat .sc{font-family:var(--display);font-size:30px;color:var(--yellow)}
+#player .hang{max-width:150px;display:block;margin:0 auto}
+#player .word{margin:0 0 10px;min-height:56px;gap:4px 16px}
+#player .ch{width:26px;height:40px;font-size:30px;border-bottom-width:4px}
+#player .kb{grid-template-columns:repeat(7,1fr);gap:6px}
+#player .key{font-size:26px;padding:8px 0 6px}
+#player .hintline{font-size:18px}
+
+/* resultados */
+.podium{display:flex;gap:16px;align-items:flex-end;justify-content:center;margin:26px 0;flex-wrap:wrap}
+.pod{border:3px solid var(--yellow);border-radius:16px;padding:18px 26px;text-align:center;min-width:150px}
+.pod b{font-family:var(--display);font-weight:400;font-size:30px;display:block}
+.pod i{font-style:normal;font-family:var(--display);font-size:40px;color:var(--yellow)}
+.pod.p1{padding-top:40px;border-color:var(--yellow)} .pod.p2{padding-top:26px;border-color:var(--chalk)} .pod.p3{border-color:var(--pink)}
+
+/* modal / toast */
+.modal{position:fixed;inset:0;z-index:100;background:rgba(5,15,12,.72);display:none;align-items:center;justify-content:center;padding:20px}
+.modal.on{display:flex}
+.mbox{background:var(--board-d);border:4px solid var(--chalk);border-radius:20px 12px 22px 10px;padding:24px;max-width:460px;width:100%;animation:drop .2s}
+.mbox h3{color:var(--yellow);margin-bottom:8px}
+.mbox p{margin:0 0 14px;white-space:pre-line}
+.mbox .row{justify-content:flex-end;margin-top:14px}
+.toast{position:fixed;left:50%;top:22px;transform:translate(-50%,-120px);z-index:120;background:var(--yellow);color:#2a2a20;padding:10px 22px;border-radius:12px;transition:transform .25s;font-size:20px}
+.toast.on{transform:translate(-50%,0)}
+.confetti{position:fixed;top:-20px;width:10px;height:16px;z-index:90;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+.fab{position:fixed;right:22px;top:20px;z-index:60;background:rgba(0,0,0,.3);border:2px solid var(--chalk-dim);border-radius:50%;width:46px;height:46px;font-size:22px}
+
+@media(max-width:820px){
+  .stage,.lobby{grid-template-columns:1fr}
+  .hang{max-width:200px;margin:0 auto;display:block}
+  .wrow{grid-template-columns:28px 1fr 1fr 34px;}
+  .wrow .h2,.wrow .h3,.wrow .cat{display:none}
+  .wrow.head .h2,.wrow.head .h3,.wrow.head .cat{display:none}
+  .screen{padding:20px 16px 40px}
+  .fab{top:auto;bottom:18px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<button class="fab" id="muteBtn" title="Sonido" aria-label="Activar o silenciar sonido">🔊</button>
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal"><div class="mbox"><h3 id="mTitle"></h3><p id="mBody"></p><input type="text" id="mInput" style="display:none"><div class="row"><button class="btn sm" id="mCancel">Cancelar</button><button class="btn primary sm" id="mOk">Aceptar</button></div></div></div>
+
+<!-- INICIO -->
+<section class="screen on" id="home">
+  <div class="hero">
+    <div>
+      <h1>El Colgado</h1>
+      <p>Tú eliges las palabras y las pistas. Tus estudiantes adivinan letra por letra antes de que el muñeco quede completo.</p>
+    </div>
+    <div id="heroHang"></div>
+  </div>
+  <div class="modes">
+    <button class="mode m1" data-mode="class"><span class="ic">🧑‍🏫</span><b>Todo el curso</b><span class="d">Proyecta la pantalla. El curso propone letras y tú las marcas.</span></button>
+    <button class="mode m2" data-mode="teams"><span class="ic">👥</span><b>Por equipos</b><span class="d">2 a 4 equipos con turnos y puntaje. Si fallan, pasa el turno.</span></button>
+    <button class="mode m3" data-mode="qr"><span class="ic">📱</span><b>Con celulares (QR)</b><span class="d">Cada estudiante se une con el QR y juega desde su teléfono.</span></button>
+  </div>
+  <div class="homebar">
+    <button class="btn" id="goEditor">📝 Mis palabras</button>
+    <span class="muted count" id="wordCount"></span>
+    <button class="btn sm" id="goJoin">Soy estudiante: unirme con PIN</button>
+  </div>
+</section>
+
+<!-- EDITOR -->
+<section class="screen" id="editor">
+  <div class="topbar"><h2>Mis palabras</h2><button class="btn" id="edBack">← Volver</button></div>
+  <div class="hint-note">Escribe la palabra o frase y hasta 3 pistas. Las pistas aparecen de a una. La categoría es opcional y se muestra como ayuda. Se guarda automáticamente en este navegador.</div>
+  <div class="table" id="wtable"></div>
+  <div class="row">
+    <button class="btn primary" id="addWord">+ Agregar palabra</button>
+    <button class="btn mint" id="impBtn">Importar Excel</button>
+    <button class="btn mint" id="expBtn">Exportar Excel</button>
+    <button class="btn sm" id="tplBtn">Descargar plantilla</button>
+    <button class="btn sm pink" id="clrBtn">Borrar todas</button>
+    <input type="file" id="fileIn" accept=".xlsx,.xls,.csv" hidden>
+  </div>
+</section>
+
+<!-- AJUSTES -->
+<section class="screen" id="settings">
+  <div class="topbar"><h2 id="setTitle">Configurar partida</h2><button class="btn" id="setBack">← Volver</button></div>
+  <div class="panel">
+    <div class="field"><label for="sMax">Errores permitidos</label><select id="sMax"><option>5</option><option selected>6</option><option>7</option><option>8</option></select></div>
+    <div class="field"><label for="sTime">Tiempo por palabra</label><select id="sTime"><option value="0">Sin límite</option><option value="30">30 segundos</option><option value="60">60 segundos</option><option value="90">90 segundos</option><option value="120">2 minutos</option></select></div>
+    <div class="field"><label for="sCat">Mostrar la categoría</label><input type="checkbox" class="switch" id="sCat" checked></div>
+    <div class="field"><label for="sHintCost">Cada pista cuesta un error</label><input type="checkbox" class="switch" id="sHintCost"></div>
+    <div class="field"><label for="sShuffle">Palabras en orden aleatorio</label><input type="checkbox" class="switch" id="sShuffle" checked></div>
+    <div class="field"><label for="sAuto">Pista automática cada 2 errores</label><input type="checkbox" class="switch" id="sAuto"></div>
+  </div>
+  <div class="panel" id="teamsPanel" style="display:none">
+    <div class="field"><label for="sTeams">Cantidad de equipos</label><select id="sTeams"><option>2</option><option selected>3</option><option>4</option></select></div>
+    <div class="teamsbox" id="teamNames"></div>
+  </div>
+  <div class="row"><button class="btn primary" id="startBtn">¡Jugar!</button><span class="muted sm" id="setInfo"></span></div>
+</section>
+
+<!-- JUEGO (curso / equipos) -->
+<section class="screen" id="game">
+  <div class="topbar">
+    <div class="row"><button class="btn sm" id="gExit">← Salir</button><span class="chip" id="gRound"></span><span class="chip cat" id="gCat" style="display:none"></span></div>
+    <div class="timer" id="gTimer"></div>
+  </div>
+  <div class="teambar" id="gTeams"></div>
+  <div class="stage">
+    <div><div id="gHang"></div><div class="lives" id="gLives"></div></div>
+    <div>
+      <div class="word" id="gWord"></div>
+      <div class="hints" id="gHints"></div>
+      <div class="kb" id="gKb"></div>
+      <div class="actions">
+        <button class="btn mint" id="gHintBtn">💡 Pista</button>
+        <button class="btn pink" id="gSolveBtn">✍️ Resolver</button>
+        <button class="btn sm" id="gSkipBtn">Saltar palabra</button>
+      </div>
+    </div>
+  </div>
+  <div class="resultbar" id="gResult"><div class="big" id="gResBig"></div><div class="ans" id="gResAns"></div><button class="btn primary" id="gNext">Siguiente palabra</button></div>
+</section>
+
+<!-- SALA ANFITRIÓN -->
+<section class="screen" id="hostLobby">
+  <div class="topbar"><h2>Sala abierta</h2><button class="btn sm" id="hlExit">← Cerrar sala</button></div>
+  <div class="lobby">
+    <div><div class="qrbox" id="qrBox"></div><p class="muted sm" id="joinUrl" style="max-width:240px;word-break:break-all"></p></div>
+    <div>
+      <div class="muted">Escanea el QR o entra a esta página y escribe el PIN</div>
+      <div class="pin" id="hlPin"></div>
+      <h3 style="margin-top:16px">Estudiantes conectados: <span id="hlCount">0</span></h3>
+      <div class="players" id="hlPlayers"></div>
+      <div class="row" style="margin-top:24px"><button class="btn primary" id="hlStart" disabled>Comenzar</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- JUEGO ANFITRIÓN -->
+<section class="screen" id="hostGame">
+  <div class="topbar">
+    <div class="row"><button class="btn sm" id="hgExit">← Cerrar sala</button><span class="chip" id="hgRound"></span><span class="chip cat" id="hgCat" style="display:none"></span><span class="chip">PIN <b id="hgPin"></b></span></div>
+  </div>
+  <div class="stage">
+    <div><div id="hgHang"></div><div class="lives" id="hgLives"></div></div>
+    <div>
+      <div class="word" id="hgWord"></div>
+      <div class="hints" id="hgHints"></div>
+      <div class="row spread" style="align-items:flex-start;gap:30px">
+        <div style="flex:1;min-width:230px"><h3>Puntajes</h3><ol class="board" id="hgBoard"></ol></div>
+        <div style="flex:1;min-width:200px"><h3>Letras</h3><div class="feed" id="hgUsed"></div><div class="feed" id="hgFeed"></div></div>
+      </div>
+      <div class="actions"><button class="btn mint" id="hgHintBtn">💡 Dar pista</button><button class="btn sm" id="hgSkipBtn">Saltar palabra</button></div>
+    </div>
+  </div>
+  <div class="resultbar" id="hgResult"><div class="big" id="hgResBig"></div><div class="ans" id="hgResAns"></div><button class="btn primary" id="hgNext">Siguiente palabra</button></div>
+</section>
+
+<!-- JUGADOR (celular) -->
+<section class="screen" id="player">
+  <div class="pcard" id="pJoin">
+    <h1 style="font-size:60px">El Colgado</h1>
+    <p class="muted">Escribe el PIN que ves en la pantalla del profesor</p>
+    <input type="text" id="pPin" inputmode="numeric" maxlength="6" placeholder="PIN">
+    <input type="text" id="pName" maxlength="16" placeholder="Tu nombre">
+    <button class="btn primary" id="pGo" style="width:100%;margin-top:8px">Entrar</button>
+    <p class="sm muted" id="pErr" style="color:var(--no)"></p>
+    <button class="btn sm" id="pBack" style="margin-top:14px">← Volver</button>
+  </div>
+  <div id="pPlay" style="display:none">
+    <div class="pstat"><span id="pWho" class="chip"></span><span class="chip cat" id="pCat" style="display:none"></span><span class="sc" id="pScore">0</span></div>
+    <div id="pWait" class="pcard" style="margin:40px 0"><h2 id="pWaitT">Esperando…</h2><p class="muted" id="pWaitS"></p></div>
+    <div id="pBoardWrap" style="display:none"><ol class="board" id="pBoard"></ol></div>
+    <div id="pGame" style="display:none">
+      <div id="pHang"></div>
+      <div class="word" id="pWord"></div>
+      <div class="hints" id="pHints"></div>
+      <div class="kb" id="pKb"></div>
+      <div class="actions"><button class="btn pink" id="pSolve">✍️ Resolver la palabra</button></div>
+      <div class="pcard muted sm" id="pMsg" style="margin-top:10px;min-height:24px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- RESULTADOS -->
+<section class="screen" id="results">
+  <div class="topbar"><h2>¡Fin de la partida!</h2></div>
+  <div id="resBody"></div>
+  <div class="row" style="margin-top:20px;justify-content:center"><button class="btn primary" id="resAgain">Jugar de nuevo</button><button class="btn" id="resHome">Menú principal</button></div>
+</section>
+
+<script>
+/* =====================================================
+   CONFIGURACIÓN DE FIREBASE (solo para el modo QR/celulares)
+   Copia aquí la misma configuración que usan tus otros juegos
+   de AulaGame (Realtime Database). Sin esto, los modos
+   "Todo el curso" y "Por equipos" funcionan igual.
+   ===================================================== */
+const FIREBASE_CONFIG = {
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_PROYECTO.firebaseapp.com",
+  databaseURL: "https://TU_PROYECTO-default-rtdb.firebaseio.com",
+  projectId: "TU_PROYECTO"
+};
+const ROOT = 'colgado_rooms';   // nodo de la base de datos para las salas
+
+/* ---------- utilidades ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const norm = s => String(s).toUpperCase().replace(/Ñ/g, '\u0001').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\u0001/g, 'Ñ');
+const isL = c => /^[A-ZÑ]$/.test(norm(c));
+const LETTERS = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split('');
+const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+
+/* ---------- sonido (Web Audio, todo generado por código) ---------- */
+let AC, muted = store.get('colgado_mute', false), musicTimer = null, mStep = 0;
+function ac() { if (!AC) { const C = window.AudioContext || window.webkitAudioContext; if (C) AC = new C(); } if (AC && AC.state === 'suspended') AC.resume(); return AC; }
+function tone(f, d = .15, type = 'sine', v = .14, t0 = 0) {
+  if (muted || !ac()) return;
+  const o = AC.createOscillator(), g = AC.createGain(), t = AC.currentTime + t0;
+  o.type = type; o.frequency.value = f;
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + d + .02);
+}
+const sfx = {
+  ok() { tone(660, .12, 'triangle'); tone(990, .16, 'triangle', .14, .09); },
+  no() { tone(220, .28, 'sawtooth', .1); tone(150, .35, 'sawtooth', .1, .16); },
+  win() { [523, 659, 784, 1047].forEach((f, i) => tone(f, .25, 'triangle', .16, i * .12)); },
+  lose() { [392, 330, 262, 196].forEach((f, i) => tone(f, .35, 'sawtooth', .1, i * .2)); },
+  tick() { tone(900, .05, 'square', .05); },
+  hint() { tone(780, .1, 'sine'); tone(1040, .12, 'sine', .12, .08); }
+};
+function musicOn() {
+  stopMusic(); if (muted) return;
+  const seq = [262, 330, 392, 330, 294, 349, 440, 349, 262, 330, 392, 523, 392, 330, 294, 247];
+  musicTimer = setInterval(() => { tone(seq[mStep++ % seq.length], .22, 'triangle', .03); }, 300);
+}
+function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+function setMute(m) { muted = m; store.set('colgado_mute', m); $('muteBtn').textContent = m ? '🔇' : '🔊'; if (m) stopMusic(); else if (['game', 'hostGame'].includes(cur)) musicOn(); }
+$('muteBtn').onclick = () => { setMute(!muted); ac(); };
+
+/* ---------- modal y avisos personalizados ---------- */
+function modal({ title = '', body = '', input = false, ok = 'Aceptar', cancel = null, value = '' }) {
+  return new Promise(res => {
+    $('mTitle').textContent = title; $('mBody').textContent = body;
+    const inp = $('mInput'); inp.style.display = input ? '' : 'none'; inp.value = value;
+    $('mOk').textContent = ok; $('mCancel').style.display = cancel ? '' : 'none'; if (cancel) $('mCancel').textContent = cancel;
+    $('modal').classList.add('on'); if (input) setTimeout(() => inp.focus(), 50);
+    const done = v => { $('modal').classList.remove('on'); $('mOk').onclick = $('mCancel').onclick = inp.onkeydown = null; res(v); };
+    $('mOk').onclick = () => done(input ? inp.value : true);
+    $('mCancel').onclick = () => done(input ? null : false);
+    inp.onkeydown = e => { if (e.key === 'Enter') $('mOk').click(); if (e.key === 'Escape') $('mCancel').click(); };
+  });
+}
+let toastT;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2200); }
+function confetti() {
+  const cols = ['#ffd25e', '#ff8fa3', '#7fe3c0', '#8ec5ff', '#f4f1e6'];
+  for (let i = 0; i < 70; i++) {
+    const d = document.createElement('div'); d.className = 'confetti';
+    d.style.left = Math.random() * 100 + 'vw'; d.style.background = cols[i % 5];
+    d.style.animationDuration = (2 + Math.random() * 2) + 's'; d.style.animationDelay = Math.random() * .5 + 's';
+    document.body.appendChild(d); setTimeout(() => d.remove(), 4800);
+  }
+}
+
+/* ---------- pantallas ---------- */
+let cur = 'home';
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+  cur = id; window.scrollTo(0, 0);
+  if (id === 'game' || id === 'hostGame') musicOn(); else stopMusic();
+}
+
+/* ---------- muñeco ---------- */
+const PARTS = [
+  '<circle cx="130" cy="72" r="18"/>',
+  '<line x1="130" y1="90" x2="130" y2="152"/>',
+  '<line x1="130" y1="104" x2="104" y2="132"/>',
+  '<line x1="130" y1="104" x2="156" y2="132"/>',
+  '<line x1="130" y1="152" x2="108" y2="190"/>',
+  '<line x1="130" y1="152" x2="152" y2="190"/>',
+  '<path d="M121 66l6 6m0-6l-6 6M133 66l6 6m0-6l-6 6"/>',
+  '<path d="M122 83q8-7 16 0"/>'
+];
+const shownParts = (wrong, max) => wrong <= 0 ? 0 : Math.min(8, Math.ceil(wrong * 8 / max));
+function hangSVG(n) {
+  return '<svg viewBox="0 0 220 250" class="hang" role="img" aria-label="Muñeco del ahorcado"><g class="gal"><line x1="20" y1="232" x2="190" y2="232"/><line x1="50" y1="232" x2="50" y2="20"/><line x1="50" y1="20" x2="130" y2="20"/><line x1="50" y1="56" x2="86" y2="20"/><line x1="130" y1="20" x2="130" y2="54"/></g>' +
+    PARTS.map((p, i) => `<g class="part ${i < n ? 'on' : ''}">${p}</g>`).join('') + '</svg>';
+}
+function drawHang(elId, wrong, max) {
+  const el = $(elId), n = shownParts(wrong, max), prev = +el.dataset.n || 0;
+  if (!el.firstChild || n < prev) el.innerHTML = hangSVG(n);
+  else { const ps = el.querySelectorAll('.part'); ps.forEach((p, i) => { if (i < n && !p.classList.contains('on')) { p.classList.add('on', 'pop'); } }); }
+  el.dataset.n = n;
+}
+function drawLives(elId, wrong, max) { $(elId).innerHTML = Array.from({ length: max }, (_, i) => `<span class="life ${i < wrong ? 'lost' : ''}"></span>`).join(''); }
+
+/* ---------- palabras ---------- */
+const SAMPLE = [
+  { w: 'ELEPHANT', h1: 'It is a very big animal', h2: 'It has a long trunk', h3: 'It lives in Africa and Asia', c: 'Animals' },
+  { w: 'RECICLAJE', h1: 'Ayuda a cuidar el planeta', h2: 'Separamos vidrio, papel y plástico', h3: 'Se hace en bolsas o contenedores de colores', c: 'Medio ambiente' },
+  { w: 'PRESENT PERFECT', h1: 'Es un tiempo verbal', h2: 'Usa have o has', h3: 'I have lived here for years', c: 'Gramática' },
+  { w: 'HUERTO', h1: 'Aquí crecen lechugas y tomates', h2: 'Se riega con agua', h3: 'Puede estar en el colegio', c: 'Naturaleza' },
+  { w: 'WEDNESDAY', h1: 'A day of the week', h2: 'It is in the middle of the week', h3: 'It comes after Tuesday', c: 'Days' }
+];
+let words = store.get('colgado_words', null) || SAMPLE.map(x => ({ ...x }));
+const saveWords = () => store.set('colgado_words', words);
+const validWords = () => words.filter(x => x.w && /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(x.w));
+const updCount = () => { $('wordCount').textContent = validWords().length + ' palabra' + (validWords().length === 1 ? '' : 's') + ' lista' + (validWords().length === 1 ? '' : 's'); };
+
+let S = Object.assign({ max: 6, time: 0, cat: true, hintCost: false, shuffle: true, auto: false, teams: 3, tnames: ['Equipo 1', 'Equipo 2', 'Equipo 3', 'Equipo 4'] }, store.get('colgado_settings', {}));
+let MODE = 'class';
+
+/* ---------- editor ---------- */
+function renderEditor() {
+  let h = '<div class="wrow head"><span></span><span>Palabra o frase</span><span>Pista 1</span><span class="h2">Pista 2</span><span class="h3">Pista 3</span><span class="cat">Categoría</span><span></span></div>';
+  words.forEach((x, i) => {
+    h += `<div class="wrow"><span class="n">${i + 1}</span>
+      <input type="text" data-i="${i}" data-f="w" value="${esc(x.w || '')}" placeholder="Palabra" maxlength="30" aria-label="Palabra ${i + 1}">
+      <input type="text" data-i="${i}" data-f="h1" value="${esc(x.h1 || '')}" placeholder="Pista 1" aria-label="Pista 1">
+      <input type="text" class="h2" data-i="${i}" data-f="h2" value="${esc(x.h2 || '')}" placeholder="Pista 2" aria-label="Pista 2">
+      <input type="text" class="h3" data-i="${i}" data-f="h3" value="${esc(x.h3 || '')}" placeholder="Pista 3" aria-label="Pista 3">
+      <input type="text" class="cat" data-i="${i}" data-f="c" value="${esc(x.c || '')}" placeholder="Categoría" aria-label="Categoría">
+      <button class="xbtn" data-del="${i}" aria-label="Eliminar palabra ${i + 1}">✕</button></div>`;
+  });
+  $('wtable').innerHTML = h;
+}
+$('wtable').addEventListener('input', e => { const t = e.target; if (t.dataset.f) { words[+t.dataset.i][t.dataset.f] = t.value; saveWords(); } });
+$('wtable').addEventListener('click', e => { const d = e.target.dataset.del; if (d !== undefined) { words.splice(+d, 1); saveWords(); renderEditor(); } });
+$('addWord').onclick = () => { words.push({ w: '', h1: '', h2: '', h3: '', c: '' }); saveWords(); renderEditor(); const ins = $('wtable').querySelectorAll('input[data-f="w"]'); ins[ins.length - 1].focus(); };
+$('clrBtn').onclick = async () => { if (await modal({ title: 'Borrar todas', body: '¿Eliminar todas las palabras de la lista?', ok: 'Sí, borrar', cancel: 'Cancelar' })) { words = []; saveWords(); renderEditor(); } };
+$('goEditor').onclick = () => { renderEditor(); show('editor'); };
+$('edBack').onclick = () => { words = words.filter(x => (x.w || '').trim() || (x.h1 || '').trim()); saveWords(); updCount(); show('home'); };
+const HEAD = ['Palabra', 'Pista 1', 'Pista 2', 'Pista 3', 'Categoría'];
+$('expBtn').onclick = () => { const ws = XLSX.utils.aoa_to_sheet([HEAD, ...words.map(x => [x.w, x.h1, x.h2, x.h3, x.c])]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Palabras'); XLSX.writeFile(wb, 'colgado_palabras.xlsx'); };
+$('tplBtn').onclick = () => { const ws = XLSX.utils.aoa_to_sheet([HEAD, ['ELEPHANT', 'It is very big', 'It has a trunk', 'It lives in Africa', 'Animals'], ['RECICLAJE', 'Cuida el planeta', 'Se separa en colores', '', 'Medio ambiente']]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Palabras'); XLSX.writeFile(wb, 'plantilla_colgado.xlsx'); };
+$('impBtn').onclick = () => $('fileIn').click();
+$('fileIn').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = async ev => {
+    try {
+      const wb = XLSX.read(ev.target.result, { type: 'array' });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
+      let start = /palabra|word/i.test(String(rows[0] && rows[0][0])) ? 1 : 0;
+      const nw = rows.slice(start).filter(r => String(r[0]).trim()).map(r => ({ w: String(r[0]).trim(), h1: String(r[1] || ''), h2: String(r[2] || ''), h3: String(r[3] || ''), c: String(r[4] || '') }));
+      if (!nw.length) { await modal({ title: 'Archivo vacío', body: 'No encontré palabras. Usa la plantilla: la primera columna es la palabra.' }); return; }
+      const rep = await modal({ title: 'Importar ' + nw.length + ' palabras', body: '¿Reemplazar la lista actual o agregarlas al final?', ok: 'Reemplazar', cancel: 'Agregar' });
+      words = rep ? nw : words.concat(nw); saveWords(); renderEditor(); toast('Palabras importadas');
+    } catch (err) { await modal({ title: 'No se pudo leer', body: 'Revisa que sea un archivo Excel (.xlsx) o CSV.' }); }
+    e.target.value = '';
+  };
+  r.readAsArrayBuffer(f);
+};
+
+/* ---------- ajustes ---------- */
+function renderTeamNames() {
+  const n = +$('sTeams').value;
+  $('teamNames').innerHTML = Array.from({ length: n }, (_, i) => `<input type="text" data-t="${i}" value="${esc(S.tnames[i])}" maxlength="18" aria-label="Nombre equipo ${i + 1}">`).join('');
+}
+$('teamNames').addEventListener('input', e => { if (e.target.dataset.t) S.tnames[+e.target.dataset.t] = e.target.value || ('Equipo ' + (+e.target.dataset.t + 1)); });
+$('sTeams').onchange = () => { S.teams = +$('sTeams').value; renderTeamNames(); };
+document.querySelectorAll('.mode').forEach(b => b.onclick = () => {
+  if (!validWords().length) { modal({ title: 'Faltan palabras', body: 'Agrega al menos una palabra en "Mis palabras" para empezar.' }); return; }
+  MODE = b.dataset.mode; ac();
+  $('setTitle').textContent = { class: 'Todo el curso', teams: 'Por equipos', qr: 'Con celulares' }[MODE];
+  $('teamsPanel').style.display = MODE === 'teams' ? '' : 'none';
+  $('sMax').value = S.max; $('sTime').value = S.time; $('sCat').checked = S.cat; $('sHintCost').checked = S.hintCost; $('sShuffle').checked = S.shuffle; $('sAuto').checked = S.auto; $('sTeams').value = S.teams;
+  $('sTime').disabled = MODE === 'qr'; $('setInfo').textContent = MODE === 'qr' ? 'En este modo el tiempo no aplica; las pistas las das tú.' : '';
+  $('sHintCost').disabled = MODE === 'qr'; $('startBtn').textContent = MODE === 'qr' ? 'Abrir sala' : '¡Jugar!';
+  renderTeamNames(); show('settings');
+});
+$('setBack').onclick = () => show('home');
+function readSettings() {
+  S.max = +$('sMax').value; S.time = +$('sTime').value; S.cat = $('sCat').checked; S.hintCost = $('sHintCost').checked; S.shuffle = $('sShuffle').checked; S.auto = $('sAuto').checked; S.teams = +$('sTeams').value;
+  store.set('colgado_settings', S);
+}
+$('startBtn').onclick = () => { readSettings(); if (MODE === 'qr') hostOpen(); else startClassic(); };
+
+/* ---------- lógica común de una palabra ---------- */
+function maskChars(word, used, reveal) {
+  return Array.from(word).map(ch => { const L = isL(ch); const n = norm(ch); return { ch, L, shown: !L || reveal || used.has(n), miss: L && reveal && !used.has(n) }; });
+}
+function wordHTML(word, used, reveal, newLetter) {
+  const parts = word.split(' ').filter(Boolean);
+  return parts.map(p => '<div class="wd">' + maskChars(p, used, reveal).map(c =>
+    `<span class="ch ${c.L ? '' : 'sym'} ${c.miss ? 'miss' : ''} ${newLetter && c.L && norm(c.ch) === newLetter ? 'new' : ''}">${c.shown ? esc(c.ch.toUpperCase()) : ''}</span>`).join('') + '</div>').join('');
+}
+const lettersOf = word => new Set(Array.from(word).filter(isL).map(norm));
+function kbHTML(extraLetters) { return LETTERS.filter(l => l !== 'Ñ' || extraLetters).map(l => `<button class="key" data-l="${l}">${l}</button>`).join(''); }
+const needsEnye = list => list.some(x => /ñ/i.test(x.w));
+
+/* =====================================================
+   MODO CURSO / EQUIPOS
+   ===================================================== */
+let G = null, timerId = null;
+function startClassic() {
+  const list = validWords(); if (!list.length) return;
+  G = { list: S.shuffle ? shuffle(list) : list.slice(), i: -1, solved: 0, errors: 0, teams: [], turn: 0, enye: needsEnye(list) };
+  if (MODE === 'teams') G.teams = Array.from({ length: S.teams }, (_, i) => ({ name: S.tnames[i] || 'Equipo ' + (i + 1), score: 0, solved: 0 }));
+  $('gKb').innerHTML = kbHTML(G.enye);
+  show('game'); nextWord();
+}
+function nextWord() {
+  G.i++; if (G.i >= G.list.length) return finishClassic();
+  const w = G.list[G.i];
+  Object.assign(G, { word: w.w.trim(), used: new Set(), letters: lettersOf(w.w), wrong: 0, hintN: 0, over: false, hints: [w.h1, w.h2, w.h3].filter(h => h && h.trim()), t: S.time });
+  $('gResult').classList.remove('on', 'lose');
+  $('gRound').textContent = `Palabra ${G.i + 1} de ${G.list.length}`;
+  const cat = $('gCat'); cat.style.display = S.cat && w.c ? '' : 'none'; cat.textContent = w.c || '';
+  $('gKb').querySelectorAll('.key').forEach(k => k.className = 'key');
+  $('gHints').innerHTML = ''; $('gHang').dataset.n = 0; $('gHang').innerHTML = '';
+  renderClassic(); startTimer(); renderTeams();
+  $('gHintBtn').disabled = !G.hints.length; $('gHintBtn').textContent = G.hints.length ? '💡 Pista (0/' + G.hints.length + ')' : '💡 Sin pistas';
+}
+function renderClassic(newL) {
+  $('gWord').innerHTML = wordHTML(G.word, G.used, G.over && !G.win, newL);
+  drawHang('gHang', G.wrong, S.max); drawLives('gLives', G.wrong, S.max);
+}
+function renderTeams() {
+  if (MODE !== 'teams') { $('gTeams').innerHTML = ''; return; }
+  $('gTeams').innerHTML = G.teams.map((t, i) => `<div class="team ${i === G.turn ? 'turn' : ''}"><b>${esc(t.name)}</b><i>${t.score}</i></div>`).join('');
+}
+function startTimer() {
+  clearInterval(timerId); const el = $('gTimer'); el.classList.remove('low');
+  if (!S.time) { el.textContent = ''; return; }
+  const show_ = () => { el.textContent = G.t + 's'; el.classList.toggle('low', G.t <= 10); };
+  show_();
+  timerId = setInterval(() => {
+    if (G.over) return clearInterval(timerId);
+    G.t--; if (G.t <= 10 && G.t > 0) sfx.tick(); show_();
+    if (G.t <= 0) { toast('¡Se acabó el tiempo!'); G.t = S.time; classicError(); }
+  }, 1000);
+}
+function advanceTurn() { if (MODE === 'teams') { G.turn = (G.turn + 1) % G.teams.length; renderTeams(); } }
+function classicError(passTurn = true) {
+  G.wrong++; G.errors++; sfx.no(); renderClassic();
+  if (G.wrong >= S.max) return endWord(false);
+  if (passTurn) advanceTurn();
+  autoHint();
+}
+function autoHint() { if (S.auto && G.wrong > 0 && G.wrong % 2 === 0 && G.hintN < G.hints.length) giveHint(true); }
+function pressLetter(L) {
+  if (!G || G.over || cur !== 'game') return;
+  const key = [...$('gKb').children].find(k => k.dataset.l === L); if (!key || key.classList.contains('ok') || key.classList.contains('no')) return;
+  G.used.add(L);
+  if (G.letters.has(L)) {
+    key.classList.add('ok'); sfx.ok();
+    const cnt = Array.from(G.word).filter(c => isL(c) && norm(c) === L).length;
+    if (MODE === 'teams') { G.teams[G.turn].score += cnt * 10; renderTeams(); }
+    renderClassic(L);
+    if ([...G.letters].every(l => G.used.has(l))) { if (MODE === 'teams') { G.teams[G.turn].score += 30; G.teams[G.turn].solved++; } endWord(true); }
+  } else { key.classList.add('no'); classicError(); }
+}
+$('gKb').addEventListener('click', e => { const l = e.target.dataset && e.target.dataset.l; if (l) pressLetter(l); });
+document.addEventListener('keydown', e => {
+  if (cur !== 'game' || $('modal').classList.contains('on') || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.length === 1 ? norm(e.key) : ''; if (/^[A-ZÑ]$/.test(k)) pressLetter(k);
+});
+function giveHint(auto) {
+  if (!G || G.over || G.hintN >= G.hints.length) return;
+  G.hintN++; sfx.hint();
+  $('gHints').innerHTML = G.hints.slice(0, G.hintN).map((h, i) => `<div class="hintline">💡 ${esc(h)}</div>`).join('');
+  $('gHintBtn').textContent = G.hintN >= G.hints.length ? '💡 Sin más pistas' : `💡 Pista (${G.hintN}/${G.hints.length})`;
+  if (G.hintN >= G.hints.length) $('gHintBtn').disabled = true;
+  if (S.hintCost && !auto) classicError(false);
+}
+$('gHintBtn').onclick = () => giveHint(false);
+$('gSolveBtn').onclick = async () => {
+  if (!G || G.over) return;
+  const v = await modal({ title: 'Resolver la palabra', body: 'Si fallas, cuenta como un error.', input: true, ok: 'Probar', cancel: 'Cancelar' });
+  if (v === null || !v.trim()) return;
+  if (norm(v.trim()) === norm(G.word)) { G.letters.forEach(l => G.used.add(l)); if (MODE === 'teams') { G.teams[G.turn].score += 30; G.teams[G.turn].solved++; } sfx.ok(); renderClassic(); endWord(true); }
+  else { toast('No es esa palabra'); classicError(); }
+};
+$('gSkipBtn').onclick = async () => { if (G && !G.over && await modal({ title: 'Saltar palabra', body: 'Se mostrará la respuesta y pasarán a la siguiente.', ok: 'Saltar', cancel: 'Cancelar' })) endWord(false, true); };
+function endWord(win, skipped) {
+  G.over = true; G.win = win; clearInterval(timerId);
+  if (win) { G.solved++; sfx.win(); confetti(); } else if (!skipped) sfx.lose();
+  renderClassic();
+  const rb = $('gResult'); rb.classList.toggle('lose', !win); rb.classList.add('on');
+  $('gResBig').textContent = win ? '¡Correcto!' : (skipped ? 'Palabra saltada' : '¡Se completó el muñeco!');
+  $('gResAns').textContent = 'La palabra era: ' + G.word.toUpperCase();
+  $('gNext').textContent = G.i + 1 >= G.list.length ? 'Ver resultados' : 'Siguiente palabra';
+}
+$('gNext').onclick = nextWord;
+$('gExit').onclick = async () => { if (await modal({ title: 'Salir de la partida', body: '¿Quieres salir? Se perderá el avance.', ok: 'Salir', cancel: 'Seguir jugando' })) { clearInterval(timerId); G = null; show('home'); } };
+function finishClassic() {
+  clearInterval(timerId); sfx.win(); confetti();
+  let h = '';
+  if (MODE === 'teams') {
+    const r = G.teams.slice().sort((a, b) => b.score - a.score);
+    h = '<div class="podium">' + r.map((t, i) => `<div class="pod p${i + 1}"><span>${['🥇', '🥈', '🥉', '4°'][i]}</span><b>${esc(t.name)}</b><i>${t.score}</i><div class="sm muted">${t.solved} palabra${t.solved === 1 ? '' : 's'}</div></div>`).join('') + '</div>';
+  } else {
+    h = `<div class="panel" style="text-align:center"><h3>Resolvieron ${G.solved} de ${G.list.length} palabras</h3><p class="muted">Errores totales: ${G.errors}</p></div>`;
+  }
+  $('resBody').innerHTML = h; $('resAgain').onclick = () => { if (MODE === 'qr') hostOpen(); else startClassic(); }; show('results');
+}
+$('resHome').onclick = () => show('home');
+
+/* =====================================================
+   MODO CELULARES (QR) — Firebase Realtime Database
+   ===================================================== */
+let DB = null;
+function fbReady() {
+  if (/TU_API_KEY|TU_PROYECTO/.test(JSON.stringify(FIREBASE_CONFIG))) return false;
+  if (typeof firebase === 'undefined') return false;
+  try { if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); DB = firebase.database(); return true; } catch (e) { return false; }
+}
+async function needFb() {
+  if (fbReady()) return true;
+  await modal({ title: 'Falta conectar Firebase', body: 'Para usar el modo con celulares, pega la configuración de Firebase de AulaGame en la constante FIREBASE_CONFIG, al inicio del script de este archivo.\n\nLos modos "Todo el curso" y "Por equipos" funcionan sin esto.' });
+  return false;
+}
+
+let H = null;
+async function hostOpen() {
+  if (!await needFb()) return;
+  let pin, tries = 0;
+  do { pin = String(100000 + (Math.random() * 900000 | 0)); const s = await DB.ref(ROOT + '/' + pin).once('value'); if (!s.exists()) break; } while (++tries < 8);
+  const list = S.shuffle ? shuffle(validWords()) : validWords();
+  H = { pin, ref: DB.ref(ROOT + '/' + pin), list, i: -1, players: {}, state: 'lobby', enye: needsEnye(list), rounds: 0 };
+  await H.ref.set({ state: 'lobby', total: list.length, max: S.max, created: Date.now(), enye: H.enye });
+  H.ref.onDisconnect().remove();
+  H.ref.child('players').on('value', s => { H.players = s.val() || {}; renderHostPlayers(); });
+  H.ref.child('picks').on('child_added', s => { const p = s.val(); s.ref.remove(); if (p) handlePick(p); });
+  const url = location.origin + location.pathname + '?join=' + pin;
+  $('hlPin').textContent = pin; $('hgPin').textContent = pin; $('joinUrl').textContent = url;
+  $('qrBox').innerHTML = ''; new QRCode($('qrBox'), { text: url, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+  show('hostLobby'); renderHostPlayers();
+}
+function renderHostPlayers() {
+  const ps = Object.values(H.players); $('hlCount').textContent = ps.length;
+  $('hlPlayers').innerHTML = ps.map(p => `<span class="pl">${esc(p.name)}</span>`).join('') || '<span class="muted">Aún no se conecta nadie…</span>';
+  $('hlStart').disabled = !ps.length;
+  if (H.state !== 'lobby') renderHostBoard();
+}
+function renderHostBoard() {
+  const r = Object.values(H.players).sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 8);
+  $('hgBoard').innerHTML = r.map(p => `<li><span>${esc(p.name)}</span><b>${p.score || 0}</b></li>`).join('');
+}
+$('hlStart').onclick = () => { H.state = 'play'; hostNextRound(); show('hostGame'); };
+async function closeRoom() { if (H) { H.ref.child('picks').off(); H.ref.child('players').off(); try { await H.ref.remove(); } catch (e) {} H = null; } }
+$('hlExit').onclick = async () => { await closeRoom(); show('home'); };
+$('hgExit').onclick = async () => { if (await modal({ title: 'Cerrar sala', body: 'Se desconectará a todos los estudiantes.', ok: 'Cerrar', cancel: 'Seguir' })) { await closeRoom(); show('home'); } };
+
+function hostNextRound() {
+  H.i++; if (H.i >= H.list.length) return hostFinish();
+  const w = H.list[H.i];
+  Object.assign(H, { word: w.w.trim(), cat: w.c || '', used: {}, letters: lettersOf(w.w), wrong: 0, hintN: 0, hints: [w.h1, w.h2, w.h3].filter(h => h && h.trim()), state: 'play', win: false, last: null });
+  $('hgResult').classList.remove('on', 'lose'); $('hgHang').dataset.n = 0; $('hgHang').innerHTML = '';
+  hostPublish(); hostRender();
+}
+function hostUsedSet() { return new Set(Object.keys(H.used)); }
+function hostPublish() {
+  const reveal = H.state === 'reveal';
+  const mask = Array.from(H.word).map(ch => (!isL(ch) || reveal || H.used[norm(ch)] === 'ok') ? ch.toUpperCase() : '_').join('');
+  H.ref.update({
+    state: H.state, mask, wrong: H.wrong, max: S.max, used: H.used, hints: H.hints.slice(0, H.hintN),
+    cat: S.cat ? H.cat : '', round: H.i + 1, total: H.list.length, win: !!H.win, last: H.last || null, ans: reveal ? H.word.toUpperCase() : ''
+  });
+}
+function hostRender(newL) {
+  const reveal = H.state === 'reveal' ;
+  const okSet = new Set(Object.keys(H.used).filter(k => H.used[k] === 'ok'));
+  $('hgWord').innerHTML = wordHTML(H.word, okSet, reveal && !H.win, newL);
+  drawHang('hgHang', H.wrong, S.max); drawLives('hgLives', H.wrong, S.max);
+  $('hgRound').textContent = `Palabra ${H.i + 1} de ${H.list.length}`;
+  const c = $('hgCat'); c.style.display = S.cat && H.cat ? '' : 'none'; c.textContent = H.cat;
+  $('hgHints').innerHTML = H.hints.slice(0, H.hintN).map(h => `<div class="hintline">💡 ${esc(h)}</div>`).join('');
+  $('hgHintBtn').disabled = H.hintN >= H.hints.length || H.state !== 'play';
+  $('hgUsed').innerHTML = Object.keys(H.used).map(l => `<span style="color:${H.used[l] === 'ok' ? 'var(--ok)' : 'var(--no)'};font-family:var(--display);font-size:24px;margin-right:8px">${l}</span>`).join('') || 'Aún no hay letras.';
+  renderHostBoard();
+}
+function addScore(pid, d) {
+  const p = H.players[pid]; if (!p) return;
+  p.score = Math.max(0, (p.score || 0) + d); H.ref.child('players/' + pid + '/score').set(p.score);
+}
+function handlePick(p) {
+  if (!H || H.state !== 'play' || !H.players[p.pid]) return;
+  const name = H.players[p.pid].name;
+  if (p.letter) {
+    const L = norm(p.letter); if (!/^[A-ZÑ]$/.test(L) || H.used[L]) return;
+    if (H.letters.has(L)) {
+      H.used[L] = 'ok'; const cnt = Array.from(H.word).filter(c => isL(c) && norm(c) === L).length;
+      addScore(p.pid, cnt * 10); H.last = { n: name, t: L, ok: true }; sfx.ok();
+      if ([...H.letters].every(l => H.used[l] === 'ok')) { addScore(p.pid, 25); return hostEnd(true, p.pid); }
+      hostPublish(); hostRender(L);
+    } else {
+      H.used[L] = 'no'; H.wrong++; addScore(p.pid, -5); H.last = { n: name, t: L, ok: false }; sfx.no();
+      if (H.wrong >= S.max) return hostEnd(false);
+      if (S.auto && H.wrong % 2 === 0 && H.hintN < H.hints.length) H.hintN++;
+      hostPublish(); hostRender();
+    }
+    $('hgFeed').textContent = `${name}: ${L} ${H.last.ok ? '✔' : '✘'}`;
+  } else if (p.guess) {
+    if (norm(String(p.guess).trim()) === norm(H.word)) { H.letters.forEach(l => { if (!H.used[l]) H.used[l] = 'ok'; }); addScore(p.pid, 40); H.last = { n: name, t: '¡la palabra!', ok: true }; hostEnd(true, p.pid); }
+    else { H.wrong++; addScore(p.pid, -10); H.last = { n: name, t: 'palabra', ok: false }; sfx.no(); if (H.wrong >= S.max) return hostEnd(false); hostPublish(); hostRender(); $('hgFeed').textContent = `${name} falló al resolver ✘`; }
+  }
+}
+function hostEnd(win, pid) {
+  H.state = 'reveal'; H.win = win; if (pid && H.players[pid]) H.last = { n: H.players[pid].name, t: 'completó la palabra', ok: true, done: true };
+  hostPublish(); hostRender();
+  if (win) { sfx.win(); confetti(); } else sfx.lose();
+  const rb = $('hgResult'); rb.classList.toggle('lose', !win); rb.classList.add('on');
+  $('hgResBig').textContent = win ? '¡Lo lograron!' : '¡Se completó el muñeco!';
+  $('hgResAns').textContent = 'La palabra era: ' + H.word.toUpperCase();
+  $('hgNext').textContent = H.i + 1 >= H.list.length ? 'Ver resultados' : 'Siguiente palabra';
+}
+$('hgNext').onclick = hostNextRound;
+$('hgHintBtn').onclick = () => { if (H.hintN < H.hints.length) { H.hintN++; sfx.hint(); hostPublish(); hostRender(); } };
+$('hgSkipBtn').onclick = () => { if (H.state === 'play') hostEnd(false); };
+function hostFinish() {
+  H.state = 'end'; H.ref.update({ state: 'end' });
+  const r = Object.values(H.players).sort((a, b) => (b.score || 0) - (a.score || 0));
+  $('resBody').innerHTML = '<div class="podium">' + r.slice(0, 3).map((p, i) => `<div class="pod p${i + 1}"><span>${['🥇', '🥈', '🥉'][i]}</span><b>${esc(p.name)}</b><i>${p.score || 0}</i></div>`).join('') + '</div>' +
+    (r.length > 3 ? '<ol class="board" start="4" style="max-width:420px;margin:0 auto">' + r.slice(3).map(p => `<li><span>${esc(p.name)}</span><b>${p.score || 0}</b></li>`).join('') + '</ol>' : '');
+  sfx.win(); confetti(); MODE = 'qr'; show('results');
+  const old = H; $('resHome').onclick = async () => { await closeRoom(); show('home'); $('resHome').onclick = () => show('home'); };
+  $('resAgain').onclick = async () => { await closeRoom(); hostOpen(); };
+}
+
+/* ---------- jugador ---------- */
+let P = null;
+function playerScreen(pin) {
+  show('player'); $('pJoin').style.display = ''; $('pPlay').style.display = 'none'; $('pErr').textContent = '';
+  if (pin) $('pPin').value = pin; $('pName').value = store.get('colgado_name', '');
+}
+$('goJoin').onclick = () => playerScreen('');
+$('pBack').onclick = () => { if (P) { P.ref.off(); P = null; } history.replaceState(null, '', location.pathname); show('home'); };
+$('pGo').onclick = async () => {
+  const pin = $('pPin').value.trim(), name = $('pName').value.trim();
+  if (!/^\d{6}$/.test(pin)) return $('pErr').textContent = 'El PIN tiene 6 números.';
+  if (!name) return $('pErr').textContent = 'Escribe tu nombre.';
+  if (!fbReady()) return $('pErr').textContent = 'Esta página aún no está conectada a Firebase.';
+  const ref = DB.ref(ROOT + '/' + pin), snap = await ref.once('value');
+  if (!snap.exists()) return $('pErr').textContent = 'No encontré esa sala. Revisa el PIN.';
+  if (snap.val().state !== 'lobby' && !sessionStorage.getItem('colgado_pid_' + pin)) return $('pErr').textContent = 'La partida ya comenzó.';
+  store.set('colgado_name', name);
+  let pid = sessionStorage.getItem('colgado_pid_' + pin); if (!pid) { pid = 'p' + Math.random().toString(36).slice(2, 9); sessionStorage.setItem('colgado_pid_' + pin, pid); }
+  const mine = snap.child('players/' + pid);
+  await ref.child('players/' + pid).update({ name, ...(mine.exists() ? {} : { score: 0 }) });
+  P = { pin, pid, ref, name, cool: false, enye: !!snap.val().enye, kbBuilt: false };
+  $('pJoin').style.display = 'none'; $('pPlay').style.display = ''; $('pWho').textContent = name;
+  $('pKb').innerHTML = kbHTML(P.enye);
+  ref.on('value', s => playerRender(s.val()));
+};
+$('pKb').addEventListener('click', e => {
+  const l = e.target.dataset && e.target.dataset.l; if (!l || !P || P.cool || e.target.classList.contains('ok') || e.target.classList.contains('no')) return;
+  P.ref.child('picks').push({ pid: P.pid, letter: l });
+  P.cool = true; $('pKb').querySelectorAll('.key').forEach(k => k.disabled = true);
+  setTimeout(() => { P.cool = false; $('pKb').querySelectorAll('.key').forEach(k => k.disabled = false); }, 1200);
+});
+$('pSolve').onclick = async () => {
+  if (!P) return;
+  const v = await modal({ title: 'Resolver la palabra', body: 'Si aciertas ganas 40 puntos. Si fallas, pierdes 10 y cuenta como error del curso.', input: true, ok: 'Probar', cancel: 'Cancelar' });
+  if (v && v.trim()) P.ref.child('picks').push({ pid: P.pid, guess: v.trim().slice(0, 40) });
+};
+let lastRound = 0, lastWrong = 0, lastState = '';
+function playerRender(r) {
+  if (!r) { if (P) { P.ref.off(); P = null; } $('pPlay').style.display = 'none'; $('pJoin').style.display = ''; $('pErr').textContent = 'La sala se cerró.'; return; }
+  const me = (r.players || {})[P.pid]; $('pScore').textContent = (me && me.score) || 0;
+  const wait = $('pWait'), game = $('pGame'), bw = $('pBoardWrap');
+  const ranking = Object.values(r.players || {}).sort((a, b) => (b.score || 0) - (a.score || 0));
+  const showBoard = () => { bw.style.display = ''; $('pBoard').innerHTML = ranking.slice(0, 5).map(p => `<li><span>${esc(p.name)}</span><b>${p.score || 0}</b></li>`).join(''); };
+  if (r.state === 'lobby') { wait.style.display = ''; game.style.display = 'none'; bw.style.display = 'none'; $('pWaitT').textContent = '¡Estás dentro!'; $('pWaitS').textContent = 'Espera a que el profesor comience.'; return; }
+  if (r.state === 'end') { wait.style.display = ''; game.style.display = 'none'; const pos = ranking.findIndex(p => p.name === P.name && true) + 1; $('pWaitT').textContent = 'Fin de la partida'; $('pWaitS').textContent = 'Tu puntaje final: ' + ((me && me.score) || 0); showBoard(); if (lastState !== 'end') { sfx.win(); confetti(); } lastState = 'end'; return; }
+  wait.style.display = 'none'; game.style.display = ''; bw.style.display = 'none';
+  const used = r.used || {}, okSet = new Set(Object.keys(used).filter(k => used[k] === 'ok')), reveal = r.state === 'reveal';
+  $('pWord').innerHTML = r.mask.split(' ').filter(Boolean).map(w => '<div class="wd">' + Array.from(w).map(c => `<span class="ch ${c === '_' ? '' : ''}">${c === '_' ? '' : esc(c)}</span>`).join('') + '</div>').join('');
+  drawHang('pHang', r.wrong || 0, r.max || 6);
+  $('pHints').innerHTML = (r.hints || []).map(h => `<div class="hintline">💡 ${esc(h)}</div>`).join('');
+  const cat = $('pCat'); cat.style.display = r.cat ? '' : 'none'; cat.textContent = r.cat || '';
+  $('pKb').querySelectorAll('.key').forEach(k => { k.classList.remove('ok', 'no'); if (used[k.dataset.l]) k.classList.add(used[k.dataset.l]); k.disabled = reveal || P.cool; });
+  $('pSolve').disabled = reveal;
+  const msg = $('pMsg');
+  if (reveal) { msg.innerHTML = r.win ? '<b style="color:var(--ok)">¡Lo lograron! Era ' + esc(r.ans) + '</b>' : '<b style="color:var(--pink)">No se logró. Era ' + esc(r.ans) + '</b>'; if (lastState !== 'reveal') { r.win ? sfx.win() : sfx.lose(); } }
+  else if (r.last) { msg.textContent = `${r.last.n}: ${r.last.t} ${r.last.ok ? '✔' : '✘'}`; if ((r.wrong || 0) > lastWrong && lastRound === r.round) sfx.no(); else if (lastRound === r.round && r.last.ok) sfx.ok(); }
+  else msg.textContent = 'Toca una letra. ¡El primero en acertar suma puntos!';
+  lastRound = r.round; lastWrong = r.wrong || 0; lastState = r.state;
+}
+
+/* ---------- inicio ---------- */
+$('heroHang').innerHTML = hangSVG(5);
+setMute(muted); updCount();
+const q = new URLSearchParams(location.search);
+if (q.get('join')) playerScreen(q.get('join'));
+window.addEventListener('beforeunload', () => { if (H) H.ref.remove(); });
+</script>
+</body>
+</html>
