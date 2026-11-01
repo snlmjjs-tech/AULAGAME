@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bingo Game</title>
+<style>
+  :root {
+    --bg1: #0f172a;
+    --bg2: #1e1b4b;
+    --bg3: #3b0764;
+    --gold: #fbbf24;
+    --gold-text: #facc15;
+    --crimson: #be185d;
+    --crimson-dark: #9d174d;
+    --ball-1: #a78bfa;
+    --ball-2: #7c3aed;
+    --called-1: #fdba74;
+    --called-2: #f97316;
+    --panel: #0f0a24;
+    --text: #ffffff;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--text);
+    background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 55%, var(--bg3) 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    padding: 24px 16px 48px;
+  }
+  button { font: inherit; }
+  [hidden] { display: none !important; }
+
+  .credit {
+    position: fixed;
+    top: calc(20px + env(safe-area-inset-top, 0px));
+    right: 14px;
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(10, 8, 28, .85);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 12px;
+    padding: 9px 14px 9px 10px;
+    font-size: 12px; font-weight: 700;
+    z-index: 5;
+  }
+  .credit .av {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, #fb923c, #ea580c);
+    display: grid; place-items: center;
+    font-size: 10px; font-weight: 800;
+  }
+
+  .back {
+    position: fixed;
+    top: calc(20px + env(safe-area-inset-top, 0px));
+    left: 14px;
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(10, 8, 28, .85);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 12px;
+    padding: 0 16px; height: 46px;
+    color: #e9d5ff; font-size: 14px; font-weight: 700; cursor: pointer;
+    z-index: 5;
+  }
+  .back:hover { background: rgba(60, 30, 110, .85); }
+
+  main { max-width: 1520px; margin: 0 auto; text-align: center; }
+
+  h1 {
+    margin: 8px 0 22px;
+    font-size: 48px; font-weight: 700;
+    color: var(--gold-text);
+    letter-spacing: .5px;
+  }
+  h1.sub { font-size: 38px; margin-top: 52px; }
+
+  /* ---------- Menu ---------- */
+  .menu-balls { display: flex; justify-content: center; gap: 14px; margin: 70px 0 8px; }
+  .mball {
+    width: 62px; height: 62px; border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 26px; font-weight: 800; color: #fff;
+    background: radial-gradient(circle at 35% 30%, var(--ball-1), var(--ball-2));
+    border: 2px solid #c4b5fd55;
+    box-shadow: inset 0 -4px 8px rgba(0,0,0,.2), 0 6px 14px rgba(0,0,0,.35);
+  }
+  .mball.hot {
+    background: radial-gradient(circle at 35% 30%, var(--called-1), var(--called-2));
+    border-color: #fed7aa;
+    box-shadow: 0 0 18px rgba(251,146,60,.8), inset 0 -4px 8px rgba(0,0,0,.15);
+  }
+  .menu-title { font-size: 64px; margin: 18px 0 8px; }
+  .menu-tag { color: #c7b8f5; font-size: 18px; margin: 0 0 44px; }
+  .menu-list { display: flex; flex-direction: column; gap: 16px; align-items: center; }
+  .mbtn {
+    width: min(360px, 100%); height: 60px;
+    border: 0; border-radius: 999px; cursor: pointer;
+    font-size: 19px; font-weight: 700; color: #fff;
+    box-shadow: 0 8px 20px rgba(0,0,0,.35);
+    transition: transform .15s, filter .15s;
+  }
+  .mbtn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+  .mbtn.go   { background: linear-gradient(90deg, #10b981, #0d9488); }
+  .mbtn.info { background: linear-gradient(90deg, #8b5cf6, #6d28d9); }
+  .mbtn.cards { background: linear-gradient(90deg, #fbbf24, #f97316); color: #2a1500; }
+  .mbtn.ghost {
+    background: transparent; border: 1px solid #ffffff33; box-shadow: none;
+    color: #e9d5ff; height: 48px; font-size: 16px; font-weight: 600;
+  }
+
+  /* ---------- Panels (instrucciones / setup / cartones) ---------- */
+  .panel-box {
+    max-width: 680px; margin: 0 auto; text-align: left;
+    background: var(--panel);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px; padding: 28px 32px;
+  }
+  .panel-box h3 { margin: 26px 0 10px; font-size: 20px; color: #fde68a; font-weight: 600; }
+  .panel-box h3:first-child { margin-top: 0; }
+  .panel-box p, .panel-box li { color: #ddd6fe; font-size: 16px; line-height: 1.65; }
+  .panel-box p { margin: 0 0 8px; }
+  .panel-box ol, .panel-box ul { margin: 0; padding-left: 22px; }
+  .panel-box li { margin-bottom: 8px; }
+  .panel-box b { color: #fff; }
+  .actions { display: flex; flex-direction: column; gap: 14px; align-items: center; margin-top: 30px; }
+
+  .field { margin-top: 26px; }
+  .field:first-child { margin-top: 0; }
+  .field > .lbl { display: block; font-size: 17px; font-weight: 600; color: #fde68a; margin-bottom: 12px; }
+  .field .hint { display: block; color: #a78bfa; font-size: 14px; margin-top: 8px; line-height: 1.5; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .opt {
+    min-width: 88px; height: 46px; padding: 0 18px;
+    border-radius: 999px; cursor: pointer;
+    background: #ffffff0d; color: #ddd6fe;
+    border: 1.5px solid #ffffff26;
+    font-size: 16px; font-weight: 600;
+    transition: background .15s, border-color .15s, transform .15s;
+  }
+  .opt:hover:not(:disabled) { background: #ffffff1a; }
+  .opt[aria-pressed="true"] {
+    background: linear-gradient(135deg, #fbbf24, #f97316);
+    border-color: #fed7aa; color: #2a1500;
+  }
+  .opt:disabled { opacity: .35; cursor: not-allowed; }
+  .num-in {
+    width: 110px; height: 46px; padding: 0 14px;
+    background: #ffffff0d; color: #fff;
+    border: 1.5px solid #ffffff26; border-radius: 12px;
+    font: inherit; font-size: 16px; font-weight: 600;
+  }
+  .num-in:focus { outline: 3px solid #fff; outline-offset: 2px; }
+  .custom { display: flex; align-items: center; gap: 12px; margin-top: 14px; color: #c4b5fd; font-size: 15px; flex-wrap: wrap; }
+  .check { display: flex; align-items: center; gap: 12px; color: #ddd6fe; font-size: 16px; cursor: pointer; }
+  .check input { width: 20px; height: 20px; accent-color: #f59e0b; }
+  .msg { min-height: 24px; margin: 16px 0 0; text-align: center; font-size: 15px; color: #fde68a; }
+  .msg.err { color: #fda4af; }
+
+  /* ---------- Game ---------- */
+  .stage {
+    width: 176px; height: 176px; margin: 0 auto;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 40%, #d11d56, var(--crimson-dark));
+    border: 3px solid var(--gold);
+    display: grid; place-items: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,.45);
+    position: relative;
+  }
+  .big-ball {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fde68a, #f59e0b 60%, #ea7a0c);
+    box-shadow: inset 0 -5px 10px rgba(0,0,0,.18), 0 6px 14px rgba(0,0,0,.35);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #475569; line-height: 1;
+  }
+  .big-ball .n { font-size: 24px; font-weight: 800; }
+  .big-ball .w { font-size: 11px; font-weight: 600; margin-top: 4px; color: #3b3b4f; }
+  .big-ball.empty { background: radial-gradient(circle at 35% 30%, #ffffff33, #ffffff14); box-shadow: none; }
+  .big-ball.empty .n { color: #ffffff88; font-size: 28px; }
+
+  .drawing-label {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-6px, -50%);
+    font-size: 13px; font-weight: 700; color: #fff;
+    text-shadow: 0 1px 4px rgba(0,0,0,.5);
+    opacity: 0; pointer-events: none; white-space: nowrap;
+  }
+  .stage.drawing .drawing-label { opacity: 1; }
+  .stage.drawing .big-ball { animation: spin .35s linear infinite; }
+  .stage.drawing .big-ball .w { visibility: hidden; }
+  @keyframes spin {
+    0%   { transform: translateX(-26px) rotate(0); }
+    50%  { transform: translateX(0) rotate(180deg) scale(1.06); }
+    100% { transform: translateX(26px) rotate(360deg); }
+  }
+  .stage.landed .big-ball { animation: land .5s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes land { from { transform: scale(.5); } to { transform: scale(1); } }
+
+  .draw-btn {
+    margin-top: 24px; border: 0; cursor: pointer;
+    padding: 0 40px; height: 60px; border-radius: 999px;
+    font-size: 19px; font-weight: 700; color: #fff;
+    background: linear-gradient(90deg, #10b981, #0d9488);
+    box-shadow: 0 8px 20px rgba(0,0,0,.35);
+    transition: transform .15s, filter .15s;
+  }
+  .draw-btn:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
+  .draw-btn:disabled { opacity: .55; cursor: not-allowed; }
+  .draw-btn:focus-visible, .sound:focus-visible, .reset:focus-visible, .opt:focus-visible,
+  .mbtn:focus-visible, .back:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+
+  .sound {
+    display: block; margin: 14px auto 0;
+    background: none; border: 0; cursor: pointer; color: #d1d5db; padding: 4px;
+  }
+  .sound svg { width: 22px; height: 22px; display: block; }
+  .sound.off { opacity: .5; }
+
+  h2.called-title { margin: 52px 0 18px; font-size: 24px; font-weight: 500; color: #fde68a; }
+  .called-box {
+    background: var(--panel);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 12px; min-height: 72px; padding: 16px 20px;
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center;
+    max-width: 1504px; margin: 0 auto;
+  }
+  .chip {
+    background: #fbbf24; color: #1f1300;
+    border-radius: 999px; padding: 0 16px; height: 40px;
+    display: inline-flex; align-items: center;
+    font-size: 15px; font-weight: 700;
+    animation: chipIn .45s ease-out;
+  }
+  .chip.latest { box-shadow: 0 0 0 2px #fff8; }
+  @keyframes chipIn { from { transform: translateX(-30px) scale(.8); opacity: 0; } to { transform: none; opacity: 1; } }
+  .placeholder { color: #ffffff55; font-size: 14px; }
+
+  h2.all-title { margin: 36px 0 18px; font-size: 22px; font-weight: 500; color: #fde68a; }
+  .grid {
+    display: grid; grid-template-columns: repeat(10, 1fr);
+    gap: 12px 0; max-width: 1504px; margin: 0 auto; justify-items: center;
+  }
+  .b {
+    width: 60px; height: 60px; border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 19px; font-weight: 700; color: #fff;
+    background: radial-gradient(circle at 35% 30%, var(--ball-1), var(--ball-2));
+    box-shadow: inset 0 -4px 8px rgba(0,0,0,.2), 0 4px 10px rgba(0,0,0,.3);
+    border: 2px solid #c4b5fd55;
+    transition: transform .3s, background .3s, box-shadow .3s;
+  }
+  .b.called {
+    background: radial-gradient(circle at 35% 30%, var(--called-1), var(--called-2));
+    border-color: #fed7aa;
+    box-shadow: 0 0 18px rgba(251,146,60,.8), inset 0 -4px 8px rgba(0,0,0,.15);
+    transform: scale(1.15); font-size: 22px;
+  }
+  .reset {
+    margin: 36px auto 0; background: transparent; color: #e9d5ff;
+    border: 1px solid #ffffff33; border-radius: 999px;
+    padding: 10px 24px; font-size: 14px; cursor: pointer;
+  }
+  .reset:hover { background: #ffffff14; }
+  .winner { margin-top: 28px; font-size: 22px; font-weight: 700; color: var(--gold-text); }
+
+  @media (max-width: 760px) {
+    h1 { font-size: 34px; margin-top: 60px; }
+    .menu-title { font-size: 46px; }
+    .menu-balls { margin-top: 90px; gap: 8px; }
+    .mball { width: 48px; height: 48px; font-size: 21px; }
+    .credit { top: calc(8px + env(safe-area-inset-top, 0px)); right: 8px; }
+    .back { top: calc(8px + env(safe-area-inset-top, 0px)); left: 8px; }
+    .panel-box { padding: 22px 18px; }
+    .grid { grid-template-columns: repeat(5, 1fr); }
+    .b { width: 52px; height: 52px; font-size: 17px; }
+    .draw-btn { height: 54px; font-size: 17px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="credit"><div class="av">MN</div><span>Created by Mr.Nunez</span></div>
+
+  <main>
+
+    <!-- ================= MENÚ ================= -->
+    <section id="screen-menu">
+      <div class="menu-balls" aria-hidden="true">
+        <div class="mball">B</div><div class="mball hot">I</div><div class="mball">N</div><div class="mball hot">G</div><div class="mball">O</div>
+      </div>
+      <h1 class="menu-title">Bingo Game</h1>
+      <p class="menu-tag">Elige una opción para comenzar</p>
+      <div class="menu-list">
+        <button class="mbtn go" type="button" data-go="setup">Iniciar</button>
+        <button class="mbtn info" type="button" data-go="help">Instrucciones</button>
+        <button class="mbtn cards" type="button" data-go="cards">Generar cartones de bingo</button>
+      </div>
+    </section>
+
+    <!-- ================= INSTRUCCIONES ================= -->
+    <section id="screen-help" hidden>
+      <h1 class="sub">Instrucciones</h1>
+      <div class="panel-box">
+        <h3>Objetivo</h3>
+        <p>Ser el primero en completar un patrón en tu cartón (una línea, una columna, una diagonal o el cartón lleno, según acuerden antes de empezar).</p>
+
+        <h3>Cómo jugar</h3>
+        <ol>
+          <li>Presiona <b>Iniciar</b> y elige con cuántos números quieres jugar (por ejemplo del 1 al 50, 75 o 100).</li>
+          <li>Reparte los cartones. Puedes crearlos e imprimirlos con <b>Generar cartones de bingo</b>, usando el mismo rango del juego.</li>
+          <li>Presiona <b>Draw Ball</b>. Sale una bola con su número y su nombre en inglés, y se dice en voz alta si el sonido está activado.</li>
+          <li>Cada jugador marca el número en su cartón si lo tiene.</li>
+          <li>Quien complete el patrón grita <b>"BINGO!"</b>. Se revisan los números en la lista "Called Numbers".</li>
+        </ol>
+
+        <h3>Consejos</h3>
+        <ul>
+          <li>El ícono del parlante activa o desactiva la voz.</li>
+          <li>También puedes sortear con la tecla <b>Espacio</b> o <b>Enter</b>.</li>
+          <li>Las bolas que ya salieron se encienden en naranja en el tablero "All Balls".</li>
+          <li><b>New game</b> borra los números cantados para empezar otra ronda.</li>
+        </ul>
+      </div>
+      <div class="actions">
+        <button class="mbtn go" type="button" data-go="setup">Iniciar</button>
+        <button class="mbtn ghost" type="button" data-go="menu">Volver al menú</button>
+      </div>
+    </section>
+
+    <!-- ================= ELEGIR RANGO DE JUEGO ================= -->
+    <section id="screen-setup" hidden>
+      <h1 class="sub">Nuevo juego</h1>
+      <div class="panel-box">
+        <div class="field">
+          <span class="lbl">¿Con cuántos números quieres jugar?</span>
+          <div id="setupPicker"></div>
+          <span class="hint">Las bolas van desde el 1 hasta el número que elijas.</span>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="mbtn go" type="button" id="startBtn">Comenzar</button>
+        <button class="mbtn ghost" type="button" data-go="menu">Volver al menú</button>
+      </div>
+    </section>
+
+    <!-- ================= GENERAR CARTONES ================= -->
+    <section id="screen-cards" hidden>
+      <h1 class="sub">Generar cartones</h1>
+      <div class="panel-box">
+        <div class="field">
+          <span class="lbl">Números del cartón</span>
+          <div id="cardsPicker"></div>
+          <span class="hint">Usa el mismo rango con el que vas a jugar.</span>
+        </div>
+
+        <div class="field">
+          <span class="lbl">Tamaño del cartón</span>
+          <div class="chips" id="sizeChips">
+            <button class="opt" type="button" data-size="3" aria-pressed="false">3 × 3</button>
+            <button class="opt" type="button" data-size="4" aria-pressed="false">4 × 4</button>
+            <button class="opt" type="button" data-size="5" aria-pressed="true">5 × 5</button>
+          </div>
+          <span class="hint" id="sizeHint"></span>
+        </div>
+
+        <div class="field">
+          <span class="lbl">Cantidad de cartones</span>
+          <input class="num-in" id="cardCount" type="number" min="1" max="200" value="10" inputmode="numeric" aria-label="Cantidad de cartones">
+        </div>
+
+        <div class="field">
+          <span class="lbl">Cartones por hoja</span>
+          <div class="chips" id="perPageChips">
+            <button class="opt" type="button" data-pp="1" aria-pressed="false">1</button>
+            <button class="opt" type="button" data-pp="2" aria-pressed="true">2</button>
+          </div>
+        </div>
+
+        <div class="field" id="freeField">
+          <label class="check"><input type="checkbox" id="freeCenter" checked> Casilla libre (FREE) al centro</label>
+        </div>
+      </div>
+
+      <p class="msg" id="cardsMsg" role="status"></p>
+      <div class="actions" style="margin-top:6px">
+        <button class="mbtn cards" type="button" id="pdfBtn">Descargar cartones en PDF</button>
+        <button class="mbtn ghost" type="button" data-go="menu">Volver al menú</button>
+      </div>
+    </section>
+
+    <!-- ================= JUEGO ================= -->
+    <section id="screen-game" hidden>
+      <button class="back" id="backBtn" type="button">&#8592; Menú</button>
+      <h1>Bingo Game</h1>
+
+      <div class="stage" id="stage" aria-live="polite">
+        <div class="big-ball empty" id="bigBall"><div class="n">?</div><div class="w"></div></div>
+        <div class="drawing-label">Drawing...</div>
+      </div>
+
+      <button class="draw-btn" id="drawBtn" type="button">Draw Ball</button>
+      <button class="sound" id="soundBtn" type="button" aria-label="Toggle sound" title="Sound on/off">
+        <svg id="soundIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>
+        </svg>
+      </button>
+
+      <h2 class="called-title">Called Numbers: <span id="count">0</span>/<span id="totalCount">100</span></h2>
+      <div class="called-box" id="calledBox"><span class="placeholder">No numbers drawn yet</span></div>
+
+      <h2 class="all-title">All Balls</h2>
+      <div class="grid" id="grid"></div>
+
+      <div class="winner" id="doneMsg" hidden>All balls have been drawn!</div>
+      <button class="reset" id="resetBtn" type="button">New game</button>
+    </section>
+
+  </main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function () {
+  /* ================= Utilidades ================= */
+  var ones = ["","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"];
+  var tens = ["","","twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"];
+  function words(n) {
+    if (n === 100) return "one hundred";
+    if (n < 20) return ones[n];
+    var t = tens[Math.floor(n / 10)], o = n % 10;
+    return o ? t + "-" + ones[o] : t;
+  }
+  function cap(s) { return s.split("-").map(function (p) { return p.charAt(0).toUpperCase() + p.slice(1); }).join("-"); }
+  function $(id) { return document.getElementById(id); }
+
+  /* ================= Navegación ================= */
+  var screens = { menu: $("screen-menu"), help: $("screen-help"), setup: $("screen-setup"), cards: $("screen-cards"), game: $("screen-game") };
+  function show(name) {
+    for (var k in screens) screens[k].hidden = (k !== name);
+    window.scrollTo(0, 0);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-go]"), function (b) {
+    b.addEventListener("click", function () { show(b.getAttribute("data-go")); });
+  });
+
+  /* ================= Selector de rango ================= */
+  function rangePicker(root, opts) {
+    var min = opts.min, value = opts.def, listeners = [];
+    var presets = [25, 50, 75, 90, 100].filter(function (p) { return p >= min; });
+    root.innerHTML = '<div class="chips"></div>' +
+      '<div class="custom"><span>Otro número (' + min + ' a 100):</span>' +
+      '<input class="num-in" type="number" min="' + min + '" max="100" inputmode="numeric" aria-label="Otro número máximo"></div>';
+    var chips = root.querySelector(".chips");
+    var input = root.querySelector("input");
+    var btns = presets.map(function (p) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "opt"; b.textContent = "1 al " + p;
+      b.addEventListener("click", function () { set(p, true); input.value = ""; });
+      chips.appendChild(b); return b;
+    });
+    function paint() {
+      btns.forEach(function (b, i) { b.setAttribute("aria-pressed", String(presets[i] === value)); });
+    }
+    function set(v) {
+      value = v; paint();
+      listeners.forEach(function (fn) { fn(value); });
+    }
+    input.addEventListener("input", function () {
+      var n = parseInt(input.value, 10);
+      if (n >= min && n <= 100) set(n);
+    });
+    input.addEventListener("blur", function () {
+      if (input.value === "") return;
+      var n = parseInt(input.value, 10);
+      if (isNaN(n)) { input.value = ""; return; }
+      n = Math.max(min, Math.min(100, n));
+      input.value = n; set(n);
+    });
+    paint();
+    return {
+      get: function () { return value; },
+      onChange: function (fn) { listeners.push(fn); }
+    };
+  }
+
+  /* ================= Juego ================= */
+  var TOTAL = 100;
+  var called = [];
+  var busy = false;
+  var soundOn = true;
+  var cells = {};
+
+  var grid = $("grid"), calledBox = $("calledBox"), countEl = $("count"), totalEl = $("totalCount");
+  var stage = $("stage"), bigBall = $("bigBall"), drawBtn = $("drawBtn"), soundBtn = $("soundBtn");
+  var doneMsg = $("doneMsg"), resetBtn = $("resetBtn");
+
+  var setupPicker = rangePicker($("setupPicker"), { min: 10, def: 100 });
+
+  function buildGrid() {
+    grid.innerHTML = ""; cells = {};
+    for (var i = 1; i <= TOTAL; i++) {
+      var d = document.createElement("div");
+      d.className = "b"; d.textContent = i;
+      grid.appendChild(d); cells[i] = d;
+    }
+  }
+
+  function resetBall() {
+    bigBall.classList.add("empty");
+    bigBall.querySelector(".n").textContent = "?";
+    bigBall.querySelector(".w").textContent = "";
+  }
+
+  function setBall(n) {
+    bigBall.classList.remove("empty");
+    bigBall.querySelector(".n").textContent = n;
+    bigBall.querySelector(".w").textContent = cap(words(n));
+  }
+
+  function stopSpeech() { try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {} }
+
+  function speak(n) {
+    if (!soundOn || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(String(n));
+      u.lang = "en-US"; u.rate = 0.9;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
+  var audioCtx = null;
+  function tick() {
+    if (!soundOn) return;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = "triangle"; o.frequency.value = 420 + Math.random() * 300;
+      g.gain.value = 0.04;
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + 0.05);
+    } catch (e) {}
+  }
+
+  function renderCalled() {
+    calledBox.innerHTML = "";
+    if (!called.length) {
+      var p = document.createElement("span");
+      p.className = "placeholder"; p.textContent = "No numbers drawn yet";
+      calledBox.appendChild(p);
+    }
+    called.slice().reverse().forEach(function (n, idx) {
+      var c = document.createElement("span");
+      c.className = "chip" + (idx === 0 ? " latest" : "");
+      c.textContent = n + " - " + words(n);
+      calledBox.appendChild(c);
+    });
+    countEl.textContent = called.length;
+    totalEl.textContent = TOTAL;
+  }
+
+  function newRound() {
+    called = [];
+    buildGrid(); resetBall();
+    stage.classList.remove("drawing", "landed");
+    doneMsg.hidden = true;
+    drawBtn.disabled = false;
+    stopSpeech();
+    renderCalled();
+  }
+
+  function draw() {
+    if (busy || called.length >= TOTAL) return;
+    busy = true;
+    drawBtn.disabled = true;
+    stage.classList.remove("landed");
+    stage.classList.add("drawing");
+
+    var pool = [];
+    for (var i = 1; i <= TOTAL; i++) if (called.indexOf(i) === -1) pool.push(i);
+    var pick = pool[Math.floor(Math.random() * pool.length)];
+
+    var spins = 0, maxSpins = 14;
+    var iv = setInterval(function () {
+      setBall(pool[Math.floor(Math.random() * pool.length)]);
+      tick();
+      spins++;
+      if (spins >= maxSpins) {
+        clearInterval(iv);
+        setBall(pick);
+        called.push(pick);
+        cells[pick].classList.add("called");
+        stage.classList.remove("drawing");
+        stage.classList.add("landed");
+        renderCalled();
+        speak(pick);
+        busy = false;
+        if (called.length >= TOTAL) { doneMsg.hidden = false; drawBtn.disabled = true; }
+        else drawBtn.disabled = false;
+      }
+    }, 110);
+  }
+
+  $("startBtn").addEventListener("click", function () {
+    TOTAL = setupPicker.get();
+    busy = false;
+    newRound();
+    show("game");
+  });
+
+  resetBtn.addEventListener("click", function () {
+    if (busy) return;
+    if (called.length && !confirm("Start a new game? All called numbers will be cleared.")) return;
+    newRound();
+  });
+
+  $("backBtn").addEventListener("click", function () {
+    if (busy) return;
+    if (called.length && !confirm("Go back to the menu? The current game will be lost.")) return;
+    stopSpeech();
+    show("menu");
+  });
+
+  drawBtn.addEventListener("click", draw);
+  soundBtn.addEventListener("click", function () {
+    soundOn = !soundOn;
+    soundBtn.classList.toggle("off", !soundOn);
+    $("soundIcon").innerHTML = soundOn
+      ? '<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>'
+      : '<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>';
+    if (!soundOn) stopSpeech();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (screens.game.hidden) return;
+    if ((e.code === "Space" || e.code === "Enter") && document.activeElement === document.body) {
+      e.preventDefault(); draw();
+    }
+  });
+
+  /* ================= Generador de cartones ================= */
+  var cardsPicker = rangePicker($("cardsPicker"), { min: 9, def: 75 });
+  var size = 5, perPage = 2;
+  var sizeBtns = Array.prototype.slice.call($("sizeChips").querySelectorAll("button"));
+  var ppBtns = Array.prototype.slice.call($("perPageChips").querySelectorAll("button"));
+  var freeField = $("freeField"), freeBox = $("freeCenter");
+  var msg = $("cardsMsg"), pdfBtn = $("pdfBtn");
+
+  function setMsg(t, err) { msg.textContent = t || ""; msg.className = "msg" + (err ? " err" : ""); }
+
+  function refreshSizes() {
+    var N = cardsPicker.get();
+    var ok = [];
+    sizeBtns.forEach(function (b) {
+      var k = parseInt(b.getAttribute("data-size"), 10);
+      var valid = N >= k * k;
+      b.disabled = !valid;
+      if (valid) ok.push(k);
+    });
+    if (ok.indexOf(size) === -1) size = ok[ok.length - 1];
+    sizeBtns.forEach(function (b) {
+      b.setAttribute("aria-pressed", String(parseInt(b.getAttribute("data-size"), 10) === size));
+    });
+    freeField.hidden = (size % 2 === 0);
+    $("sizeHint").textContent = "Con " + N + " números puedes usar cartones de hasta " + ok[ok.length - 1] + " × " + ok[ok.length - 1] + ".";
+  }
+  cardsPicker.onChange(function () { setMsg(""); refreshSizes(); });
+  sizeBtns.forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (b.disabled) return;
+      size = parseInt(b.getAttribute("data-size"), 10);
+      refreshSizes();
+    });
+  });
+  ppBtns.forEach(function (b) {
+    b.addEventListener("click", function () {
+      perPage = parseInt(b.getAttribute("data-pp"), 10);
+      ppBtns.forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+    });
+  });
+  refreshSizes();
+
+  function pickUnique(from, to, count) {
+    var arr = [];
+    for (var i = from; i <= to; i++) arr.push(i);
+    for (var j = arr.length - 1; j > 0; j--) {
+      var r = Math.floor(Math.random() * (j + 1));
+      var t = arr[j]; arr[j] = arr[r]; arr[r] = t;
+    }
+    return arr.slice(0, count).sort(function (a, b) { return a - b; });
+  }
+
+  // Devuelve matriz [fila][columna]; null = casilla libre
+  function makeCard(N, k, free) {
+    var cols = [], mid = (k - 1) / 2;
+    for (var c = 0; c < k; c++) {
+      var lo = Math.floor(c * N / k) + 1, hi = Math.floor((c + 1) * N / k);
+      var needs = (free && c === mid) ? k - 1 : k;
+      var nums = pickUnique(lo, hi, needs);
+      if (free && c === mid) nums.splice(mid, 0, null);
+      cols.push(nums);
+    }
+    var rows = [];
+    for (var r = 0; r < k; r++) {
+      var row = [];
+      for (var cc = 0; cc < k; cc++) row.push(cols[cc][r]);
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  function buildPdf(N, k, count, free, pp) {
+    var doc = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
+    var PW = 210, PH = 297, margin = 12;
+    var availH = pp === 1 ? PH - 2 * margin : (PH - 3 * margin) / 2;
+    var cell = Math.min((availH - 28) / k, 178 / k, 38);
+    var W = cell * k, x0 = (PW - W) / 2;
+    var letters = "BINGO".slice(0, k).split("");
+    var mm = 0.3528;
+
+    for (var i = 0; i < count; i++) {
+      if (i > 0 && i % pp === 0) doc.addPage();
+      var slot = i % pp;
+      var y0 = margin + slot * (availH + margin);
+      var card = makeCard(N, k, free);
+
+      // Título
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.setTextColor(59, 7, 100);
+      doc.text("Bingo Game", x0, y0 + 7);
+      doc.setFontSize(10);
+      doc.setTextColor(100, 90, 140);
+      doc.text("Card " + (i + 1) + "  -  Numbers 1 to " + N, x0 + W, y0 + 7, { align: "right" });
+
+      // Encabezado
+      var hy = y0 + 12, headH = 16;
+      doc.setFillColor(76, 29, 149);
+      doc.rect(x0, hy, W, headH, "F");
+      var hf = Math.min(26, cell * 1.0);
+      doc.setFontSize(hf);
+      doc.setTextColor(255, 255, 255);
+      for (var c = 0; c < k; c++) {
+        doc.text(letters[c], x0 + c * cell + cell / 2, hy + headH / 2 + hf * 0.36 * mm, { align: "center" });
+      }
+
+      // Casillas
+      var gy = hy + headH;
+      doc.setDrawColor(124, 58, 237);
+      doc.setLineWidth(0.4);
+      var nf = Math.min(30, cell * 1.15);
+      for (var r = 0; r < k; r++) {
+        for (var cc = 0; cc < k; cc++) {
+          var x = x0 + cc * cell, y = gy + r * cell, v = card[r][cc];
+          if (v === null) {
+            doc.setFillColor(251, 191, 36);
+            doc.rect(x, y, cell, cell, "FD");
+            doc.setFontSize(Math.min(14, cell * 0.55));
+            doc.setTextColor(90, 40, 0);
+            doc.text("FREE", x + cell / 2, y + cell / 2 + Math.min(14, cell * 0.55) * 0.36 * mm, { align: "center" });
+          } else {
+            doc.setFillColor(255, 255, 255);
+            doc.rect(x, y, cell, cell, "FD");
+            doc.setFontSize(nf);
+            doc.setTextColor(30, 27, 75);
+            doc.text(String(v), x + cell / 2, y + cell / 2 + nf * 0.36 * mm, { align: "center" });
+          }
+        }
+      }
+    }
+    return doc;
+  }
+
+  var dl = null;
+  try {
+    if (window.claude && window.claude.use) {
+      window.claude.use("downloads").then(function (d) { dl = d; }).catch(function () {});
+    }
+  } catch (e) {}
+
+  pdfBtn.addEventListener("click", function () {
+    var N = cardsPicker.get();
+    var count = parseInt($("cardCount").value, 10);
+    if (isNaN(count) || count < 1) { setMsg("Escribe cuántos cartones quieres (de 1 a 200).", true); return; }
+    count = Math.min(200, count);
+    $("cardCount").value = count;
+    if (N < size * size) { setMsg("Ese tamaño de cartón necesita al menos " + (size * size) + " números.", true); return; }
+    if (!window.jspdf) { setMsg("No se pudo cargar el generador de PDF. Revisa tu conexión e intenta de nuevo.", true); return; }
+    if (!dl) { setMsg("La descarga no está disponible en esta vista. Abre la página desde Claude para descargar el PDF.", true); return; }
+
+    var free = (size % 2 === 1) && freeBox.checked;
+    pdfBtn.disabled = true; setMsg("Generando " + count + " cartones...");
+    setTimeout(function () {
+      var buf;
+      try {
+        buf = buildPdf(N, size, count, free, perPage).output("arraybuffer");
+      } catch (e) {
+        pdfBtn.disabled = false; setMsg("No se pudo generar el PDF. Intenta con menos cartones.", true); return;
+      }
+      dl.save({ filename: "bingo-cartones-1-a-" + N + ".pdf", data: buf }).then(function () {
+        setMsg("Listo: " + count + " cartones guardados.");
+      }).catch(function (err) {
+        if (err && err.code === "declined") setMsg("Descarga cancelada.");
+        else setMsg("No se pudo guardar el archivo.", true);
+      }).then(function () { pdfBtn.disabled = false; });
+    }, 30);
+  });
+
+  /* ================= Inicio ================= */
+  buildGrid();
+  renderCalled();
+  show("menu");
+})();
+</script>
+</body>
+</html>
