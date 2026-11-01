@@ -7,7 +7,7 @@
 import { firebaseConfig } from "../../firebase-config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
-  getDatabase, ref, set, update, remove, onValue, get, serverTimestamp
+  getDatabase, ref, set, update, remove, push, onValue, get, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 import { crearCodigoCorto } from "./short-links.js";
 
@@ -91,7 +91,18 @@ export function escuchar(ref_, cb){
 export function escribir(ref_, datos){ return set(ref_, datos); }
 export function actualizar(ref_, datos){ return update(ref_, datos); }
 export function eliminar(ref_){ return remove(ref_); }
+export function agregar(ref_, datos){ return push(ref_, datos); }
 export function marcaTiempo(){ return serverTimestamp(); }
+
+/**
+ * Lee una vez el valor actual de una sala (o de una sub-ruta dentro de ella).
+ * Devuelve null si no existe — para validar un PIN antes de unirse, sin
+ * dejar un listener abierto.
+ */
+export async function leerSala(juego, sala, path){
+  const snap = await get(refSala(juego, sala, path));
+  return snap.exists() ? snap.val() : null;
+}
 
 const cacheSalas = {}; // "juego:destino" -> Promise<{sala, codigoCorto}>
 

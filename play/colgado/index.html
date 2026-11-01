@@ -8,8 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Caveat+Brush&family=Patrick+Hand&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
 :root{
   --board:#1f3a34; --board-d:#162a26; --board-l:#2a4a42;
@@ -375,20 +373,17 @@ select option{color:#222}
   <div class="row" style="margin-top:20px;justify-content:center"><button class="btn primary" id="resAgain">Jugar de nuevo</button><button class="btn" id="resHome">Menú principal</button></div>
 </section>
 
-<script>
+<script type="module">
 /* =====================================================
-   CONFIGURACIÓN DE FIREBASE (solo para el modo QR/celulares)
-   Copia aquí la misma configuración que usan tus otros juegos
-   de AulaGame (Realtime Database). Sin esto, los modos
-   "Todo el curso" y "Por equipos" funcionan igual.
+   CONFIGURACIÓN DE FIREBASE — modo QR/celulares
+   Usa el mismo proyecto y el mismo sistema de "salas en vivo" que el resto
+   de los juegos de AulaGame (play/shared/live-room.js). El profesor debe
+   haber iniciado sesión en aulagame.cl para abrir una sala; los modos
+   "Todo el curso" y "Por equipos" no necesitan sesión ni conexión.
    ===================================================== */
-const FIREBASE_CONFIG = {
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_PROYECTO.firebaseapp.com",
-  databaseURL: "https://TU_PROYECTO-default-rtdb.firebaseio.com",
-  projectId: "TU_PROYECTO"
-};
-const ROOT = 'colgado_rooms';   // nodo de la base de datos para las salas
+import { getCurrentUid } from "../shared/game-storage.js";
+import { refSala, escuchar, escribir, eliminar, agregar, leerSala } from "../shared/live-room.js";
+import { pintarQR } from "../shared/qr-inline.js";
 
 /* ---------- utilidades ---------- */
 const $ = id => document.getElementById(id);
@@ -687,34 +682,33 @@ function finishClassic() {
 $('resHome').onclick = () => show('home');
 
 /* =====================================================
-   MODO CELULARES (QR) — Firebase Realtime Database
+   MODO CELULARES (QR) — sala en vivo compartida de AulaGame
    ===================================================== */
-let DB = null;
-function fbReady() {
-  if (/TU_API_KEY|TU_PROYECTO/.test(JSON.stringify(FIREBASE_CONFIG))) return false;
-  if (typeof firebase === 'undefined') return false;
-  try { if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); DB = firebase.database(); return true; } catch (e) { return false; }
-}
-async function needFb() {
-  if (fbReady()) return true;
-  await modal({ title: 'Falta conectar Firebase', body: 'Para usar el modo con celulares, pega la configuración de Firebase de AulaGame en la constante FIREBASE_CONFIG, al inicio del script de este archivo.\n\nLos modos "Todo el curso" y "Por equipos" funcionan sin esto.' });
-  return false;
-}
-
 let H = null;
 async function hostOpen() {
-  if (!await needFb()) return;
-  let pin, tries = 0;
-  do { pin = String(100000 + (Math.random() * 900000 | 0)); const s = await DB.ref(ROOT + '/' + pin).once('value'); if (!s.exists()) break; } while (++tries < 8);
+  const uid = await getCurrentUid();
+  if (!uid) {
+    const ir = await modal({ title: 'Inicia sesión para usar celulares', body: 'Para que tus estudiantes se conecten con el código o el QR necesitas iniciar sesión en aulagame.cl con tu cuenta de profesor.\n\nLos modos "Todo el curso" y "Por equipos" no necesitan sesión.', ok: 'Iniciar sesión', cancel: 'Cancelar' });
+    if (ir) location.href = '/';
+    return;
+  }
+  const r = await pintarQR({ juego: 'colgado', destino: '/play/colgado/', contenedores: ['qrBox'], links: ['joinUrl'] });
+  if (!r) { await modal({ title: 'Sin conexión', body: 'No se pudo crear la sala. Revisa tu conexión a internet e inténtalo de nuevo.' }); return; }
+  const pin = r.sala;
   const list = S.shuffle ? shuffle(validWords()) : validWords();
-  H = { pin, ref: DB.ref(ROOT + '/' + pin), list, i: -1, players: {}, state: 'lobby', enye: needsEnye(list), rounds: 0 };
-  await H.ref.set({ state: 'lobby', total: list.length, max: S.max, created: Date.now(), enye: H.enye });
-  H.ref.onDisconnect().remove();
-  H.ref.child('players').on('value', s => { H.players = s.val() || {}; renderHostPlayers(); });
-  H.ref.child('picks').on('child_added', s => { const p = s.val(); s.ref.remove(); if (p) handlePick(p); });
-  const url = location.origin + location.pathname + '?join=' + pin;
-  $('hlPin').textContent = pin; $('hgPin').textContent = pin; $('joinUrl').textContent = url;
-  $('qrBox').innerHTML = ''; new QRCode($('qrBox'), { text: url, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+  H = { pin, list, i: -1, players: {}, state: 'lobby', enye: needsEnye(list), seenPicks: new Set() };
+  await escribir(refSala('colgado', pin, 'estado'), { state: 'lobby', total: list.length, max: S.max, enye: H.enye });
+  H.offPlayers = escuchar(refSala('colgado', pin, 'jugadores'), s => { H.players = s || {}; renderHostPlayers(); });
+  H.offPicks = escuchar(refSala('colgado', pin, 'picks'), s => {
+    const picks = s || {};
+    Object.keys(picks).forEach(key => {
+      if (H.seenPicks.has(key)) return;
+      H.seenPicks.add(key);
+      handlePick(picks[key]);
+      eliminar(refSala('colgado', pin, 'picks/' + key));
+    });
+  });
+  $('hlPin').textContent = pin; $('hgPin').textContent = pin;
   show('hostLobby'); renderHostPlayers();
 }
 function renderHostPlayers() {
@@ -728,7 +722,13 @@ function renderHostBoard() {
   $('hgBoard').innerHTML = r.map(p => `<li><span>${esc(p.name)}</span><b>${p.score || 0}</b></li>`).join('');
 }
 $('hlStart').onclick = () => { H.state = 'play'; hostNextRound(); show('hostGame'); };
-async function closeRoom() { if (H) { H.ref.child('picks').off(); H.ref.child('players').off(); try { await H.ref.remove(); } catch (e) {} H = null; } }
+async function closeRoom() {
+  if (H) {
+    if (H.offPlayers) H.offPlayers(); if (H.offPicks) H.offPicks();
+    try { await eliminar(refSala('colgado', H.pin)); } catch (e) {}
+    H = null;
+  }
+}
 $('hlExit').onclick = async () => { await closeRoom(); show('home'); };
 $('hgExit').onclick = async () => { if (await modal({ title: 'Cerrar sala', body: 'Se desconectará a todos los estudiantes.', ok: 'Cerrar', cancel: 'Seguir' })) { await closeRoom(); show('home'); } };
 
@@ -739,17 +739,16 @@ function hostNextRound() {
   $('hgResult').classList.remove('on', 'lose'); $('hgHang').dataset.n = 0; $('hgHang').innerHTML = '';
   hostPublish(); hostRender();
 }
-function hostUsedSet() { return new Set(Object.keys(H.used)); }
 function hostPublish() {
   const reveal = H.state === 'reveal';
   const mask = Array.from(H.word).map(ch => (!isL(ch) || reveal || H.used[norm(ch)] === 'ok') ? ch.toUpperCase() : '_').join('');
-  H.ref.update({
+  escribir(refSala('colgado', H.pin, 'estado'), {
     state: H.state, mask, wrong: H.wrong, max: S.max, used: H.used, hints: H.hints.slice(0, H.hintN),
-    cat: S.cat ? H.cat : '', round: H.i + 1, total: H.list.length, win: !!H.win, last: H.last || null, ans: reveal ? H.word.toUpperCase() : ''
+    cat: S.cat ? H.cat : '', round: H.i + 1, total: H.list.length, win: !!H.win, last: H.last || null, ans: reveal ? H.word.toUpperCase() : '', enye: H.enye
   });
 }
 function hostRender(newL) {
-  const reveal = H.state === 'reveal' ;
+  const reveal = H.state === 'reveal';
   const okSet = new Set(Object.keys(H.used).filter(k => H.used[k] === 'ok'));
   $('hgWord').innerHTML = wordHTML(H.word, okSet, reveal && !H.win, newL);
   drawHang('hgHang', H.wrong, S.max); drawLives('hgLives', H.wrong, S.max);
@@ -762,10 +761,11 @@ function hostRender(newL) {
 }
 function addScore(pid, d) {
   const p = H.players[pid]; if (!p) return;
-  p.score = Math.max(0, (p.score || 0) + d); H.ref.child('players/' + pid + '/score').set(p.score);
+  const score = Math.max(0, (p.score || 0) + d);
+  escribir(refSala('colgado', H.pin, 'jugadores/' + pid + '/score'), score);
 }
 function handlePick(p) {
-  if (!H || H.state !== 'play' || !H.players[p.pid]) return;
+  if (!H || H.state !== 'play' || !p || !H.players[p.pid]) return;
   const name = H.players[p.pid].name;
   if (p.letter) {
     const L = norm(p.letter); if (!/^[A-ZÑ]$/.test(L) || H.used[L]) return;
@@ -799,12 +799,12 @@ $('hgNext').onclick = hostNextRound;
 $('hgHintBtn').onclick = () => { if (H.hintN < H.hints.length) { H.hintN++; sfx.hint(); hostPublish(); hostRender(); } };
 $('hgSkipBtn').onclick = () => { if (H.state === 'play') hostEnd(false); };
 function hostFinish() {
-  H.state = 'end'; H.ref.update({ state: 'end' });
+  H.state = 'end'; escribir(refSala('colgado', H.pin, 'estado/state'), 'end');
   const r = Object.values(H.players).sort((a, b) => (b.score || 0) - (a.score || 0));
   $('resBody').innerHTML = '<div class="podium">' + r.slice(0, 3).map((p, i) => `<div class="pod p${i + 1}"><span>${['🥇', '🥈', '🥉'][i]}</span><b>${esc(p.name)}</b><i>${p.score || 0}</i></div>`).join('') + '</div>' +
     (r.length > 3 ? '<ol class="board" start="4" style="max-width:420px;margin:0 auto">' + r.slice(3).map(p => `<li><span>${esc(p.name)}</span><b>${p.score || 0}</b></li>`).join('') + '</ol>' : '');
   sfx.win(); confetti(); MODE = 'qr'; show('results');
-  const old = H; $('resHome').onclick = async () => { await closeRoom(); show('home'); $('resHome').onclick = () => show('home'); };
+  $('resHome').onclick = async () => { await closeRoom(); show('home'); $('resHome').onclick = () => show('home'); };
   $('resAgain').onclick = async () => { await closeRoom(); hostOpen(); };
 }
 
@@ -815,47 +815,49 @@ function playerScreen(pin) {
   if (pin) $('pPin').value = pin; $('pName').value = store.get('colgado_name', '');
 }
 $('goJoin').onclick = () => playerScreen('');
-$('pBack').onclick = () => { if (P) { P.ref.off(); P = null; } history.replaceState(null, '', location.pathname); show('home'); };
+$('pBack').onclick = () => { if (P && P.off) P.off(); P = null; history.replaceState(null, '', location.pathname); show('home'); };
 $('pGo').onclick = async () => {
   const pin = $('pPin').value.trim(), name = $('pName').value.trim();
   if (!/^\d{6}$/.test(pin)) return $('pErr').textContent = 'El PIN tiene 6 números.';
   if (!name) return $('pErr').textContent = 'Escribe tu nombre.';
-  if (!fbReady()) return $('pErr').textContent = 'Esta página aún no está conectada a Firebase.';
-  const ref = DB.ref(ROOT + '/' + pin), snap = await ref.once('value');
-  if (!snap.exists()) return $('pErr').textContent = 'No encontré esa sala. Revisa el PIN.';
-  if (snap.val().state !== 'lobby' && !sessionStorage.getItem('colgado_pid_' + pin)) return $('pErr').textContent = 'La partida ya comenzó.';
+  const sala = await leerSala('colgado', pin);
+  if (!sala) return $('pErr').textContent = 'No encontré esa sala. Revisa el PIN.';
+  const estado = sala.estado || {};
+  let pid = sessionStorage.getItem('colgado_pid_' + pin);
+  const yaUnido = !!(pid && sala.jugadores && sala.jugadores[pid]);
+  if (estado.state !== 'lobby' && !yaUnido) return $('pErr').textContent = 'La partida ya comenzó.';
   store.set('colgado_name', name);
-  let pid = sessionStorage.getItem('colgado_pid_' + pin); if (!pid) { pid = 'p' + Math.random().toString(36).slice(2, 9); sessionStorage.setItem('colgado_pid_' + pin, pid); }
-  const mine = snap.child('players/' + pid);
-  await ref.child('players/' + pid).update({ name, ...(mine.exists() ? {} : { score: 0 }) });
-  P = { pin, pid, ref, name, cool: false, enye: !!snap.val().enye, kbBuilt: false };
+  if (!pid) { pid = 'p' + Math.random().toString(36).slice(2, 9); sessionStorage.setItem('colgado_pid_' + pin, pid); }
+  if (!yaUnido) await escribir(refSala('colgado', pin, 'jugadores/' + pid), { name, score: 0 });
+  P = { pin, pid, name, cool: false, enye: !!estado.enye };
   $('pJoin').style.display = 'none'; $('pPlay').style.display = ''; $('pWho').textContent = name;
   $('pKb').innerHTML = kbHTML(P.enye);
-  ref.on('value', s => playerRender(s.val()));
+  P.off = escuchar(refSala('colgado', pin), s => playerRender(s));
 };
 $('pKb').addEventListener('click', e => {
   const l = e.target.dataset && e.target.dataset.l; if (!l || !P || P.cool || e.target.classList.contains('ok') || e.target.classList.contains('no')) return;
-  P.ref.child('picks').push({ pid: P.pid, letter: l });
+  agregar(refSala('colgado', P.pin, 'picks'), { pid: P.pid, letter: l });
   P.cool = true; $('pKb').querySelectorAll('.key').forEach(k => k.disabled = true);
   setTimeout(() => { P.cool = false; $('pKb').querySelectorAll('.key').forEach(k => k.disabled = false); }, 1200);
 });
 $('pSolve').onclick = async () => {
   if (!P) return;
   const v = await modal({ title: 'Resolver la palabra', body: 'Si aciertas ganas 40 puntos. Si fallas, pierdes 10 y cuenta como error del curso.', input: true, ok: 'Probar', cancel: 'Cancelar' });
-  if (v && v.trim()) P.ref.child('picks').push({ pid: P.pid, guess: v.trim().slice(0, 40) });
+  if (v && v.trim()) agregar(refSala('colgado', P.pin, 'picks'), { pid: P.pid, guess: v.trim().slice(0, 40) });
 };
 let lastRound = 0, lastWrong = 0, lastState = '';
-function playerRender(r) {
-  if (!r) { if (P) { P.ref.off(); P = null; } $('pPlay').style.display = 'none'; $('pJoin').style.display = ''; $('pErr').textContent = 'La sala se cerró.'; return; }
-  const me = (r.players || {})[P.pid]; $('pScore').textContent = (me && me.score) || 0;
+function playerRender(sala) {
+  if (!sala) { if (P && P.off) P.off(); P = null; $('pPlay').style.display = 'none'; $('pJoin').style.display = ''; $('pErr').textContent = 'La sala se cerró.'; return; }
+  const r = sala.estado || {}, jugadores = sala.jugadores || {};
+  const me = jugadores[P.pid]; $('pScore').textContent = (me && me.score) || 0;
   const wait = $('pWait'), game = $('pGame'), bw = $('pBoardWrap');
-  const ranking = Object.values(r.players || {}).sort((a, b) => (b.score || 0) - (a.score || 0));
+  const ranking = Object.values(jugadores).sort((a, b) => (b.score || 0) - (a.score || 0));
   const showBoard = () => { bw.style.display = ''; $('pBoard').innerHTML = ranking.slice(0, 5).map(p => `<li><span>${esc(p.name)}</span><b>${p.score || 0}</b></li>`).join(''); };
   if (r.state === 'lobby') { wait.style.display = ''; game.style.display = 'none'; bw.style.display = 'none'; $('pWaitT').textContent = '¡Estás dentro!'; $('pWaitS').textContent = 'Espera a que el profesor comience.'; return; }
-  if (r.state === 'end') { wait.style.display = ''; game.style.display = 'none'; const pos = ranking.findIndex(p => p.name === P.name && true) + 1; $('pWaitT').textContent = 'Fin de la partida'; $('pWaitS').textContent = 'Tu puntaje final: ' + ((me && me.score) || 0); showBoard(); if (lastState !== 'end') { sfx.win(); confetti(); } lastState = 'end'; return; }
+  if (r.state === 'end') { wait.style.display = ''; game.style.display = 'none'; $('pWaitT').textContent = 'Fin de la partida'; $('pWaitS').textContent = 'Tu puntaje final: ' + ((me && me.score) || 0); showBoard(); if (lastState !== 'end') { sfx.win(); confetti(); } lastState = 'end'; return; }
   wait.style.display = 'none'; game.style.display = ''; bw.style.display = 'none';
-  const used = r.used || {}, okSet = new Set(Object.keys(used).filter(k => used[k] === 'ok')), reveal = r.state === 'reveal';
-  $('pWord').innerHTML = r.mask.split(' ').filter(Boolean).map(w => '<div class="wd">' + Array.from(w).map(c => `<span class="ch ${c === '_' ? '' : ''}">${c === '_' ? '' : esc(c)}</span>`).join('') + '</div>').join('');
+  const used = r.used || {}, reveal = r.state === 'reveal';
+  $('pWord').innerHTML = (r.mask || '').split(' ').filter(Boolean).map(w => '<div class="wd">' + Array.from(w).map(c => `<span class="ch ${c === '_' ? '' : ''}">${c === '_' ? '' : esc(c)}</span>`).join('') + '</div>').join('');
   drawHang('pHang', r.wrong || 0, r.max || 6);
   $('pHints').innerHTML = (r.hints || []).map(h => `<div class="hintline">💡 ${esc(h)}</div>`).join('');
   const cat = $('pCat'); cat.style.display = r.cat ? '' : 'none'; cat.textContent = r.cat || '';
@@ -872,8 +874,8 @@ function playerRender(r) {
 $('heroHang').innerHTML = hangSVG(5);
 setMute(muted); updCount();
 const q = new URLSearchParams(location.search);
-if (q.get('join')) playerScreen(q.get('join'));
-window.addEventListener('beforeunload', () => { if (H) H.ref.remove(); });
+if (q.get('room')) playerScreen(q.get('room'));
+window.addEventListener('beforeunload', () => { if (H) eliminar(refSala('colgado', H.pin)); });
 </script>
 </body>
 </html>

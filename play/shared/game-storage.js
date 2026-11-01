@@ -70,6 +70,21 @@ export function initGameSync(gameKey, onReady){
 }
 
 /**
+ * Resuelve con el uid del profesor logueado, o null si no hay sesión activa.
+ * No gatea la página ni carga datos guardados — para juegos que solo
+ * necesitan saber si hay sesión antes de una acción puntual (ej. abrir una
+ * sala en vivo), sin bloquear el resto de la página detrás de un login.
+ */
+export function getCurrentUid(){
+  return new Promise(function(resolve){
+    const unsubscribe = onAuthStateChanged(auth, function(user){
+      unsubscribe();
+      resolve(user ? user.uid : null);
+    });
+  });
+}
+
+/**
  * Igual que initGameSync pero sin gatear la sesión ni tocar la visibilidad de
  * la página — para juegos que ya manejan su propio auth-gate (ej. porque
  * también admiten un modo sin login, como un jugador uniéndose por QR).
