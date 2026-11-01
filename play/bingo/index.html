@@ -777,12 +777,14 @@
     return doc;
   }
 
-  var dl = null;
-  try {
-    if (window.claude && window.claude.use) {
-      window.claude.use("downloads").then(function (d) { dl = d; }).catch(function () {});
-    }
-  } catch (e) {}
+  function downloadPdf(filename, buf) {
+    var blob = new Blob([buf], { type: "application/pdf" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+  }
 
   pdfBtn.addEventListener("click", function () {
     var N = cardsPicker.get();
@@ -792,7 +794,6 @@
     $("cardCount").value = count;
     if (N < size * size) { setMsg("Ese tamaño de cartón necesita al menos " + (size * size) + " números.", true); return; }
     if (!window.jspdf) { setMsg("No se pudo cargar el generador de PDF. Revisa tu conexión e intenta de nuevo.", true); return; }
-    if (!dl) { setMsg("La descarga no está disponible en esta vista. Abre la página desde Claude para descargar el PDF.", true); return; }
 
     var free = (size % 2 === 1) && freeBox.checked;
     pdfBtn.disabled = true; setMsg("Generando " + count + " cartones...");
@@ -803,12 +804,13 @@
       } catch (e) {
         pdfBtn.disabled = false; setMsg("No se pudo generar el PDF. Intenta con menos cartones.", true); return;
       }
-      dl.save({ filename: "bingo-cartones-1-a-" + N + ".pdf", data: buf }).then(function () {
+      try {
+        downloadPdf("bingo-cartones-1-a-" + N + ".pdf", buf);
         setMsg("Listo: " + count + " cartones guardados.");
-      }).catch(function (err) {
-        if (err && err.code === "declined") setMsg("Descarga cancelada.");
-        else setMsg("No se pudo guardar el archivo.", true);
-      }).then(function () { pdfBtn.disabled = false; });
+      } catch (err) {
+        setMsg("No se pudo guardar el archivo.", true);
+      }
+      pdfBtn.disabled = false;
     }, 30);
   });
 
