@@ -255,6 +255,7 @@ textarea.qbox { width: 100%; min-height: 130px; background: var(--night-3); colo
             <div class="row" style="justify-content:flex-start;margin-top:8px">
               <button class="btn ghost mini" type="button" id="btnQSample">Cargar ejemplo</button>
               <button class="btn ghost mini" type="button" id="btnQHelp">Copiar instrucciones para generar preguntas con IA</button>
+              <span id="aiBox"></span>
             </div>
             <small id="qCount">0 preguntas</small>
           </div>
@@ -776,6 +777,37 @@ textarea.qbox { width: 100%; min-height: 130px; background: var(--night-3); colo
   });
   window.addEventListener("pagehide", function () { stopMusic(); stopSuspense(); cancelSpeech(); });
 })();
+</script>
+
+<script type="module">
+  // Botón "Generar con IA" para las preguntas de rescate (opcional): Agrupados sigue
+  // funcionando igual sin sesión iniciada; este botón solo aparece/activa si hay un
+  // profesor Premium o con demo activa (ver play/shared/ai-questions.js). Sin sesión,
+  // o sin Premium, muestra el mismo aviso amable que usan el resto de los juegos.
+  import { getCurrentUid } from "../shared/game-storage.js";
+  import { renderAIButton } from "../shared/ai-questions.js";
+
+  getCurrentUid().then(function (uid) {
+    renderAIButton(document.getElementById("aiBox"), {
+      uid: uid,
+      game: "agrupados",
+      defaultCount: 10,
+      label: "Generar preguntas con IA",
+      className: "btn ghost mini",
+      onGenerated: function (data) {
+        var items = (data && Array.isArray(data.questions)) ? data.questions : [];
+        var lines = items
+          .map(function (it) { return (it && it.q ? String(it.q).trim() : "") + " | " + (it && it.a ? String(it.a).trim() : ""); })
+          .filter(function (l) { return l.trim() !== "|"; });
+        if (!lines.length) return;
+        var ta = document.getElementById("sQs");
+        ta.value = lines.join("\n");
+        ta.dispatchEvent(new Event("input", { bubbles: true }));
+        var chk = document.getElementById("sQOn");
+        if (chk) chk.checked = true;
+      }
+    });
+  });
 </script>
 </body>
 </html>

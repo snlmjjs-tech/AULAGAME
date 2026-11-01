@@ -607,6 +607,40 @@ const GAME_CONFIG = {
       };
     },
   },
+
+  agrupados: {
+    minCount: 3, maxCount: 40, defaultCount: 10,
+    build(subject, n) {
+      return {
+        userPrompt:
+          `Tema: "${subject}". Genera ${n} preguntas cortas de respuesta breve sobre el tema, para que las ` +
+          `respondan por escrito en su cuaderno los alumnos que quedan fuera de una ronda de un juego de formar ` +
+          `grupos (dinámica de calentamiento). Cada pregunta debe tener una respuesta correcta corta (una palabra ` +
+          `o frase breve), fácil de verificar a simple vista.`,
+        tool: {
+          name: "devolver_preguntas",
+          description: "Devuelve las preguntas de rescate generadas.",
+          input_schema: {
+            type: "object",
+            properties: {
+              questions: {
+                type: "array", minItems: n, maxItems: n,
+                items: {
+                  type: "object",
+                  properties: {
+                    q: { type: "string" },
+                    a: { type: "string" },
+                  },
+                  required: ["q", "a"],
+                },
+              },
+            },
+            required: ["questions"],
+          },
+        },
+      };
+    },
+  },
 };
 
 /* ======================================================================
