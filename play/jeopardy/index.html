@@ -45,6 +45,26 @@ body::before{
 }
 h1,h2,h3{font-family:'Georgia',serif; margin:0;}
 
+/* ---------- Animated stage background ---------- */
+.bg-fx{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none;}
+.bg-fx .orb{position:absolute; border-radius:50%; filter:blur(70px); will-change:transform;}
+.bg-fx .orb1{width:480px; height:480px; left:-120px; top:-120px; background:radial-gradient(circle, rgba(37,99,235,.6), transparent 70%); animation:orbit1 22s ease-in-out infinite;}
+.bg-fx .orb2{width:420px; height:420px; right:-110px; top:4%; background:radial-gradient(circle, rgba(220,38,38,.42), transparent 70%); animation:orbit2 26s ease-in-out infinite;}
+.bg-fx .orb3{width:540px; height:540px; left:28%; bottom:-220px; background:radial-gradient(circle, rgba(147,51,234,.5), transparent 70%); animation:orbit3 30s ease-in-out infinite;}
+.bg-fx .orb4{width:320px; height:320px; right:8%; bottom:-100px; background:radial-gradient(circle, rgba(255,212,59,.32), transparent 70%); animation:orbit1 18s ease-in-out infinite reverse;}
+@keyframes orbit1{0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(70px,50px) scale(1.18);}}
+@keyframes orbit2{0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(-60px,70px) scale(1.12);}}
+@keyframes orbit3{0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(50px,-60px) scale(1.22);}}
+.bg-fx .spotlight{
+  position:absolute; top:-40%; left:50%; width:160%; height:160%; transform:translateX(-50%);
+  background:conic-gradient(from 0deg, transparent 0deg, rgba(255,212,59,.07) 50deg, transparent 130deg, transparent 360deg);
+  animation:spotlightSweep 16s linear infinite; mix-blend-mode:screen;
+}
+@keyframes spotlightSweep{to{transform:translateX(-50%) rotate(360deg);}}
+.bg-fx .stars{position:absolute; inset:0;}
+.star-dot{position:absolute; width:2px; height:2px; background:#fff; border-radius:50%; animation:twinkle 3.2s ease-in-out infinite;}
+@keyframes twinkle{0%,100%{opacity:.12; transform:scale(.8);} 50%{opacity:1; transform:scale(1.6);}}
+
 /* ---------- Layout screens ---------- */
 .screen{display:none; padding:18px; max-width:1400px; margin:0 auto; position:relative; z-index:1;}
 .screen.active{display:block; animation:screenIn .5s var(--ease);}
@@ -64,6 +84,11 @@ h1,h2,h3{font-family:'Georgia',serif; margin:0;}
   font-size:2rem; width:48px; height:48px; display:flex; align-items:center; justify-content:center;
   background:radial-gradient(circle at 35% 30%, #fff7d6, var(--gold) 55%, var(--gold2) 100%);
   border-radius:12px; box-shadow:0 0 18px var(--gold-soft), inset 0 -3px 6px rgba(0,0,0,.25);
+  animation:logoGlow 3.4s ease-in-out infinite;
+}
+@keyframes logoGlow{
+  0%,100%{box-shadow:0 0 18px var(--gold-soft), inset 0 -3px 6px rgba(0,0,0,.25); transform:rotate(0deg);}
+  50%{box-shadow:0 0 30px rgba(255,212,59,.8), inset 0 -3px 6px rgba(0,0,0,.25); transform:rotate(-5deg);}
 }
 .brand h1{
   font-size:1.5rem; letter-spacing:1.5px; font-weight:800;
@@ -142,7 +167,12 @@ button:active{transform:scale(.95);}
 }
 .buzz-btn:hover:not(:disabled){transform:translateY(-2px); filter:brightness(1.15);}
 .buzz-btn:disabled{opacity:.35; cursor:not-allowed;}
-.buzz-btn.winner{outline:4px solid var(--gold); transform:scale(1.08); box-shadow:0 0 24px rgba(255,212,59,.65);}
+.buzz-btn.winner{outline:4px solid var(--gold); transform:scale(1.08); box-shadow:0 0 24px rgba(255,212,59,.65); position:relative;}
+.buzz-btn.winner::after{
+  content:""; position:absolute; inset:-6px; border-radius:14px; border:2px solid var(--gold);
+  opacity:0; animation:ringPulse 1.2s ease-out infinite; pointer-events:none;
+}
+@keyframes ringPulse{0%{opacity:.65; transform:scale(.94);} 100%{opacity:0; transform:scale(1.12);}}
 #buzzResult{display:none; margin:0 0 14px; font-size:1.15rem; font-weight:bold; color:var(--gold); text-align:center; animation:popin .3s var(--ease);}
 
 /* ---------- Scoreboard ---------- */
@@ -161,6 +191,10 @@ button:active{transform:scale(.95);}
 }
 .team-card.active{
   border-color:var(--gold); box-shadow:0 0 26px rgba(255,212,59,.5), 0 10px 24px rgba(0,0,0,.4); transform:translateY(-5px);
+}
+.team-card.active::after{
+  content:""; position:absolute; inset:-6px; border-radius:calc(var(--radius-md) + 6px);
+  border:2px solid rgba(255,212,59,.55); opacity:0; animation:ringPulse 1.8s ease-out infinite; pointer-events:none;
 }
 .team-card.leading{box-shadow:0 0 0 1px rgba(255,212,59,.4), 0 10px 24px rgba(0,0,0,.4);}
 .team-card .crown{position:absolute; top:-12px; right:-2px; font-size:1.1rem; filter:drop-shadow(0 2px 4px rgba(0,0,0,.5)); animation:floaty 2.4s ease-in-out infinite;}
@@ -181,16 +215,24 @@ button:active{transform:scale(.95);}
   color:#fff; text-shadow:0 2px 5px rgba(0,0,0,.55); min-height:58px; display:flex; align-items:center; justify-content:center;
   letter-spacing:.5px; text-transform:uppercase; position:relative; overflow:hidden;
   box-shadow:0 -1px 0 rgba(255,255,255,.15) inset, 0 6px 14px rgba(0,0,0,.35);
+  animation:tileIn .5s var(--ease) both; animation-delay:calc(var(--idx,0) * 70ms);
 }
 .cat-header::after{
   content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(255,255,255,.22), transparent 55%);
 }
+@keyframes tileIn{from{opacity:0; transform:translateY(16px) scale(.92);} to{opacity:1; transform:translateY(0) scale(1);}}
 .cell{
   aspect-ratio:2.2/1; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center;
   font-size:1.9rem; font-weight:900; color:#fff; cursor:pointer; user-select:none; position:relative; overflow:hidden;
   box-shadow:inset 0 -5px 0 rgba(0,0,0,.28), 0 6px 14px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.2);
   text-shadow:0 2px 5px rgba(0,0,0,.55);
   transition:transform .2s var(--ease), box-shadow .2s var(--ease), filter .2s var(--ease);
+  animation:tileIn .45s var(--ease) both, cellGlow 4.5s ease-in-out infinite;
+  animation-delay:calc(var(--idx,0) * 18ms), calc(var(--idx,0) * 110ms + .7s);
+}
+@keyframes cellGlow{
+  0%,100%{box-shadow:inset 0 -5px 0 rgba(0,0,0,.28), 0 6px 14px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.2);}
+  50%{box-shadow:inset 0 -5px 0 rgba(0,0,0,.28), 0 10px 22px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.35), 0 0 16px rgba(255,255,255,.2);}
 }
 .cell::before{
   content:""; position:absolute; top:0; left:-60%; width:40%; height:100%;
@@ -205,6 +247,7 @@ button:active{transform:scale(.95);}
 .cell:active:not(.used){transform:translateY(-1px) scale(.98);}
 .cell.used{
   background:linear-gradient(165deg,#161b38,#11162e) !important; color:#3a4270; cursor:default; box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);
+  animation:tileIn .45s var(--ease) both; animation-delay:calc(var(--idx,0) * 18ms);
 }
 .cell.used::after{content:"✔"; font-size:1.5rem; color:#3a4270;}
 .cell .star{position:absolute; top:4px; right:8px; font-size:.9rem;}
@@ -227,9 +270,18 @@ button:active{transform:scale(.95);}
 .modal .tag{
   display:inline-block; padding:7px 18px; border-radius:30px; font-size:.78rem; font-weight:800;
   text-transform:uppercase; letter-spacing:1.5px; margin-bottom:16px; box-shadow:0 4px 12px rgba(0,0,0,.35);
+  animation:tagPop .45s var(--ease) both;
 }
-.modal .pts{font-size:1.05rem; color:var(--gold); font-weight:800; margin-bottom:12px; letter-spacing:1px; text-shadow:0 0 16px rgba(255,212,59,.4);}
-.modal .qtext{font-size:1.5rem; line-height:1.55; margin:14px 0 24px; min-height:60px; font-weight:600;}
+@keyframes tagPop{from{opacity:0; transform:scale(.6) translateY(-10px);} to{opacity:1; transform:scale(1) translateY(0);}}
+.modal .pts{
+  font-size:1.05rem; color:var(--gold); font-weight:800; margin-bottom:12px; letter-spacing:1px; text-shadow:0 0 16px rgba(255,212,59,.4);
+  animation:fadeUp .4s var(--ease) .12s both;
+}
+.modal .qtext{
+  font-size:1.5rem; line-height:1.55; margin:14px 0 24px; min-height:60px; font-weight:600;
+  animation:fadeUp .45s var(--ease) .22s both;
+}
+@keyframes fadeUp{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
 .modal .atext{
   font-size:1.35rem; color:#8affc1; font-weight:bold; background:linear-gradient(160deg, rgba(20,80,50,.45), rgba(16,60,40,.4));
   border:1px solid rgba(138,255,193,.25); border-radius:14px;
@@ -261,12 +313,15 @@ button:active{transform:scale(.95);}
 .bonus-tag{background:linear-gradient(135deg,#f472b6,#a855f7); }
 
 /* ---------- Winner screen ---------- */
-.winner-wrap{text-align:center; padding:60px 20px;}
+.winner-wrap{text-align:center; padding:60px 20px; position:relative;}
 .winner-wrap h2{
   font-size:2.8rem; margin-bottom:24px; font-weight:800;
   background:linear-gradient(135deg,#fff6d8,var(--gold) 50%,var(--gold2)); -webkit-background-clip:text; background-clip:text; color:transparent;
   text-shadow:0 2px 30px rgba(255,212,59,.3); animation:popin .5s var(--ease);
 }
+.winner-wrap h2 .trophy{display:inline-block; animation:trophyBounce 1.6s ease-in-out infinite;}
+.winner-wrap h2 .trophy:last-child{animation-delay:.3s;}
+@keyframes trophyBounce{0%,100%{transform:translateY(0) rotate(0deg);} 50%{transform:translateY(-8px) rotate(-6deg);}}
 .podium{display:flex; justify-content:center; align-items:flex-end; gap:16px; flex-wrap:wrap; margin:30px 0;}
 .podium .pcard{
   background:linear-gradient(165deg, var(--panel3), var(--panel)); border-radius:18px; padding:22px; min-width:170px;
@@ -278,8 +333,20 @@ button:active{transform:scale(.95);}
 .podium .pcard:nth-child(4){animation-delay:.44s;}
 .podium .pcard:nth-child(5){animation-delay:.57s;}
 @keyframes podiumIn{from{opacity:0; transform:translateY(24px) scale(.92);} to{opacity:1; transform:translateY(0) scale(1);}}
-.podium .pcard.first{border-color:var(--gold); box-shadow:0 0 40px rgba(255,212,59,.55), 0 10px 26px rgba(0,0,0,.4); transform:scale(1.1);}
+.podium .pcard.first{border-color:var(--gold); box-shadow:0 0 40px rgba(255,212,59,.55), 0 10px 26px rgba(0,0,0,.4); transform:scale(1.1); animation:podiumIn .5s var(--ease) forwards, firstGlow 2.2s ease-in-out 1s infinite;}
+@keyframes firstGlow{0%,100%{box-shadow:0 0 40px rgba(255,212,59,.55), 0 10px 26px rgba(0,0,0,.4);} 50%{box-shadow:0 0 58px rgba(255,212,59,.8), 0 10px 26px rgba(0,0,0,.4);}}
 .podium .medal{font-size:2.2rem; filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));}
+
+/* ---------- Confetti ---------- */
+.confetti-layer{position:fixed; inset:0; z-index:300; pointer-events:none; overflow:hidden;}
+.confetti-piece{
+  position:absolute; top:-20px; width:9px; height:14px; opacity:.95; border-radius:2px;
+  animation-name:confettiFall; animation-timing-function:ease-in; animation-fill-mode:forwards;
+}
+@keyframes confettiFall{
+  0%{transform:translate(0,0) rotate(0deg); opacity:1;}
+  100%{transform:translate(var(--drift,0px), 112vh) rotate(var(--rot,360deg)); opacity:.15;}
+}
 
 /* ---------- Editor ---------- */
 .editor-wrap{padding:10px 18px 40px;}
@@ -311,6 +378,7 @@ footer.credit{text-align:center; color:var(--muted); font-size:.75rem; padding:2
   display:none; flex-direction:column; align-items:center; justify-content:flex-start; gap:16px;
   max-width:460px; margin:0 auto; padding:26px 16px 60px; min-height:100vh; text-align:center;
   background:var(--bg); color:var(--ink); font-family:'Trebuchet MS','Segoe UI',sans-serif;
+  position:relative; z-index:1;
 }
 #student-app.show{display:flex;}
 .student-team-btn{
@@ -342,6 +410,15 @@ footer.credit{text-align:center; color:var(--muted); font-size:.75rem; padding:2
 </style>
 </head>
 <body>
+
+<div class="bg-fx" aria-hidden="true">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="orb orb4"></div>
+  <div class="spotlight"></div>
+  <div class="stars" id="bgStars"></div>
+</div>
 
 <div class="topbar">
   <div class="brand">
@@ -404,11 +481,12 @@ footer.credit{text-align:center; color:var(--muted); font-size:.75rem; padding:2
 <!-- WINNER SCREEN -->
 <div class="screen" id="winnerScreen">
   <div class="winner-wrap">
-    <h2>🏆 ¡Juego terminado! 🏆</h2>
+    <h2><span class="trophy">🏆</span> ¡Juego terminado! <span class="trophy">🏆</span></h2>
     <div class="podium" id="podium"></div>
     <button class="btn btn-gold" id="playAgainBtn">🔄 Jugar de nuevo</button>
   </div>
 </div>
+<div class="confetti-layer" id="confettiLayer"></div>
 
 <!-- EDITOR SCREEN -->
 <div class="screen" id="editorScreen">
@@ -668,6 +746,57 @@ function showScreen(id){
   document.getElementById(id).classList.add("active");
 }
 
+/* Puntitos de fondo tipo "estrellas" — puramente decorativo, se genera una sola vez. */
+(function spawnStars(){
+  const wrap = document.getElementById("bgStars");
+  if(!wrap) return;
+  const n = 36;
+  for(let i=0;i<n;i++){
+    const s = document.createElement("div");
+    s.className = "star-dot";
+    s.style.left = (Math.random()*100) + "%";
+    s.style.top = (Math.random()*100) + "%";
+    s.style.animationDelay = (Math.random()*3.2) + "s";
+    s.style.animationDuration = (2.4 + Math.random()*2.4) + "s";
+    wrap.appendChild(s);
+  }
+})();
+
+/* Anima un contador de puntaje de un valor a otro (ease-out cúbico). */
+function animateNumber(el, from, to, dur){
+  if(!el) return;
+  if(from === to){ el.textContent = to; return; }
+  dur = dur || 500;
+  const start = performance.now();
+  function step(now){
+    const p = Math.min(1, (now - start) / dur);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(from + (to - from) * eased);
+    if(p < 1) requestAnimationFrame(step); else el.textContent = to;
+  }
+  requestAnimationFrame(step);
+}
+
+/* Lluvia de confeti para la pantalla de ganador — se limpia sola a los 5s. */
+function spawnConfetti(colors){
+  const layer = document.getElementById("confettiLayer");
+  if(!layer) return;
+  layer.innerHTML = "";
+  const n = 80;
+  for(let i=0;i<n;i++){
+    const p = document.createElement("div");
+    p.className = "confetti-piece";
+    p.style.left = (Math.random()*100) + "vw";
+    p.style.background = colors[i % colors.length];
+    p.style.animationDuration = (2.2 + Math.random()*1.8) + "s";
+    p.style.animationDelay = (Math.random()*1.3) + "s";
+    p.style.setProperty("--rot", (Math.random()*360) + "deg");
+    p.style.setProperty("--drift", (Math.random()*160 - 80) + "px");
+    layer.appendChild(p);
+  }
+  setTimeout(()=>{ layer.innerHTML = ""; }, 5200);
+}
+
 /* ---------- Setup ---------- */
 function buildTeamInputs(){
   const wrap = document.getElementById("teamInputs");
@@ -742,12 +871,14 @@ function renderScoreboard(){
     card.className = "team-card" + (i===currentTeam ? " active" : "") + (isLeader ? " leading" : "");
     card.style.setProperty("--team-color", t.color);
     card.style.borderColor = i===currentTeam ? "var(--gold)" : t.color+"55";
+    const from = prevScores[i] !== undefined ? prevScores[i] : t.score;
     const bumped = prevScores[i] !== undefined && prevScores[i] !== t.score;
     card.innerHTML = `${i===currentTeam ? '<div class="turn-flag">🎙️</div>' : ''}
       ${isLeader ? '<div class="crown">👑</div>' : ''}
       <div class="tname" style="color:${t.color}">${escapeHtml(t.name)}</div>
-      <div class="tscore${bumped ? ' bump' : ''}">${t.score}</div>`;
+      <div class="tscore${bumped ? ' bump' : ''}">${from}</div>`;
     sb.appendChild(card);
+    if(bumped) animateNumber(card.querySelector(".tscore"), from, t.score, 600);
   });
   prevScores = teams.map(t=>t.score);
   syncRoster();
@@ -758,19 +889,22 @@ function renderBoard(){
   const headers = document.getElementById("catHeaders");
   const board = document.getElementById("board");
   headers.innerHTML = ""; board.innerHTML = "";
-  CATEGORIES.forEach(cat=>{
+  CATEGORIES.forEach((cat,ci)=>{
     const h = document.createElement("div");
     h.className = "cat-header";
     h.style.background = cat.color;
+    h.style.setProperty("--idx", ci);
     h.textContent = cat.name;
     headers.appendChild(h);
   });
+  let idx = 0;
   POINTS.forEach(pts=>{
     CATEGORIES.forEach(cat=>{
       const key = cat.key+"-"+pts;
       const cell = document.createElement("div");
       cell.className = "cell" + (usedCells.has(key) ? " used" : "");
       cell.style.background = usedCells.has(key) ? "" : cat.color;
+      cell.style.setProperty("--idx", idx++);
       if(!usedCells.has(key)) cell.textContent = pts;
       cell.dataset.cat = cat.key;
       cell.dataset.pts = pts;
@@ -1022,6 +1156,7 @@ function showWinner(){
     podium.appendChild(card);
   });
   showScreen("winnerScreen");
+  spawnConfetti(teams.map(t=>t.color).concat(["#ffd43b", "#ffffff"]));
 }
 
 /* =========================================================
