@@ -15,10 +15,13 @@
     --blue-light:#7f9bd6;
     --blue-mid:#3f5fa9;
     --blue-dark:#1c2850;
+    --navy:#070b1c;
     --orange:#f2963f;
     --orange-dark:#dd7f28;
+    --orange-glow:rgba(242,150,63,.55);
     --blue-accent:#3f6fd6;
     --blue-accent-dark:#28499e;
+    --blue-glow:rgba(63,111,214,.5);
     --grey-light:#cfcfcf;
     --grey-dark:#8a8a8a;
     --green:#2ecc71;
@@ -27,6 +30,7 @@
     --red-dark:#b7362d;
     --panel:#15203f;
     --panel-light:#22315c;
+    --panel2:#1b2a57;
     --cream:#fff7ea;
     --team0:#3f9fd6;
     --team0-dark:#256fa3;
@@ -34,22 +38,47 @@
     --team1-dark:#a33c25;
     --team2:#4fbf72;
     --team2-dark:#2f8a4d;
+    --ease:cubic-bezier(.22,1,.36,1);
+    --radius-lg:22px;
+    --radius-md:14px;
   }
   *{box-sizing:border-box;}
   html,body{
     margin:0;padding:0;height:100%;
     font-family:'Segoe UI', 'Trebuchet MS', Arial, sans-serif;
-    background:radial-gradient(ellipse at 30% 20%, var(--blue-light) 0%, var(--blue-mid) 45%, var(--blue-dark) 100%);
+    background:
+      radial-gradient(ellipse 60vw 50vh at 20% 10%, rgba(63,111,214,.35), transparent 60%),
+      radial-gradient(ellipse 60vw 50vh at 85% 15%, rgba(242,150,63,.18), transparent 55%),
+      radial-gradient(ellipse at 30% 20%, var(--blue-light) 0%, var(--blue-mid) 45%, var(--blue-dark) 100%);
     overflow:hidden;
     color:#fff;
+    position:relative;
   }
   .screen{
-    position:absolute; inset:0;
+    position:absolute; inset:0; z-index:1;
     display:flex; align-items:center; justify-content:center;
     flex-direction:column;
-    transition:opacity .4s ease;
+    animation:roscoScreenIn .45s var(--ease);
   }
+  @keyframes roscoScreenIn{ from{opacity:0;} to{opacity:1;} }
   .hidden{ display:none !important; }
+
+  /* ---------- Animated stage background ---------- */
+  .bg-fx{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+  .bg-fx .orb{ position:absolute; border-radius:50%; filter:blur(70px); will-change:transform; }
+  .bg-fx .orb1{ width:46vw; height:46vw; left:-14vw; top:-16vw; background:radial-gradient(circle, rgba(63,111,214,.55), transparent 70%); animation:roscoOrbit1 22s ease-in-out infinite; }
+  .bg-fx .orb2{ width:38vw; height:38vw; right:-10vw; top:2vh; background:radial-gradient(circle, rgba(242,150,63,.4), transparent 70%); animation:roscoOrbit2 26s ease-in-out infinite; }
+  .bg-fx .orb3{ width:50vw; height:50vw; left:24vw; bottom:-22vw; background:radial-gradient(circle, rgba(46,204,113,.22), transparent 70%); animation:roscoOrbit3 30s ease-in-out infinite; }
+  @keyframes roscoOrbit1{0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(4vw,3vh) scale(1.15);}}
+  @keyframes roscoOrbit2{0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(-3vw,4vh) scale(1.1);}}
+  @keyframes roscoOrbit3{0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(3vw,-3vh) scale(1.2);}}
+  .bg-fx .stars{ position:absolute; inset:0; }
+  .star-dot{ position:absolute; width:2px; height:2px; background:#fff; border-radius:50%; animation:roscoTwinkle 3.2s ease-in-out infinite; }
+  @keyframes roscoTwinkle{0%,100%{opacity:.1; transform:scale(.8);} 50%{opacity:.9; transform:scale(1.5);}}
+
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
+  }
 
   /* ---------- TITLE SCREEN ---------- */
   #title-screen .credit-row{
@@ -72,12 +101,27 @@
     box-shadow:4px 4px 0 rgba(0,0,0,.35);
   }
 
+  .floating-letters{ position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:0; }
+  .floating-letter{
+    position:absolute; bottom:-10%; font-weight:900; color:rgba(255,255,255,.14);
+    font-size:clamp(20px,3vw,34px); animation-name:roscoFloatLetter; animation-timing-function:linear; animation-iteration-count:infinite;
+  }
+  @keyframes roscoFloatLetter{
+    0%{ transform:translateY(0) rotate(0deg); opacity:0; }
+    12%{ opacity:1; }
+    88%{ opacity:1; }
+    100%{ transform:translateY(-92vh) rotate(25deg); opacity:0; }
+  }
+
   .logo-card{
     width:min(46vw,520px); height:min(30vw,340px);
     border-radius:22px; overflow:hidden; position:relative;
-    box-shadow:0 20px 40px rgba(0,0,0,.4);
+    box-shadow:0 20px 40px rgba(0,0,0,.4), 0 0 60px var(--blue-glow);
     background:var(--blue-accent);
+    animation:roscoLogoIn .6s var(--ease) both, roscoLogoFloat 4.4s ease-in-out .6s infinite;
   }
+  @keyframes roscoLogoIn{ from{opacity:0; transform:translateY(-18px) scale(.9);} to{opacity:1; transform:translateY(0) scale(1);} }
+  @keyframes roscoLogoFloat{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-7px);} }
   .logo-card::before{
     content:"";
     position:absolute; inset:0;
@@ -91,10 +135,15 @@
     opacity:.5;
   }
   .logo-ring{
-    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    position:absolute; top:50%; left:50%;
     width:66%; aspect-ratio:1/1; border-radius:50%;
     border:6px dashed rgba(46,204,113,.85);
     display:flex; align-items:center; justify-content:center;
+    animation:roscoRingSpin 18s linear infinite;
+  }
+  @keyframes roscoRingSpin{
+    from{ transform:translate(-50%,-50%) rotate(0deg); }
+    to{ transform:translate(-50%,-50%) rotate(360deg); }
   }
   .logo-word{
     font-size:clamp(18px,2.7vw,28px); font-weight:900; color:#fff;
@@ -106,47 +155,92 @@
   .logo-word .line2{opacity:.92; font-weight:600; display:block; font-size:.72em;}
 
   .teams-setup{
-    margin-top:22px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center;
-    max-width:90vw;
+    margin-top:24px; display:flex; align-items:stretch; gap:14px; flex-wrap:wrap; justify-content:center;
+    max-width:92vw; position:relative; z-index:1;
   }
+  @keyframes roscoCardIn{ from{opacity:0; transform:translateY(14px) scale(.94);} to{opacity:1; transform:translateY(0) scale(1);} }
+  .team-setup-card{
+    position:relative; width:168px; padding:14px 12px 16px; border-radius:16px;
+    background:linear-gradient(165deg, var(--panel-light), var(--panel));
+    border:2px solid rgba(255,255,255,.08);
+    box-shadow:0 10px 24px rgba(0,0,0,.35);
+    animation:roscoCardIn .45s var(--ease) both;
+    transition:transform .2s var(--ease), box-shadow .2s var(--ease);
+  }
+  .team-setup-card:hover{ transform:translateY(-3px); }
+  .teams-setup > :nth-child(1){ animation-delay:.05s; }
+  .teams-setup > :nth-child(2){ animation-delay:.16s; }
+  .teams-setup > :nth-child(3){ animation-delay:.27s; }
+  .team-setup-card::before{
+    content:""; position:absolute; top:0; left:14px; right:14px; height:3px; border-radius:0 0 3px 3px;
+  }
+  .team-setup-card.t0::before{ background:var(--team0); }
+  .team-setup-card.t1::before{ background:var(--team1); }
+  .team-setup-card.t2::before{ background:var(--team2); }
+  .team-setup-label{ font-size:10.5px; font-weight:800; letter-spacing:1.5px; opacity:.7; margin-bottom:8px; text-align:center; }
   .team-input{
-    width:150px; text-align:center; font-weight:800; letter-spacing:1px;
-    font-size:14px; padding:10px 10px; border-radius:10px;
-    border:3px solid #0c1430; color:#fff;
-    background:rgba(12,20,48,.55);
-    outline:none;
+    width:100%; text-align:center; font-weight:800; letter-spacing:.5px;
+    font-size:14px; padding:10px 8px; border-radius:9px;
+    border:2px solid rgba(255,255,255,.12); color:#fff;
+    background:rgba(8,13,32,.65);
+    outline:none; transition:border-color .15s ease, box-shadow .15s ease;
   }
-  .team-input.t0{ box-shadow: 0 0 0 2px var(--team0) inset; }
-  .team-input.t1{ box-shadow: 0 0 0 2px var(--team1) inset; }
-  .team-input.t2{ box-shadow: 0 0 0 2px var(--team2) inset; }
-  .team-input::placeholder{ color:#c8d3ee; }
-  .vs-label{ font-weight:900; font-size:16px; opacity:.8; letter-spacing:1px; }
+  .team-input:focus{ border-color:var(--orange); box-shadow:0 0 0 3px rgba(242,150,63,.28); }
+  .team-input::placeholder{ color:#8d9ccb; }
+  .team-remove-btn{
+    position:absolute; top:-9px; right:-9px; width:26px; height:26px; border-radius:50%;
+    background:linear-gradient(160deg,#ff8a8a,var(--red-dark)); color:#fff; border:2px solid #1c2850;
+    font-size:.75rem; font-weight:900; cursor:pointer; box-shadow:0 3px 8px rgba(0,0,0,.4);
+    display:flex; align-items:center; justify-content:center; padding:0;
+    transition:transform .15s ease;
+  }
+  .team-remove-btn:hover{ transform:scale(1.12); }
+  .team-add-btn{
+    width:168px; padding:14px; border-radius:16px; border:2px dashed rgba(255,255,255,.3);
+    background:rgba(255,255,255,.04); color:#dbe3f7; font-weight:800; font-size:12px; letter-spacing:1px;
+    cursor:pointer; transition:background .15s ease, border-color .15s ease, transform .15s ease;
+    animation:roscoCardIn .45s var(--ease) both;
+  }
+  .team-add-btn:hover{ background:rgba(255,255,255,.1); border-color:var(--orange); transform:translateY(-3px); }
 
   .play-btn{
-    margin-top:22px;
-    background:linear-gradient(180deg, var(--blue-accent), var(--blue-accent-dark));
-    border:3px solid #0c1430; color:#fff; font-weight:800;
+    position:relative; overflow:hidden;
+    margin-top:26px;
+    background:linear-gradient(160deg, #ffb869, var(--orange) 45%, var(--orange-dark));
+    border:3px solid #0c1430; color:#3a2200; font-weight:900;
     font-size:22px; letter-spacing:2px;
-    padding:14px 70px; border-radius:10px; cursor:pointer;
-    box-shadow:0 6px 0 #0c1430;
+    padding:14px 70px; border-radius:12px; cursor:pointer;
+    box-shadow:0 6px 0 #a35612, 0 14px 30px var(--orange-glow);
     transition:transform .08s ease, box-shadow .08s ease;
+    animation:roscoCardIn .5s var(--ease) .32s both;
   }
-  .play-btn:active{ transform:translateY(6px); box-shadow:0 0 0 #0c1430; }
+  .play-btn::after{
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(115deg, transparent 20%, rgba(255,255,255,.55) 40%, transparent 60%);
+    transform:translateX(-120%); animation:roscoSheen 3.4s ease-in-out .8s infinite;
+  }
+  @keyframes roscoSheen{ 0%,55%{transform:translateX(-120%);} 100%{transform:translateX(120%);} }
+  .play-btn:active{ transform:translateY(6px); box-shadow:0 0 0 #a35612; }
   .edit-btn{
     margin-top:14px; background:rgba(255,255,255,.08); color:#fff;
     border:2px solid rgba(255,255,255,.6); font-weight:700; font-size:13px;
     letter-spacing:1px; padding:9px 22px; border-radius:8px; cursor:pointer;
-    transition:background .15s ease, transform .08s ease;
+    transition:background .15s ease, transform .08s ease, border-color .15s ease;
+    animation:roscoCardIn .5s var(--ease) .4s both;
   }
-  .edit-btn:hover{ background:rgba(255,255,255,.18); }
+  .edit-btn:hover{ background:rgba(255,255,255,.18); border-color:var(--orange); }
   .edit-btn:active{ transform:translateY(2px); }
   .subtitle{
     margin-top:14px; font-size:13px; color:#dbe3f7; opacity:.85;
     letter-spacing:.5px; text-align:center; max-width:460px;
+    animation:roscoCardIn .5s var(--ease) .48s both;
   }
 
   /* ---------- GAME SCREEN ---------- */
   #game-screen{ width:100%; height:100%; position:relative; }
+
+  @keyframes roscoDropIn{ from{opacity:0; transform:translateY(-14px);} to{opacity:1; transform:translateY(0);} }
+  @keyframes roscoSlideInLeft{ from{opacity:0; transform:translate(-16px,-50%);} to{opacity:1; transform:translate(0,-50%);} }
 
   .avatar-box{
     position:absolute; top:3vh; left:3vw;
@@ -156,6 +250,7 @@
     display:flex; align-items:center; justify-content:center;
     overflow:hidden;
     z-index:6;
+    animation:roscoDropIn .5s var(--ease) both;
   }
 
   /* ---------- TEAMS BAR ---------- */
@@ -166,21 +261,32 @@
     width:min(96vw,920px);
   }
   .team-chip{
-    background:#0c1226; border:3px solid #445; border-radius:14px;
+    position:relative;
+    background:linear-gradient(165deg,#111c38,#0c1226); border:3px solid #445; border-radius:14px;
     padding:8px 14px; min-width:130px; text-align:center;
     cursor:pointer; user-select:none;
     box-shadow:3px 3px 0 rgba(0,0,0,.35);
-    transition:transform .1s ease, border-color .2s ease, box-shadow .2s ease;
+    transition:transform .15s var(--ease), border-color .2s ease, box-shadow .2s ease, opacity .2s ease;
     opacity:.75;
+    animation:roscoDropIn .5s var(--ease) both;
   }
   .team-chip:hover{ transform:translateY(-2px); }
   .team-chip.active{
     opacity:1; border-color:#fff;
     box-shadow:0 0 0 3px rgba(255,255,255,.35), 3px 3px 0 rgba(0,0,0,.35);
+    transform:translateY(-3px);
+  }
+  .team-chip.active::after{
+    content:""; position:absolute; inset:-5px; border-radius:18px; border:2px solid rgba(255,255,255,.5);
+    opacity:0; animation:roscoRingPulse 1.6s ease-out infinite; pointer-events:none;
   }
   .team-chip.t0.active{ border-color:var(--team0); box-shadow:0 0 0 3px rgba(63,159,214,.5), 3px 3px 0 rgba(0,0,0,.35); }
+  .team-chip.t0.active::after{ border-color:var(--team0); }
   .team-chip.t1.active{ border-color:var(--team1); box-shadow:0 0 0 3px rgba(214,84,63,.5), 3px 3px 0 rgba(0,0,0,.35); }
+  .team-chip.t1.active::after{ border-color:var(--team1); }
   .team-chip.t2.active{ border-color:var(--team2); box-shadow:0 0 0 3px rgba(79,191,114,.5), 3px 3px 0 rgba(0,0,0,.35); }
+  .team-chip.t2.active::after{ border-color:var(--team2); }
+  @keyframes roscoRingPulse{ 0%{opacity:.6; transform:scale(.96);} 100%{opacity:0; transform:scale(1.08);} }
   .team-chip.finished{ opacity:.4; }
   .team-name{
     font-weight:900; font-size:12.5px; letter-spacing:.5px;
@@ -191,24 +297,27 @@
   .team-stats{ font-size:11.5px; font-weight:700; margin-top:3px; opacity:.9; display:flex; gap:9px; justify-content:center; }
   .team-stats .ok{ color:#6ff0a0; }
   .team-stats .bad{ color:#ff8f85; }
-  .team-timer{ font-size:14px; font-weight:800; margin-top:4px; letter-spacing:.5px; }
-  .team-timer.low{ color:#ff6b5e; }
+  .team-timer{ font-size:14px; font-weight:800; margin-top:4px; letter-spacing:.5px; font-variant-numeric:tabular-nums; }
+  .team-timer.low{ color:#ff6b5e; animation:roscoTimeFlash 1s ease-in-out infinite; }
+  @keyframes roscoTimeFlash{ 0%,100%{opacity:1;} 50%{opacity:.4;} }
   .switch-btn{
     width:46px; height:46px; border-radius:50%;
     background:linear-gradient(180deg,#ffd76a,#e8a730);
     border:3px solid #7a5410; color:#3a2600; font-weight:900; font-size:20px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     box-shadow:0 4px 0 #7a5410;
-    transition:transform .08s ease, box-shadow .08s ease;
+    transition:transform .12s var(--ease), box-shadow .12s ease;
     flex-shrink:0;
   }
+  .switch-btn:hover{ transform:translateY(-2px); box-shadow:0 6px 0 #7a5410; }
   .switch-btn:active{ transform:translateY(4px); box-shadow:0 0 0 #7a5410; }
   .switch-label{ font-size:9px; font-weight:800; text-align:center; margin-top:2px; opacity:.85; letter-spacing:.5px;}
-  .switch-col{ display:flex; flex-direction:column; align-items:center; }
+  .switch-col{ display:flex; flex-direction:column; align-items:center; animation:roscoDropIn .5s var(--ease) both; }
 
   .pasa-btn-wrap{
     position:absolute; left:3vw; top:50%; transform:translateY(-50%);
     display:flex; flex-direction:column; align-items:center; gap:10px;
+    animation:roscoSlideInLeft .5s var(--ease) both;
   }
   .pasa-btn{
     width:min(9vw,86px); height:min(9vw,86px); border-radius:50%;
@@ -216,8 +325,9 @@
     border:3px solid #7a1f18;
     box-shadow:0 6px 0 #7a1f18, inset 0 -6px 10px rgba(0,0,0,.25);
     cursor:pointer;
-    transition:transform .08s ease, box-shadow .08s ease;
+    transition:transform .1s var(--ease), box-shadow .1s ease, filter .15s ease;
   }
+  .pasa-btn:hover{ filter:brightness(1.12); box-shadow:0 6px 0 #7a1f18, inset 0 -6px 10px rgba(0,0,0,.25), 0 0 18px rgba(230,72,60,.55); }
   .pasa-btn:active{ transform:translateY(6px); box-shadow:0 0 0 #7a1f18, inset 0 -6px 10px rgba(0,0,0,.25); }
   .pasa-label{ font-size:12px; font-weight:800; letter-spacing:1px; color:#ffd9d5; }
 
@@ -228,11 +338,14 @@
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     font-size:20px;
     box-shadow:3px 3px 0 rgba(0,0,0,.35);
+    transition:transform .12s var(--ease), background .15s ease;
   }
+  .mute-btn:hover{ transform:translateY(-2px); background:#1c2b52; }
 
   .util-btns{
     position:absolute; top:3vh; right:3vw; z-index:6;
     display:flex; flex-direction:column; gap:8px;
+    animation:roscoDropIn .5s var(--ease) both;
   }
   .util-btn{
     width:50px; height:50px; border-radius:10px;
@@ -240,15 +353,28 @@
     display:flex; align-items:center; justify-content:center; cursor:pointer;
     font-size:20px;
     box-shadow:3px 3px 0 rgba(0,0,0,.35);
-    transition:background .15s ease;
+    transition:background .15s ease, transform .12s var(--ease);
   }
-  .util-btn:hover{ background:#1c2b52; }
+  .util-btn:hover{ background:#1c2b52; transform:translateY(-2px); }
   .util-btn.paused-state{ background:#5a3d10; border-color:#ffd76a; }
 
   .rosco-wrap{
     position:relative;
     width:min(64vh,86vw); height:min(64vh,86vw);
     margin:0 auto;
+  }
+  @keyframes roscoNodeIn{ from{opacity:0; transform:translate(-50%,-50%) scale(.5);} to{opacity:1; transform:translate(-50%,-50%) scale(1);} }
+  @keyframes roscoCorrectPop{ 0%{transform:translate(-50%,-50%) scale(1);} 40%{transform:translate(-50%,-50%) scale(1.3);} 100%{transform:translate(-50%,-50%) scale(1);} }
+  @keyframes roscoWrongShake{
+    0%,100%{transform:translate(-50%,-50%) scale(1) rotate(0deg);}
+    20%{transform:translate(-50%,-50%) scale(1.08) rotate(-8deg);}
+    40%{transform:translate(-50%,-50%) scale(1.08) rotate(8deg);}
+    60%{transform:translate(-50%,-50%) scale(1.08) rotate(-5deg);}
+    80%{transform:translate(-50%,-50%) scale(1.08) rotate(5deg);}
+  }
+  @keyframes roscoCurrentGlow{
+    0%,100%{ box-shadow:0 0 0 4px rgba(255,255,255,.55), 0 4px 10px rgba(0,0,0,.4), 0 0 0 rgba(242,150,63,0); }
+    50%{ box-shadow:0 0 0 4px rgba(255,255,255,.55), 0 4px 10px rgba(0,0,0,.4), 0 0 22px 4px var(--orange-glow); }
   }
   .letter-node{
     position:absolute; width:8.4%; aspect-ratio:1/1;
@@ -260,8 +386,11 @@
     font-weight:800; font-size:clamp(11px,1.7vw,20px); color:#222;
     cursor:pointer; user-select:none;
     box-shadow:0 3px 0 rgba(0,0,0,.35);
-    transition:transform .15s ease, background .2s ease, box-shadow .2s ease;
+    transition:background .2s ease, box-shadow .2s ease;
+    animation:roscoNodeIn .4s var(--ease) both;
+    animation-delay:calc(var(--idx,0) * 18ms);
   }
+  .letter-node:hover:not(.current){ filter:brightness(1.1); }
   .letter-node .badge{
     position:absolute; top:-16%; right:-16%;
     width:46%; height:46%; border-radius:50%;
@@ -282,23 +411,29 @@
     transform:translate(-50%,-50%) scale(1.18);
     background:radial-gradient(circle at 32% 28%, #ffe7b8, var(--orange-dark) 85%);
     border-color:#fff;
-    box-shadow:0 0 0 4px rgba(255,255,255,.55), 0 4px 10px rgba(0,0,0,.4);
     z-index:5;
+    animation:roscoNodeIn .4s var(--ease) both, roscoCurrentGlow 1.8s ease-in-out .4s infinite;
   }
-  .letter-node.correct{ background:radial-gradient(circle at 32% 28%, #8ff0b4, var(--green-dark) 85%); }
+  .letter-node.correct{
+    background:radial-gradient(circle at 32% 28%, #8ff0b4, var(--green-dark) 85%);
+    animation:roscoCorrectPop .45s var(--ease);
+  }
   .letter-node.correct .mark{ display:flex; color:var(--green-dark); }
-  .letter-node.wrong{ background:radial-gradient(circle at 32% 28%, #ffb0a8, var(--red-dark) 85%); }
+  .letter-node.wrong{
+    background:radial-gradient(circle at 32% 28%, #ffb0a8, var(--red-dark) 85%);
+    animation:roscoWrongShake .45s ease;
+  }
   .letter-node.wrong .mark{ display:flex; color:var(--red-dark); }
   .letter-node.passed:not(.current){ box-shadow:0 0 0 3px rgba(255,255,255,.5), 0 3px 0 rgba(0,0,0,.35); }
 
   .center-box{
     position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
     width:58%; height:60%;
-    background:linear-gradient(180deg, var(--orange), var(--orange-dark));
+    background:linear-gradient(165deg, #ffb869, var(--orange) 45%, var(--orange-dark));
     border-radius:26px; border:3px solid #b3611c;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     padding:3%; text-align:center;
-    box-shadow:inset 0 0 0 3px rgba(255,255,255,.15), 0 10px 20px rgba(0,0,0,.3);
+    box-shadow:inset 0 0 0 3px rgba(255,255,255,.15), 0 10px 30px rgba(0,0,0,.35), 0 0 50px rgba(242,150,63,.18);
   }
   .turn-label{
     font-size:clamp(11px,1.5vw,14px); font-weight:900; letter-spacing:1px;
@@ -310,10 +445,12 @@
     font-size:clamp(28px,4.6vw,50px); font-weight:900; color:#1c1c1c;
     text-shadow:0 2px 0 rgba(255,255,255,.25);
     line-height:1;
+    animation:roscoCardIn .3s var(--ease);
   }
   .center-clue{
     margin-top:6px; font-size:clamp(13px,1.9vw,22px); font-weight:800; color:#1c1c1c;
     line-height:1.25; max-width:92%;
+    animation:roscoCardIn .35s var(--ease) .05s both;
   }
   .center-controls{
     margin-top:14px; display:flex; gap:14px;
@@ -322,48 +459,74 @@
     width:54px;height:54px;border-radius:50%; border:3px solid rgba(0,0,0,.25);
     cursor:pointer; font-size:22px; display:flex;align-items:center;justify-content:center;
     box-shadow:0 4px 0 rgba(0,0,0,.3);
-    transition:transform .08s ease, box-shadow .08s ease;
+    transition:transform .1s var(--ease), box-shadow .1s ease, filter .15s ease;
   }
+  .ctrl-btn:hover{ filter:brightness(1.1); transform:translateY(-2px); }
   .ctrl-btn:active{ transform:translateY(4px); box-shadow:0 0 0 rgba(0,0,0,.3);}
   .ctrl-btn.correct-btn{ background:#fff; color:var(--green-dark);}
   .ctrl-btn.wrong-btn{ background:#fff; color:var(--red-dark);}
 
   /* ---------- END MODAL ---------- */
+  @keyframes roscoOverlayIn{ from{opacity:0;} to{opacity:1;} }
+  @keyframes roscoModalIn{ from{opacity:0; transform:scale(.88) translateY(14px);} to{opacity:1; transform:scale(1) translateY(0);} }
   .modal-overlay{
-    position:absolute; inset:0; background:rgba(6,10,25,.72);
+    position:absolute; inset:0; background:rgba(4,6,18,.78); backdrop-filter:blur(4px);
     display:flex; align-items:center; justify-content:center; z-index:50;
+    animation:roscoOverlayIn .25s ease;
   }
   .modal{
-    background:var(--panel); border:3px solid #fff; border-radius:20px;
+    background:linear-gradient(165deg, var(--panel2), var(--panel) 65%);
+    border:1px solid rgba(255,255,255,.18); border-radius:22px;
     padding:30px 40px; text-align:center; max-width:560px;
-    box-shadow:0 20px 50px rgba(0,0,0,.5);
+    box-shadow:0 0 0 1px rgba(255,255,255,.04) inset, 0 30px 60px rgba(0,0,0,.55);
+    animation:roscoModalIn .35s var(--ease);
   }
   .modal h2{ margin:0 0 14px; font-size:24px; letter-spacing:1px; }
   .score-compare{ display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; }
-  .score-side{ min-width:100px; padding:8px 10px; border-radius:12px; }
-  .score-side.winner{ background:rgba(255,215,106,.12); box-shadow:0 0 0 2px rgba(255,215,106,.7); }
-  .score-num{ font-size:40px; font-weight:900; }
+  .score-side{ min-width:100px; padding:10px 12px; border-radius:14px; transition:transform .2s var(--ease); }
+  .score-side.winner{
+    background:rgba(255,215,106,.12); box-shadow:0 0 0 2px rgba(255,215,106,.7), 0 0 22px rgba(255,215,106,.3);
+    transform:translateY(-3px);
+  }
+  .score-num{ font-size:40px; font-weight:900; font-variant-numeric:tabular-nums; }
   .score-team-name{ font-size:12.5px; font-weight:800; opacity:.85; margin-top:2px; letter-spacing:.5px;}
   .score-time{ font-size:11.5px; opacity:.75; margin-top:2px; }
   .score-vs{ font-size:20px; font-weight:900; opacity:.6; }
-  .winner-label{ margin-top:14px; font-size:19px; font-weight:900; color:#ffd76a; letter-spacing:.5px;}
+  .winner-label{
+    margin-top:14px; font-size:19px; font-weight:900; color:#ffd76a; letter-spacing:.5px;
+    animation:roscoCardIn .4s var(--ease) .1s both;
+  }
   .modal p{ opacity:.8; font-size:13px; line-height:1.5; margin-top:12px;}
   .modal-again{
-    margin-top:18px; background:linear-gradient(180deg, var(--blue-accent), var(--blue-accent-dark));
+    position:relative; overflow:hidden;
+    margin-top:18px; background:linear-gradient(160deg, #6f93e8, var(--blue-accent), var(--blue-accent-dark));
     border:3px solid #0c1430; color:#fff; font-weight:800; font-size:16px;
     padding:10px 30px; border-radius:10px; cursor:pointer; letter-spacing:1px;
     box-shadow:0 5px 0 #0c1430;
+    transition:transform .1s var(--ease), box-shadow .1s ease;
   }
+  .modal-again:hover{ transform:translateY(-2px); box-shadow:0 7px 0 #0c1430; }
   .modal-again:active{ transform:translateY(5px); box-shadow:0 0 0 #0c1430; }
+
+  /* ---------- Confeti de la pantalla de resultados ---------- */
+  .confetti-layer{ position:fixed; inset:0; z-index:300; pointer-events:none; overflow:hidden; }
+  .confetti-piece{
+    position:absolute; top:-20px; width:9px; height:14px; opacity:.95; border-radius:2px;
+    animation-name:roscoConfettiFall; animation-timing-function:ease-in; animation-fill-mode:forwards;
+  }
+  @keyframes roscoConfettiFall{
+    0%{ transform:translate(0,0) rotate(0deg); opacity:1; }
+    100%{ transform:translate(var(--drift,0px), 112vh) rotate(var(--rot,360deg)); opacity:.15; }
+  }
 
   /* ---------- PASAPALABRA TRANSITION OVERLAY ---------- */
   .pass-modal{ max-width:420px; }
-  .pass-icon{ font-size:48px; margin-bottom:6px; }
+  .pass-icon{ font-size:48px; margin-bottom:6px; animation:roscoCardIn .4s var(--ease); }
   .pass-modal h2{ color:#ff8f7c; font-size:28px; margin-bottom:4px; }
   .pass-sub{ font-size:13px; opacity:.8; margin:0; }
   .pass-team-name{
     font-size:26px; font-weight:900; letter-spacing:1px; margin:8px 0 4px;
-    color:#fff;
+    color:#fff; animation:roscoCardIn .4s var(--ease) .08s both;
   }
   .pass-hint{ font-size:12.5px; opacity:.75; margin-top:10px; line-height:1.5; }
 
@@ -377,7 +540,9 @@
     border:2px solid #2c3a63; border-bottom:none; background:#0c1226; color:#b9c4e6;
     font-weight:800; font-size:12px; letter-spacing:.5px; cursor:pointer;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    transition:background .15s ease, color .15s ease;
   }
+  .edit-tab:hover{ background:#162043; }
   .edit-tab.active{ background:var(--blue-accent-dark); color:#fff; border-color:var(--blue-accent); }
   .edit-list{
     max-height:44vh; overflow-y:auto; display:flex; flex-direction:column; gap:8px;
@@ -392,16 +557,17 @@
   .edit-input{
     flex:1; padding:8px 10px; border-radius:8px; border:2px solid #2c3a63;
     background:#0c1226; color:#fff; font-size:13px; font-weight:600;
-    outline:none;
+    outline:none; transition:border-color .15s ease, box-shadow .15s ease;
   }
-  .edit-input:focus{ border-color:var(--blue-accent); }
+  .edit-input:focus{ border-color:var(--blue-accent); box-shadow:0 0 0 3px rgba(63,111,214,.25); }
   .edit-actions{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:6px; }
   .edit-action-btn{
     border-radius:8px; padding:8px 14px; font-size:12px; font-weight:800;
     letter-spacing:.5px; cursor:pointer; border:2px solid rgba(255,255,255,.5);
     background:rgba(255,255,255,.06); color:#fff; text-align:center;
+    transition:background .15s ease, transform .1s var(--ease);
   }
-  .edit-action-btn:hover{ background:rgba(255,255,255,.16); }
+  .edit-action-btn:hover{ background:rgba(255,255,255,.16); transform:translateY(-1px); }
   .edit-footer{ display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:8px; }
   .edit-cancel-btn{
     background:none; border:none; color:#b9c4e6; font-size:12px;
@@ -419,7 +585,10 @@
   .student-team-btn{
     padding:20px; border-radius:14px; border:3px solid #fff; font-weight:900; font-size:18px;
     color:#fff; cursor:pointer; text-align:center; letter-spacing:.5px;
+    transition:transform .1s var(--ease), filter .15s ease;
+    animation:roscoCardIn .4s var(--ease) both;
   }
+  .student-team-btn:active{ transform:scale(.97); }
   .student-team-btn.t0{ background:var(--team0); }
   .student-team-btn.t1{ background:var(--team1); }
   .student-team-btn.t2{ background:var(--team2); }
@@ -428,16 +597,19 @@
   .student-letter-cell{
     aspect-ratio:1/1; border-radius:50%; display:flex; align-items:center; justify-content:center;
     font-weight:800; font-size:13px; background:var(--grey-light); color:#222;
+    transition:background .2s ease, transform .2s var(--ease), box-shadow .2s ease;
   }
   .student-letter-cell.correct{ background:var(--green); color:#fff; }
   .student-letter-cell.wrong{ background:var(--red); color:#fff; }
-  .student-letter-cell.current{ background:var(--orange); color:#fff; box-shadow:0 0 0 3px #fff; }
-  .student-letter-big{ font-size:44px; font-weight:900; text-align:center; }
+  .student-letter-cell.current{ background:var(--orange); color:#fff; box-shadow:0 0 0 3px #fff; transform:scale(1.1); }
+  .student-letter-big{ font-size:44px; font-weight:900; text-align:center; animation:roscoCardIn .3s var(--ease); }
   .student-clue{ font-size:16px; font-weight:700; text-align:center; padding:0 8px; }
   .student-input{
     width:100%; padding:14px; border-radius:10px; border:2px solid #fff; font-size:16px;
     text-align:center; background:rgba(255,255,255,.95); color:#111; box-sizing:border-box;
+    transition:box-shadow .15s ease;
   }
+  .student-input:focus{ outline:none; box-shadow:0 0 0 3px rgba(242,150,63,.5); }
   .student-sent-hint{ font-size:13px; opacity:.85; text-align:center; min-height:18px; }
   .student-btn-row{ display:flex; gap:8px; margin-top:10px; }
   .student-btn-row .modal-again{ flex:1; margin-top:0; }
@@ -449,8 +621,10 @@
     .credit-box{ font-size:11px; padding:6px 10px;}
     .info-icon{ width:34px;height:34px; font-size:16px;}
     .team-chip{ min-width:100px; padding:6px 8px;}
-    .team-input{ width:110px; font-size:12px; }
+    .team-setup-card, .team-add-btn{ width:132px; }
+    .team-input{ font-size:12px; }
     .teams-bar{ top:1.5vh; }
+    .logo-card{ width:min(70vw,420px); height:min(44vw,260px); }
     .rosco-wrap{ margin-top:16vh; }
     .util-btns{ flex-direction:row; top:auto; bottom:3vh; right:3vw; }
     .util-btn{ width:40px; height:40px; font-size:16px; }
@@ -459,8 +633,16 @@
 </head>
 <body>
 
+<div class="bg-fx" aria-hidden="true">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="stars" id="bgStars"></div>
+</div>
+
 <!-- ===================== TITLE SCREEN ===================== -->
 <div id="title-screen" class="screen">
+  <div class="floating-letters" id="floatingLetters" aria-hidden="true"></div>
   <div class="credit-row">
     <div class="info-icon">i</div>
     <div class="credit-box">CREATED AND<br>DEVELOPED BY<br>MR. NUÑEZ</div>
@@ -555,6 +737,7 @@
     <button class="modal-again" id="againBtn">JUGAR DE NUEVO</button>
   </div>
 </div>
+<div class="confetti-layer" id="confettiLayer"></div>
 
 <!-- ===================== PASAPALABRA TRANSITION OVERLAY ===================== -->
 <div id="pass-overlay" class="modal-overlay hidden">
@@ -639,7 +822,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script type="module">
-import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
+import { initGameSync, saveGameData, saveGameDataDebounced, toast } from "../shared/game-storage.js";
 import { crearSala, refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
 import { renderAIButton } from "../shared/ai-questions.js";
 
@@ -680,9 +863,15 @@ const DEFAULT_CLUES = [
   'IT IS SIMILAR TO A PUMPKIN, BUT IN CHILE'
 ];
 
-const TEAM_COUNT = 3;
+const MAX_TEAMS = 3;
+const MIN_TEAMS = 1;
 const TEAM_COLOR_CLASSES = ['t0','t1','t2'];
-const DEFAULT_TEAM_NAMES = Array.from({length:TEAM_COUNT}, (_,i)=>'EQUIPO '+(i+1));
+const DEFAULT_TEAM_NAMES = Array.from({length:MAX_TEAMS}, (_,i)=>'EQUIPO '+(i+1));
+/* Cuantos equipos participan (1-3). El profe lo elige en la pantalla de inicio;
+   es la fuente de verdad unica para el setup, el editor y la partida. Las
+   preguntas de los 3 equipos se guardan siempre (ver TEAM_CLUES abajo), asi que
+   bajar y subir este numero nunca destruye el contenido de un equipo inactivo. */
+let activeTeamCount = MAX_TEAMS;
 
 /* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore.
    Un alumno que entra con ?room=... no tiene sesión de profesor: se salta el gate de
@@ -711,7 +900,7 @@ function teamCluesFromSaved(saved){
   if(!saved || !saved.teamClues) return null;
   const src = saved.teamClues;
   const out = [];
-  for(let t=0;t<TEAM_COUNT;t++){
+  for(let t=0;t<MAX_TEAMS;t++){
     const arr = src[t] || src[String(t)];
     if(!Array.isArray(arr)) return null;
     out.push(LETTERS.map(function(_,i){ return arr[i] || DEFAULT_CLUES[i]; }));
@@ -725,7 +914,21 @@ function teamCluesToSaveShape(teamClues){
 }
 
 /* Cada equipo tiene su propio set de 26 preguntas, editable de forma independiente. */
-let TEAM_CLUES = teamCluesFromSaved(SAVED_ROSCO) || Array.from({length:TEAM_COUNT}, ()=> DEFAULT_CLUES.slice());
+let TEAM_CLUES = teamCluesFromSaved(SAVED_ROSCO) || Array.from({length:MAX_TEAMS}, ()=> DEFAULT_CLUES.slice());
+
+/* Restaura la cantidad de equipos que el profe eligio la ultima vez (1-3). */
+function activeTeamCountFromSaved(saved){
+  if(!saved || typeof saved.activeTeamCount !== 'number') return null;
+  const n = Math.round(saved.activeTeamCount);
+  return (n>=MIN_TEAMS && n<=MAX_TEAMS) ? n : null;
+}
+activeTeamCount = activeTeamCountFromSaved(SAVED_ROSCO) || MAX_TEAMS;
+/* Guarda (con debounce) la cantidad activa junto con las preguntas de los 3 equipos:
+   saveGameData reemplaza el documento completo, asi que siempre van juntas. */
+function persistTeamSetup(){
+  if(ES_ALUMNO) return;
+  saveGameDataDebounced('rosco', CURRENT_UID, { teamClues: teamCluesToSaveShape(TEAM_CLUES), activeTeamCount: activeTeamCount }, 500);
+}
 const TOTAL_TIME = 240; // seconds (4 min) per team
 
 /* ================= STATE ================= */
@@ -740,7 +943,7 @@ function freshTeam(name){
     finishTime: null // seconds elapsed when they completed the whole rosco (null = not completed)
   };
 }
-let teams = DEFAULT_TEAM_NAMES.map(n=>freshTeam(n));
+let teams = []; // poblado por rebuildPregameTeams() segun activeTeamCount, y de nuevo al presionar PLAY
 let activeTeam = 0;
 let timerInterval = null;
 let musicInterval = null;
@@ -812,6 +1015,7 @@ LETTERS.forEach((ch,i)=>{
   node.className = 'letter-node';
   node.style.left = x+'%';
   node.style.top = y+'%';
+  node.style.setProperty('--idx', i);
   node.innerHTML = `${ch}<div class="badge">P</div><div class="mark"></div>`;
   node.addEventListener('click', ()=> selectLetter(i));
   roscoWrap.appendChild(node);
@@ -819,40 +1023,69 @@ LETTERS.forEach((ch,i)=>{
 });
 
 /* ================= BUILD TEAM UI (title inputs, team chips, edit tabs) ================= */
-const teamNameInputs = [];
-{
-  const setupEl = document.getElementById('teamsSetup');
-  for(let i=0;i<TEAM_COUNT;i++){
-    if(i>0){
-      const vs = document.createElement('div');
-      vs.className = 'vs-label';
-      vs.textContent = 'VS';
-      setupEl.appendChild(vs);
+/* Nombres elegidos por el profe para cada una de las 3 casillas (1-3 activas).
+   Sobrevive a agregar/quitar equipos, para que nunca se pierda lo ya escrito. */
+let teamSetupNames = DEFAULT_TEAM_NAMES.slice();
+function getTeamSetupName(i){ return (teamSetupNames[i] || '').trim() || DEFAULT_TEAM_NAMES[i]; }
+
+/* Reconstruye el array de equipos "en vivo" (pre-partida) segun activeTeamCount,
+   para que el chip del profe y la sala QR (si hay celulares conectados antes de
+   presionar PLAY) nunca muestren un equipo inactivo. */
+function rebuildPregameTeams(){
+  teams = Array.from({length:activeTeamCount}, (_,i)=> freshTeam(getTeamSetupName(i)));
+  if(salaActual) pushEstadoCompleto();
+}
+
+const teamsSetupEl = document.getElementById('teamsSetup');
+function renderTeamsSetup(){
+  teamsSetupEl.innerHTML = '';
+  for(let i=0;i<activeTeamCount;i++){
+    const removable = activeTeamCount > MIN_TEAMS && i === activeTeamCount - 1;
+    const card = document.createElement('div');
+    card.className = 'team-setup-card ' + TEAM_COLOR_CLASSES[i];
+    card.innerHTML =
+      '<div class="team-setup-label">EQUIPO '+(i+1)+'</div>' +
+      '<input type="text" class="team-input" id="teamNameInput'+i+'" maxlength="18" placeholder="'+DEFAULT_TEAM_NAMES[i]+'">' +
+      (removable ? '<button type="button" class="team-remove-btn" title="Quitar equipo">✕</button>' : '');
+    teamsSetupEl.appendChild(card);
+    const inp = card.querySelector('.team-input');
+    inp.value = teamSetupNames[i];
+    /* Mientras el profe escribe el nombre (antes de PLAY), se sincroniza en vivo
+       con los celulares ya conectados que están eligiendo equipo. */
+    inp.addEventListener('input', ()=>{
+      teamSetupNames[i] = inp.value;
+      if(teams[i]){ teams[i].name = getTeamSetupName(i); if(salaActual) pushEstadoCompleto(); }
+    });
+    if(removable){
+      card.querySelector('.team-remove-btn').addEventListener('click', ()=>{
+        activeTeamCount--;
+        rebuildPregameTeams();
+        renderTeamsSetup();
+        persistTeamSetup();
+      });
     }
-    const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.id = 'teamNameInput'+i;
-    inp.className = 'team-input ' + TEAM_COLOR_CLASSES[i];
-    inp.maxLength = 18;
-    inp.placeholder = DEFAULT_TEAM_NAMES[i];
-    inp.value = DEFAULT_TEAM_NAMES[i];
-    setupEl.appendChild(inp);
-    teamNameInputs.push(inp);
+  }
+  if(activeTeamCount < MAX_TEAMS){
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'team-add-btn';
+    addBtn.textContent = '+ AGREGAR EQUIPO';
+    addBtn.addEventListener('click', ()=>{
+      activeTeamCount++;
+      rebuildPregameTeams();
+      renderTeamsSetup();
+      persistTeamSetup();
+    });
+    teamsSetupEl.appendChild(addBtn);
   }
 }
-/* Mientras el profe escribe el nombre en la pantalla de inicio (antes de PLAY),
-   se sincroniza en vivo con los celulares ya conectados que están eligiendo equipo. */
-teamNameInputs.forEach((inp, i) => {
-  inp.addEventListener('input', () => {
-    teams[i].name = inp.value.trim() || DEFAULT_TEAM_NAMES[i];
-    if(salaActual) pushEstadoCompleto();
-  });
-});
+rebuildPregameTeams();
+renderTeamsSetup();
 
 const teamChips = [], teamNameEls = [], teamTimerEls = [], teamCorrectEls = [], teamWrongEls = [];
 {
   const barEl = document.getElementById('teamsBar');
-  for(let i=0;i<TEAM_COUNT;i++){
+  for(let i=0;i<MAX_TEAMS;i++){
     const chip = document.createElement('div');
     chip.className = 'team-chip ' + TEAM_COLOR_CLASSES[i];
     chip.id = 'teamChip'+i;
@@ -870,6 +1103,7 @@ const teamChips = [], teamNameEls = [], teamTimerEls = [], teamCorrectEls = [], 
   }
   const switchCol = document.createElement('div');
   switchCol.className = 'switch-col';
+  switchCol.id = 'switchCol';
   switchCol.innerHTML = '<div class="switch-btn" id="switchTeamBtn" title="Pasar turno al siguiente equipo">⇄</div><div class="switch-label">CAMBIAR<br>EQUIPO</div>';
   barEl.appendChild(switchCol);
 }
@@ -877,7 +1111,7 @@ const teamChips = [], teamNameEls = [], teamTimerEls = [], teamCorrectEls = [], 
 const editTabButtons = [];
 {
   const tabsEl = document.getElementById('editTabs');
-  for(let i=0;i<TEAM_COUNT;i++){
+  for(let i=0;i<MAX_TEAMS;i++){
     const btn = document.createElement('button');
     btn.className = 'edit-tab' + (i===0 ? ' active' : '');
     btn.id = 'editTab'+i;
@@ -916,6 +1150,57 @@ function formatTime(s){
 }
 function countStatus(team, s){ return team.status.filter(x=>x===s).length; }
 
+/* Letras del alfabeto flotando lentamente detrás del logo, en la pantalla de inicio. */
+(function spawnFloatingLetters(){
+  const wrap = document.getElementById('floatingLetters');
+  if(!wrap) return;
+  for(let i=0;i<14;i++){
+    const el = document.createElement('div');
+    el.className = 'floating-letter';
+    el.textContent = LETTERS[Math.floor(Math.random()*LETTERS.length)];
+    el.style.left = (Math.random()*100) + '%';
+    el.style.animationDuration = (9 + Math.random()*8) + 's';
+    el.style.animationDelay = (Math.random()*10) + 's';
+    wrap.appendChild(el);
+  }
+})();
+
+/* Puntitos de fondo tipo "estrellas" — puramente decorativo, se genera una sola vez. */
+(function spawnStars(){
+  const wrap = document.getElementById('bgStars');
+  if(!wrap) return;
+  for(let i=0;i<30;i++){
+    const s = document.createElement('div');
+    s.className = 'star-dot';
+    s.style.left = (Math.random()*100) + '%';
+    s.style.top = (Math.random()*100) + '%';
+    s.style.animationDelay = (Math.random()*3.2) + 's';
+    s.style.animationDuration = (2.4 + Math.random()*2.4) + 's';
+    wrap.appendChild(s);
+  }
+})();
+
+/* Lluvia de confeti para la pantalla de resultados — se limpia sola a los 5s. */
+function spawnConfetti(){
+  const layer = document.getElementById('confettiLayer');
+  if(!layer) return;
+  layer.innerHTML = '';
+  const colors = [getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f2963f',
+    '#3f9fd6', '#4fbf72', '#d6543f', '#ffd76a'];
+  for(let i=0;i<80;i++){
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.left = (Math.random()*100) + 'vw';
+    p.style.background = colors[i % colors.length];
+    p.style.animationDuration = (2.2 + Math.random()*1.8) + 's';
+    p.style.animationDelay = (Math.random()*1.3) + 's';
+    p.style.setProperty('--rot', (Math.random()*360) + 'deg');
+    p.style.setProperty('--drift', (Math.random()*160 - 80) + 'px');
+    layer.appendChild(p);
+  }
+  setTimeout(()=>{ layer.innerHTML = ''; }, 5200);
+}
+
 /* ================= EDIT QUESTIONS (per team) ================= */
 let draftClues = null;   // working copy while the modal is open: [ [26 clues team0], [26 clues team1], ... ]
 let editingTeamIdx = 0;
@@ -948,9 +1233,12 @@ function switchEditTab(teamIdx){
 function openEditModal(){
   draftClues = TEAM_CLUES.map(arr=>arr.slice());
   editingTeamIdx = 0;
+  /* Solo se muestran las pestañas de los equipos activos (activeTeamCount, elegido
+     en la pantalla de inicio); las preguntas de los equipos inactivos quedan
+     guardadas en draftClues/TEAM_CLUES sin tocarse, listas si el profe los reactiva. */
   editTabButtons.forEach((btn,i)=>{
-    const nm = teamNameInputs[i].value.trim() || DEFAULT_TEAM_NAMES[i];
-    btn.textContent = nm.toUpperCase();
+    btn.classList.toggle('hidden', i>=activeTeamCount);
+    btn.textContent = getTeamSetupName(i).toUpperCase();
     btn.classList.toggle('active', i===0);
   });
   buildEditList(0);
@@ -969,7 +1257,7 @@ function exportQuestions(){
   ws['!cols'] = [{wch:8},{wch:80}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Preguntas');
-  const teamLabel = (teamNameInputs[editingTeamIdx].value.trim() || DEFAULT_TEAM_NAMES[editingTeamIdx]).replace(/[^a-zA-Z0-9]+/g,'_');
+  const teamLabel = getTeamSetupName(editingTeamIdx).replace(/[^a-zA-Z0-9]+/g,'_');
   XLSX.writeFile(wb, 'preguntas-rosco-' + teamLabel + '.xlsx');
 }
 function importQuestionsFromFile(file){
@@ -1009,7 +1297,13 @@ function renderTeamChips(){
     teamTimerEls[i].classList.toggle('low', t.timeLeft<=20 && t.timeLeft>0);
     teamChips[i].classList.toggle('active', i===activeTeam && !gameOver);
     teamChips[i].classList.toggle('finished', t.finished);
+    teamChips[i].classList.remove('hidden');
   });
+  /* Los chips de equipos inactivos (mas alla de teams.length) nunca se muestran,
+     y el boton de cambiar equipo no tiene sentido con un solo equipo jugando. */
+  for(let i=teams.length;i<MAX_TEAMS;i++) teamChips[i].classList.add('hidden');
+  const switchCol = document.getElementById('switchCol');
+  if(switchCol) switchCol.classList.toggle('hidden', teams.length<2);
   pushEstadoCompleto();
 }
 
@@ -1227,7 +1521,7 @@ function endGame(){
       scoreCompareEl.appendChild(vs);
     }
     const side = document.createElement('div');
-    side.className = 'score-side' + (win.idxs.includes(i) ? ' winner' : '');
+    side.className = 'score-side' + (win.idxs.includes(i) && teams.length>1 ? ' winner' : '');
     const c = countStatus(t,'correct');
     side.innerHTML =
       '<div class="score-num">'+c+'</div>' +
@@ -1237,7 +1531,13 @@ function endGame(){
   });
 
   let winnerText;
-  if(win.idxs.length>1){
+  document.getElementById('modalTitle').textContent = teams.length===1 ? '¡DESAFÍO TERMINADO!' : '¡JUEGO TERMINADO!';
+  if(teams.length===1){
+    /* Modo solitario: no hay "ganador", se muestra el desempeño del equipo. */
+    const t = teams[0];
+    winnerText = t.finishTime!==null ? '¡ROSCO COMPLETADO! 🎉' : '¡TIEMPO TERMINADO!';
+    if(t.finishTime!==null) sndVictory();
+  } else if(win.idxs.length>1){
     const names = win.idxs.map(i=> teams[i].name.toUpperCase());
     winnerText = '¡EMPATE ENTRE ' + names.join(' Y ') + '!';
   } else {
@@ -1252,6 +1552,7 @@ function endGame(){
     teams.map(t=> `${t.name}: ${countStatus(t,'correct')} correctas, ${countStatus(t,'wrong')} incorrectas`).join('  ·  ');
   renderTeamChips();
   endModal.classList.remove('hidden');
+  spawnConfetti();
 }
 
 function resetGame(){
@@ -1273,8 +1574,7 @@ function startTimerLoop(){
 
 /* ================= EVENTS ================= */
 document.getElementById('playBtn').addEventListener('click', ()=>{
-  const names = teamNameInputs.map((inp,i)=> inp.value.trim() || DEFAULT_TEAM_NAMES[i]);
-  teams = names.map(n=>freshTeam(n));
+  teams = Array.from({length:activeTeamCount}, (_,i)=> freshTeam(getTeamSetupName(i)));
   activeTeam = 0;
   gameOver = false;
   titleScreen.classList.add('hidden');
@@ -1318,7 +1618,7 @@ document.getElementById('saveQuestionsBtn').addEventListener('click', ()=>{
   saveInputsToDraft(editingTeamIdx);
   TEAM_CLUES = draftClues.map(arr=>arr.slice());
   closeEditModal();
-  saveGameData('rosco', CURRENT_UID, { teamClues: teamCluesToSaveShape(TEAM_CLUES) }).then(function(ok){
+  saveGameData('rosco', CURRENT_UID, { teamClues: teamCluesToSaveShape(TEAM_CLUES), activeTeamCount: activeTeamCount }).then(function(ok){
     if(ok) toast('✓ Preguntas guardadas y sincronizadas');
   });
 });
