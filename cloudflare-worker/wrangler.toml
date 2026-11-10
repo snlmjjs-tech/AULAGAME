@@ -8,8 +8,8 @@ FIREBASE_PROJECT_ID = "aulagame-4c019"
 # Pago único de Premium con PayPal (ver README, sección "Cobrar Premium con PayPal").
 # CAMBIA el precio antes de desplegar, y usa "live" solo cuando ya hayas probado en "sandbox".
 PAYPAL_ENV = "sandbox"
-PAYPAL_CLIENT_ID = ""
-PREMIUM_PRICE_USD = "9.99"
+PAYPAL_CLIENT_ID = "ATjOONXq9LaSKcmcA3TyNUzyHXdjOQO5ZM05c7O5AijVGmmtkz4XeaeG2_Y0HLV4IQOn9hvM-d9LfQQD"  # Client ID de SANDBOX (al pasar a "live" hay que cambiarlo por el Client ID Live)
+PREMIUM_PRICE_USD = "8.00"
 PREMIUM_CURRENCY = "USD"
 
 # Secretos (NO van aquí, se cargan con `wrangler secret put`):
