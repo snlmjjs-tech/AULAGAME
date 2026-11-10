@@ -251,6 +251,14 @@ canvas#cv{width:100%;height:100%;display:block;touch-action:none}
 .cbtn.j{flex:2;max-width:300px;background:var(--sun);color:#2a1535;border-color:rgba(150,95,0,.4);font-size:var(--t-lg);letter-spacing:.02em;gap:var(--s2);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -4px 0 rgba(150,95,0,.28),var(--sh-1)}
 .cbtn.on,.cbtn:active{transform:translateY(2px) scale(.98);box-shadow:inset 0 2px 4px rgba(0,0,0,.16)}
 .keys{font-size:var(--t-xs);color:var(--ink-2);text-align:center;max-width:70ch}
+#tCount{position:absolute;inset:0;z-index:calc(var(--z-overlay) + 3);display:none;align-items:center;justify-content:center;pointer-events:none;font:800 clamp(140px,34vmin,360px)/1 'Bricolage Grotesque',system-ui,sans-serif;color:#fff;-webkit-text-stroke:6px #d6275a;paint-order:stroke fill;text-shadow:0 10px 40px rgba(214,39,90,.55)}
+#tCount::before{content:'';position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse at center,transparent 42%,rgba(214,39,90,.3));animation:tcVig 1s ease-in-out both}
+#tCount.on{display:flex;animation:tcPulse 1s ease-out both}
+#tCount.hot{color:#ffe27a;-webkit-text-stroke-color:#b3122f}
+#tCount.q{align-items:flex-start;padding-top:2%;font-size:clamp(70px,16vmin,160px)}
+@keyframes tcPulse{0%{transform:scale(1.55);opacity:0}15%{opacity:.95}100%{transform:scale(1);opacity:.55}}
+@keyframes tcVig{0%{opacity:.2}50%{opacity:1}100%{opacity:.4}}
+@media (prefers-reduced-motion:reduce){#tCount.on{animation:none;opacity:.8}#tCount::before{animation:none}}
 .toast{position:absolute;left:50%;top:14%;z-index:var(--z-toast);transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:var(--s2) var(--s4);border-radius:var(--r-pill);font-weight:var(--w-bold);box-shadow:var(--sh-2);display:none;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis}
 .toast.on{display:block;animation:pop var(--d-base) var(--ease)}
 
@@ -754,6 +762,7 @@ body[data-screen="game"]{overflow:hidden;overscroll-behavior:none;touch-action:n
       <span class="pill" id="gScore" aria-live="off">0 pts</span>
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div id="tCount" aria-hidden="true"></div>
     <div class="overlay" id="qOv" role="dialog" aria-modal="true" aria-labelledby="qText"><div class="qbox" id="qBox" tabindex="-1"><div class="qbar" id="qBarWrap" aria-hidden="true"><i id="qBar"></i></div><p class="qt" id="qText"></p><div class="ans" id="qAns"></div></div></div>
     <div class="overlay" id="rOv" role="dialog" aria-modal="true" aria-label="Resultados"><div class="res" id="rBox" tabindex="-1"></div></div>
     <div class="ctrls">
@@ -1630,7 +1639,30 @@ function updateLluvia(dt){
 }
 
 /* Actualización general */
+let ftLast=-1;
+function suspenseBeat(n){
+  if(typeof sfxTone!=='function')return;
+  const k=10-n;
+  sfxTone(62,.2,'sine',.55,0,45);sfxTone(58,.2,'sine',.45,.2,42);
+  sfxTone(900+k*90,.05,'square',.06,.02);
+  if(n<=3){sfxTone(62,.2,'sine',.5,.5,45);sfxTone(58,.2,'sine',.4,.7,42);sfxTone(1200+k*90,.05,'square',.06,.52)}
+  const base=110*Math.pow(1.045,k);
+  sfxTone(base,1,'sawtooth',.03+k*.004);
+  sfxTone(base*1.0595,1,'sine',.045+k*.004);
+}
+/* Últimos 10 s de un nivel de carrera: número gigante al centro + música de suspenso */
+function finalTick(){
+  const el=document.getElementById('tCount');if(!el)return;
+  const on=state==='race'&&L&&isRaceType(L.type)&&me&&!me.fin&&!me.out;
+  const rem=on?RACE_LIMIT-raceT:99;
+  if(on&&rem<=0&&ftLast>0&&typeof sfxTone==='function'){sfxTone(90,1.3,'sine',.8,0,28);sfxTone(180,.9,'sawtooth',.14,0,60)}
+  if(!on||rem>10||rem<=0){if(el.classList.contains('on'))el.classList.remove('on');ftLast=-1;return}
+  const n=Math.ceil(rem);
+  el.classList.toggle('q',!!qs);
+  if(n!==ftLast){ftLast=n;el.textContent=n;el.classList.remove('on');void el.offsetWidth;el.classList.add('on');el.classList.toggle('hot',n<=3);suspenseBeat(n)}
+}
 function update(dt){
+  finalTick();
   if(toastT>0){toastT-=dt;if(toastT<=0)$('#toast').classList.remove('on')}
   shards.forEach(s=>{s.vy+=1400*dt;s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt});shards=shards.filter(s=>s.life>0);
   if(state==='count'){cd-=dt;if(cd<=0){state='race';if(L.type==='cuadro')L.pt=L.thinkT;if(L.type==='lluvia')L.pt=L.rainT}return}
@@ -3044,7 +3076,7 @@ loop=function(ts){
 };
 const _startLevel=startLevel;
 startLevel=function(){
-  _startLevel();RACE_LIMIT=isRaceType(L.type)?raceLimit(Q.length):60;PT.length=0;E2.shake=0;roster.forEach(p=>{p.an=null});
+  _startLevel();ftLast=-1;{const tc=document.getElementById('tCount');if(tc)tc.classList.remove('on')}RACE_LIMIT=isRaceType(L.type)?raceLimit(Q.length):60;PT.length=0;E2.shake=0;roster.forEach(p=>{p.an=null});
   fit();const tg=camTarget();camX=isArena()?0:tg[0];camY=L.type==='lava'?tg[1]:0;
 };
 const _dropWrong=dropWrong;
