@@ -7,8 +7,8 @@ FIREBASE_PROJECT_ID = "aulagame-4c019"
 
 # Pago único de Premium con PayPal (ver README, sección "Cobrar Premium con PayPal").
 # CAMBIA el precio antes de desplegar, y usa "live" solo cuando ya hayas probado en "sandbox".
-PAYPAL_ENV = "sandbox"
-PAYPAL_CLIENT_ID = "ATjOONXq9LaSKcmcA3TyNUzyHXdjOQO5ZM05c7O5AijVGmmtkz4XeaeG2_Y0HLV4IQOn9hvM-d9LfQQD"  # Client ID de SANDBOX (al pasar a "live" hay que cambiarlo por el Client ID Live)
+PAYPAL_ENV = "live"
+PAYPAL_CLIENT_ID = "BAAr7C72Ykz3Yf7YCbyS9k9cnZFFB3CA5xbWI_VF5i6pake5Qb4smPCwWEXBbv7NQbASWHY9eqqG5uC7Ho"  # Client ID LIVE (app AulaGame)
 PREMIUM_PRICE_USD = "8.00"
 PREMIUM_CURRENCY = "USD"
 
