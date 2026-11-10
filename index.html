@@ -2337,6 +2337,7 @@
     }
     if(estadoActual.plan === "premium"){ mostrarAviso("⭐ Tu cuenta ya es Premium."); return; }
     abrirCompraPremium({
+      email: auth.currentUser.email || "",
       getIdToken: function(){ return auth.currentUser.getIdToken(true); },
       onPremium: async function(){
         try{

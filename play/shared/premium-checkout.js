@@ -23,6 +23,8 @@ function injectStyle() {
     .pp-price{font-size:34px;font-weight:800;margin:6px 0 2px}
     .pp-price small{font-size:14px;font-weight:600;color:#667}
     .pp-list{margin:12px 0 16px;padding:0;list-style:none;font-size:14px;line-height:1.7}
+    .pp-acct{font-size:13px;background:#f1f4ff;border:1px solid #cfd8ff;border-radius:10px;padding:9px 12px;margin:0 0 14px;line-height:1.45}
+    .pp-acct b{overflow-wrap:anywhere}
     .pp-msg{font-size:14px;margin:10px 0;min-height:1.2em}
     .pp-err{color:#b3261e}.pp-ok{color:#1b7f45;font-weight:700}
     .pp-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
@@ -62,6 +64,7 @@ async function postWorker(path, idToken, body) {
 /**
  * Abre el modal de compra. options:
  *   getIdToken()  — Promise<string> con el ID token de Firebase del profe logueado
+ *   email         — correo de la cuenta de AulaGame logueada (solo para mostrarlo)
  *   onPremium()   — se llama cuando el servidor confirmó el pago y activó el plan
  */
 export function abrirCompraPremium(options) {
@@ -78,6 +81,7 @@ export function abrirCompraPremium(options) {
         <li>✅ Preguntas con IA integrada</li>
         <li>✅ Se activa automáticamente en esta cuenta</li>
       </ul>
+      <div class="pp-acct" id="pp-acct"></div>
       <div id="pp-buttons"></div>
       <div class="pp-msg" id="pp-msg"></div>
       <div class="pp-actions">
@@ -89,6 +93,13 @@ export function abrirCompraPremium(options) {
   const $ = (id) => overlay.querySelector("#" + id);
   const msg = (t, cls) => { const m = $("pp-msg"); m.textContent = t || ""; m.className = "pp-msg" + (cls ? " " + cls : ""); };
   const close = () => overlay.remove();
+  const acct = $("pp-acct");
+  acct.textContent = "";
+  acct.append("El Premium se activará en la cuenta de AulaGame: ");
+  const eb = document.createElement("b");
+  eb.textContent = options.email || "tu cuenta actual";
+  acct.append(eb);
+  acct.append(". Se liga a esta cuenta, no al correo que uses en PayPal. Si entras con otro correo, no verás el Premium.");
   $("pp-close").onclick = close;
   overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
 
