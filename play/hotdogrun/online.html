@@ -432,14 +432,26 @@ body[data-screen="lobby"] #lmBtn,body[data-screen="lobbyHost"] #lmBtn{display:in
 .supchat input{flex:1;min-width:0;border:none;border-radius:999px;padding:8px 14px;font:inherit;font-size:var(--t-sm);background:rgba(255,255,255,.94);color:#2a1535}
 .supchat .btn{flex:none}
 @media (max-height:520px){.supchat{top:auto;bottom:46px;width:min(60%,420px)}}
-.plist{list-style:none;margin:0;padding:0;width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:var(--s3)}
+.chat{width:min(100%,560px);display:flex;flex-direction:column;gap:var(--s2);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:var(--s3);box-shadow:var(--sh-1)}
+.chat-hd{display:flex;align-items:center;justify-content:space-between;gap:var(--s2)}
+.chatlist{list-style:none;margin:0;padding:0;height:150px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;font-size:var(--t-sm)}
+.chatlist li{line-height:1.3;word-break:break-word}
+.chatlist li b{font-weight:var(--w-bold);margin-right:6px}
+.chatlist li.sys{color:var(--ink-2);font-style:italic}
+.chatlist li.me b{color:var(--berry-ink)}
+.chatlist li.host b{color:var(--calafate)}
+.chatform{display:flex;gap:var(--s2)}
+.chatform input{flex:1;min-width:0;border:1px solid var(--line-strong);border-radius:var(--r-pill);padding:8px 14px;font:inherit;font-size:var(--t-sm);background:var(--surface-2);color:var(--ink)}
+.chatform input:disabled{opacity:.55}
+.plist{list-style:none;margin:0;padding:0;width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s4)}
 .plist li{display:flex;flex-direction:column;align-items:center;gap:var(--s1);padding:var(--s3) var(--s2);border-radius:var(--r-l);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1);font-weight:var(--w-semi);font-size:var(--t-sm);animation:pop var(--d-base) var(--ease);min-width:0}
 .plist li{position:relative}
 .plist li .nm{white-space:normal;text-align:center;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
 .plist li .kick{position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(42,21,53,.55);color:#fff;display:grid;place-items:center;cursor:pointer;padding:0;opacity:.85;transition:background-color .15s,transform .15s}
 .plist li .kick:hover{background:var(--bad);opacity:1;transform:scale(1.1)}
 .plist li .kick .ic{width:14px;height:14px;stroke-width:3}
-.plist li img{width:48px;height:68px;object-fit:contain}
+.plist li img{width:96px;height:136px;object-fit:contain;filter:drop-shadow(0 6px 6px rgba(42,21,53,.28))}
+.plist li{padding:var(--s4) var(--s2) var(--s3);font-size:var(--t-md)}
 .plist li span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .plist li.me{outline:2px solid var(--sun-d);outline-offset:-1px}
 .board{list-style:none;margin:0;padding:0;width:100%;display:flex;flex-direction:column;gap:var(--s2)}
@@ -838,6 +850,11 @@ body[data-screen="game"]{overflow:hidden;overscroll-behavior:none;touch-action:n
     <h2 id="lTitle">Esperando al profesor…</h2>
     <p class="hint" id="lSub">Cuando el profesor inicie, la carrera empieza para todos a la vez.</p>
     <ul class="plist" id="lPlayers" aria-label="Jugadores en la sala"></ul>
+    <section class="chat" id="lChat" aria-label="Chat de la sala">
+      <ul class="chatlist" id="lChatList" aria-live="polite"></ul>
+      <form class="chatform" id="lChatForm" autocomplete="off"><input id="lChatTxt" maxlength="80" placeholder="Escribe un mensaje…" aria-label="Mensaje"><button class="btn sm" type="submit">Enviar</button></form>
+      <p class="hint" id="lChatNote"></p>
+    </section>
     <button class="btn ghost" id="lLeave"><svg class="ic" aria-hidden="true"><use href="#i-exit"/></svg>Salir</button>
   </div>
 </main>
@@ -854,6 +871,11 @@ body[data-screen="game"]{overflow:hidden;overscroll-behavior:none;touch-action:n
     <h2><span id="hCount2" class="cnt">0</span> <span id="hCountL">jugadores</span></h2>
     <ul class="plist" id="hPlayers" aria-label="Jugadores conectados"></ul>
     <div class="row" id="hCheatRow" hidden style="justify-content:center;align-items:center"><button class="btn ghost sm" id="hBotsAdd" type="button">＋ Agregar bots</button><button class="btn ghost sm" id="hBotsClear" type="button">Quitar bots</button><button class="btn sm" id="hSupOpen" type="button">🛡 Entrar como supervisor</button><span class="hint" id="hBotsN"></span></div>
+    <section class="chat" id="hChat" aria-label="Chat de la sala">
+      <div class="chat-hd"><b>💬 Chat de la sala</b><button class="btn ghost sm" id="hChatToggle" type="button">Chat: activado</button></div>
+      <ul class="chatlist" id="hChatList" aria-live="polite"></ul>
+      <form class="chatform" id="hChatForm" autocomplete="off"><input id="hChatTxt" maxlength="80" placeholder="Escribe un mensaje para los alumnos…" aria-label="Mensaje"><button class="btn sm" type="submit">Enviar</button></form>
+    </section>
     <p class="hint" id="hDemo" hidden>Modo demostración: sin Supabase solo funcionan pestañas del mismo navegador. Configura <b>online/config.js</b> para jugar con otros dispositivos.</p>
     <div class="row" style="justify-content:center"><button class="btn alt" id="hStart" disabled>Iniciar partida</button><button class="btn ghost" id="hClose">Cerrar sala</button></div>
   </div>
@@ -1328,7 +1350,7 @@ function drawBean(c,cx,by,av,o){
   c.restore();
 }
 const urlCache={};
-function avURL(av){const k=av.color+av.eyes+av.hat+(av.bun||0);if(urlCache[k])return urlCache[k];const cv=document.createElement('canvas');cv.width=68;cv.height=96;const c=cv.getContext('2d');drawBean(c,34,90,av,{scale:1.2});return urlCache[k]=cv.toDataURL()}
+function avURL(av){const k=av.color+av.eyes+av.hat+(av.bun||0);if(urlCache[k])return urlCache[k];const cv=document.createElement('canvas');cv.width=136;cv.height=192;const c=cv.getContext('2d');drawBean(c,68,180,av,{scale:2.4});return urlCache[k]=cv.toDataURL()}
 function paintPreview(id){const cv=$(id);const c=cv.getContext('2d');
   const w=Math.round((cv.clientWidth||150)*DPR);const h=Math.round(w*170/150);
   if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h}
@@ -2363,6 +2385,42 @@ $('#hCheat').onclick=()=>{
 };
 $('#hBotsAdd').onclick=()=>spawnBots(Math.max(1,CHEAT.n));
 $('#hBotsClear').onclick=botFarmClear;
+/* ---------- Chat de la sala de espera (el profe lo puede silenciar o activar) ---------- */
+const CHAT={on:true,msgs:[],cool:0};
+const chatClean=raw=>String(raw||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,80);
+function chatRender(){
+  ['hChatList','lChatList'].forEach(id=>{
+    const ul=document.getElementById(id);if(!ul)return;ul.innerHTML='';
+    CHAT.msgs.forEach(m=>{
+      const li=document.createElement('li');li.className=m.sys?'sys':(m.id===myId?'me':(m.host?'host':''));
+      if(m.sys)li.textContent=m.x;else{const b=document.createElement('b');b.textContent=m.name+':';li.append(b,document.createTextNode(m.x))}
+      ul.appendChild(li);
+    });
+    ul.scrollTop=ul.scrollHeight;
+  });
+}
+function chatPush(m){CHAT.msgs.push(m);if(CHAT.msgs.length>60)CHAT.msgs.shift();chatRender()}
+function chatPaint(){
+  const hb=document.getElementById('hChatToggle');if(hb)hb.textContent=CHAT.on?'Chat: activado':'Chat: silenciado';
+  const t=document.getElementById('lChatTxt'),n=document.getElementById('lChatNote');
+  if(t){t.disabled=!CHAT.on;t.placeholder=CHAT.on?'Escribe un mensaje…':'El profe silenció el chat'}
+  if(n)n.textContent=CHAT.on?'':'El profesor silenció el chat por ahora.';
+}
+function chatReset(){CHAT.msgs=[];CHAT.on=true;chatPaint();chatRender()}
+$('#lChatForm').onsubmit=e=>{
+  e.preventDefault();const i=$('#lChatTxt'),x=chatClean(i.value),now=performance.now();
+  if(!x||!CHAT.on||ROLE!=='player'||now<CHAT.cool)return;
+  CHAT.cool=now+1200;try{upCh.send({t:'chat',x:x})}catch(err){}i.value='';
+};
+$('#hChatForm').onsubmit=e=>{
+  e.preventDefault();const i=$('#hChatTxt'),x=chatClean(i.value);if(!x||ROLE!=='host')return;
+  const m={t:'chat',id:'host',name:'👩‍🏫 Profe',x:x,host:1};try{down.send(m)}catch(err){}chatPush(m);i.value='';
+};
+$('#hChatToggle').onclick=()=>{
+  if(ROLE!=='host')return;HS.chatOn=!HS.chatOn;CHAT.on=HS.chatOn;
+  try{down.send({t:'chatmode',on:HS.chatOn})}catch(err){}
+  chatPush({sys:1,x:HS.chatOn?'Chat activado':'Chat silenciado'});chatPaint();
+};
 /* ---------- Supervisor (solo administradores): entra a jugar con los alumnos sin responder y escribe mensajes ---------- */
 function adminDialog(o){return new Promise(res=>{
   const d=$('#cheatDlg');$('#cheatT').textContent=o.title;$('#cheatP').textContent=o.text;
@@ -2397,7 +2455,7 @@ async function joinRoom(code,name){
   if(!r)throw new Error('No existe una sala con ese código.');
   if(r.status==='closed')throw new Error('Esa sala ya terminó.');
   quiz=r.quiz;quiz.levels.forEach((l,i)=>{if(!TYPES[l.type])l.type=TYPE_ORDER[i%TYPE_ORDER.length]});
-  ROLE='player';roomCode=code;netPlayers=[];joinFail='';lastLevelKey='';
+  ROLE='player';roomCode=code;netPlayers=[];joinFail='';lastLevelKey='';chatReset();
   down=await Net.sub('berry:'+code+':down',onDown);
   upCh=await Net.sub('berry:'+code+':up:'+myId,()=>{});
   const hello=()=>down.send({t:'join',id:myId,name:cleanName(name),av:cleanAv(avatar),sup:SUP?1:0});
@@ -2423,7 +2481,9 @@ function renderLobbyPlayer(){
 function onDown(m){
   if(!m||!m.t)return;
   switch(m.t){
-    case 'roster':netPlayers=m.players||[];roomPhase=m.phase;if(ROLE==='player')renderLobbyPlayer();break;
+    case 'roster':netPlayers=m.players||[];roomPhase=m.phase;if(ROLE==='player'){if(typeof m.chat==='boolean'&&m.chat!==CHAT.on){CHAT.on=m.chat;chatPaint()}renderLobbyPlayer()}break;
+    case 'chat':if(ROLE==='player')chatPush({id:m.id,name:String(m.name||'').replace(/[<>]/g,'').slice(0,24),x:chatClean(m.x),host:m.id==='host'});break;
+    case 'chatmode':if(ROLE==='player'){CHAT.on=!!m.on;chatPush({sys:1,x:CHAT.on?'El profe activó el chat':'El profe silenció el chat'});chatPaint()}break;
     case 'full':if(m.id===myId)joinFail='La sala está llena.';break;
     case 'level':startOnline(m);break;
     case 'snap':applySnap(m);break;
@@ -2534,7 +2594,7 @@ $('#pname').onkeydown=e=>{if(e.key==='Enter')$('#bPlay').click()};
 $('#lLeave').onclick=()=>leaveRoom();
 
 /* ---------- Profesor (hace de servidor de la sala) ---------- */
-const HS={banned:new Set(),bannedNames:new Set(),players:new Map(),phase:'lobby',idx:0,t0:0,graceAt:0,tick:null,snapAcc:0,forceEnd:false,lastRes:null,rosterT:null,liveN:0,up:0,dn:0,lf:1,lastSnapT:0,upRate:0};
+const HS={chatOn:true,banned:new Set(),bannedNames:new Set(),players:new Map(),phase:'lobby',idx:0,t0:0,graceAt:0,tick:null,snapAcc:0,forceEnd:false,lastRes:null,rosterT:null,liveN:0,up:0,dn:0,lf:1,lastSnapT:0,upRate:0};
 async function createRoomUI(){
   if(!quiz.levels.reduce((a,l)=>a+validQs(l).length,0)){msg('Agrega al menos una pregunta válida antes de crear la sala.','err');return}
   if(!(await hdGate('online')))return;
@@ -2542,7 +2602,7 @@ async function createRoomUI(){
   b.disabled=true;b.setAttribute('aria-busy','true');b.textContent='Creando sala…';
   try{
     const code=await Net.createRoom(quiz);
-    HS.banned=new Set();HS.bannedNames=new Set();
+    HS.banned=new Set();HS.bannedNames=new Set();HS.chatOn=true;chatReset();
     ROLE='host';roomCode=code;HS.players=new Map();HS.phase='lobby';HS.idx=0;HS.lastRes=null;
     down=await Net.sub('berry:'+code+':down',m=>{if(m&&m.t==='join')hostAddPlayer(m)});
     const url=location.origin+location.pathname+'?sala='+code;
@@ -2582,6 +2642,10 @@ function onHostUp(id,u){
   else if(u.t==='emo'&&HS.phase!=='lobby'&&Number.isInteger(u.k)&&u.k>=0&&u.k<EMOS.length){
     const now=Date.now();if(now-(pl.emoT||0)>900){pl.emoT=now;try{down.send({t:'emo',id:id,k:u.k})}catch(e){}}
   }
+  else if(u.t==='chat'&&HS.phase==='lobby'&&HS.chatOn&&typeof u.x==='string'){
+    const now=Date.now(),x=chatClean(u.x);
+    if(x&&now-(pl.chatT||0)>1000){pl.chatT=now;const m={t:'chat',id:id,name:pl.name,x:x};try{down.send(m)}catch(e){}chatPush(m)}
+  }
   else if(u.t==='leave'){
     if(HS.phase==='lobby'){HS.players.delete(id);pl.sub&&pl.sub.close();scheduleRoster()}else pl.gone=true;
   }
@@ -2589,7 +2653,7 @@ function onHostUp(id,u){
 function scheduleRoster(){clearTimeout(HS.rosterT);HS.rosterT=setTimeout(hostRoster,120)}
 function hostRoster(){
   if(ROLE!=='host'||!down)return;
-  down.send({t:'roster',phase:HS.phase,players:[...HS.players.values()].map(p=>({id:p.id,name:p.name,av:p.av}))});
+  down.send({t:'roster',phase:HS.phase,chat:HS.chatOn,players:[...HS.players.values()].map(p=>({id:p.id,name:p.name,av:p.av}))});
   renderHostLobby();
 }
 function kickPlayer(p){
@@ -3620,10 +3684,10 @@ window.AG_initAI = async function(){
     box.appendChild(b);
     return;
   }
-  renderAIButton(box, { uid, game: "quizlive", defaultCount: 8, className: "btn alt sm", label: "✨ IA: este nivel",
+  renderAIButton(box, { uid, game: "hotdogrun", defaultCount: 5, maxCount: 45, className: "btn alt sm", label: "✨ IA: este nivel",
     onGenerated: d => window.AG_applyAI(d, false) });
-  renderAIButton(box, { uid, game: "quizlive", defaultCount: 24, className: "btn ghost sm", label: "✨ IA: todos los niveles",
-    extraFields: '<p style="font-size:12px;color:#666;margin:10px 0 0;">Las preguntas se reparten entre todos tus niveles (máx. 30 en total).</p>',
+  renderAIButton(box, { uid, game: "hotdogrun", defaultCount: 45, maxCount: 45, className: "btn ghost sm", label: "✨ IA: todos los niveles",
+    extraFields: '<p style="font-size:12px;color:#666;margin:10px 0 0;">Las preguntas se reparten entre todos tus niveles (unas 5 por nivel, máx. 45 en total).</p>',
     onGenerated: d => window.AG_applyAI(d, true) });
 };
 if(new URLSearchParams(location.search).get("bot")!=="1") window.AG_initAI();

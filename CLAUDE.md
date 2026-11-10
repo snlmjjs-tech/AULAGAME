@@ -64,6 +64,9 @@ es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
     vuelve a pedir el código `2179`; el supervisor juega sin responder preguntas, escribe mensajes de texto que ven todos
     (burbuja + aviso) y no cuenta en puntajes ni en "todos terminaron". El código es solo un freno en el cliente,
     no una barrera de seguridad real.
+  - Hot Dog Run, sala de espera: chat de texto entre alumnos y profe (solo en la sala de espera; el profe lo silencia/activa;
+    el anfitrión retransmite y limita 1 mensaje/s por alumno). La IA usa la config `hotdogrun` del Worker (hasta 45
+    preguntas, ~5 por nivel; `maxCount` configurable en `play/shared/ai-questions.js`).
   - `clasesIngles/{claseId}` — contenido de la intranet de inglés (sin Firebase Auth real ahí).
 - **Realtime Database** — salas en vivo (`salasVivo/{juego}/{sala}/...`): jugadores, equipos,
   buzz, respuestas, estado de la partida en tiempo real. También `pines/{pin}` para resolver PIN

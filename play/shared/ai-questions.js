@@ -92,7 +92,7 @@ function injectModalStyle() {
  * resuelve con `data` (la estructura específica del juego) si el profesor generó preguntas
  * con éxito, o `null` si canceló.
  */
-function openAIGeneratorModal({ uid, game, defaultCount, fixedCount, extraFields }) {
+function openAIGeneratorModal({ uid, game, defaultCount, fixedCount, extraFields, maxCount }) {
   injectModalStyle();
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
@@ -105,7 +105,7 @@ function openAIGeneratorModal({ uid, game, defaultCount, fixedCount, extraFields
         <input type="text" id="ai-q-subject" placeholder="Ej: Verbos irregulares en pasado, Capitales de Sudamérica..." maxlength="200">
         ${fixedCount ? "" : `
         <label for="ai-q-count">Cantidad de preguntas</label>
-        <input type="number" id="ai-q-count" min="1" max="60" value="${defaultCount || 10}">
+        <input type="number" id="ai-q-count" min="1" max="${maxCount || 60}" value="${defaultCount || 10}">
         `}
         ${extraFields || ""}
         <div class="ai-q-error" id="ai-q-error" style="display:none;"></div>
@@ -138,7 +138,8 @@ function openAIGeneratorModal({ uid, game, defaultCount, fixedCount, extraFields
         errorBox.style.display = "block";
         return;
       }
-      const count = fixedCount || (countInput ? parseInt(countInput.value, 10) || defaultCount : defaultCount);
+      let count = fixedCount || (countInput ? parseInt(countInput.value, 10) || defaultCount : defaultCount);
+      if (maxCount && count > maxCount) count = maxCount;
 
       errorBox.style.display = "none";
       goBtn.disabled = true;
@@ -280,7 +281,7 @@ export function renderAIButton(container, options) {
     if (estado.esPremium) {
       btn.textContent = label || "✨ Generar con IA";
       btn.onclick = async () => {
-        const data = await openAIGeneratorModal({ uid, game, defaultCount, fixedCount, extraFields: options.extraFields });
+        const data = await openAIGeneratorModal({ uid, game, defaultCount, fixedCount, extraFields: options.extraFields, maxCount: options.maxCount });
         if (data && onGenerated) onGenerated(data);
       };
     } else {

@@ -490,6 +490,39 @@ const GAME_CONFIG = {
     },
   },
 
+  hotdogrun: {
+    minCount: 3, maxCount: 45, defaultCount: 40,
+    build(subject, n) {
+      return {
+        userPrompt:
+          `Tema: "${subject}". Genera ${n} preguntas de opción múltiple con 4 alternativas cada una (solo una correcta), ` +
+          `pensadas para estudiantes en un juego de carrera: enunciados cortos y claros, con dificultad variada de fácil a difícil, sin repetir preguntas.`,
+        tool: {
+          name: "devolver_preguntas",
+          description: "Devuelve las preguntas generadas.",
+          input_schema: {
+            type: "object",
+            properties: {
+              questions: {
+                type: "array", minItems: n, maxItems: n,
+                items: {
+                  type: "object",
+                  properties: {
+                    text: { type: "string" },
+                    options: { type: "array", minItems: 4, maxItems: 4, items: { type: "string" } },
+                    correct: { type: "integer", minimum: 0, maximum: 3 },
+                  },
+                  required: ["text", "options", "correct"],
+                },
+              },
+            },
+            required: ["questions"],
+          },
+        },
+      };
+    },
+  },
+
   quizlive: {
     minCount: 3, maxCount: 30, defaultCount: 10,
     build(subject, n) {
