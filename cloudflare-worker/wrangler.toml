@@ -12,7 +12,11 @@ PAYPAL_CLIENT_ID = "BAAr7C72Ykz3Yf7YCbyS9k9cnZFFB3CA5xbWI_VF5i6pake5Qb4smPCwWEXB
 PREMIUM_PRICE_USD = "8.00"
 PREMIUM_CURRENCY = "USD"
 
+# Mercado Pago (pesos chilenos). Precio del Premium de por vida, en CLP.
+MP_PRICE_CLP = "7990"
+
 # Secretos (NO van aquí, se cargan con `wrangler secret put`):
 #   ANTHROPIC_API_KEY            -> tu clave de api.anthropic.com
 #   FIREBASE_SERVICE_ACCOUNT_JSON -> el JSON completo de la cuenta de servicio de Firebase
 #   PAYPAL_CLIENT_SECRET         -> el "Secret" de tu app de PayPal (developer.paypal.com)
+#   MERCADOPAGO_ACCESS_TOKEN     -> el Access Token de producción de tu app de Mercado Pago

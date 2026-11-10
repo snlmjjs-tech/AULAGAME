@@ -1681,7 +1681,7 @@
   } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
   import { calcularEstadoPremium, TRIAL_DIAS } from "./play/shared/premium-status.js";
   import { activarDemoPremium } from "./play/shared/trial.js";
-  import { abrirCompraPremium } from "./play/shared/premium-checkout.js";
+  import { abrirCompraPremium, confirmarPagoMercadoPago } from "./play/shared/premium-checkout.js";
 
   var app = initializeApp(firebaseConfig);
   var auth = getAuth(app);
@@ -2328,7 +2328,35 @@
     }
     abrirModalDemoConfirmar();
   }
-  /** Compra única de Premium con PayPal: exige sesión (el plan se activa en la cuenta
+  /** Al volver de Mercado Pago el sitio recibe ?pago=mp&payment_id=...: confirma el pago en el
+   * servidor (que lo consulta a Mercado Pago) y activa el Premium. Se hace una sola vez. */
+  var retornoPagoProcesado = false;
+  async function procesarRetornoPago(user){
+    if(retornoPagoProcesado) return;
+    var params = new URLSearchParams(location.search);
+    var pago = params.get("pago");
+    if(!pago || pago.indexOf("mp") !== 0) return;
+    if(!user) return; // espera a que haya sesión; vuelve a llamarse al iniciarla
+    retornoPagoProcesado = true;
+    var paymentId = params.get("payment_id") || params.get("collection_id");
+    try{ history.replaceState(null, "", location.pathname); }catch(e){}
+    if(pago === "mp_fallo"){ mostrarAviso("El pago no se completó. No se hizo ningún cobro.", true); return; }
+    if(pago === "mp_pendiente"){ mostrarAviso("Tu pago está pendiente. Cuando se apruebe, tu cuenta pasará a Premium."); return; }
+    if(!paymentId){ mostrarAviso("No pudimos identificar tu pago. Escríbenos por WhatsApp.", true); return; }
+    try{
+      mostrarAviso("Confirmando tu pago…");
+      var idToken = await user.getIdToken(true);
+      await confirmarPagoMercadoPago(idToken, paymentId);
+      var snap = await getDoc(doc(db, "profes", uidActual));
+      estadoActual = calcularEstadoPremium(snap.exists() ? snap.data() : {});
+      actualizarEstado();
+      mostrarAviso("⭐ ¡Gracias! Ya eres Premium de por vida.");
+    }catch(e){
+      mostrarAviso((e && e.message) || "No se pudo confirmar el pago. Escríbenos por WhatsApp.", true);
+    }
+  }
+
+  /** Compra única de Premium (Mercado Pago o PayPal): exige sesión (el plan se activa en la cuenta
    * logueada, no en el correo que se escriba al pagar) y relee el plan al terminar. */
   function iniciarCompraPremium(){
     if(!auth.currentUser){
@@ -2438,6 +2466,7 @@
       actualizarTextosLogin();
     }
     mostrarAnuncioPremiumSiCorresponde();
+    procesarRetornoPago(user);
   });
 </script>
 

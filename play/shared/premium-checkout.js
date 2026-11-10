@@ -20,7 +20,7 @@ function injectStyle() {
     .pp-overlay{position:fixed;inset:0;background:rgba(10,10,20,.62);z-index:99995;display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,sans-serif}
     .pp-modal{background:#fff;color:#1c2233;border-radius:18px;max-width:420px;width:100%;padding:24px;box-shadow:0 14px 44px rgba(0,0,0,.4);max-height:94vh;overflow:auto}
     .pp-modal h3{margin:0 0 6px;font-size:21px}
-    .pp-price{font-size:34px;font-weight:800;margin:6px 0 2px}
+    .pp-price{font-size:28px;font-weight:800;margin:6px 0 2px;line-height:1.25}
     .pp-price small{font-size:14px;font-weight:600;color:#667}
     .pp-list{margin:12px 0 16px;padding:0;list-style:none;font-size:14px;line-height:1.7}
     .pp-acct{font-size:13px;background:#f1f4ff;border:1px solid #cfd8ff;border-radius:10px;padding:9px 12px;margin:0 0 14px;line-height:1.45}
@@ -30,6 +30,9 @@ function injectStyle() {
     .pp-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
     .pp-btn{padding:10px 18px;border-radius:10px;border:none;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;display:inline-block}
     .pp-btn-ghost{background:#eee;color:#333}.pp-btn-wa{background:#25D366;color:#08321c}
+    .pp-btn-mp{display:block;width:100%;background:#009ee3;color:#fff;font-size:16px;padding:14px 18px;border-radius:30px;margin:0 0 12px}
+    .pp-btn-mp:disabled{opacity:.6;cursor:default}
+    .pp-or{font-size:12.5px;color:#667;text-align:center;margin:2px 0 10px}
   `;
   document.head.appendChild(st);
 }
@@ -82,6 +85,8 @@ export function abrirCompraPremium(options) {
         <li>✅ Se activa automáticamente en esta cuenta</li>
       </ul>
       <div class="pp-acct" id="pp-acct"></div>
+      <button type="button" class="pp-btn pp-btn-mp" id="pp-mp" style="display:none"></button>
+      <div class="pp-or" id="pp-or" style="display:none">o paga en dólares con PayPal</div>
       <div id="pp-buttons"></div>
       <div class="pp-msg" id="pp-msg"></div>
       <div class="pp-actions">
@@ -99,25 +104,57 @@ export function abrirCompraPremium(options) {
   const eb = document.createElement("b");
   eb.textContent = options.email || "tu cuenta actual";
   acct.append(eb);
-  acct.append(". Se liga a esta cuenta, no al correo que uses en PayPal. Si entras con otro correo, no verás el Premium.");
+  acct.append(". Se liga a esta cuenta, no al correo que uses para pagar. Si entras con otro correo, no verás el Premium.");
   $("pp-close").onclick = close;
   overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
 
-  (async () => {
-    let cfg;
+  const fmtCLP = (n) => "$" + Number(n).toLocaleString("es-CL") + " CLP";
+  const getJson = async (path) => {
     try {
-      const res = await fetch(TRIAL_WORKER_BASE + "/paypal/config");
-      cfg = await res.json();
-      if (!res.ok || !cfg.ok) throw new Error(cfg && cfg.error);
-    } catch (e) {
+      const res = await fetch(TRIAL_WORKER_BASE + path);
+      const j = await res.json();
+      return res.ok && j && j.ok ? j : null;
+    } catch (e) { return null; }
+  };
+
+  (async () => {
+    const [pp, mp] = await Promise.all([getJson("/paypal/config"), getJson("/mercadopago/config")]);
+    if (!pp && !mp) {
       $("pp-price").textContent = "";
-      msg((e && e.message) || "El pago en línea todavía no está disponible.", "pp-err");
+      msg("El pago en línea todavía no está disponible.", "pp-err");
       $("pp-wa").style.display = "inline-block";
       return;
     }
-    $("pp-price").innerHTML = cfg.currency + " " + cfg.price + " <small>pago único</small>";
+    const precios = [];
+    if (mp) precios.push(fmtCLP(mp.priceCLP));
+    if (pp) precios.push(pp.currency + " " + pp.price);
+    $("pp-price").innerHTML = precios.join(" <small>·</small> ") + " <small>pago único</small>";
+
+    if (mp) {
+      const b = $("pp-mp");
+      b.style.display = "block";
+      b.textContent = "Pagar " + fmtCLP(mp.priceCLP) + " con Mercado Pago";
+      b.onclick = async () => {
+        msg("");
+        b.disabled = true;
+        b.textContent = "Abriendo Mercado Pago…";
+        try {
+          const idToken = await options.getIdToken();
+          const r = await postWorker("/mercadopago/create-checkout", idToken);
+          window.location.href = r.url;
+        } catch (e) {
+          b.disabled = false;
+          b.textContent = "Pagar " + fmtCLP(mp.priceCLP) + " con Mercado Pago";
+          msg(e.message, "pp-err");
+          $("pp-wa").style.display = "inline-block";
+        }
+      };
+      if (pp) $("pp-or").style.display = "block";
+    }
+
+    if (!pp) return;
     try {
-      const paypal = await cargarSdkPayPal(cfg.clientId, cfg.currency);
+      const paypal = await cargarSdkPayPal(pp.clientId, pp.currency);
       paypal.Buttons({
         style: { layout: "vertical", shape: "pill", label: "pay", height: 46 },
         createOrder: async () => {
@@ -132,6 +169,8 @@ export function abrirCompraPremium(options) {
             const idToken = await options.getIdToken();
             await postWorker("/paypal/capture-order", idToken, { orderID: data.orderID });
             $("pp-buttons").innerHTML = "";
+            $("pp-mp").style.display = "none";
+            $("pp-or").style.display = "none";
             msg("🎉 ¡Pago recibido! Tu cuenta ya es Premium.", "pp-ok");
             if (options.onPremium) options.onPremium();
           } catch (e) {
@@ -150,4 +189,11 @@ export function abrirCompraPremium(options) {
       $("pp-wa").style.display = "inline-block";
     }
   })();
+}
+
+/** Al volver de Mercado Pago (?pago=mp&payment_id=...), el sitio llama a esto con el ID token
+ * del profe logueado: el servidor consulta el pago a Mercado Pago y activa el Premium.
+ * Lanza un Error con `.message` legible y `.code` ("NOT_APPROVED" si aún no se aprueba). */
+export function confirmarPagoMercadoPago(idToken, paymentId) {
+  return postWorker("/mercadopago/confirm", idToken, { paymentId: paymentId });
 }

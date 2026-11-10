@@ -127,3 +127,22 @@ cuenta con sesión iniciada, no al correo que se escriba al pagar.
 Mientras `PAYPAL_CLIENT_ID`/`PAYPAL_CLIENT_SECRET` estén vacíos, el modal de compra avisa que el pago
 no está disponible y ofrece WhatsApp. Si un pago se cobra pero la activación falla, el profe puede
 volver a abrir el modal; si no, se activa a mano poniendo `plan: "premium"` en Firestore.
+
+## Cobrar Premium con Mercado Pago (pesos chilenos)
+
+Funciona junto a PayPal: en la ventana de compra aparece "Pagar $7.990 CLP con Mercado Pago". El profe paga en
+Mercado Pago (Checkout Pro) y vuelve a aulagame.cl. El Worker **consulta el pago directamente a la API de Mercado
+Pago** (estado aprobado, moneda CLP, monto y dueño) y recién ahí activa el plan. Hay dos caminos y ambos verifican igual:
+el aviso automático (`/mercadopago/webhook`) y la confirmación al volver al sitio (`/mercadopago/confirm`).
+
+1. En [mercadopago.cl/developers/panel](https://www.mercadopago.cl/developers/panel) crea una **aplicación** (Checkout Pro).
+2. En **Credenciales de producción** copia el **Access Token** (empieza con `APP_USR-`).
+3. En `wrangler.toml` ajusta `MP_PRICE_CLP` (precio en pesos). Guarda el token como secreto y despliega:
+   ```
+   npx wrangler secret put MERCADOPAGO_ACCESS_TOKEN
+   npx wrangler deploy
+   ```
+   (o pégalo en Cloudflare: Workers → aulagame-ai-questions → Settings → Variables and Secrets).
+4. No hace falta configurar webhooks en el panel de Mercado Pago: la URL de aviso se envía en cada pago.
+
+Mientras no exista `MERCADOPAGO_ACCESS_TOKEN`, el botón de Mercado Pago no aparece y solo se ve PayPal.

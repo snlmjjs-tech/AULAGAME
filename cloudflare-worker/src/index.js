@@ -18,6 +18,15 @@
 //   POST /paypal/capture-order   Header: Authorization: Bearer <Firebase ID token>, Body: { orderID }
 //                        Cobra la orden, la verifica con PayPal (estado, monto, moneda y dueño) y
 //                        solo entonces escribe plan:"premium" en profes/{uid} (Premium de por vida).
+//
+//   GET  /mercadopago/config           -> { ok, priceCLP }
+//   POST /mercadopago/create-checkout  Header: Authorization: Bearer <Firebase ID token>
+//                        Crea la preferencia de Mercado Pago (pesos chilenos) ligada al uid y
+//                        devuelve { ok, url } (Checkout Pro).
+//   POST /mercadopago/confirm          Header: Authorization: Bearer <Firebase ID token>, Body: { paymentId }
+//                        Verifica el pago consultando a Mercado Pago y activa el Premium.
+//   POST|GET /mercadopago/webhook      Aviso automático de Mercado Pago (sin sesión): consulta el
+//                        pago en la API de Mercado Pago y, si está aprobado, activa el Premium.
 
 const ALLOWED_ORIGINS = [
   "https://aulagames.teacherseba.com",
@@ -824,6 +833,150 @@ async function handlePaypal(request, env, url, origin, projectId) {
 }
 
 /* ======================================================================
+ * D3. PAGO ÚNICO CON MERCADO PAGO (Checkout Pro, pesos chilenos)
+ *    Igual que PayPal: el Premium se activa SOLO desde el servidor, después de consultar
+ *    el pago directamente a la API de Mercado Pago (estado, monto, moneda y dueño).
+ *    Secreto: MERCADOPAGO_ACCESS_TOKEN (wrangler secret put). Variable: MP_PRICE_CLP.
+ * ====================================================================== */
+
+function mpPrice(env) {
+  const n = Math.round(Number(env.MP_PRICE_CLP));
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+function mpConfigured(env) {
+  return !!(env.MERCADOPAGO_ACCESS_TOKEN && mpPrice(env));
+}
+async function mpFetch(env, path, init) {
+  const res = await fetch("https://api.mercadopago.com" + path, {
+    ...init,
+    headers: { Authorization: "Bearer " + env.MERCADOPAGO_ACCESS_TOKEN, "Content-Type": "application/json", ...((init && init.headers) || {}) },
+  });
+  const data = await res.json().catch(() => null);
+  return { res, data };
+}
+
+/** Revisa que un pago de Mercado Pago esté aprobado, en CLP, por el monto correcto y
+ * a nombre de este uid (external_reference puesto por nosotros al crear la preferencia). */
+function verificarPagoMP(env, uid, p) {
+  if (!p || p.status !== "approved") {
+    return { ok: false, code: "NOT_APPROVED", error: "El pago todavía no está aprobado. Si ya te cobraron, espera un minuto y recarga la página." };
+  }
+  if (p.currency_id !== "CLP" || Number(p.transaction_amount) < mpPrice(env)) {
+    return { ok: false, error: "El monto pagado no coincide con el precio del Premium." };
+  }
+  if (!p.external_reference || p.external_reference !== uid) {
+    return { ok: false, error: "Este pago pertenece a otra cuenta." };
+  }
+  return { ok: true, paymentID: String(p.id), email: (p.payer && p.payer.email) || "" };
+}
+
+async function activarPremiumMP(env, uid, pago) {
+  await patchProfeDoc(env, uid, {
+    plan: { stringValue: "premium" },
+    premiumTipo: { stringValue: "vitalicio" },
+    premiumDesde: { timestampValue: new Date().toISOString() },
+    mpPaymentId: { stringValue: pago.paymentID },
+    mpPayerEmail: { stringValue: pago.email || "" },
+  });
+}
+
+function limpiarId(v) {
+  return typeof v === "string" || typeof v === "number" ? String(v).replace(/[^0-9]/g, "").slice(0, 24) : "";
+}
+
+async function handleMercadoPago(request, env, url, origin, projectId) {
+  if (request.method === "GET" && url.pathname === "/mercadopago/config") {
+    if (!mpConfigured(env)) return json({ ok: false, error: "El pago con Mercado Pago todavía no está disponible." }, 503, origin);
+    return json({ ok: true, priceCLP: mpPrice(env) }, 200, origin);
+  }
+
+  /* ---- aviso automático de Mercado Pago (no trae sesión; se verifica consultando la API) ---- */
+  if (url.pathname === "/mercadopago/webhook") {
+    if (!mpConfigured(env)) return json({ ok: true }, 200, origin);
+    let body = null;
+    if (request.method === "POST") { try { body = await request.json(); } catch (e) { body = null; } }
+    const tipo = url.searchParams.get("type") || url.searchParams.get("topic") || (body && (body.type || body.topic)) || "";
+    if (tipo !== "payment") return json({ ok: true }, 200, origin); // otros avisos (merchant_order, etc.): se ignoran
+    const paymentId = limpiarId(url.searchParams.get("data.id") || url.searchParams.get("id") || (body && body.data && body.data.id));
+    if (!paymentId) return json({ ok: true }, 200, origin);
+    try {
+      const { res, data } = await mpFetch(env, "/v1/payments/" + paymentId, { method: "GET" });
+      if (!res.ok || !data) return json({ ok: true }, 200, origin);
+      const uid = typeof data.external_reference === "string" ? data.external_reference.slice(0, 128) : "";
+      const pago = uid ? verificarPagoMP(env, uid, data) : { ok: false };
+      if (pago.ok) await activarPremiumMP(env, uid, pago);
+      return json({ ok: true }, 200, origin);
+    } catch (e) {
+      console.error("Error procesando webhook de Mercado Pago:", e);
+      return json({ ok: false }, 500, origin); // Mercado Pago reintenta ante un 5xx
+    }
+  }
+
+  if (request.method !== "POST") return null;
+
+  if (url.pathname === "/mercadopago/create-checkout" || url.pathname === "/mercadopago/confirm") {
+    if (!mpConfigured(env)) return json({ ok: false, error: "El pago con Mercado Pago todavía no está disponible." }, 503, origin);
+    const auth = await uidDesdeRequest(request, projectId, origin);
+    if (auth.error) return auth.error;
+    const uid = auth.uid;
+
+    if (url.pathname === "/mercadopago/create-checkout") {
+      let actual;
+      try {
+        actual = await getProfeDoc(env, uid);
+      } catch (e) {
+        console.error("Error leyendo profes/{uid} (mp):", e);
+        return json({ ok: false, error: "No se pudo verificar tu cuenta. Intenta de nuevo en unos segundos." }, 502, origin);
+      }
+      if (actual.plan === "premium") {
+        return json({ ok: false, code: "ALREADY_PREMIUM", error: "Tu cuenta ya tiene el plan Premium." }, 409, origin);
+      }
+      const site = isAllowedOrigin(origin) && !LOCALHOST_RE.test(origin) ? origin : "https://aulagame.cl";
+      try {
+        const { res, data } = await mpFetch(env, "/checkout/preferences", {
+          method: "POST",
+          body: JSON.stringify({
+            items: [{ title: "AulaGame Premium (pago único, de por vida)", quantity: 1, currency_id: "CLP", unit_price: mpPrice(env) }],
+            external_reference: uid,
+            binary_mode: true,
+            statement_descriptor: "AULAGAME",
+            back_urls: { success: site + "/?pago=mp", failure: site + "/?pago=mp_fallo", pending: site + "/?pago=mp_pendiente" },
+            auto_return: "approved",
+            notification_url: new URL(request.url).origin + "/mercadopago/webhook",
+          }),
+        });
+        if (!res.ok || !data || !data.init_point) {
+          console.error("Mercado Pago preferencia falló:", res.status, JSON.stringify(data).slice(0, 400));
+          return json({ ok: false, error: "No se pudo iniciar el pago con Mercado Pago. Intenta de nuevo." }, 502, origin);
+        }
+        return json({ ok: true, url: data.init_point }, 200, origin);
+      } catch (e) {
+        console.error("Error creando preferencia de Mercado Pago:", e);
+        return json({ ok: false, error: "No se pudo contactar a Mercado Pago. Intenta de nuevo." }, 502, origin);
+      }
+    }
+
+    /* confirm */
+    let body;
+    try { body = await request.json(); } catch (e) { body = null; }
+    const paymentId = limpiarId(body && body.paymentId);
+    if (!paymentId) return json({ ok: false, error: "Falta el identificador del pago." }, 400, origin);
+    try {
+      const { res, data } = await mpFetch(env, "/v1/payments/" + paymentId, { method: "GET" });
+      if (!res.ok || !data) return json({ ok: false, error: "No se pudo consultar el pago en Mercado Pago." }, 502, origin);
+      const pago = verificarPagoMP(env, uid, data);
+      if (!pago.ok) return json({ ok: false, code: pago.code, error: pago.error }, pago.code === "NOT_APPROVED" ? 402 : 403, origin);
+      await activarPremiumMP(env, uid, pago);
+      return json({ ok: true }, 200, origin);
+    } catch (e) {
+      console.error("Error confirmando pago de Mercado Pago:", e);
+      return json({ ok: false, error: "El pago se procesó pero no pudimos activar tu Premium. Escríbenos por WhatsApp y lo activamos a mano." }, 502, origin);
+    }
+  }
+  return null;
+}
+
+/* ======================================================================
  * E. HANDLER PRINCIPAL
  * ====================================================================== */
 
@@ -845,6 +998,12 @@ export default {
     /* ---------------- PayPal: /paypal/config, /paypal/create-order, /paypal/capture-order ---------------- */
     if (url.pathname.startsWith("/paypal/")) {
       const r = await handlePaypal(request, env, url, origin, projectId);
+      if (r) return r;
+    }
+
+    /* ---------------- Mercado Pago: /mercadopago/* ---------------- */
+    if (url.pathname.startsWith("/mercadopago/")) {
+      const r = await handleMercadoPago(request, env, url, origin, projectId);
       if (r) return r;
     }
 
@@ -898,7 +1057,7 @@ export default {
 
     /* ---------------- POST /generate ---------------- */
     if (request.method !== "POST" || url.pathname !== "/generate") {
-      return json({ ok: false, error: "Ruta no encontrada. Usa POST /generate, POST /start-trial o /paypal/*." }, 404, origin);
+      return json({ ok: false, error: "Ruta no encontrada. Usa POST /generate, POST /start-trial, /paypal/* o /mercadopago/*." }, 404, origin);
     }
 
     if (!env.ANTHROPIC_API_KEY) {
