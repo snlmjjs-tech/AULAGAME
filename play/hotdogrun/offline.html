@@ -2585,19 +2585,23 @@ function glass(x,y,w,h,r,a){ctx.fillStyle='rgba(26,12,40,'+(a||.5)+')';rr(ctx,x,
 function gpill(x,y,w,txt,col){glass(x,y,w,30,15);ctx.fillStyle=col||'#fff';ctx.font='700 16px '+FONT;ctx.textAlign='center';ctx.fillText(txt,x+w/2,y+21)}
 function drawScreen(txt,clock,hot){
   const Wd=E2.hw||W,cp=(H*E2.sc)<470,bw=Math.min(Wd-(cp?120:60),cp?700:820),x=(Wd-bw)/2,y=(E2.hy||E2.HY)+(cp?36:40),bh=cp?64:140;
-  ctx.save();ctx.globalAlpha=cp?.7:1;board(x,y,bw,bh,cp?18:24);ctx.restore();
+  ctx.save();ctx.globalAlpha=cp?.34:1;board(x,y,bw,bh,cp?18:24);ctx.restore();
   const sizes=cp?[22,19,17,15]:[30,26,22,19,16],gap=cp?5:7,cap=cp?bh-12:108;
   let fs=sizes[0],lines;for(const f of sizes){fs=f;ctx.font='700 '+f+'px '+FONT;lines=wrap(ctx,txt,bw-(cp?96:130));if(lines.length*(f+gap)<=cap)break}
-  ctx.fillStyle='#2a1535';ctx.textAlign='center';const y0=y+bh/2-(lines.length*(fs+gap))/2+fs-(cp?3:4);lines.forEach((ln,i)=>ctx.fillText(ln,x+bw/2-(cp?12:14),y0+i*(fs+gap)));
+  ctx.fillStyle='#2a1535';ctx.textAlign='center';const y0=y+bh/2-(lines.length*(fs+gap))/2+fs-(cp?3:4);
+  if(cp){ctx.lineJoin='round';ctx.lineWidth=5;ctx.strokeStyle='rgba(255,250,241,.95)';lines.forEach((ln,i)=>ctx.strokeText(ln,x+bw/2-12,y0+i*(fs+gap)))}
+  lines.forEach((ln,i)=>ctx.fillText(ln,x+bw/2-(cp?12:14),y0+i*(fs+gap)));
   const cr=cp?17:24,cx=x+bw-(cp?34:44),cy=y+(cp?bh/2:36);
   ctx.fillStyle=hot?'#d6275a':'#ffc533';ctx.beginPath();ctx.arc(cx,cy,cr,0,7);ctx.fill();ctx.fillStyle=hot?'#fff':'#2a1535';ctx.font='800 '+(cp?20:26)+'px '+FONT;ctx.fillText(clock,cx,cy+(cp?7:9));
 }
 function drawBanner(txt,subtxt){
-  const Wd=E2.hw||W,cp=(H*E2.sc)<470,bw=Math.min(Wd-(cp?120:60),cp?620:760),x=(Wd-bw)/2,y=(E2.hy||E2.HY)+(cp?36:40),bh=cp?50:92;
-  ctx.save();ctx.globalAlpha=cp?.7:1;board(x,y,bw,bh,cp?16:22);ctx.restore();
+  const Wd=E2.hw||W,cp=(H*E2.sc)<470,bw=Math.min(Wd-(cp?120:60),cp?620:760),x=(Wd-bw)/2,y=(E2.hy||E2.HY)+(cp?36:40),bh=cp?44:92;
+  ctx.save();ctx.globalAlpha=cp?.34:1;board(x,y,bw,bh,cp?16:22);ctx.restore();
   const sizes=cp?[19,17,15,13]:[26,22,19,16],gap=cp?4:6,cap=cp?bh-12:58;
   let fs=sizes[0],lines;for(const f of sizes){fs=f;ctx.font='700 '+f+'px '+FONT;lines=wrap(ctx,txt,bw-(cp?36:70));if(lines.length*(f+gap)<=cap)break}
-  ctx.fillStyle='#2a1535';ctx.textAlign='center';const y0=y+(cp?bh/2:34)-(lines.length*(fs+gap))/2+fs-3;lines.forEach((ln,i)=>ctx.fillText(ln,Wd/2,y0+i*(fs+gap)));
+  ctx.fillStyle='#2a1535';ctx.textAlign='center';const y0=y+(cp?bh/2:34)-(lines.length*(fs+gap))/2+fs-3;
+  if(cp){ctx.lineJoin='round';ctx.lineWidth=5;ctx.strokeStyle='rgba(255,250,241,.95)';lines.forEach((ln,i)=>ctx.strokeText(ln,Wd/2,y0+i*(fs+gap)))}
+  lines.forEach((ln,i)=>ctx.fillText(ln,Wd/2,y0+i*(fs+gap)));
   if(!cp){ctx.fillStyle='#65507a';ctx.font='600 14px '+FONT;ctx.fillText(subtxt,Wd/2,y+80)}
 }
 function drawHUD(t){
