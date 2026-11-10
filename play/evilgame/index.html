@@ -826,7 +826,11 @@
       <div id="studentPreguntaZone" class="hidden" style="margin-top:16px; background:rgba(255,255,255,.06); border-radius:14px; padding:16px; text-align:left;">
         <div style="font-size:.75rem; opacity:.7; text-transform:uppercase;">Casilla</div>
         <h2 id="studentQuestionText" style="font-size:1.2rem; margin:6px 0;"></h2>
-        <p style="font-size:.8rem; opacity:.75;">El profesor está evaluando la respuesta oral del equipo…</p>
+        <div id="studentAnswerBox">
+          <textarea id="studentAnswerInput" maxlength="200" rows="2" placeholder="Escribe la respuesta de tu equipo..." style="width:100%; box-sizing:border-box; margin-top:8px; padding:12px; border-radius:10px; border:1.5px solid rgba(255,255,255,.25); background:rgba(255,255,255,.08); color:#fff; font:inherit; font-size:1rem; resize:none;"></textarea>
+          <button class="student-roll-btn" id="studentAnswerBtn" style="margin-top:10px;">ENVIAR RESPUESTA</button>
+        </div>
+        <p id="studentAnswerHint" style="font-size:.85rem; opacity:.85; margin-top:10px; min-height:1.2em;"></p>
       </div>
     </div>
   </div>
@@ -839,6 +843,7 @@
     <div class="modal-tag" id="q-tag">CASILLA</div>
     <h2 id="q-text">...</h2>
     <p id="q-sub"></p>
+    <div id="q-student-answer" style="display:none; margin:0 auto 16px; max-width:360px; padding:12px 14px; border-radius:12px; background:rgba(47,211,196,.14); border:1.5px solid rgba(47,211,196,.5); font-weight:700; text-align:left;"></div>
     <div id="q-buttons-answer" style="display:none; gap:14px; justify-content:center;">
       <button class="btn correct" onclick="answerQuestion(true)">✅ Correcta</button>
       <button class="btn wrong" onclick="answerQuestion(false)">❌ Incorrecta</button>
@@ -1795,13 +1800,21 @@ function showQuestion(c){
     document.getElementById('q-buttons-answer').style.display = 'flex';
     document.getElementById('q-continue').style.display = 'none';
     modalCallback = resolve;
+    const tq = teams[currentTurn];
+    if(tq) limpiarRespuestaEquipo(tq.id);
     document.getElementById('question-modal').classList.add('active');
-    if(salaActual) escribir(refSala('evilgame', salaActual, 'estado/preguntaAsignada'), { texto: c.q });
+    renderRespuestaModal();
+    if(salaActual){
+      escribir(refSala('evilgame', salaActual, 'estado/resultado'), null);
+      escribir(refSala('evilgame', salaActual, 'estado/preguntaAsignada'), { texto: c.q });
+    }
   });
 }
 
 function answerQuestion(ok){
   document.getElementById('question-modal').classList.remove('active');
+  { const tq = teams[currentTurn]; if(tq) limpiarRespuestaEquipo(tq.id); }
+  renderRespuestaModal();
   if(ok) sfxCorrect(); else sfxWrong();
   if(salaActual) escribir(refSala('evilgame', salaActual, 'estado/resultado'), { correcto: ok });
   if(modalCallback){ const cb = modalCallback; modalCallback = null; cb(ok); }
@@ -1858,6 +1871,33 @@ function showEvent(kind, emoji, text, sub, duration, shake){
 
 /* ============ MODAL / INSPECT ============ */
 let modalCallback = null;
+let respuestasActuales = {}; // { [equipoId]: {tipo, texto, ...} } enviadas desde los celulares
+
+function renderRespuestaModal(){
+  const el = document.getElementById('q-student-answer');
+  if(!el) return;
+  const t = teams[currentTurn];
+  const r = t && respuestasActuales[t.id];
+  if(r && r.tipo === 'respuesta' && r.texto && document.getElementById('question-modal').classList.contains('active')){
+    el.textContent = '';
+    const lab = document.createElement('div');
+    lab.style.cssText = 'font-size:.7rem; opacity:.7; text-transform:uppercase; margin-bottom:4px;';
+    lab.textContent = '📱 Respuesta de ' + t.name;
+    const tx = document.createElement('div');
+    tx.style.cssText = 'font-size:1.1rem;';
+    tx.textContent = r.texto;
+    el.appendChild(lab); el.appendChild(tx);
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+    el.textContent = '';
+  }
+}
+
+function limpiarRespuestaEquipo(equipoId){
+  delete respuestasActuales[equipoId];
+  if(salaActual) escribir(refSala('evilgame', salaActual, 'respuestas/' + equipoId), null);
+}
 function closeModal(){
   document.getElementById('question-modal').classList.remove('active');
   if(modalCallback){ const cb = modalCallback; modalCallback=null; cb(); }
@@ -1939,6 +1979,8 @@ async function iniciarSalaQR(){
   if(!salaListenerListo){
     salaListenerListo = true;
     escuchar(refSala('evilgame', salaActual, 'respuestas'), function(datos){
+      respuestasActuales = datos || {};
+      renderRespuestaModal();
       if(!datos || busy || gameOver || !teams.length) return;
       const turnoId = teams[currentTurn].id;
       const peticion = datos[turnoId];
@@ -1977,6 +2019,7 @@ function initStudentView(){
   let estado = null;
   let yaLanzado = false;
   let ultimoDado = undefined;
+  let respuestaEnviada = false;
 
   const selectEl = document.getElementById('studentSelect');
   const playEl = document.getElementById('studentPlay');
@@ -2009,13 +2052,20 @@ function initStudentView(){
 
     if(estado.resultado){
       preguntaZone.classList.add('hidden');
+      respuestaEnviada = false;
       dadoEl.textContent = estado.resultado.correcto ? '✅ ¡Correcto!' : '❌ Incorrecto.';
     } else if(estado.preguntaAsignada){
       preguntaZone.classList.remove('hidden');
       document.getElementById('studentQuestionText').textContent = estado.preguntaAsignada.texto;
+      document.getElementById('studentAnswerBox').style.display = (soyYo && !respuestaEnviada) ? 'block' : 'none';
+      document.getElementById('studentAnswerHint').textContent = soyYo
+        ? (respuestaEnviada ? '✓ Respuesta enviada, esperando al profe…' : '')
+        : 'Responde el equipo que tiene el turno…';
       dadoEl.textContent = '';
     } else {
       preguntaZone.classList.add('hidden');
+      respuestaEnviada = false;
+      document.getElementById('studentAnswerInput').value = '';
       dadoEl.textContent = estado.dado ? ('🎲 Salió ' + estado.dado.valor) : '';
     }
 
@@ -2037,6 +2087,18 @@ function initStudentView(){
     if(rollBtnStudent.disabled) return;
     rollBtnStudent.disabled = true;
     escribir(refSala('evilgame', SALA_ALUMNO, 'respuestas/' + miEquipoId), { tipo: 'lanzar', jugadorId: jugadorId, enviadaEn: marcaTiempo() });
+  });
+
+  document.getElementById('studentAnswerBtn').addEventListener('click', function(){
+    const inp = document.getElementById('studentAnswerInput');
+    const texto = inp.value.trim();
+    if(!texto || miEquipoId === null || respuestaEnviada) return;
+    respuestaEnviada = true;
+    escribir(refSala('evilgame', SALA_ALUMNO, 'respuestas/' + miEquipoId), {
+      tipo: 'respuesta', texto: texto, jugadorId: jugadorId, jugadorNombre: 'Un alumno', enviadaEn: marcaTiempo()
+    });
+    inp.value = '';
+    render();
   });
 
   escuchar(refSala('evilgame', SALA_ALUMNO, 'estado'), function(datos){
@@ -2072,7 +2134,7 @@ if(ES_ALUMNO){
       'Elige tu equipo tocando su color.',
       'Cuando sea el turno de tu equipo, toca "🎲 LANZAR DADO".',
       'Avanzas casillas según el número que salió. Si caes en 😈 retrocedes, en 🎭 puedes saltar 3 números, y en 🪜 subes o bajas.',
-      'El profesor evalúa tu respuesta oral cuando caigas en una pregunta.',
+      'Cuando caigas en una pregunta, escribe y envía la respuesta de tu equipo; el profesor la evalúa.',
       '¡Gana el primer equipo que llegue exacto a la casilla 33!'
     ]
   });
