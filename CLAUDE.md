@@ -13,7 +13,7 @@ es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
 - `play/<juego>/index.html` — cada juego es una app de una sola página (HTML+CSS+JS inline,
   sin build step). Carpetas actuales: `agrupados`, `battlecastle3d`, `betyouranswer`, `bingo`,
   `colgado`, `evilgame`, `impostor`, `jeopardy`, `memorice`, `millonario`, `monopoly`,
-  `quizlive`, `raceboard`, `robotfight`, `rosco`, `berryrun` (menú + `offline.html` + `online.html`; el modo online usa Supabase, no Firebase).
+  `quizlive`, `raceboard`, `robotfight`, `rosco`, `hotdogrun` (menú + `offline.html` + `online.html`; el modo online usa Supabase, no Firebase; `play/berryrun/` solo redirige a `hotdogrun`).
 - `play/shared/*.js` — módulos JS compartidos entre juegos: `ai-questions.js` (llama al Worker
   de IA), `game-storage.js` (guardar/cargar preguntas en Firestore), `live-room.js` (salas en
   vivo con Realtime Database), `premium-status.js`, `qr-inline.js`, `short-links.js`,
