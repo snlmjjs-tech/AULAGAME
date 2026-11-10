@@ -752,6 +752,7 @@ body[data-screen="game"]{overflow:hidden;overscroll-behavior:none;touch-action:n
       <div id="hList" class="col"></div>
       <div class="row">
         <button class="btn alt sm" id="hAddQ"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>Pregunta</button>
+        <span id="aiBox" style="display:contents"></span>
         <button class="btn ghost sm" id="hMoveL"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg>Mover</button>
         <button class="btn ghost sm" id="hMoveR">Mover<svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>
         <button class="btn danger sm" id="hDelLvl"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>Borrar nivel</button>
@@ -1293,6 +1294,26 @@ $('#hAddQ').onclick=()=>{quiz.levels[hostLvl].questions.push({q:'',o:['','','','
 $('#hDelLvl').onclick=()=>{if(quiz.levels.length<2){msg('Debe existir al menos un nivel.','err');return}ask('¿Borrar este nivel?','Se borrarán el nivel y todas sus preguntas.','Borrar',true).then(ok=>{if(!ok)return;quiz.levels.splice(hostLvl,1);hostLvl=0;saveQuiz();renderHost()})};
 $('#hExport').onclick=()=>{$('#hBackup').value=JSON.stringify(quiz);$('#hBackup').select();try{navigator.clipboard.writeText($('#hBackup').value).then(()=>msg('Respaldo copiado.','ok'),()=>msg('Selecciona y copia el texto.'))}catch(e){msg('Selecciona y copia el texto.')}};
 $('#hImport').onclick=()=>{try{const d=JSON.parse($('#hBackup').value);if(!d.levels||!d.levels.length)throw 0;d.bots=clamp(+d.bots||0,0,11);d.levels.forEach((l,i)=>{if(!TYPES[l.type])l.type=TYPE_ORDER[i%TYPE_ORDER.length]});quiz=d;saveQuiz();hostLvl=0;renderHost();msg('Respaldo cargado.','ok')}catch(e){msg('Ese texto no es un respaldo válido.','err')}};
+/* ---------- Preguntas con IA (botones del editor; los crea el módulo del final) ---------- */
+window.AG_applyAI=function(data,all){
+  const list=(data&&Array.isArray(data.questions)?data.questions:[]).map(x=>{
+    const o=(Array.isArray(x.options)?x.options:[]).map(s=>String(s).trim()).slice(0,6);
+    return{q:String(x.text||'').trim(),o:o,a:clamp(parseInt(x.correct,10)||0,0,Math.max(0,o.length-1))};
+  }).filter(x=>x.q&&x.o.filter(Boolean).length>=2);
+  if(!list.length){msg('La IA no devolvió preguntas válidas. Inténtalo de nuevo.','err');return}
+  const L=quiz.levels[hostLvl];
+  const apply=()=>{
+    if(all){
+      const n=quiz.levels.length,per=Math.floor(list.length/n);let k=0;
+      quiz.levels.forEach((lv,i)=>{const take=i===n-1?list.length-k:per;if(take>0){lv.questions=list.slice(k,k+take);k+=take}});
+    }else L.questions=list;
+    saveQuiz();renderHost();
+    msg('✨ Preguntas generadas con IA ('+list.length+'). Revísalas y edítalas si quieres.','ok');
+  };
+  const has=all?quiz.levels.some(l=>l.questions.length):L.questions.length;
+  if(has)ask('¿Reemplazar las preguntas?',all?'Se reemplazarán las preguntas de todos los niveles por las generadas con IA.':'Se reemplazarán las preguntas de este nivel por las generadas con IA.','Reemplazar',true).then(ok=>{if(ok)apply()});
+  else apply();
+};
 $('#hReset').onclick=()=>{ask('¿Restaurar el ejemplo?','Se reemplazarán todos los niveles y preguntas por los de ejemplo.','Restaurar',true).then(ok=>{if(!ok)return;quiz=defaultQuiz();saveQuiz();hostLvl=0;renderHost();msg('Ejemplo restaurado.','ok')})};
 function renderTest(){
   const e=$('#hTestMsg');$('#hCodeBtn').textContent=TEST?'Desactivar':'Activar';$('#hCode').disabled=TEST;
@@ -3213,6 +3234,27 @@ import { registrarPinExterno } from "../shared/live-room.js";
 import { crearCodigoCorto } from "../shared/short-links.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { renderAIButton } from "../shared/ai-questions.js";
+window.AG_initAI = async function(){
+  const box = document.getElementById("aiBox");
+  if(!box) return;
+  const auth = getAuth(getApp());
+  await auth.authStateReady();
+  const uid = auth.currentUser ? auth.currentUser.uid : null;
+  if(!uid){
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "btn alt sm"; b.textContent = "🔒 ✨ Preguntas con IA";
+    b.onclick = () => alert("Para usar la IA inicia sesión como profe en aulagame.cl (con plan Premium o demo activa) y vuelve a abrir esta página.");
+    box.appendChild(b);
+    return;
+  }
+  renderAIButton(box, { uid, game: "quizlive", defaultCount: 8, className: "btn alt sm", label: "✨ IA: este nivel",
+    onGenerated: d => window.AG_applyAI(d, false) });
+  renderAIButton(box, { uid, game: "quizlive", defaultCount: 24, className: "btn ghost sm", label: "✨ IA: todos los niveles",
+    extraFields: '<p style="font-size:12px;color:#666;margin:10px 0 0;">Las preguntas se reparten entre todos tus niveles (máx. 30 en total).</p>',
+    onGenerated: d => window.AG_applyAI(d, true) });
+};
+window.AG_initAI();
 window.AG_registrarSala = async function(code){
   const auth = getAuth(getApp());
   await auth.authStateReady();
