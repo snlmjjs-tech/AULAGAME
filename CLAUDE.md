@@ -92,3 +92,5 @@ que vive cifrado en GitHub (Settings → Secrets → Actions) y solo tiene permi
 - **No tocar `firestore.rules` ni `database.rules.json` sin avisar** al dueño del proyecto antes
   de desplegarlas (`firebase deploy --only firestore:rules,database`), aunque el cambio parezca
   pequeño: son las que protegen el plan Premium, la demo y los datos de cada profesor.
+- **Los cambios van siempre a `main`** (el dueño lo pidió explícitamente): hacer commit y push
+  directo a `main` (o PR y merge inmediato), para que se publiquen en aulagame.cl sin pasos extra.
