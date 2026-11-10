@@ -260,6 +260,12 @@ canvas#cv{width:100%;height:100%;display:block;touch-action:none}
 @keyframes tcPulse{0%{transform:scale(1.55);opacity:0}15%{opacity:.95}100%{transform:scale(1);opacity:.55}}
 @keyframes tcVig{0%{opacity:.2}50%{opacity:1}100%{opacity:.4}}
 @media (prefers-reduced-motion:reduce){#tCount.on{animation:none;opacity:.8}#tCount::before{animation:none}}
+
+.chips-name{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip-name{display:inline-flex;align-items:center;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 11px;font:inherit;font-size:var(--t-xs);font-weight:var(--w-semi);cursor:pointer;transition:background-color .15s,transform .15s}
+.chip-name:hover{background:var(--sun);color:#2a1535;border-color:var(--sun-d);transform:translateY(-1px)}
+.chip-name .ic{width:1em;height:1em;margin-right:4px}
+
 .toast{position:absolute;left:50%;top:14%;z-index:var(--z-toast);transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:var(--s2) var(--s4);border-radius:var(--r-pill);font-weight:var(--w-bold);box-shadow:var(--sh-2);display:none;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis}
 .toast.on{display:block;animation:pop var(--d-base) var(--ease)}
 
@@ -656,7 +662,7 @@ body[data-screen="game"]{overflow:hidden;overscroll-behavior:none;touch-action:n
       <h1 class="rise" style="--i:0">Hotdog <span class="b">Run</span></h1>
       <p class="sub rise" style="--i:1">Corre, salta y arma tu completo. Cada ingrediente trae una pregunta de la clase.</p>
       <div class="start rise" style="--i:2">
-        <div><label class="l" for="pname">Tu nombre</label><input type="text" id="pname" maxlength="14" placeholder="Escribe tu nombre" autocomplete="nickname" enterkeyhint="go"></div>
+        <div><label class="l" for="pname">Tu nombre</label><input type="text" id="pname" maxlength="20" placeholder="Escribe tu nombre" autocomplete="nickname" enterkeyhint="go"><div class="chips-name" id="nameChips" aria-label="Nombres divertidos"></div></div>
         <div class="row">
           <button class="btn ghost" id="bAvatar">Crear avatar</button>
           <button class="btn" id="bPlay">¡Jugar!</button>
@@ -692,6 +698,7 @@ body[data-screen="game"]{overflow:hidden;overscroll-behavior:none;touch-action:n
       <canvas id="avPrev" width="380" height="420" role="img" aria-label="Vista previa de tu avatar"></canvas>
     </div>
     <div class="col">
+      <div class="fgroup rise" style="--i:1"><label class="l" for="aName">Nombre (puedes elegir uno loco)</label><input type="text" id="aName" maxlength="20" placeholder="Tu nombre" autocomplete="nickname"><div class="chips-name" id="nameChips2" aria-label="Nombres divertidos"></div></div>
       <div class="fgroup rise" style="--i:1"><span class="l" id="lColor">Color de la salchicha</span><div class="sw-row" id="swatches" role="group" aria-labelledby="lColor"></div></div>
       <div class="opt-row rise" style="--i:2"><button class="btn ghost sm icon" data-k="eyes" data-d="-1" aria-label="Ojos anteriores"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button><b id="eyesName" aria-live="polite">Ojos</b><button class="btn ghost sm icon" data-k="eyes" data-d="1" aria-label="Ojos siguientes"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button></div>
       <div class="opt-row rise" style="--i:3"><button class="btn ghost sm icon" data-k="hat" data-d="-1" aria-label="Accesorio anterior"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button><b id="hatName" aria-live="polite">Accesorio</b><button class="btn ghost sm icon" data-k="hat" data-d="1" aria-label="Accesorio siguiente"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button></div>
@@ -967,7 +974,7 @@ const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(M
 /* ---------- Tipos de nivel ---------- */
 const TYPES={
   parkour:{n:'Parkour',tip:'Salta los huecos y rompe las paredes respondiendo la pregunta.',host:'Carrera de saltos sin caerse. Cada pregunta es una pared que cruza todo el camino.',w:'Pared'},
-  autos:{n:'Calle de autos',tip:'Salta sobre los autos y responde las paredes de preguntas.',host:'Calle con autos que pasan. Hay que saltarlos. Cada pregunta es una pared.',w:'Pared'},
+  autos:{n:'Calle de autos',tip:'Salta los autos, esquiva los aviones y sube a las barreras. Mientras respondes, nada te choca.',host:'Calle con autos y aviones. Hay que saltar los autos y esquivar los aviones; las barreras elevadas protegen de los autos. Mientras un alumno responde una pared, nada lo choca.',w:'Pared'},
   puente:{n:'Puente de cristal',tip:'Elige: A muy arriba (¡doble salto!) o B abajo. El falso se rompe.',host:'En cada pregunta hay dos vidrios: A muy arriba (se llega con doble salto) y B abajo. Uno es la respuesta correcta y el otro una falsa al azar; el falso se rompe y caes.',w:'Fila'},
   cuadro:{n:'El cuadro correcto',tip:'Corre al cuadro con la respuesta correcta. ¡Los incorrectos caen rápido!',host:'Cada pregunta es una ronda: todos corren al cuadro correcto y los demás caen. Usa 2 a 6 opciones (más opciones = más difícil).',w:'Ronda'},
   puertas:{n:'Puertas',tip:'Todas las puertas se ven iguales: solo la correcta te deja pasar.',host:'Pared con 2 o 3 puertas a distinta altura. Todas se ven cerradas; solo la correcta deja pasar. Ideal para verdadero o falso.',w:'Puerta'},
@@ -1143,12 +1150,23 @@ function refreshAvatar(){
   const w=$('#swatches'); w.innerHTML='';
   COLORS.forEach(col=>{const b=document.createElement('button');b.className='sw'+(col===avatar.color?' on':'');b.style.background=col;b.setAttribute('aria-label','Color '+COLOR_NAMES[COLORS.indexOf(col)]);b.setAttribute('aria-pressed',col===avatar.color);b.onclick=()=>{avatar.color=col;saveAv();refreshAvatar()};w.appendChild(b)});
 }
-$('#bAvatar').onclick=()=>{avatar.name=$('#pname').value.trim();saveAv();show('avatar');refreshAvatar()};
+$('#bAvatar').onclick=()=>{avatar.name=$('#pname').value.trim();saveAv();$('#aName').value=avatar.name||'';show('avatar');refreshAvatar()};
 $('#avBack').onclick=()=>{show('home');refreshHome()};
 $('#bAvOk').onclick=()=>{show('home');refreshHome()};
 $('#bRand').onclick=()=>{Object.assign(avatar,randAv());saveAv();refreshAvatar()};
 document.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const k=b.dataset.k,d=+b.dataset.d,n=k==='eyes'?EYES.length:k==='bun'?BUNS.length:HATS.length;avatar[k]=(avatar[k]+d+n)%n;saveAv();refreshAvatar()});
-$('#pname').oninput=e=>{avatar.name=e.target.value;saveAv()};
+$('#pname').oninput=e=>{avatar.name=e.target.value;saveAv();const a=$('#aName');if(a)a.value=e.target.value};
+/* ---------- Nombres divertidos ---------- */
+const FUNNY_NAMES=['Mostaza','El Kétchup','La Palta Hass','La Vienesa Quemada','El Completo Italiano','Don Pebre','La Mayo Loca','El Chacarero','La Longaniza','El Ají Pico','Sr. Chucrut','La Crujiente','El Dinámico','Pan Tostado','La Salchi Veloz','El Sin Pan','Doña Chancho','El Salsero'];
+function setPlayerName(n){avatar.name=n;saveAv();$('#pname').value=n;const a=$('#aName');if(a)a.value=n}
+function buildNameChips(box){
+  if(!box)return;box.innerHTML='';
+  FUNNY_NAMES.slice().sort(()=>Math.random()-.5).slice(0,6).forEach(n=>box.appendChild(mk('button',{type:'button',className:'chip-name',textContent:n,onclick:()=>setPlayerName(n)})));
+  box.appendChild(mk('button',{type:'button',className:'chip-name',innerHTML:ic('dice')+'Otros',onclick:()=>buildNameChips(box)}));
+}
+$('#aName').oninput=e=>{avatar.name=e.target.value;saveAv();$('#pname').value=e.target.value};
+buildNameChips($('#nameChips'));buildNameChips($('#nameChips2'));
+
 
 /* ---------- Panel del profesor ---------- */
 let hostLvl=0;
@@ -1239,7 +1257,7 @@ function checkWarn(){const n=quiz.levels.reduce((a,l)=>a+validQs(l).length,0);$(
 /* ---------- Generadores de niveles ---------- */
 function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const CAR_COLS=['#e63a7a','#4da3ff','#ffd23f','#5ed17a','#ff9f1c','#8e6bff'];
-function emptyL(type,theme){return{type:type,theme:theme,plats:[],springs:[],saws:[],movers:[],walls:[],gates:[],cars:[],lp:[],stages:[],finishX:1e9,finY:430,length:W,killY:760,unit:100}}
+function emptyL(type,theme){return{type:type,theme:theme,plats:[],springs:[],saws:[],movers:[],walls:[],gates:[],cars:[],planes:[],lp:[],stages:[],finishX:1e9,finY:430,length:W,killY:760,unit:100}}
 function genPlat(i,nW,hard,type){
   const r=rng(901+i*131),L=emptyL(type||(hard?'dificil':'parkour'),type==='persecucion'?1:(hard?3:0));
   L.plats.push({x:-300,y:430,w:900,h:400});
@@ -1271,7 +1289,10 @@ function genAutos(i,nW){
   L.plats.push({x:-300,y:430,w:finishX+800,h:400,road:true});
   for(let z=0;z<zones;z++){const zc=1000+z*650;
     for(let k=0;k<(z%3===2?2:1);k++){const x0=zc-450,x1=zc+450,w=92+r()*24;
-      L.cars.push({x:x0+r()*(x1-x0),y:430-38,w:w,h:38,v:-(150+r()*170),x0:x0,x1:x1,col:CAR_COLS[Math.floor(r()*CAR_COLS.length)]})}}
+      L.cars.push({x:x0+r()*(x1-x0),y:430-38,w:w,h:38,v:-(150+r()*170),x0:x0,x1:x1,col:CAR_COLS[Math.floor(r()*CAR_COLS.length)]})}
+    if(z%2===1)L.planes.push({x:zc-200+r()*400,y:266+r()*30,w:96,h:28,v:-(300+r()*150),x0:zc-520,x1:zc+520});
+    if(z%2===0&&z>0)L.plats.push({x:zc-80+r()*50,y:336,w:150,h:16,bar:true});
+  }
   const step=Math.max(300,(finishX-1700)/Math.max(nW,1));
   for(let b=0;b<nW;b++)L.walls.push({x:1150+b*step,y:430,qi:b});
   L.finishX=finishX;L.finY=430;L.length=finishX+400;
@@ -1456,7 +1477,7 @@ function breakGlass(g,p){
 /* Física */
 function step(p,dt){
   let dir=0;
-  p.hit=Math.max(0,p.hit-dt);
+  p.hit=Math.max(0,p.hit-dt);p.invul=Math.max(0,(p.invul||0)-dt);
   if(p.fin){dir=0}
   else if(p.bot){
     if(L.type==='cuadro')dir=botCuadro(p);
@@ -1481,9 +1502,10 @@ function step(p,dt){
   let PL=(p.bot&&(L.type==='puente'||L.type==='puertas'))?botPlats(p):L.plats;
   if(TEST&&p===me&&L.type==='puertas')PL=PL.filter(q=>!q.door);
   p.x+=p.vx*dt;
-  for(const q of PL){if(p.x<q.x+q.w&&p.x+p.w>q.x&&p.y<q.y+q.h&&p.y+p.h>q.y){if(p.vx>0)p.x=q.x-p.w;else if(p.vx<0)p.x=q.x+q.w;p.vx=0}}
+  for(const q of PL){if(q.bar)continue;if(p.x<q.x+q.w&&p.x+p.w>q.x&&p.y<q.y+q.h&&p.y+p.h>q.y){if(p.vx>0)p.x=q.x-p.w;else if(p.vx<0)p.x=q.x+q.w;p.vx=0}}
   p.y+=p.vy*dt;p.og=false;
   for(const q of PL){if(p.x<q.x+q.w&&p.x+p.w>q.x&&p.y<q.y+q.h&&p.y+p.h>q.y){
+    if(q.bar&&!(p.vy>0&&(p.y+p.h-p.vy*dt)<=q.y+6))continue;
     if(p.vy>0){p.y=q.y-p.h;p.og=true;p.lastPlat=q;if(!q.glass)p.safe=q;if(q.idx!==undefined)p.lidx=q.idx}else p.y=q.y+q.h;
     p.vy=0}}
   if(p.og)p.jumps=0;
@@ -1535,8 +1557,11 @@ function step(p,dt){
     if(p.x<c.x+c.w&&p.x+p.w>c.x&&p.y<c.y+c.h&&p.y+p.h>c.y){
       const prevB=p.y+p.h-p.vy*dt;
       if(p.vy>0&&prevB<=c.y+10){p.vy=-520;p.og=false;p.y=c.y-p.h}
-      else if(p.hit<=0){p.hit=1.2;p.stun=.9;p.vx=-330;p.vy=-320;p.og=false}
+      else if(p.hit<=0&&!p.frozen&&!(p.invul>0)){p.hit=1.2;p.stun=.9;p.vx=-330;p.vy=-320;p.og=false}
     }
+  }
+  for(const c of L.planes){
+    if(p.x<c.x+c.w&&p.x+p.w>c.x&&p.y<c.y+c.h&&p.y+p.h>c.y&&p.hit<=0&&!p.frozen&&!(p.invul>0)){p.hit=1.2;p.stun=.9;p.vx=-330;p.vy=-320;p.og=false}
   }
   /* sierras */
   for(const s of L.saws){const dx=p.x+p.w/2-s.x,dy=p.y+p.h/2-s.y;
@@ -1662,6 +1687,7 @@ function update(dt){
   else{
     moveMovers(dt);
     L.cars.forEach(c=>{c.x+=c.v*dt;if(c.x+c.w<c.x0)c.x=c.x1});
+    L.planes.forEach(c=>{c.x+=c.v*dt;if(c.x+c.w<c.x0)c.x=c.x1});
     if(L.type==='lava'){if(L.freeze>0)L.freeze-=dt;else L.lavaY-=(36+raceT*.13)*dt}
     roster.forEach(p=>{if(!p.out)step(p,dt)});
     if(L.roller){
@@ -1705,7 +1731,7 @@ function answer(i){
   } else {me.stun=3;flash(i<0?'¡Se acabó el tiempo!':'Casi… ¡pierdes tiempo!',1400)}
   updScore();
 }
-function closeQ(){$('#qOv').classList.remove('on');qs=null;me.frozen=false}
+function closeQ(){$('#qOv').classList.remove('on');qs=null;me.frozen=false;me.invul=1.6}
 
 /* resultados */
 function ranking(){
@@ -2281,6 +2307,33 @@ function drawLava(t){
   if(!fz&&!E2.rm.matches&&Math.random()<.35)emit({k:'d',x:rnd(x0,x1),y:ly,vx:rnd(-20,20),vy:-rnd(60,160),g:-10,life:1.1,max:1.1,r:rnd(2,4),c:'#ffb347'});
 }
 
+/* ---------- Aviones y barreras elevadas (nivel de autos) ---------- */
+function drawPlane(c){
+  const x=c.x,y=c.y,w=c.w,h=c.h,t=E2.t||0;
+  ctx.save();
+  const tr=ctx.createLinearGradient(x+w,0,x+w+130,0);tr.addColorStop(0,'rgba(255,255,255,.6)');tr.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=tr;rr(ctx,x+w-4,y+h*.5-3,130,6,3);ctx.fill();
+  ctx.fillStyle='#e63a7a';ctx.beginPath();ctx.moveTo(x+w*.84,y+h*.55);ctx.lineTo(x+w*.98,y-2);ctx.lineTo(x+w*1.03,y+h*.55);ctx.closePath();ctx.fill();
+  ctx.fillStyle=lgrad(ctx,0,y+h*.25,0,y+h*.95,'#ffffff','#bfc6da');ctx.beginPath();ctx.ellipse(x+w*.52,y+h*.58,w*.48,h*.3,0,0,7);ctx.fill();
+  ctx.fillStyle=lgrad(ctx,0,y+h*.55,0,y+h*1.08,'#ffe27a','#d99a00');ctx.beginPath();ctx.moveTo(x+w*.4,y+h*.62);ctx.lineTo(x+w*.62,y+h*.62);ctx.lineTo(x+w*.74,y+h*1.08);ctx.lineTo(x+w*.5,y+h*1.08);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#7fd6ff';[.3,.42,.54].forEach(f=>{ctx.beginPath();ctx.arc(x+w*f+6,y+h*.52,3.2,0,7);ctx.fill()});
+  ctx.fillStyle='#e63a7a';ctx.beginPath();ctx.ellipse(x+w*.05,y+h*.58,w*.07,h*.27,0,0,7);ctx.fill();
+  const a=Math.sin(t*.06)*h*.5;ctx.strokeStyle='rgba(40,40,60,.75)';ctx.lineWidth=3;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x-3,y+h*.58-a);ctx.lineTo(x-3,y+h*.58+a);ctx.stroke();
+  ctx.restore();
+}
+function drawBarrier(p,t){
+  const x=p.x,y=p.y,w=p.w,h=p.h;
+  ctx.fillStyle='rgba(0,0,0,.16)';ctx.beginPath();ctx.ellipse(x+w/2,433,w*.46,5,0,0,7);ctx.fill();
+  ctx.save();rr(ctx,x,y,w,h,6);ctx.clip();
+  ctx.fillStyle='#fff';ctx.fillRect(x,y,w,h);
+  ctx.fillStyle='#e63a7a';for(let sx=x-24;sx<x+w;sx+=26){ctx.beginPath();ctx.moveTo(sx,y+h);ctx.lineTo(sx+13,y+h);ctx.lineTo(sx+25,y);ctx.lineTo(sx+12,y);ctx.closePath();ctx.fill()}
+  ctx.fillStyle='rgba(255,255,255,.35)';ctx.fillRect(x,y,w,4);
+  ctx.restore();
+  ctx.strokeStyle='rgba(42,21,53,.55)';ctx.lineWidth=2;rr(ctx,x,y,w,h,6);ctx.stroke();
+  const on=Math.sin(t*.008)>0;
+  [x+9,x+w-9].forEach((lx,i)=>{const lit=i?on:!on;ctx.fillStyle=lit?'#ffd23f':'#8a6a10';ctx.beginPath();ctx.arc(lx,y-5,4,0,7);ctx.fill();if(lit){const g=ctx.createRadialGradient(lx,y-5,1,lx,y-5,14);g.addColorStop(0,'rgba(255,210,63,.6)');g.addColorStop(1,'rgba(255,210,63,0)');ctx.fillStyle=g;ctx.fillRect(lx-14,y-19,28,28)}});
+}
+
 /* ---------- Personajes: dibujo con volumen + animación ---------- */
 /* Dibujo del personaje HOT DOG (se inserta en assets/engine2.js).
    Origen en los pies; ~52 de alto sin accesorio. Opciones de avatar:
@@ -2542,6 +2595,7 @@ draw=function(t){
     if(p.glass){drawGlass(p,t);return}
     if(p.mv){drawMover(p,t);return}
     if(p.road){drawRoad(p,t,vx0,vx1,vy1);return}
+    if(p.bar){drawBarrier(p,t);return}
     drawPlat(p,th,tA,vx0,vx1,vy0,vy1);
   });
   drawCheckpoints(t);
@@ -2552,7 +2606,7 @@ draw=function(t){
   if(L.type==='lava'){const tp=L.lp[L.lp.length-1];drawFinish(tp.x+tp.w/2,tp.y-90,t)}
   L.walls.forEach(w=>{if(!me.broken.has(w.qi))drawWall(w)});
   L.gates.forEach(g=>{if(!me.broken.has(g.qi))drawGate(g)});
-  L.cars.forEach(drawCar);
+  L.cars.forEach(drawCar);L.planes.forEach(drawPlane);
   if(L.type==='cuadro'){
     L.tiles.forEach(tl=>{if(!tl.alive)return;let ox=0;if(L.phase==='shake'&&!tl.ok)ox=Math.sin(t*.06)*4;drawTile(tl,ox,430,0,(L.phase!=='think'&&tl.ok))});
     L.fallen.forEach(f=>{ctx.save();ctx.translate(f.x+f.w/2,f.y);ctx.rotate(f.rot);ctx.translate(-(f.x+f.w/2),-f.y);drawTile({x:f.x,w:f.w,i:f.i,text:f.text},0,f.y,.55,false);ctx.restore()});
