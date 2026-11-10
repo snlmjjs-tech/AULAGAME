@@ -104,3 +104,26 @@ Si en el futuro modificas `cloudflare-worker/src/index.js` (por ejemplo, para ag
 nuevo), solo necesitas repetir el paso 5 (`npx wrangler deploy`) — los secretos ya guardados
 (`ANTHROPIC_API_KEY`, `FIREBASE_SERVICE_ACCOUNT_JSON`) se mantienen, no hace falta volver a
 configurarlos.
+
+## Cobrar Premium con PayPal (pago único, de por vida)
+
+El botón **💳 Comprar Premium** del sitio abre PayPal. El cobro y la activación pasan en este
+Worker: crea la orden ligada al usuario logueado, la cobra, **verifica con PayPal** (estado,
+monto, moneda y dueño) y recién ahí escribe `plan: "premium"` en `profes/{uid}`. Se liga a la
+cuenta con sesión iniciada, no al correo que se escriba al pagar.
+
+1. En [developer.paypal.com](https://developer.paypal.com) → **Apps & Credentials** → crea una app
+   (primero en **Sandbox** para probar; después en **Live**). Copia el **Client ID** y el **Secret**.
+2. En `wrangler.toml`: pon el `PAYPAL_CLIENT_ID`, el precio `PREMIUM_PRICE_USD` y deja
+   `PAYPAL_ENV = "sandbox"` mientras pruebas (cámbialo a `"live"` con las credenciales Live).
+3. Guarda el secreto y despliega:
+   ```
+   npx wrangler secret put PAYPAL_CLIENT_SECRET
+   npx wrangler deploy
+   ```
+4. Prueba con una cuenta sandbox de comprador (se crean en developer.paypal.com → Testing tools →
+   Sandbox accounts) y confirma que `profes/{uid}` quede con `plan: "premium"`.
+
+Mientras `PAYPAL_CLIENT_ID`/`PAYPAL_CLIENT_SECRET` estén vacíos, el modal de compra avisa que el pago
+no está disponible y ofrece WhatsApp. Si un pago se cobra pero la activación falla, el profe puede
+volver a abrir el modal; si no, se activa a mano poniendo `plan: "premium"` en Firestore.

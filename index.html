@@ -619,6 +619,13 @@
     flex-direction:column; gap:2px;
     padding: 12px 20px; font-size:14px;
   }
+  .btn-pagar-premium{
+    background: linear-gradient(135deg, #2EE878, #128C4A); color:#fff;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 14px 24px -14px rgba(18,140,74,.7);
+    white-space:normal; flex-shrink:0; font-weight:800; text-align:center; line-height:1.3;
+    padding: 12px 20px; font-size:14px;
+  }
+  .modal-acciones .btn-pagar-premium{ flex:1; }
   .btn-demo-premium small{ display:block; font-size:10.5px; font-weight:700; opacity:.85; margin-top:1px; }
   .btn-demo-premium:disabled{ opacity:.65; cursor:default; }
 
@@ -1126,6 +1133,7 @@
     <div class="plan-gratuito oculto" id="plan-gratuito">
       <span id="plan-gratuito-texto"></span>
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-pagar-premium oculto" id="plan-gratuito-pagar" type="button">💳 Comprar Premium de por vida</button>
         <button class="btn btn-demo-premium oculto" id="plan-gratuito-demo" type="button">🎁 Probar demo (5 días)</button>
         <a class="btn btn-whatsapp oculto" id="plan-gratuito-btn" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">💬 Pasarme a Premium</a>
       </div>
@@ -1602,6 +1610,7 @@
     <p>Tu plan gratuito permite guardar 2 juegos a la vez. Elimina uno para reemplazarlo, o escríbenos por WhatsApp para pasarte a Premium y crear todos los que quieras.</p>
     <div class="modal-acciones">
       <button class="btn btn-cancelar" id="btn-limite-cerrar">Cerrar</button>
+      <button class="btn btn-pagar-premium oculto" id="btn-limite-pagar" type="button">💳 Comprar Premium</button>
       <button class="btn btn-demo-premium oculto" id="btn-limite-demo" type="button">🎁 Probar demo (5 días)</button>
       <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">Quiero pasarme a Premium</a>
     </div>
@@ -1648,6 +1657,7 @@
   <div class="anuncio-popup-caja" role="dialog" aria-modal="true" aria-label="Oferta AulaGame Premium">
     <img class="anuncio-popup-img" src="img/anuncio-premium.webp" alt="AulaGame Premium: acceso a todas las plantillas, IA integrada para crear preguntas, actualizaciones incluidas y sin pagos mensuales.">
     <div class="anuncio-popup-botones">
+      <button type="button" class="btn btn-pagar-premium" id="btn-anuncio-popup-pagar">💳 Comprar Premium de por vida</button>
       <button type="button" class="btn btn-demo-premium" id="btn-anuncio-popup-demo">🎁 Probar demo gratis (5 días)</button>
       <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">💬 Quiero Premium por WhatsApp</a>
     </div>
@@ -1671,6 +1681,7 @@
   } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
   import { calcularEstadoPremium, TRIAL_DIAS } from "./play/shared/premium-status.js";
   import { activarDemoPremium } from "./play/shared/trial.js";
+  import { abrirCompraPremium } from "./play/shared/premium-checkout.js";
 
   var app = initializeApp(firebaseConfig);
   var auth = getAuth(app);
@@ -1883,7 +1894,15 @@
   });
 
   // ---------- Cupos y contadores ----------
+  function actualizarBotonesPagar(){
+    var mostrar = !(uidActual && estadoActual.plan === "premium");
+    ["plan-gratuito-pagar", "btn-limite-pagar"].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.classList.toggle("oculto", !mostrar);
+    });
+  }
   function actualizarBotonesDemo(){
+    actualizarBotonesPagar();
     var mostrar = estadoActual.puedeActivarDemo;
     ["btn-demo-premium", "plan-gratuito-demo", "btn-limite-demo"].forEach(function(id){
       var el = document.getElementById(id);
@@ -2309,6 +2328,36 @@
     }
     abrirModalDemoConfirmar();
   }
+  /** Compra única de Premium con PayPal: exige sesión (el plan se activa en la cuenta
+   * logueada, no en el correo que se escriba al pagar) y relee el plan al terminar. */
+  function iniciarCompraPremium(){
+    if(!auth.currentUser){
+      abrirLoginModal("Inicia sesión para comprar Premium: se activará en tu cuenta.");
+      return;
+    }
+    if(estadoActual.plan === "premium"){ mostrarAviso("⭐ Tu cuenta ya es Premium."); return; }
+    abrirCompraPremium({
+      getIdToken: function(){ return auth.currentUser.getIdToken(true); },
+      onPremium: async function(){
+        try{
+          var snap = await getDoc(doc(db, "profes", uidActual));
+          estadoActual = calcularEstadoPremium(snap.exists() ? snap.data() : {});
+        }catch(e){}
+        actualizarEstado();
+        mostrarAviso("⭐ ¡Gracias! Ya eres Premium de por vida.");
+      }
+    });
+  }
+  ["plan-gratuito-pagar", "btn-limite-pagar"].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.addEventListener("click", iniciarCompraPremium);
+  });
+  var btnPopupPagar = document.getElementById("btn-anuncio-popup-pagar");
+  if(btnPopupPagar) btnPopupPagar.addEventListener("click", function(){
+    modalAnuncioPremium.classList.add("oculto");
+    try{ sessionStorage.setItem("anuncio_premium_cerrado", "1"); }catch(e){}
+    iniciarCompraPremium();
+  });
   ["btn-demo-premium", "plan-gratuito-demo", "btn-limite-demo", "btn-anuncio-popup-demo"].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.addEventListener("click", iniciarFlujoDemo);

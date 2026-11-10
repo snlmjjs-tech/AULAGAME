@@ -5,6 +5,14 @@ compatibility_date = "2024-11-01"
 [vars]
 FIREBASE_PROJECT_ID = "aulagame-4c019"
 
+# Pago único de Premium con PayPal (ver README, sección "Cobrar Premium con PayPal").
+# CAMBIA el precio antes de desplegar, y usa "live" solo cuando ya hayas probado en "sandbox".
+PAYPAL_ENV = "sandbox"
+PAYPAL_CLIENT_ID = ""
+PREMIUM_PRICE_USD = "9.99"
+PREMIUM_CURRENCY = "USD"
+
 # Secretos (NO van aquí, se cargan con `wrangler secret put`):
 #   ANTHROPIC_API_KEY            -> tu clave de api.anthropic.com
 #   FIREBASE_SERVICE_ACCOUNT_JSON -> el JSON completo de la cuenta de servicio de Firebase
+#   PAYPAL_CLIENT_SECRET         -> el "Secret" de tu app de PayPal (developer.paypal.com)

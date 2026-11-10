@@ -11,6 +11,13 @@
 //   POST /start-trial   Header: Authorization: Bearer <Firebase ID token>
 //                        Activa 5 días de Premium de prueba para la cuenta del token (una
 //                        sola vez por cuenta). Respuesta OK: { ok:true, trialFin: "<ISO>" }
+//
+//   GET  /paypal/config          -> { ok, clientId, price, currency } (datos públicos para el botón)
+//   POST /paypal/create-order    Header: Authorization: Bearer <Firebase ID token>
+//                        Crea la orden de PayPal (pago único) ligada al uid del token.
+//   POST /paypal/capture-order   Header: Authorization: Bearer <Firebase ID token>, Body: { orderID }
+//                        Cobra la orden, la verifica con PayPal (estado, monto, moneda y dueño) y
+//                        solo entonces escribe plan:"premium" en profes/{uid} (Premium de por vida).
 
 const ALLOWED_ORIGINS = [
   "https://aulagames.teacherseba.com",
@@ -34,7 +41,7 @@ function corsHeaders(origin) {
   const allow = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
     "Access-Control-Allow-Origin": allow,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
@@ -644,6 +651,179 @@ const GAME_CONFIG = {
 };
 
 /* ======================================================================
+ * D2. PAGO ÚNICO CON PAYPAL (Premium de por vida)
+ *    El Premium se activa SOLO desde el servidor, después de cobrar y verificar
+ *    la orden directamente con PayPal; el navegador nunca decide si se pagó.
+ *    Secretos: PAYPAL_CLIENT_SECRET (wrangler secret put). Variables: PAYPAL_CLIENT_ID,
+ *    PAYPAL_ENV ("sandbox" | "live"), PREMIUM_PRICE_USD, PREMIUM_CURRENCY (ver wrangler.toml).
+ * ====================================================================== */
+
+function paypalBase(env) {
+  return env.PAYPAL_ENV === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+}
+function premiumPrice(env) {
+  const n = Number(env.PREMIUM_PRICE_USD);
+  return Number.isFinite(n) && n > 0 ? n.toFixed(2) : null;
+}
+function premiumCurrency(env) {
+  return (env.PREMIUM_CURRENCY || "USD").toUpperCase();
+}
+function paypalConfigured(env) {
+  return !!(env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET && premiumPrice(env));
+}
+
+let cachedPaypalToken = null; // { token, expiresAt }
+async function getPaypalToken(env) {
+  const now = Date.now();
+  if (cachedPaypalToken && cachedPaypalToken.expiresAt > now + 60000) return cachedPaypalToken.token;
+  const res = await fetch(paypalBase(env) + "/v1/oauth2/token", {
+    method: "POST",
+    headers: {
+      Authorization: "Basic " + btoa(env.PAYPAL_CLIENT_ID + ":" + env.PAYPAL_CLIENT_SECRET),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: "grant_type=client_credentials",
+  });
+  if (!res.ok) throw new Error("PayPal OAuth respondió " + res.status + ": " + (await res.text()));
+  const data = await res.json();
+  cachedPaypalToken = { token: data.access_token, expiresAt: now + (data.expires_in || 600) * 1000 };
+  return cachedPaypalToken.token;
+}
+
+async function paypalFetch(env, path, init) {
+  const token = await getPaypalToken(env);
+  const res = await fetch(paypalBase(env) + path, {
+    ...init,
+    headers: { Authorization: "Bearer " + token, "Content-Type": "application/json", ...((init && init.headers) || {}) },
+  });
+  const data = await res.json().catch(() => null);
+  return { res, data };
+}
+
+/** Lee el uid del Firebase ID token del header Authorization (o devuelve una Response de error). */
+async function uidDesdeRequest(request, projectId, origin) {
+  const match = (request.headers.get("Authorization") || "").match(/^Bearer (.+)$/);
+  if (!match) return { error: json({ ok: false, error: "Inicia sesión para pagar tu Premium." }, 401, origin) };
+  try {
+    return { uid: await verifyFirebaseIdToken(match[1], projectId) };
+  } catch (e) {
+    console.error("Token de Firebase inválido (paypal):", e);
+    return { error: json({ ok: false, error: "Tu sesión no es válida. Vuelve a iniciar sesión e intenta de nuevo." }, 401, origin) };
+  }
+}
+
+/** Revisa que una orden de PayPal esté realmente cobrada, por el monto correcto y a nombre
+ * de este uid. Devuelve { ok, orderID, email } o { ok:false, error }. */
+function verificarOrdenPagada(env, uid, order) {
+  const pu = order && order.purchase_units && order.purchase_units[0];
+  const cap = pu && pu.payments && pu.payments.captures && pu.payments.captures[0];
+  if (!order || order.status !== "COMPLETED" || !cap || cap.status !== "COMPLETED") {
+    return { ok: false, error: "El pago no quedó completado. Si te cobraron, escríbenos por WhatsApp con tu comprobante." };
+  }
+  const owner = (pu && pu.custom_id) || cap.custom_id;
+  if (owner !== uid) return { ok: false, error: "Este pago pertenece a otra cuenta." };
+  const monto = cap.amount || {};
+  if (Number(monto.value) !== Number(premiumPrice(env)) || monto.currency_code !== premiumCurrency(env)) {
+    return { ok: false, error: "El monto pagado no coincide con el precio del Premium." };
+  }
+  const email = (order.payer && order.payer.email_address) || "";
+  return { ok: true, orderID: order.id, captureID: cap.id, email };
+}
+
+async function activarPremiumPagado(env, uid, pago) {
+  await patchProfeDoc(env, uid, {
+    plan: { stringValue: "premium" },
+    premiumTipo: { stringValue: "vitalicio" },
+    premiumDesde: { timestampValue: new Date().toISOString() },
+    paypalOrderId: { stringValue: pago.orderID },
+    paypalCaptureId: { stringValue: pago.captureID || "" },
+    paypalPayerEmail: { stringValue: pago.email || "" },
+  });
+}
+
+async function handlePaypal(request, env, url, origin, projectId) {
+  if (request.method === "GET" && url.pathname === "/paypal/config") {
+    if (!paypalConfigured(env)) return json({ ok: false, error: "El pago en línea todavía no está disponible." }, 503, origin);
+    return json({ ok: true, clientId: env.PAYPAL_CLIENT_ID, price: premiumPrice(env), currency: premiumCurrency(env) }, 200, origin);
+  }
+  if (request.method !== "POST") return null;
+
+  if (url.pathname === "/paypal/create-order" || url.pathname === "/paypal/capture-order") {
+    if (!paypalConfigured(env)) return json({ ok: false, error: "El pago en línea todavía no está disponible." }, 503, origin);
+    const auth = await uidDesdeRequest(request, projectId, origin);
+    if (auth.error) return auth.error;
+    const uid = auth.uid;
+
+    let actual;
+    try {
+      actual = await getProfeDoc(env, uid);
+    } catch (e) {
+      console.error("Error leyendo profes/{uid} (paypal):", e);
+      return json({ ok: false, error: "No se pudo verificar tu cuenta. Intenta de nuevo en unos segundos." }, 502, origin);
+    }
+
+    if (url.pathname === "/paypal/create-order") {
+      if (actual.plan === "premium") {
+        return json({ ok: false, code: "ALREADY_PREMIUM", error: "Tu cuenta ya tiene el plan Premium." }, 409, origin);
+      }
+      try {
+        const { res, data } = await paypalFetch(env, "/v2/checkout/orders", {
+          method: "POST",
+          body: JSON.stringify({
+            intent: "CAPTURE",
+            purchase_units: [{
+              custom_id: uid,
+              description: "AulaGame Premium (pago único, de por vida)",
+              amount: { currency_code: premiumCurrency(env), value: premiumPrice(env) },
+            }],
+          }),
+        });
+        if (!res.ok || !data || !data.id) {
+          console.error("PayPal create-order falló:", res.status, JSON.stringify(data).slice(0, 400));
+          return json({ ok: false, error: "No se pudo iniciar el pago. Intenta de nuevo." }, 502, origin);
+        }
+        return json({ ok: true, id: data.id }, 200, origin);
+      } catch (e) {
+        console.error("Error creando orden de PayPal:", e);
+        return json({ ok: false, error: "No se pudo contactar a PayPal. Intenta de nuevo." }, 502, origin);
+      }
+    }
+
+    /* capture-order */
+    let body;
+    try { body = await request.json(); } catch (e) { body = null; }
+    const orderID = body && typeof body.orderID === "string" ? body.orderID.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64) : "";
+    if (!orderID) return json({ ok: false, error: "Falta el identificador del pago." }, 400, origin);
+
+    try {
+      let { res, data } = await paypalFetch(env, "/v2/checkout/orders/" + orderID + "/capture", {
+        method: "POST",
+        headers: { "PayPal-Request-Id": "aulagame-capture-" + orderID },
+        body: "{}",
+      });
+      // Si ya estaba cobrada (ej. se reintentó la activación), se lee la orden tal como quedó.
+      const yaCobrada = data && Array.isArray(data.details) && data.details.some((d) => d.issue === "ORDER_ALREADY_CAPTURED");
+      if (!res.ok && yaCobrada) {
+        ({ res, data } = await paypalFetch(env, "/v2/checkout/orders/" + orderID, { method: "GET" }));
+      }
+      if (!res.ok || !data) {
+        console.error("PayPal capture falló:", res.status, JSON.stringify(data).slice(0, 400));
+        const rechazado = data && Array.isArray(data.details) && data.details.some((d) => d.issue === "INSTRUMENT_DECLINED");
+        return json({ ok: false, error: rechazado ? "PayPal rechazó el medio de pago. Prueba con otro." : "No se pudo completar el pago. Intenta de nuevo." }, 502, origin);
+      }
+      const pago = verificarOrdenPagada(env, uid, data);
+      if (!pago.ok) return json({ ok: false, error: pago.error }, 402, origin);
+      await activarPremiumPagado(env, uid, pago);
+      return json({ ok: true }, 200, origin);
+    } catch (e) {
+      console.error("Error capturando orden de PayPal:", e);
+      return json({ ok: false, error: "El pago se procesó pero no pudimos activar tu Premium. Escríbenos por WhatsApp y lo activamos a mano." }, 502, origin);
+    }
+  }
+  return null;
+}
+
+/* ======================================================================
  * E. HANDLER PRINCIPAL
  * ====================================================================== */
 
@@ -660,6 +840,12 @@ export default {
 
     if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
       return json({ ok: false, error: "El servidor no tiene configurada la cuenta de servicio de Firebase." }, 500, origin);
+    }
+
+    /* ---------------- PayPal: /paypal/config, /paypal/create-order, /paypal/capture-order ---------------- */
+    if (url.pathname.startsWith("/paypal/")) {
+      const r = await handlePaypal(request, env, url, origin, projectId);
+      if (r) return r;
     }
 
     /* ---------------- POST /start-trial ---------------- */
@@ -712,7 +898,7 @@ export default {
 
     /* ---------------- POST /generate ---------------- */
     if (request.method !== "POST" || url.pathname !== "/generate") {
-      return json({ ok: false, error: "Ruta no encontrada. Usa POST /generate o POST /start-trial." }, 404, origin);
+      return json({ ok: false, error: "Ruta no encontrada. Usa POST /generate, POST /start-trial o /paypal/*." }, 404, origin);
     }
 
     if (!env.ANTHROPIC_API_KEY) {
