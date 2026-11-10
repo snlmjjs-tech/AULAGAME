@@ -812,6 +812,7 @@ body[data-screen="game"]{overflow:hidden;overscroll-behavior:none;touch-action:n
         <button class="btn ghost sm" id="hReset">Restaurar ejemplo</button>
       </div>
       <p class="status" id="hMsg" role="status" aria-live="polite"></p>
+      <p class="hint" id="hPlan"></p>
     </section>
     <section class="hsec" aria-label="Modo prueba" hidden>
       <div><label class="l" for="hCode">Código de prueba</label>
@@ -1195,7 +1196,42 @@ if((quiz.v||0)<4){ /* v4: el nivel «cuadro» de ejemplo pasa a 6 opciones */
   quiz.v=4;store.set(QKEY,quiz);
 }
 quiz.levels.forEach((l,i)=>{if(!TYPES[l.type])l.type=TYPE_ORDER[i%TYPE_ORDER.length]});
-const saveQuiz=()=>store.set(QKEY,quiz);
+let quizDirty=false;
+const saveQuiz=()=>{store.set(QKEY,quiz);quizDirty=true;if(window.AG_cloud)AG_cloud.save(quiz)};
+/* Preguntas en la nube (cuenta del profe) + contador de usos del plan gratis. Lo conecta el módulo del final. */
+async function hdPlanInfo(){
+  const el=$('#hPlan');if(!el||!window.AG_usarHotdog)return;
+  const r=await AG_usarHotdog('peek',true);
+  el.textContent=r.code==='NO_LOGIN'?'Para usar Hot Dog Run como profe inicia sesión en aulagame.cl (plan gratis: 5 usos).':r.premium?'⭐ Premium: usos ilimitados.':(r.unverified||r.restantes==null)?'':'Plan gratis: te quedan '+r.restantes+' de '+r.limite+' usos de Hot Dog Run.';
+}
+async function hdGate(kind){
+  if(TEST||!window.AG_usarHotdog)return true;
+  const r=await AG_usarHotdog(kind);
+  if(r.ok){hdPlanInfo();return true}
+  if(r.code==='NO_LOGIN'){
+    if(await ask('Inicia sesión para jugar','Hot Dog Run para profesores usa tu cuenta de AulaGame: así se guardan tus preguntas y se llevan tus 5 usos gratis. Los alumnos que entran con un código no necesitan cuenta.','Ir a AulaGame'))location.href='https://aulagame.cl/?login=1';
+    return false;
+  }
+  if(r.code==='HOTDOG_LIMIT'){
+    if(await ask('Usaste tus '+(r.limite||5)+' partidas gratis','Para seguir usando Hot Dog Run hazte Premium: pago único, de por vida, y se activa solo en tu cuenta.','Hacerme Premium'))location.href='https://aulagame.cl/?premium=1';
+    return false;
+  }
+  return true;
+}
+window.AG_onModuleReady=async()=>{
+  try{
+    const r=await AG_cloud.load();
+    const cloud=r.saved&&r.saved.quiz;
+    if(cloud&&Array.isArray(cloud.levels)&&cloud.levels.length&&!quizDirty){
+      cloud.levels.forEach((l,i)=>{if(!TYPES[l.type])l.type=TYPE_ORDER[i%TYPE_ORDER.length];if(!Array.isArray(l.questions))l.questions=[]});
+      cloud.bots=clamp(+cloud.bots||0,0,11);
+      quiz=cloud;store.set(QKEY,quiz);
+      if($('#host').classList.contains('on'))renderHost();
+      renderRoute();
+    }else if(r.uid&&!cloud&&!quizDirty){AG_cloud.save(quiz)}
+  }catch(e){}
+  hdPlanInfo();
+};
 
 /* ---------- Avatar ---------- */
 const COLORS=['#e2493a','#a8281f','#ff7a3d','#e8a21c','#ffd23f','#5ed17a','#2ec4b6','#4da3ff','#8e6bff','#c77dff','#ff5d8f','#6c757d'];
@@ -2440,6 +2476,7 @@ $('#lLeave').onclick=()=>leaveRoom();
 const HS={banned:new Set(),bannedNames:new Set(),players:new Map(),phase:'lobby',idx:0,t0:0,graceAt:0,tick:null,snapAcc:0,forceEnd:false,lastRes:null,rosterT:null,liveN:0,up:0,dn:0,lf:1,lastSnapT:0,upRate:0};
 async function createRoomUI(){
   if(!quiz.levels.reduce((a,l)=>a+validQs(l).length,0)){msg('Agrega al menos una pregunta válida antes de crear la sala.','err');return}
+  if(!(await hdGate('online')))return;
   const b=$('#hCreate'),label=b.textContent;
   b.disabled=true;b.setAttribute('aria-busy','true');b.textContent='Creando sala…';
   try{
@@ -3453,6 +3490,8 @@ import { crearCodigoCorto } from "../shared/short-links.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { renderAIButton } from "../shared/ai-questions.js";
+import { loadGameData, saveGameDataDebounced } from "../shared/game-storage.js";
+import { TRIAL_WORKER_BASE } from "../shared/trial.js";
 window.AG_initAI = async function(){
   const box = document.getElementById("aiBox");
   if(!box) return;
@@ -3473,6 +3512,30 @@ window.AG_initAI = async function(){
     onGenerated: d => window.AG_applyAI(d, true) });
 };
 window.AG_initAI();
+
+/* ---- Hot Dog Run: preguntas en la cuenta del profe y contador de usos (plan gratis) ---- */
+const HD_KEY = "hotdogrun" + (() => { const c = new URLSearchParams(location.search).get("c"); return c && /^[\w-]{1,60}$/.test(c) ? "_" + c : ""; })();
+let _hdUid = null;
+window.AG_cloud = {
+  key: HD_KEY,
+  async load(){ const r = await loadGameData(HD_KEY); _hdUid = r.uid; return r; },
+  save(quiz){ if(!_hdUid) return; return saveGameDataDebounced(HD_KEY, _hdUid, { quiz: JSON.parse(JSON.stringify(quiz)), updatedAt: Date.now() }, 900); }
+};
+window.AG_usarHotdog = async function(kind, peek){
+  const au = getAuth(getApp());
+  await au.authStateReady();
+  const u = au.currentUser;
+  if(!u) return { ok: false, code: "NO_LOGIN" };
+  try{
+    const token = await u.getIdToken();
+    const res = await fetch(TRIAL_WORKER_BASE + "/hotdog/use", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ kind: kind, peek: !!peek }) });
+    const j = await res.json().catch(() => null);
+    if(j && j.code === "HOTDOG_LIMIT") return j;
+    if(!res.ok || !j || !j.ok) return { ok: true, unverified: true }; // sin conexión o error del servidor: no se bloquea al profe
+    return j;
+  }catch(e){ return { ok: true, unverified: true }; }
+};
+if(window.AG_onModuleReady) window.AG_onModuleReady();
 window.AG_registrarSala = async function(code){
   const auth = getAuth(getApp());
   await auth.authStateReady();

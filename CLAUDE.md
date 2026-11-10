@@ -51,6 +51,12 @@ es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
   - `profes/{uid}/datosJuegos/{gameId}` — contenido editable de cada juego (preguntas, rondas,
     configuración), uno por juego, sincronizado entre dispositivos.
   - `codigosCortos/{codigo}` — links cortos (`aulagame.cl/<codigo>`) que resuelve `r.html`.
+  - `profes/{uid}/datosJuegos/hotdogrun` y `hotdogrun_<c>` — preguntas de Hot Dog Run (la copia original y
+    cada duplicado, `?c=<id>` en la URL), sincronizadas entre dispositivos.
+  - `usosJuegos/{uid}` — contador de usos de Hot Dog Run del plan gratis (`hotdogUsos`, `hotdogUltimoUso`).
+    Solo lo lee/escribe el Worker (`POST /hotdog/use`); las reglas de Firestore no lo exponen al cliente.
+    Plan gratis: 5 usos (`HOTDOG_FREE_USOS` en `wrangler.toml`; repeticiones en 90 min no recuentan) y un solo
+    duplicado de Hot Dog Run; Premium: ilimitado.
   - `clasesIngles/{claseId}` — contenido de la intranet de inglés (sin Firebase Auth real ahí).
 - **Realtime Database** — salas en vivo (`salasVivo/{juego}/{sala}/...`): jugadores, equipos,
   buzz, respuestas, estado de la partida en tiempo real. También `pines/{pin}` para resolver PIN

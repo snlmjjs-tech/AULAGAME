@@ -2153,8 +2153,9 @@
     var nuevoId = "juego-" + Date.now() + "-" + Math.floor(Math.random() * 1000);
     // Hot Dog Run guarda las preguntas en el navegador: cada copia usa su propio juego (?c=<id>)
     // para que las preguntas de un curso no se mezclen con las de otro.
-    if(/\/play\/hotdogrun\/?$/.test(url)){
-      url = url.replace(/\/?$/, "/") + "?c=" + nuevoId;
+    var urlBase = String(url || "").split("?")[0];
+    if(/\/play\/hotdogrun\/?$/.test(urlBase)){
+      url = urlBase.replace(/\/?$/, "/") + "?c=" + nuevoId;
       editUrl = url;
     }
     misJuegos.push({
@@ -2182,9 +2183,16 @@
   var inputNombrar = document.getElementById("input-nombrar");
   var duplicadoPendiente = null;
 
+  var esHotdogUrl = function(u){ return /\/play\/hotdogrun\/?(\?|$)/.test(u || ""); };
   function abrirModalNombrar(nombre, icono, color, url, editUrl){
     if(misJuegos.length >= totalCupos()){
       mostrarModalLimite();
+      return;
+    }
+    // Plan gratis: Hot Dog Run se puede duplicar una sola vez; más copias requieren Premium.
+    if(esHotdogUrl(url) && !esPremium() && misJuegos.filter(function(j){ return esHotdogUrl(j.url); }).length >= 1){
+      mostrarAviso("Con el plan gratis puedes duplicar Hot Dog Run una vez. Para más copias hazte Premium.", true);
+      iniciarCompraPremium();
       return;
     }
     duplicadoPendiente = { icono: icono, color: color, url: url, editUrl: editUrl };
@@ -2403,6 +2411,21 @@
     }
   }
 
+  /** Enlaces desde Hot Dog Run: ?premium=1 abre la compra y ?login=1 abre el inicio de sesión. */
+  var entradaProcesada = false, pendientePremium = false;
+  function procesarParametrosEntrada(user){
+    if(user && pendientePremium){ pendientePremium = false; iniciarCompraPremium(); return; }
+    if(entradaProcesada) return;
+    var params = new URLSearchParams(location.search);
+    var quiere = params.get("premium") ? "premium" : (params.get("login") ? "login" : "");
+    if(!quiere) return;
+    entradaProcesada = true;
+    try{ history.replaceState(null, "", location.pathname); }catch(e){}
+    if(user){ if(quiere === "premium") iniciarCompraPremium(); return; }
+    pendientePremium = quiere === "premium";
+    abrirLoginModal(quiere === "premium" ? "Inicia sesión para hacerte Premium." : "Inicia sesión para usar Hot Dog Run como profesor.");
+  }
+
   /** Compra única de Premium (Mercado Pago o PayPal): exige sesión (el plan se activa en la cuenta
    * logueada, no en el correo que se escriba al pagar) y relee el plan al terminar. */
   function iniciarCompraPremium(){
@@ -2514,6 +2537,7 @@
     }
     mostrarAnuncioPremiumSiCorresponde();
     procesarRetornoPago(user);
+    procesarParametrosEntrada(user);
   });
 </script>
 

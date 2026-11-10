@@ -19,6 +19,11 @@
 //                        Cobra la orden, la verifica con PayPal (estado, monto, moneda y dueño) y
 //                        solo entonces escribe plan:"premium" en profes/{uid} (Premium de por vida).
 //
+//   POST /hotdog/use     Header: Authorization: Bearer <Firebase ID token>, Body: { kind?, peek? }
+//                        Cuenta un uso de Hot Dog Run para la cuenta del token. Premium (pagado o demo):
+//                        ilimitado. Gratis: HOTDOG_FREE_USOS usos (por defecto 5); más allá responde 403
+//                        { code:"HOTDOG_LIMIT" }. Con peek:true solo consulta, sin contar.
+//
 //   GET  /mercadopago/config           -> { ok, priceCLP }
 //   POST /mercadopago/create-checkout  Header: Authorization: Bearer <Firebase ID token>
 //                        Crea la preferencia de Mercado Pago (pesos chilenos) ligada al uid y
@@ -977,6 +982,79 @@ async function handleMercadoPago(request, env, url, origin, projectId) {
 }
 
 /* ======================================================================
+ * D4. USOS DE HOT DOG RUN (plan gratis: 5 usos; Premium: ilimitado)
+ *    El contador vive en la colección usosJuegos/{uid}, que las reglas de Firestore no
+ *    exponen al cliente: solo este Worker (cuenta de servicio) la lee y la escribe, así
+ *    que no se puede reiniciar desde el navegador. Un "uso" es una partida/sesión del
+ *    profesor; las repeticiones dentro de 90 minutos no vuelven a contar.
+ * ====================================================================== */
+
+const HOTDOG_VENTANA_MS = 90 * 60 * 1000;
+
+function usosDocUrl(env, uid) {
+  const projectId = env.FIREBASE_PROJECT_ID || "aulagame-4c019";
+  return `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/usosJuegos/${encodeURIComponent(uid)}`;
+}
+async function getUsosDoc(env, uid) {
+  const token = await getGoogleAccessToken(env);
+  const res = await fetchWithRetry(usosDocUrl(env, uid), { headers: { Authorization: "Bearer " + token } });
+  if (res.status === 404) return {};
+  if (!res.ok) throw new Error("Firestore respondió " + res.status + ": " + (await res.text()));
+  const doc = await res.json();
+  return parseFirestoreFields(doc.fields || {});
+}
+async function patchUsosDoc(env, uid, fieldsTyped) {
+  const token = await getGoogleAccessToken(env);
+  const maskParams = Object.keys(fieldsTyped).map((f) => `updateMask.fieldPaths=${encodeURIComponent(f)}`).join("&");
+  const res = await fetchWithRetry(`${usosDocUrl(env, uid)}?${maskParams}`, {
+    method: "PATCH",
+    headers: { Authorization: "Bearer " + token, "content-type": "application/json" },
+    body: JSON.stringify({ fields: fieldsTyped }),
+  });
+  if (!res.ok) throw new Error("Firestore PATCH respondió " + res.status + ": " + (await res.text()));
+}
+
+async function handleHotdog(request, env, url, origin, projectId) {
+  if (request.method !== "POST" || url.pathname !== "/hotdog/use") return null;
+  const auth = await uidDesdeRequest(request, projectId, origin);
+  if (auth.error) return auth.error;
+  const uid = auth.uid;
+  let body;
+  try { body = await request.json(); } catch (e) { body = {}; }
+  const peek = !!(body && body.peek);
+  const limite = Math.max(1, parseInt(env.HOTDOG_FREE_USOS, 10) || 5);
+
+  let perfil, usosDoc;
+  try {
+    [perfil, usosDoc] = await Promise.all([getProfeDoc(env, uid), getUsosDoc(env, uid)]);
+  } catch (e) {
+    console.error("Error leyendo usos de Hot Dog Run:", e);
+    return json({ ok: false, error: "No se pudo verificar tu cuenta. Intenta de nuevo en unos segundos." }, 502, origin);
+  }
+  const usos = typeof usosDoc.hotdogUsos === "number" ? usosDoc.hotdogUsos : 0;
+  if (estadoPremiumDesdeDoc(perfil).premium) return json({ ok: true, premium: true, usos, limite }, 200, origin);
+
+  const ultimo = usosDoc.hotdogUltimoUso ? new Date(usosDoc.hotdogUltimoUso).getTime() : 0;
+  const dentroVentana = ultimo && Date.now() - ultimo < HOTDOG_VENTANA_MS;
+  if (peek || dentroVentana) {
+    return json({ ok: true, premium: false, usos, limite, restantes: Math.max(0, limite - usos), contado: false }, 200, origin);
+  }
+  if (usos >= limite) {
+    return json({ ok: false, code: "HOTDOG_LIMIT", usos, limite, error: `Ya usaste tus ${limite} partidas gratis de Hot Dog Run. Hazte Premium para seguir usándolo.` }, 403, origin);
+  }
+  try {
+    await patchUsosDoc(env, uid, {
+      hotdogUsos: { integerValue: String(usos + 1) },
+      hotdogUltimoUso: { timestampValue: new Date().toISOString() },
+    });
+  } catch (e) {
+    console.error("No se pudo registrar el uso de Hot Dog Run:", e);
+    return json({ ok: false, error: "No se pudo registrar el uso. Intenta de nuevo." }, 502, origin);
+  }
+  return json({ ok: true, premium: false, usos: usos + 1, limite, restantes: limite - (usos + 1), contado: true }, 200, origin);
+}
+
+/* ======================================================================
  * E. HANDLER PRINCIPAL
  * ====================================================================== */
 
@@ -998,6 +1076,12 @@ export default {
     /* ---------------- PayPal: /paypal/config, /paypal/create-order, /paypal/capture-order ---------------- */
     if (url.pathname.startsWith("/paypal/")) {
       const r = await handlePaypal(request, env, url, origin, projectId);
+      if (r) return r;
+    }
+
+    /* ---------------- Hot Dog Run: /hotdog/use ---------------- */
+    if (url.pathname.startsWith("/hotdog/")) {
+      const r = await handleHotdog(request, env, url, origin, projectId);
       if (r) return r;
     }
 
@@ -1057,7 +1141,7 @@ export default {
 
     /* ---------------- POST /generate ---------------- */
     if (request.method !== "POST" || url.pathname !== "/generate") {
-      return json({ ok: false, error: "Ruta no encontrada. Usa POST /generate, POST /start-trial, /paypal/* o /mercadopago/*." }, 404, origin);
+      return json({ ok: false, error: "Ruta no encontrada. Usa POST /generate, POST /start-trial, /paypal/*, /mercadopago/* o /hotdog/use." }, 404, origin);
     }
 
     if (!env.ANTHROPIC_API_KEY) {
