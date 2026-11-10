@@ -231,6 +231,9 @@
     overflow:hidden;
   }
   .team-toggle.on{ border-color:var(--teal); background:rgba(47,211,196,.1); transform:translateY(-2px); box-shadow: var(--shadow-sm); }
+  .team-del{ margin-left:auto; flex-shrink:0; width:22px; height:22px; border-radius:50%; border:none; background:rgba(255,255,255,.1); color:#fff; font-size:13px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .15s, transform .15s; }
+  .team-del:hover{ background:#e64545; transform:scale(1.1); }
+  .team-restore{ background:none; border:none; color:var(--teal); font-weight:700; font-size:.8rem; cursor:pointer; margin:-12px 0 18px; padding:0; text-decoration:underline; }
   .team-dot{ width:20px; height:20px; border-radius:50%; border:2px solid #fff; flex-shrink:0; }
   .team-toggle span.tname{ font-weight:700; font-size:.85rem; }
   .tname-input{
@@ -706,6 +709,7 @@
     <div class="mode-section">
       <h3>Equipos (mínimo 2)</h3>
       <div class="team-grid" id="team-grid"></div>
+      <button type="button" class="team-restore" id="team-restore" style="display:none" onclick="restoreTeams()">+ Volver a mostrar equipos quitados</button>
     </div>
 
     <div class="mode-section">
@@ -1297,6 +1301,7 @@ function renameTeam(id, val){
 loadSavedTeamNames();
 
 let selectedTeams = [1,2,3,4];
+let removedTeams = []; // equipos quitados de la lista de configuración (no se usan en esta partida)
 let teams = [];
 let currentTurn = 0;
 let salaActual = null; // código de sala en vivo (null = modo QR no activado)
@@ -1380,7 +1385,8 @@ function goTo(id){
 function buildSetup(){
   const grid = document.getElementById('team-grid');
   grid.innerHTML = '';
-  TEAM_DEFS.forEach(t=>{
+  document.getElementById('team-restore').style.display = removedTeams.length ? '' : 'none';
+  TEAM_DEFS.filter(t=>!removedTeams.includes(t.id)).forEach(t=>{
     const on = selectedTeams.includes(t.id);
     const div = document.createElement('div');
     div.className = 'team-toggle' + (on?' on':'');
@@ -1403,6 +1409,19 @@ function buildSetup(){
 
     div.appendChild(dot);
     div.appendChild(inp);
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'team-del';
+    del.textContent = '✕';
+    del.title = 'Quitar este equipo';
+    del.setAttribute('aria-label', 'Quitar ' + t.name);
+    del.addEventListener('click', e=>{
+      e.stopPropagation();
+      removedTeams.push(t.id);
+      selectedTeams = selectedTeams.filter(id=>id!==t.id);
+      buildSetup();
+    });
+    div.appendChild(del);
     div.onclick = ()=>{
       const idx = selectedTeams.indexOf(t.id);
       if(idx>-1) selectedTeams.splice(idx,1); else selectedTeams.push(t.id);
@@ -1410,6 +1429,11 @@ function buildSetup(){
     };
     grid.appendChild(div);
   });
+}
+
+function restoreTeams(){
+  removedTeams = [];
+  buildSetup();
 }
 
 function setDiceMode(mode, fromBoard){
