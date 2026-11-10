@@ -1,0 +1,94 @@
+# AULAGAME
+
+Plataforma de juegos didácticos para profes ("duplica, personaliza y juega en clase").
+Sitio público: **https://aulagame.cl** (único dominio activo; `aulagames.teacherseba.com`
+es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
+
+## Estructura de carpetas
+
+- `index.html` — landing / catálogo de juegos.
+- `r.html` — resuelve links cortos de sala (`aulagame.cl/<codigo>`, rewrite en `firebase.json`)
+  leyendo `codigosCortos/{codigo}` en Firestore y redirigiendo al juego/sala real.
+- `404.html` — página de error, también usada por GitHub Pages en el dominio viejo.
+- `play/<juego>/index.html` — cada juego es una app de una sola página (HTML+CSS+JS inline,
+  sin build step). Carpetas actuales: `agrupados`, `battlecastle3d`, `betyouranswer`, `bingo`,
+  `colgado`, `evilgame`, `impostor`, `jeopardy`, `memorice`, `millonario`, `monopoly`,
+  `quizlive`, `raceboard`, `robotfight`, `rosco`.
+- `play/shared/*.js` — módulos JS compartidos entre juegos: `ai-questions.js` (llama al Worker
+  de IA), `game-storage.js` (guardar/cargar preguntas en Firestore), `live-room.js` (salas en
+  vivo con Realtime Database), `premium-status.js`, `qr-inline.js`, `short-links.js`,
+  `trial.js` (demo Premium), `tutorial-modal.js`, `youtube.js`.
+- `firebase-config.js` — config pública del SDK de Firebase (no es secreto, es normal que esté
+  en el repo: las claves `apiKey` de Firebase Web son públicas por diseño).
+- `intranet/` — mini-sitio aparte (otro hosting target de Firebase, `aulagame-intranet`), no
+  tiene relación con el catálogo de juegos.
+- `cloudflare-worker/` — Worker de Cloudflare que genera preguntas con IA y activa la demo
+  Premium (ver abajo).
+- `firestore.rules`, `database.rules.json`, `firestore.indexes.json` — reglas de seguridad.
+- `.github/workflows/` — despliegue automático a Firebase Hosting (ver abajo).
+
+## Plan gratis, Premium y demo
+
+- Cada profesor es un documento `profes/{uid}` en Firestore, con un campo `plan`
+  (`"gratis"` o `"premium"`). El campo `plan` **nunca** lo puede escribir el cliente directamente
+  (ver `firestore.rules`): se activa a mano desde la consola de Firebase, o automáticamente por
+  el Worker de Cloudflare al activar la demo.
+- **Demo Premium**: 5 días de Premium gratis, una sola vez por cuenta. La activa el Worker
+  (`POST /start-trial`, verificado con el ID token de Firebase Auth) escribiendo
+  `trialUsado`, `trialFin`, `trialInicio` — estos campos tampoco los puede tocar el cliente
+  directamente, solo el Worker (que usa una cuenta de servicio y no pasa por las reglas de
+  cliente).
+- **Generación de preguntas con IA**: solo para profes con plan Premium o demo activa
+  (verificado en el servidor, en el Worker, nunca confiando en lo que mande el navegador).
+  Límite de la demo: 10 usos de IA (`TRIAL_AI_LIMITE` en `cloudflare-worker/src/index.js`).
+- La lista de juegos guardados de cada profe vive en `profes/{uid}/datosJuegos/{gameId}` — ver
+  advertencia abajo, nunca se debe recortar ni sobrescribir completa.
+
+## Dónde están los datos
+
+- **Firestore** (`aulagame-4c019`):
+  - `profes/{uid}` — datos del profesor (plan, trial, etc.).
+  - `profes/{uid}/datosJuegos/{gameId}` — contenido editable de cada juego (preguntas, rondas,
+    configuración), uno por juego, sincronizado entre dispositivos.
+  - `codigosCortos/{codigo}` — links cortos (`aulagame.cl/<codigo>`) que resuelve `r.html`.
+  - `clasesIngles/{claseId}` — contenido de la intranet de inglés (sin Firebase Auth real ahí).
+- **Realtime Database** — salas en vivo (`salasVivo/{juego}/{sala}/...`): jugadores, equipos,
+  buzz, respuestas, estado de la partida en tiempo real. También `pines/{pin}` para resolver PIN
+  → sala.
+- **Cloudflare Worker** (`cloudflare-worker/`) — intermediario seguro para la API de Anthropic
+  (Claude) y para activar la demo Premium; nunca expone la API key de Anthropic al navegador.
+
+## Cómo se despliega cada parte
+
+- **Hosting (aulagame.cl)** — automático: cada push o merge a `main` en GitHub despliega solo el
+  hosting del target `main` (sitio `aulagame-4c019`) vía GitHub Actions
+  (`.github/workflows/firebase-hosting-merge.yml`). Cada Pull Request genera un canal de vista
+  previa (`firebase-hosting-pull-request.yml`). No hace falta correr `firebase deploy` a mano
+  para esto. El target `intranet` (sitio `aulagame-intranet`) **no** se toca con este workflow.
+- **Reglas de seguridad** (Firestore + Realtime Database) — manual:
+  ```
+  firebase deploy --only firestore:rules,database
+  ```
+  No hay automatización para esto a propósito (ver advertencia abajo).
+- **Worker de Cloudflare** — manual, desde `cloudflare-worker/`:
+  ```
+  npx wrangler deploy
+  ```
+
+## Secretos
+
+Los secretos (clave de la API de Anthropic, cuenta de servicio de Firebase para el Worker) viven
+**solo en Cloudflare** (`npx wrangler secret put ...`, ver `cloudflare-worker/README.md`) y nunca
+en este repositorio ni en archivos de configuración versionados. La única credencial en el repo
+relacionada con despliegues es el secreto de GitHub Actions `FIREBASE_SERVICE_ACCOUNT_AULAGAME_4C019`,
+que vive cifrado en GitHub (Settings → Secrets → Actions) y solo tiene permisos de Firebase Hosting
+(no toca Firestore/Realtime Database rules ni el Worker).
+
+## Advertencias
+
+- **Nunca recortar ni sobrescribir completa** la lista de juegos guardados de un profesor
+  (`profes/{uid}/datosJuegos/*`). Siempre leer lo existente y mezclar/actualizar por `gameId`,
+  nunca reemplazar la colección entera.
+- **No tocar `firestore.rules` ni `database.rules.json` sin avisar** al dueño del proyecto antes
+  de desplegarlas (`firebase deploy --only firestore:rules,database`), aunque el cambio parezca
+  pequeño: son las que protegen el plan Premium, la demo y los datos de cada profesor.

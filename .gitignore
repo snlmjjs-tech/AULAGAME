@@ -70,3 +70,8 @@ node_modules/
 
 # Fuente original sin optimizar del anuncio Premium (se usa img/anuncio-premium.webp)
 img/anuncio-premium.png
+
+# Config local de herramientas de IA (skills/agentes), no es parte del proyecto
+.agents/
+.claude/
+.codex/
