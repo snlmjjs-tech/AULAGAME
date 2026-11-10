@@ -620,12 +620,38 @@
     padding: 12px 20px; font-size:14px;
   }
   .btn-pagar-premium{
-    background: linear-gradient(135deg, #2EE878, #128C4A); color:#fff;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 14px 24px -14px rgba(18,140,74,.7);
-    white-space:normal; flex-shrink:0; font-weight:800; text-align:center; line-height:1.3;
-    padding: 12px 20px; font-size:14px;
+    position:relative; overflow:hidden; isolation:isolate;
+    background: linear-gradient(135deg, #3BE58A 0%, #17A558 55%, #0E7F42 100%); color:#fff;
+    border-radius:18px; padding:10px 22px 10px 16px; gap:12px; flex-shrink:0; white-space:nowrap;
+    text-shadow:0 1px 0 rgba(0,0,0,.28);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.5), inset 0 -3px 0 rgba(0,0,0,.2), 0 12px 26px -10px rgba(23,165,88,.9), 0 0 0 1px rgba(255,255,255,.14);
   }
+  .btn-pagar-premium:hover{ transform:translateY(-2px); filter:brightness(1.07); }
+  .btn-pagar-premium .ic-pago{ width:30px; height:30px; flex:none; padding:5px; border-radius:10px; background:rgba(0,0,0,.2); box-shadow:inset 0 1px 0 rgba(255,255,255,.22); }
+  .btn-pagar-premium .tx{ display:flex; flex-direction:column; align-items:flex-start; text-align:left; line-height:1.15; }
+  .btn-pagar-premium .tx b{ font-size:15px; font-weight:800; letter-spacing:-.015em; }
+  .btn-pagar-premium .tx small{ font-size:10.5px; font-weight:700; opacity:.9; letter-spacing:.03em; margin-top:2px; }
+  .btn-pagar-premium::after{
+    content:""; position:absolute; top:0; bottom:0; left:-70%; width:45%; pointer-events:none;
+    background:linear-gradient(100deg, transparent, rgba(255,255,255,.4), transparent); transform:skewX(-18deg);
+    animation: brillo-pagar 4.2s ease-in-out infinite;
+  }
+  @keyframes brillo-pagar{ 0%,55%{ left:-70%; } 100%{ left:140%; } }
+  @media (prefers-reduced-motion: reduce){ .btn-pagar-premium::after{ animation:none; display:none; } }
   .modal-acciones .btn-pagar-premium{ flex:1; }
+  .btn-chat{
+    background: rgba(37,211,102,.1); color:#a6f5c8; border:1.5px solid rgba(37,211,102,.55);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08); gap:9px; padding:11px 20px; font-size:14px; font-weight:700;
+    white-space:nowrap; flex-shrink:0;
+  }
+  .btn-chat .i{ width:20px; height:20px; color:#25D366; }
+  .btn-chat:hover{ background: rgba(37,211,102,.2); border-color:#25D366; transform:translateY(-1px); filter:none; }
+  .modal-acciones .btn-chat{ flex:1; }
+  @media (prefers-color-scheme: light){
+    .btn-chat{ color:#0a5f33; background:rgba(37,211,102,.14); border-color:#1fa855; box-shadow:none; }
+    .btn-chat .i{ color:#17a558; }
+    .btn-chat:hover{ background:rgba(37,211,102,.26); }
+  }
   .btn-demo-premium small{ display:block; font-size:10.5px; font-weight:700; opacity:.85; margin-top:1px; }
   .btn-demo-premium:disabled{ opacity:.65; cursor:default; }
 
@@ -1133,9 +1159,9 @@
     <div class="plan-gratuito oculto" id="plan-gratuito">
       <span id="plan-gratuito-texto"></span>
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button class="btn btn-pagar-premium oculto" id="plan-gratuito-pagar" type="button">💳 Comprar Premium de por vida</button>
+        <button class="btn btn-pagar-premium oculto" id="plan-gratuito-pagar" type="button"><svg class="ic-pago" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/></svg><span class="tx"><b>Comprar Premium</b><small>Pago único · de por vida</small></span></button>
         <button class="btn btn-demo-premium oculto" id="plan-gratuito-demo" type="button">🎁 Probar demo (5 días)</button>
-        <a class="btn btn-whatsapp oculto" id="plan-gratuito-btn" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">💬 Pasarme a Premium</a>
+        <a class="btn btn-chat oculto" id="plan-gratuito-btn" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20conversar%20sobre%20AulaGame." target="_blank" rel="noopener"><svg class="i" aria-hidden="true"><use href="#i-whatsapp"/></svg> Charla con nosotros</a>
       </div>
     </div>
 
@@ -1610,9 +1636,9 @@
     <p>Tu plan gratuito permite guardar 2 juegos a la vez. Elimina uno para reemplazarlo, o escríbenos por WhatsApp para pasarte a Premium y crear todos los que quieras.</p>
     <div class="modal-acciones">
       <button class="btn btn-cancelar" id="btn-limite-cerrar">Cerrar</button>
-      <button class="btn btn-pagar-premium oculto" id="btn-limite-pagar" type="button">💳 Comprar Premium</button>
+      <button class="btn btn-pagar-premium oculto" id="btn-limite-pagar" type="button"><svg class="ic-pago" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/></svg><span class="tx"><b>Comprar Premium</b><small>Pago único · de por vida</small></span></button>
       <button class="btn btn-demo-premium oculto" id="btn-limite-demo" type="button">🎁 Probar demo (5 días)</button>
-      <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">Quiero pasarme a Premium</a>
+      <a class="btn btn-chat" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20conversar%20sobre%20AulaGame." target="_blank" rel="noopener"><svg class="i" aria-hidden="true"><use href="#i-whatsapp"/></svg> Charla con nosotros</a>
     </div>
   </div>
 </div>
@@ -1657,9 +1683,9 @@
   <div class="anuncio-popup-caja" role="dialog" aria-modal="true" aria-label="Oferta AulaGame Premium">
     <img class="anuncio-popup-img" src="img/anuncio-premium.webp" alt="AulaGame Premium: acceso a todas las plantillas, IA integrada para crear preguntas, actualizaciones incluidas y sin pagos mensuales.">
     <div class="anuncio-popup-botones">
-      <button type="button" class="btn btn-pagar-premium" id="btn-anuncio-popup-pagar">💳 Comprar Premium de por vida</button>
+      <button class="btn btn-pagar-premium" id="btn-anuncio-popup-pagar" type="button"><svg class="ic-pago" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/></svg><span class="tx"><b>Comprar Premium</b><small>Pago único · de por vida</small></span></button>
       <button type="button" class="btn btn-demo-premium" id="btn-anuncio-popup-demo">🎁 Probar demo gratis (5 días)</button>
-      <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener">💬 Quiero Premium por WhatsApp</a>
+      <a class="btn btn-chat" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20conversar%20sobre%20AulaGame." target="_blank" rel="noopener"><svg class="i" aria-hidden="true"><use href="#i-whatsapp"/></svg> Charla con nosotros</a>
     </div>
   </div>
 </div>
