@@ -57,6 +57,9 @@ es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
     Solo lo lee/escribe el Worker (`POST /hotdog/use`); las reglas de Firestore no lo exponen al cliente.
     Plan gratis: 5 usos (`HOTDOG_FREE_USOS` en `wrangler.toml`; repeticiones en 90 min no recuentan) y un solo
     duplicado de Hot Dog Run; Premium: ilimitado.
+  - Hot Dog Run, botón CHEAT (solo administradores, código `2179` = `TEST_CODE` en `online.html`): al crear la sala
+    agrega N bots; cada bot es un iframe invisible de `online.html?sala=<código>&bot=1` que entra como alumno y
+    juega solo con la IA de bots del motor (sirve para probar el juego sin tener alumnos conectados).
   - `clasesIngles/{claseId}` — contenido de la intranet de inglés (sin Firebase Auth real ahí).
 - **Realtime Database** — salas en vivo (`salasVivo/{juego}/{sala}/...`): jugadores, equipos,
   buzz, respuestas, estado de la partida en tiempo real. También `pines/{pin}` para resolver PIN

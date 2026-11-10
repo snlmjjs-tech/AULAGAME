@@ -820,7 +820,7 @@ body[data-screen="game"]{overflow:hidden;overscroll-behavior:none;touch-action:n
       <p class="hint">Con el código, tú juegas sin responder preguntas para probar los niveles rápido.</p>
       <p class="status" id="hTestMsg" role="status" aria-live="polite"></p>
     </section>
-    <div class="row"><button class="btn alt" id="hCreate">Crear sala online</button><button class="btn ghost" id="hBack">Volver al inicio</button></div>
+    <div class="row"><button class="btn alt" id="hCreate">Crear sala online</button><button class="btn ghost" id="hBack">Volver al inicio</button><button class="btn ghost" id="hCheat" type="button" title="Solo para administradores de AulaGame">CHEAT</button></div>
   </div>
 </main>
 
@@ -848,6 +848,7 @@ body[data-screen="game"]{overflow:hidden;overscroll-behavior:none;touch-action:n
     </div>
     <h2><span id="hCount2" class="cnt">0</span> <span id="hCountL">jugadores</span></h2>
     <ul class="plist" id="hPlayers" aria-label="Jugadores conectados"></ul>
+    <div class="row" id="hCheatRow" hidden style="justify-content:center;align-items:center"><button class="btn ghost sm" id="hBotsAdd" type="button">＋ Agregar bots</button><button class="btn ghost sm" id="hBotsClear" type="button">Quitar bots</button><span class="hint" id="hBotsN"></span></div>
     <p class="hint" id="hDemo" hidden>Modo demostración: sin Supabase solo funcionan pestañas del mismo navegador. Configura <b>online/config.js</b> para jugar con otros dispositivos.</p>
     <div class="row" style="justify-content:center"><button class="btn alt" id="hStart" disabled>Iniciar partida</button><button class="btn ghost" id="hClose">Cerrar sala</button></div>
   </div>
@@ -898,6 +899,14 @@ body[data-screen="game"]{overflow:hidden;overscroll-behavior:none;touch-action:n
   <div class="rot" id="rotHint" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.6"/><path d="M11 18.5h2"/></svg><span>Gira el teléfono para ver más del mundo</span></div>
 </main>
 
+<dialog class="dlg" id="cheatDlg" aria-labelledby="cheatT">
+  <h3 id="cheatT">CHEAT · solo administradores</h3>
+  <p class="hint" id="cheatP">Botón solo para ADM de AulaGame. Sirve para simular alumnos (bots) en línea y probar el juego. Pide un código.</p>
+  <label class="l" for="cheatCode">Código</label><input type="password" id="cheatCode" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Código de administrador">
+  <label class="l" for="cheatN" style="margin-top:var(--s2)">Cantidad de bots</label><input type="number" id="cheatN" min="1" max="20" value="6">
+  <p class="warn" id="cheatErr" role="alert"></p>
+  <div class="row" style="justify-content:flex-end"><button class="btn ghost" id="cheatNo" type="button">Cancelar</button><button class="btn" id="cheatOk" type="button">Activar</button></div>
+</dialog>
 <dialog class="dlg" id="dlg" aria-labelledby="dlgT" aria-describedby="dlgP">
   <h3 id="dlgT"></h3><p id="dlgP"></p>
   <div class="row"><button class="btn ghost sm" id="dlgNo">Cancelar</button><button class="btn sm" id="dlgOk">Aceptar</button></div>
@@ -1242,7 +1251,7 @@ const BUNS=['Pan normal','Pan tostado','Sin pan'];
 const NAMES=['Mostaza','Kétchup','Palta','Tomate','Mayo','Pebre','Chucrut','Longaniza','Vienesa','Italiano','Dinámico','Chacarero','Ají','Crujiente'];
 let avatar=Object.assign({color:COLORS[0],eyes:0,hat:0,bun:0,name:''},store.get('br_avatar',{}));
 if(!COLORS.includes(avatar.color))avatar.color=COLORS[0];avatar.eyes=(+avatar.eyes||0)%EYES.length;avatar.hat=(+avatar.hat||0)%HATS.length;avatar.bun=(+avatar.bun||0)%BUNS.length;
-const saveAv=()=>store.set('br_avatar',avatar);
+const saveAv=()=>{if(!BOTMODE)store.set('br_avatar',avatar)};
 const randAv=()=>({color:COLORS[Math.floor(Math.random()*COLORS.length)],eyes:Math.floor(Math.random()*EYES.length),hat:Math.floor(Math.random()*HATS.length),bun:Math.random()<.65?0:Math.floor(Math.random()*BUNS.length)});
 
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
@@ -2227,7 +2236,8 @@ document.addEventListener('contextmenu',e=>{if($('#game').classList.contains('on
 const CFG=window.BERRY_CONFIG||{};
 const SB_OK=!!(CFG.SUPABASE_URL&&CFG.SUPABASE_ANON_KEY&&window.supabase);
 const BUDGET=+CFG.MSG_BUDGET||90, MAXP=+CFG.MAX_PLAYERS||60, GRACE=+CFG.GRACE_SECONDS||20, CAP=240;
-const myId=(()=>{try{let v=sessionStorage.getItem('br_pid');if(!v){v=Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-3);sessionStorage.setItem('br_pid',v)}return v}catch(e){return Math.random().toString(36).slice(2,10)}})();
+const BOTMODE=new URLSearchParams(location.search).get('bot')==='1';
+const myId=BOTMODE?('bot'+Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-3)):(()=>{try{let v=sessionStorage.getItem('br_pid');if(!v){v=Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-3);sessionStorage.setItem('br_pid',v)}return v}catch(e){return Math.random().toString(36).slice(2,10)}})();
 const R=v=>Math.round(v);
 const netMsg=m=>/fetch|network|load failed/i.test(String(m))?'No hay conexión con el servidor. Revisa tu internet.':String(m);
 const cleanName=s=>String(s||'').replace(/[<>&"'`]/g,'').trim().slice(0,20)||'Jugador';
@@ -2318,7 +2328,36 @@ function syncList(ul,players,onKick){
     li.dataset.id=p.id;ul.appendChild(li);
   });
 }
+/* ---------- CHEAT (solo administradores): bots en línea para probar el juego ---------- */
+const CHEAT={on:false,n:6};
+let botFarm=null;
+function botFarmClear(){if(botFarm){botFarm.remove();botFarm=null}const e=document.getElementById('hBotsN');if(e)e.textContent=''}
+function spawnBots(n){
+  if(ROLE!=='host'||!roomCode)return;
+  if(!botFarm){botFarm=document.createElement('div');botFarm.id='botFarm';botFarm.setAttribute('aria-hidden','true');botFarm.style.cssText='position:fixed;left:-10000px;top:0;width:480px;height:320px;overflow:hidden;pointer-events:none';document.body.appendChild(botFarm)}
+  const room=Math.max(0,Math.min(n,MAXP-HS.players.size,20-botFarm.children.length));
+  for(let i=0;i<room;i++)setTimeout(()=>{
+    if(!botFarm||ROLE!=='host')return;
+    const f=document.createElement('iframe');f.tabIndex=-1;f.title='bot';
+    f.src=location.pathname+'?sala='+roomCode+'&bot=1&bi='+botFarm.children.length;botFarm.appendChild(f);
+    const e=document.getElementById('hBotsN');if(e)e.textContent=botFarm.children.length+' bots';
+  },i*450);
+}
+function paintCheat(){const b=$('#hCheat');b.textContent=CHEAT.on?'CHEAT ✓ ('+CHEAT.n+' bots)':'CHEAT';b.classList.toggle('alt',CHEAT.on)}
+$('#hCheat').onclick=()=>{
+  if(CHEAT.on){CHEAT.on=false;paintCheat();msg('CHEAT desactivado.');return}
+  const d=$('#cheatDlg');$('#cheatCode').value='';$('#cheatErr').textContent='';$('#cheatN').value=CHEAT.n;
+  const fin=ok=>{d.close();if(!ok)return;CHEAT.on=true;CHEAT.n=clamp(parseInt($('#cheatN').value,10)||6,1,20);paintCheat();msg('CHEAT activado: al crear la sala entrarán '+CHEAT.n+' bots.','ok')};
+  const go=()=>{if($('#cheatCode').value.trim()!==TEST_CODE){$('#cheatErr').textContent='Código incorrecto.';$('#cheatCode').select();return}fin(true)};
+  $('#cheatOk').onclick=go;$('#cheatNo').onclick=()=>fin(false);
+  $('#cheatCode').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();go()}};
+  d.oncancel=e=>{e.preventDefault();fin(false)};
+  d.showModal();$('#cheatCode').focus();
+};
+$('#hBotsAdd').onclick=()=>spawnBots(Math.max(1,CHEAT.n));
+$('#hBotsClear').onclick=botFarmClear;
 function teardown(){
+  botFarmClear();
   clearInterval(hbT);clearInterval(joinT);clearInterval(HS.tick);hbT=joinT=null;HS.tick=null;
   Net.closeAll();ROLE=null;roomCode=null;down=upCh=null;HS.players=new Map();HS.phase='lobby';netPlayers=[];
   cancelAnimationFrame(raf);state='idle';roster=[];me=null;L=null;qs=null;
@@ -2373,7 +2412,7 @@ function onDown(m){
     case 'kick':if(m.id===myId&&ROLE==='player')leaveRoom('El profesor te sacó de la sala.');break;
   }
 }
-function mkNet(pl){return{id:pl.id,name:pl.name,av:cleanAv(pl.av),bot:false,remote:pl.id!==myId,skill:1,acc:.7,total:0,nx:0,ny:0,seen:false}}
+function mkNet(pl){const me_=BOTMODE&&pl.id===myId;return{id:pl.id,name:pl.name,av:cleanAv(pl.av),bot:me_,remote:pl.id!==myId,skill:me_?.84+Math.random()*.18:1,acc:me_?.5+Math.random()*.35:.7,total:0,nx:0,ny:0,seen:false}}
 function startOnline(m){
   const key=m.k+':'+m.idx;if(key===lastLevelKey||ROLE!=='player')return;
   if(!m.players.some(p=>p.id===myId))return;      /* llegó tarde: espera el próximo nivel */
@@ -2488,6 +2527,7 @@ async function createRoomUI(){
     $('#hCodeBig').textContent=code.slice(0,3)+' '+code.slice(3);$('#hCodeBig').setAttribute('aria-label','Código '+code.split('').join(' '));
     $('#hUrl').textContent=url;$('#hDemo').hidden=Net.mode==='supabase';
     renderHostLobby();show('lobbyHost');
+    $('#hCheatRow').hidden=!CHEAT.on;if(CHEAT.on)spawnBots(CHEAT.n);
     /* Registra el PIN en aulagame.cl (para "¿Tienes el PIN de la sala?") y crea el link corto aulagame.cl/H0799.
        No bloquea: si falla, queda el enlace largo de siempre. */
     if(window.AG_registrarSala)window.AG_registrarSala(code).then(sc=>{
@@ -2633,6 +2673,7 @@ function renderLive(){
   if(HS.phase==='results')$('#liveNext').textContent=HS.lastRes.last?'Ver podio final':'Siguiente nivel';
 }
 function closeRoomHost(){
+  botFarmClear();
   try{down.send({t:'closed'})}catch(e){}
   Net.closeRoom(roomCode);teardown();show('home');refreshHome();
 }
@@ -3484,6 +3525,18 @@ if(typeof showResultsNet==='function'){const f=showResultsNet;showResultsNet=fun
 if(typeof showFinalNet==='function'){const f=showFinalNet;showFinalNet=function(){f.apply(this,arguments);decorateResults()}}
 
 /*ENGINE2-END*/
+/* ---------- Modo bot (solo administradores): esta ventana entra sola a la sala y juega con la IA de bots ---------- */
+if(BOTMODE){
+  SFX.on=false;draw=function(){};
+  window.requestAnimationFrame=cb=>setTimeout(()=>cb(performance.now()),16);
+  const bi=+new URLSearchParams(location.search).get('bi')||0;
+  avatar=randAv();avatar.name='Bot'+(bi+1)+' '+NAMES[Math.floor(Math.random()*NAMES.length)];
+  $('#pname').value=avatar.name;
+  const _pfs=postFinSync;
+  postFinSync=function(){_pfs();if(me&&me.fin&&!me.emoSent){me.emoSent=true;setTimeout(()=>{try{sendEmo(Math.floor(Math.random()*EMOS.length))}catch(e){}},600+Math.random()*3500)}};
+  const _sl=startLevel;startLevel=function(){_sl();if(me)me.emoSent=false};
+  setTimeout(()=>{try{$('#bPlay').click()}catch(e){}},500+bi*350);
+}
 refreshHome();
 if(window.BerryFx)BerryFx.logo($('#home h1'));
 })();
@@ -3515,7 +3568,7 @@ window.AG_initAI = async function(){
     extraFields: '<p style="font-size:12px;color:#666;margin:10px 0 0;">Las preguntas se reparten entre todos tus niveles (máx. 30 en total).</p>',
     onGenerated: d => window.AG_applyAI(d, true) });
 };
-window.AG_initAI();
+if(new URLSearchParams(location.search).get("bot")!=="1") window.AG_initAI();
 
 /* ---- Hot Dog Run: preguntas en la cuenta del profe y contador de usos (plan gratis) ---- */
 const HD_KEY = "hotdogrun" + (() => { const c = new URLSearchParams(location.search).get("c"); return c && /^[\w-]{1,60}$/.test(c) ? "_" + c : ""; })();
@@ -3539,7 +3592,7 @@ window.AG_usarHotdog = async function(kind, peek){
     return j;
   }catch(e){ return { ok: true, unverified: true }; }
 };
-if(window.AG_onModuleReady) window.AG_onModuleReady();
+if(new URLSearchParams(location.search).get("bot")!=="1" && window.AG_onModuleReady) window.AG_onModuleReady();
 window.AG_registrarSala = async function(code){
   const auth = getAuth(getApp());
   await auth.authStateReady();
