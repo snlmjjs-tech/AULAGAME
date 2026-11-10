@@ -545,6 +545,73 @@ body[data-screen="game"]{overflow:hidden;overscroll-behavior:none;touch-action:n
 @keyframes conf{to{transform:translateY(560px) rotate(calc(var(--r) + 600deg));opacity:0}}
 @media (prefers-reduced-motion:reduce){.confetti{display:none}.crown{animation:none}.overlay.on .res{animation:none}#game .keys{animation:none}}
 
+/* ===== v3 · ventana de preguntas y resultados ===== */
+.qbox{width:min(94%,760px);padding:var(--s5) var(--s5) var(--s5);gap:var(--s4);border-radius:30px;position:relative;
+  background:linear-gradient(180deg,var(--surface),var(--surface-2));animation:qIn .38s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes qIn{from{opacity:0;transform:translateY(22px) scale(.92)}to{opacity:1;transform:none}}
+.qhead{display:flex;align-items:center;justify-content:space-between;gap:var(--s3)}
+.qtag{display:inline-flex;align-items:center;gap:7px;font-size:var(--t-xs);font-weight:var(--w-bold);letter-spacing:.09em;text-transform:uppercase;color:var(--berry-ink)}
+.qtag::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--berry);box-shadow:0 0 0 4px rgba(214,39,90,.18)}
+.qsec{font-variant-numeric:tabular-nums;font-weight:var(--w-bold);font-size:var(--t-sm);padding:3px 12px;border-radius:var(--r-pill);background:var(--surface);border:1px solid var(--line-strong);color:var(--ink)}
+.qbar{height:12px;box-shadow:inset 0 2px 3px rgba(42,21,53,.18)}
+.qbar i{background:linear-gradient(90deg,#3d4fd1,#7a5cff 60%,#c77dff)}
+.qbar.hot i{background:linear-gradient(90deg,#d6275a,#ff6b6b);animation:qHot .5s ease-in-out infinite alternate}
+@keyframes qHot{to{filter:brightness(1.25)}}
+.qbox .qt{font-size:clamp(1.25rem,3.4vw,2rem);line-height:1.2;letter-spacing:-.02em;padding:var(--s2) 0 var(--s1)}
+.ans{gap:var(--s3)}
+.ans button{--c:#3d4fd1;min-height:68px;border:2px solid var(--line-strong);border-bottom:5px solid var(--c);border-radius:18px;padding:var(--s3) var(--s4);
+  background:var(--surface);box-shadow:var(--sh-1);font-size:clamp(1rem,2.5vw,1.3rem);font-weight:var(--w-bold);
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s,background-color .2s,border-color .2s}
+.ans button:nth-child(1){--c:#d6275a}.ans button:nth-child(2){--c:#3d4fd1}.ans button:nth-child(3){--c:#2a9a55}.ans button:nth-child(4){--c:#e08a00}
+.ans button:nth-child(n+5){--c:#8e6bff}
+.ans button kbd{width:38px;height:38px;border-radius:12px;background:var(--c);border:none;color:#fff;font-size:var(--t-md);box-shadow:inset 0 -3px 0 rgba(0,0,0,.2)}
+@media (hover:hover){.ans button:hover:not(:disabled){transform:translateY(-3px);box-shadow:var(--sh-2);background:var(--surface);border-color:var(--c)}}
+.ans button:active:not(:disabled){transform:translateY(2px) scale(.98);border-bottom-width:3px}
+.ans button.ok{background:var(--ok);border-color:var(--ok);border-bottom-color:rgba(0,0,0,.3);color:#fff;animation:ansOk .5s cubic-bezier(.34,1.56,.64,1)}
+.ans button.bad{background:var(--bad);border-color:var(--bad);border-bottom-color:rgba(0,0,0,.3);color:#fff;animation:ansBad .45s ease}
+.ans button.ok kbd,.ans button.bad kbd{background:rgba(255,255,255,.28);box-shadow:none}
+.ans button:disabled:not(.ok):not(.bad){opacity:.5;filter:saturate(.6)}
+@keyframes ansOk{0%{transform:scale(.96)}60%{transform:scale(1.04)}100%{transform:scale(1)}}
+@keyframes ansBad{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(4px)}}
+.qbox.good{box-shadow:var(--bevel),var(--sh-3),0 0 0 4px rgba(82,208,138,.55)}
+.qbox.miss{box-shadow:var(--bevel),var(--sh-3),0 0 0 4px rgba(255,125,118,.55)}
+@media (max-width:560px){.ans{grid-template-columns:1fr}.qbox{padding:var(--s4)}.ans button{min-height:58px}}
+
+/* resultados */
+.res{width:min(94%,640px);padding:var(--s5) var(--s4) var(--s4);border-radius:30px;background:linear-gradient(180deg,var(--surface),var(--surface-2));gap:var(--s4)}
+.res h3{font-size:clamp(1.25rem,3vw,1.75rem);letter-spacing:-.02em;font-weight:var(--w-bold);text-wrap:balance}
+.rlist{gap:6px}
+.rrow{grid-template-columns:36px 44px 1fr auto;padding:6px var(--s3) 6px 8px;border-radius:16px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1);min-height:58px}
+.rrow .rk{width:30px;height:30px;font-size:var(--t-sm);background:var(--surface-2);border:1px solid var(--line-strong)}
+.rrow:nth-child(1) .rk{background:linear-gradient(135deg,#ffe27a,#e0a100);border-color:#b57a00;color:#4a3000}
+.rrow:nth-child(2) .rk{background:linear-gradient(135deg,#f1f3f8,#b7bdcb);border-color:#8b93a6;color:#2a2f3d}
+.rrow:nth-child(3) .rk{background:linear-gradient(135deg,#f5c08f,#c27a3c);border-color:#935420;color:#40210a}
+.rrow img{width:38px;height:52px;filter:drop-shadow(0 3px 3px rgba(42,21,53,.25))}
+.rrow .pts{min-width:62px;text-align:center;padding:5px 12px;border-radius:var(--r-pill);background:rgba(42,154,85,.16);color:var(--ok);font-size:var(--t-md)}
+.rrow.first:not(.me){background:linear-gradient(90deg,rgba(255,197,51,.34),var(--surface) 70%);border-color:rgba(217,154,0,.5)}
+.rrow.me{background:linear-gradient(90deg,#ffd45e,#ffc533);border-color:#b57a00;box-shadow:0 0 0 3px rgba(255,197,51,.45),var(--sh-2);color:#2a1535}
+.rrow.me .pts{background:rgba(42,21,53,.14);color:#2a1535}
+.rrow.first .pts,.rrow.me.first .pts{color:inherit}
+.rrow.zero .pts{background:var(--surface-2);color:var(--ink-2)}
+.rrow.inpod{display:none}
+/* podio final */
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;padding:34px var(--s2) 0;min-height:250px}
+.pd{flex:1;max-width:170px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;animation:pdIn .6s cubic-bezier(.34,1.56,.64,1) both}
+.pd.p1{animation-delay:.35s}.pd.p2{animation-delay:.15s}.pd.p3{animation-delay:.05s}
+@keyframes pdIn{from{opacity:0;transform:translateY(40px)}}
+.pd img{width:56px;height:78px;filter:drop-shadow(0 4px 4px rgba(42,21,53,.3))}
+.pd.p1 img{width:68px;height:94px}
+.pd b{font-size:var(--t-sm);font-weight:var(--w-bold);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pd .pp{font-size:var(--t-xs);font-weight:var(--w-semi);color:var(--ink-2);font-variant-numeric:tabular-nums}
+.pd .blk{width:100%;border-radius:14px 14px 0 0;display:grid;place-items:start center;padding-top:8px;font-size:1.9rem;font-weight:var(--w-bold);line-height:1;color:rgba(0,0,0,.55);box-shadow:inset 0 3px 0 rgba(255,255,255,.55)}
+.pd.p1 .blk{height:112px;background:linear-gradient(180deg,#ffe27a,#e0a100)}
+.pd.p2 .blk{height:84px;background:linear-gradient(180deg,#f1f3f8,#aab1c2)}
+.pd.p3 .blk{height:62px;background:linear-gradient(180deg,#f5c08f,#b9722f)}
+.pd.me b{background:var(--sun);color:#2a1535;padding:1px 10px;border-radius:var(--r-pill)}
+.pd .crown{width:30px;height:30px;margin:0 0 -4px}
+@media (prefers-reduced-motion:reduce){.qbox,.pd,.ans button.ok,.ans button.bad,.qbar.hot i{animation:none}}
+
+
 /* aviso para girar el móvil (solo en vertical y pantallas estrechas) */
 #game .rot{display:none}
 @media (orientation:portrait) and (max-width:700px){
@@ -687,7 +754,7 @@ body[data-screen="game"]{overflow:hidden;overscroll-behavior:none;touch-action:n
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <div id="tCount" aria-hidden="true"></div>
-    <div class="overlay" id="qOv" role="dialog" aria-modal="true" aria-labelledby="qText"><div class="qbox" id="qBox" tabindex="-1"><div class="qbar" id="qBarWrap" aria-hidden="true"><i id="qBar"></i></div><p class="qt" id="qText"></p><div class="ans" id="qAns"></div></div></div>
+    <div class="overlay" id="qOv" role="dialog" aria-modal="true" aria-labelledby="qText"><div class="qbox" id="qBox" tabindex="-1"><div class="qhead"><span class="qtag">Pregunta</span><span class="qsec" id="qSec" aria-hidden="true"></span></div><div class="qbar" id="qBarWrap" aria-hidden="true"><i id="qBar"></i></div><p class="qt" id="qText"></p><div class="ans" id="qAns"></div></div></div>
     <div class="overlay" id="rOv" role="dialog" aria-modal="true" aria-label="Resultados"><div class="res" id="rBox" tabindex="-1"></div></div>
     <div class="ctrls">
       <button class="cbtn" id="cL" aria-label="Izquierda"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
@@ -1583,7 +1650,7 @@ function update(dt){
     if(roster.every(p=>p.fin||p.out)||raceT>=RACE_LIMIT)endLevel();
   }
   if(qs){
-    if(!qs.done){qs.t-=dt;$('#qBar').style.transform='scaleX('+Math.max(0,qs.t/qs.max)+')';$('#qBarWrap').classList.toggle('hot',qs.t<4);if(qs.t<=0)answer(-1)}
+    if(!qs.done){qs.t-=dt;$('#qBar').style.transform='scaleX('+Math.max(0,qs.t/qs.max)+')';$('#qSec').textContent=Math.ceil(Math.max(0,qs.t))+' s';$('#qBarWrap').classList.toggle('hot',qs.t<4);if(qs.t<=0)answer(-1)}
     else{qs.fb-=dt;if(qs.fb<=0)closeQ()}
   }
 }
@@ -1594,7 +1661,7 @@ function openQ(w){
   qs={q:q,wall:w,opts:shuffle(q.o),t:12,max:12,done:false,fb:.9};
   $('#qText').textContent=q.q;const a=$('#qAns');a.innerHTML='';
   qs.opts.forEach((o,i)=>a.appendChild(mk('button',{onclick:()=>answer(i)},[mk('kbd',{textContent:i+1}),mk('span',{textContent:o.t})])));
-  $('#qBar').style.transform='scaleX(1)';$('#qBarWrap').classList.remove('hot');$('#qOv').classList.add('on');$('#qBox').focus({preventScroll:true});
+  $('#qBar').style.transform='scaleX(1)';$('#qSec').textContent=Math.ceil(qs.max)+' s';$('#qBox').classList.remove('good','miss');$('#qBarWrap').classList.remove('hot');$('#qOv').classList.add('on');$('#qBox').focus({preventScroll:true});
 }
 function breakWall(w){
   me.broken.add(w.qi);
@@ -1609,7 +1676,7 @@ function answer(i){
   const btns=[...$('#qAns').children];
   qs.opts.forEach((o,k)=>{if(o.ok)btns[k].classList.add('ok');else if(k===i)btns[k].classList.add('bad')});
   btns.forEach(b=>b.disabled=true);
-  const ok=i>=0&&qs.opts[i].ok;
+  const ok=i>=0&&qs.opts[i].ok;$('#qBox').classList.add(ok?'good':'miss');
   breakWall(qs.wall);
   if(ok){
     me.correct++;me.boost=2.5;me.stun=0;
@@ -2578,9 +2645,23 @@ updScore=function(){
 
 /* ---------- Resultados: contadores animados, corona y confeti ---------- */
 const CROWN='<svg class="ic crown" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/></svg>';
+function buildPodium(box,rows){
+  if(!box.querySelector('.trophy')||rows.length<2||box.querySelector('.podium'))return false;
+  const top=rows.slice(0,3),order=top.length>=3?[top[1],top[0],top[2]]:[top[1],top[0]],cls=top.length>=3?['p2','p1','p3']:['p2','p1'];
+  let h='<div class="podium">';
+  order.forEach((r,k)=>{
+    const pos=cls[k].slice(1),img=r.querySelector('img'),nm=r.children[2].textContent.trim(),pts=r.querySelector('.pts').textContent;
+    h+='<div class="pd '+cls[k]+(r.classList.contains('me')?' me':'')+'">'+(pos==='1'?CROWN:'')+(img?'<img alt="" src="'+img.getAttribute('src')+'">':'')+'<b>'+esc(nm)+'</b><span class="pp">'+esc(pts)+' pts</span><div class="blk">'+pos+'</div></div>';
+  });
+  box.querySelector('h3').insertAdjacentHTML('afterend',h+'</div>');
+  top.forEach(r=>r.classList.add('inpod'));
+  return true;
+}
 function decorateResults(){
   const box=$('#rBox');if(!box)return;
   const rows=[...box.querySelectorAll('.rrow')];
+  const pod=buildPodium(box,rows);
+  rows.forEach(r=>{const el=r.querySelector('.pts');if(el&&/^\+?0$/.test(el.textContent.trim()))r.classList.add('zero')});
   rows.forEach((r,i)=>{
     const el=r.querySelector('.pts');if(!el||el.dataset.done)return;el.dataset.done='1';
     const m=el.textContent.match(/^(\+?)(-?\d+)$/);if(!m)return;
@@ -2588,7 +2669,7 @@ function decorateResults(){
     const tick=n=>{const k=dur?clamp((n-t0)/dur,0,1):1,v=Math.round(to*(1-Math.pow(1-k,3)));el.textContent=pre+v;if(k<1)requestAnimationFrame(tick)};
     el.textContent=pre+'0';requestAnimationFrame(tick);
   });
-  if(rows[0]){rows[0].classList.add('first');const nm=rows[0].children[2];if(nm&&!nm.querySelector('.crown'))nm.insertAdjacentHTML('afterbegin',CROWN)}
+  if(rows[0]&&!pod){rows[0].classList.add('first');const nm=rows[0].children[2];if(nm&&!nm.querySelector('.crown'))nm.insertAdjacentHTML('afterbegin',CROWN)}
   const fin=!!box.querySelector('.trophy'),won=rows[0]&&rows[0].classList.contains('me');
   if((fin||rows.length&&won)&&!E2.rm.matches&&!box.querySelector('.confetti')){
     let h='<div class="confetti" aria-hidden="true">';const cs=['#ff5d8f','#ffc533','#3d4fd1','#2a9a55','#c77dff','#fff'];
