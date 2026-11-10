@@ -2234,6 +2234,11 @@ async function createRoomUI(){
     $('#hCodeBig').textContent=code.slice(0,3)+' '+code.slice(3);$('#hCodeBig').setAttribute('aria-label','Código '+code.split('').join(' '));
     $('#hUrl').textContent=url;$('#hDemo').hidden=Net.mode==='supabase';
     renderHostLobby();show('lobbyHost');
+    /* Registra el PIN en aulagame.cl (para "¿Tienes el PIN de la sala?") y crea el link corto aulagame.cl/H0799.
+       No bloquea: si falla, queda el enlace largo de siempre. */
+    if(window.AG_registrarSala)window.AG_registrarSala(code).then(sc=>{
+      if(sc&&roomCode===code&&ROLE==='host')$('#hUrl').textContent=location.origin+'/'+sc;
+    }).catch(()=>{});
     HS.tick=setInterval(hostTick,100);
   }catch(e){msg(e.message||String(e),'err');teardown()}
   finally{b.disabled=false;b.removeAttribute('aria-busy');b.textContent=label}
@@ -3074,6 +3079,20 @@ if(typeof showFinalNet==='function'){const f=showFinalNet;showFinalNet=function(
 refreshHome();
 if(window.BerryFx)BerryFx.logo($('#home h1'));
 })();
+</script>
+<script type="module">
+import { registrarPinExterno } from "../shared/live-room.js";
+import { crearCodigoCorto } from "../shared/short-links.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+window.AG_registrarSala = async function(code){
+  const auth = getAuth(getApp());
+  await auth.authStateReady();
+  if(!auth.currentUser) return null; // sin sesión de profe no se puede escribir en el registro de PINes
+  const destino = "/play/hotdogrun/online.html";
+  await registrarPinExterno(code, "hotdogrun", destino, "sala");
+  return await crearCodigoCorto({ juego: "hotdogrun", destino: destino, paramNombre: "sala", paramValor: code });
+};
 </script>
 </body>
 </html>
