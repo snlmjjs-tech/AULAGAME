@@ -60,6 +60,10 @@ es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
   - Hot Dog Run, botón CHEAT (solo administradores, código `2179` = `TEST_CODE` en `online.html`): al crear la sala
     agrega N bots; cada bot es un iframe invisible de `online.html?sala=<código>&bot=1` que entra como alumno y
     juega solo con la IA de bots del motor (sirve para probar el juego sin tener alumnos conectados).
+    Con CHEAT activo, dentro de la sala hay "🛡 Entrar como supervisor": abre `online.html?sala=<código>&sup=1`, que
+    vuelve a pedir el código `2179`; el supervisor juega sin responder preguntas, escribe mensajes de texto que ven todos
+    (burbuja + aviso) y no cuenta en puntajes ni en "todos terminaron". El código es solo un freno en el cliente,
+    no una barrera de seguridad real.
   - `clasesIngles/{claseId}` — contenido de la intranet de inglés (sin Firebase Auth real ahí).
 - **Realtime Database** — salas en vivo (`salasVivo/{juego}/{sala}/...`): jugadores, equipos,
   buzz, respuestas, estado de la partida en tiempo real. También `pines/{pin}` para resolver PIN

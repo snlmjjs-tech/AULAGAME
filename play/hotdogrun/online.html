@@ -427,6 +427,11 @@ body[data-screen="lobby"] #lmBtn,body[data-screen="lobbyHost"] #lmBtn{display:in
 .pf-e:active{transform:scale(.9)}
 @media (max-height:520px){.postfin{bottom:6px;gap:5px;max-width:98%}.pf-btn{padding:5px 11px;font-size:.78rem}.pf-tray{flex-wrap:nowrap;gap:5px;padding:5px 6px;border-radius:14px;background:rgba(26,12,40,.42)}.pf-e{padding:3px 8px;font-size:.78rem;min-height:26px;border-radius:10px;white-space:nowrap}}
 
+.supchat{position:absolute;left:50%;top:76px;transform:translateX(-50%);z-index:calc(var(--z-overlay) - 1);display:none;gap:6px;width:min(92%,460px);padding:6px;border-radius:999px;background:rgba(26,12,40,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.supchat.on{display:flex}
+.supchat input{flex:1;min-width:0;border:none;border-radius:999px;padding:8px 14px;font:inherit;font-size:var(--t-sm);background:rgba(255,255,255,.94);color:#2a1535}
+.supchat .btn{flex:none}
+@media (max-height:520px){.supchat{top:auto;bottom:46px;width:min(60%,420px)}}
 .plist{list-style:none;margin:0;padding:0;width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:var(--s3)}
 .plist li{display:flex;flex-direction:column;align-items:center;gap:var(--s1);padding:var(--s3) var(--s2);border-radius:var(--r-l);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1);font-weight:var(--w-semi);font-size:var(--t-sm);animation:pop var(--d-base) var(--ease);min-width:0}
 .plist li{position:relative}
@@ -848,7 +853,7 @@ body[data-screen="game"]{overflow:hidden;overscroll-behavior:none;touch-action:n
     </div>
     <h2><span id="hCount2" class="cnt">0</span> <span id="hCountL">jugadores</span></h2>
     <ul class="plist" id="hPlayers" aria-label="Jugadores conectados"></ul>
-    <div class="row" id="hCheatRow" hidden style="justify-content:center;align-items:center"><button class="btn ghost sm" id="hBotsAdd" type="button">＋ Agregar bots</button><button class="btn ghost sm" id="hBotsClear" type="button">Quitar bots</button><span class="hint" id="hBotsN"></span></div>
+    <div class="row" id="hCheatRow" hidden style="justify-content:center;align-items:center"><button class="btn ghost sm" id="hBotsAdd" type="button">＋ Agregar bots</button><button class="btn ghost sm" id="hBotsClear" type="button">Quitar bots</button><button class="btn sm" id="hSupOpen" type="button">🛡 Entrar como supervisor</button><span class="hint" id="hBotsN"></span></div>
     <p class="hint" id="hDemo" hidden>Modo demostración: sin Supabase solo funcionan pestañas del mismo navegador. Configura <b>online/config.js</b> para jugar con otros dispositivos.</p>
     <div class="row" style="justify-content:center"><button class="btn alt" id="hStart" disabled>Iniciar partida</button><button class="btn ghost" id="hClose">Cerrar sala</button></div>
   </div>
@@ -861,6 +866,7 @@ body[data-screen="game"]{overflow:hidden;overscroll-behavior:none;touch-action:n
     <p class="hint" id="liveSub" role="status"></p>
     <ol class="board" id="liveBoard" aria-label="Clasificación en vivo"></ol>
     <div class="row" style="justify-content:center">
+      <button class="btn ghost" id="liveSup" type="button" hidden>🛡 Supervisor</button>
       <button class="btn danger" id="liveEnd">Terminar nivel</button>
       <button class="btn" id="liveNext" hidden>Siguiente nivel</button>
       <button class="btn ghost" id="liveClose">Cerrar sala</button>
@@ -879,6 +885,7 @@ body[data-screen="game"]{overflow:hidden;overscroll-behavior:none;touch-action:n
       <span class="pill" id="gScore" aria-live="off">0 pts</span>
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <form class="supchat" id="supChat" autocomplete="off"><input id="supTxt" maxlength="60" placeholder="Mensaje para los alumnos…" aria-label="Mensaje para los alumnos"><button class="btn sm" type="submit">Enviar</button></form>
     <div class="postfin" id="postFin" hidden>
       <div class="pf-tray" id="pfTray" hidden></div>
       <div class="pf-bar">
@@ -1101,6 +1108,7 @@ const $=s=>document.querySelector(s);
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));document.body.dataset.screen=id;window.scrollTo(0,0);if(typeof lobbyMusicSync==='function')lobbyMusicSync(id)};
 let TEST=false;/* el modo prueba solo existe en la versión offline */
+let SUP=false;/* modo supervisor (solo administradores, código 2179): juega sin responder y puede escribir mensajes */
 const TEST_CODE='2179';
 const FONT="'Bricolage Grotesque',system-ui,sans-serif";
 const DPR=Math.min(window.devicePixelRatio||1,2);
@@ -1588,7 +1596,7 @@ function startLevel(){
   if(L.type==='cuadro'){L.rounds=Math.min(Q.length,8);if(L.rounds>0)setupRound()}
   if(L.type==='lluvia'){L.rounds=Math.min(Q.length,8);if(L.rounds>0)L.q=Q[0]}
   clouds=[];const r=rng(7+lvlIdx);for(let i=0;i<14;i++)clouds.push({x:r()*3000,y:30+r()*160,s:.6+r()*.9});
-  $('#gLvl').textContent=lv.name+(TEST?' · PRUEBA':'');$('#qOv').classList.remove('on');$('#rOv').classList.remove('on');$('#toast').classList.remove('on');
+  $('#gLvl').textContent=lv.name+(TEST?' · PRUEBA':'')+(SUP?' · SUPERVISOR':'');$('#qOv').classList.remove('on');$('#rOv').classList.remove('on');$('#toast').classList.remove('on');
   if(!Q.length)flash('Este nivel no tiene preguntas',2600);
   updScore();
 }
@@ -1691,7 +1699,7 @@ function step(p,dt){
   }
   p.vy+=1800*dt;if(p.vy>1000)p.vy=1000;
   let PL=(p.bot&&(L.type==='puente'||L.type==='puertas'))?botPlats(p):L.plats;
-  if(TEST&&p===me&&L.type==='puertas')PL=PL.filter(q=>!q.door);
+  if((TEST||SUP)&&p===me&&L.type==='puertas')PL=PL.filter(q=>!q.door);
   p.x+=p.vx*dt;
   for(const q of PL){if(q.bar)continue;if(p.x<q.x+q.w&&p.x+p.w>q.x&&p.y<q.y+q.h&&p.y+p.h>q.y){if(p.vx>0)p.x=q.x-p.w;else if(p.vx<0)p.x=q.x+q.w;p.vx=0}}
   p.y+=p.vy*dt;p.og=false;
@@ -1705,7 +1713,7 @@ function step(p,dt){
   if(p.og&&p.lastPlat&&p.lastPlat.glass){
     const g=p.lastPlat;
     if(g.ok){if(!p.taken.has('g'+g.stage)){p.taken.add('g'+g.stage);p.correct++;if(p===me){flash('¡Correcto!',900);updScore()}}}
-    else if(!(TEST&&p===me)){if(p===me){flash('¡Era el falso! ¡Caes!',1000);if(typeof shake==='function')shake(5)}g.crack=1;breakGlass(g,p)}
+    else if(!((TEST||SUP)&&p===me)){if(p===me){flash('¡Era el falso! ¡Caes!',1000);if(typeof shake==='function')shake(5)}g.crack=1;breakGlass(g,p)}
   }
   /* lava */
   if(L.type==='lava'&&!p.fin&&p.y+p.h>L.lavaY+8){
@@ -1724,6 +1732,7 @@ function step(p,dt){
     if(p.x+p.w>w.x-14){
       p.taken.add(w.qi);
       if(p.bot){const ok=Math.random()<p.acc;p.stun=1+Math.random()*1.2;if(ok){p.correct++;p.boost=2.5}else p.stun+=1}
+      else if(SUP&&p===me){breakWall(w)}
       else if(TEST){breakWall(w);p.correct++;p.boost=2.5;updScore();flash('Modo prueba: pared superada',900)}
       else{p.x=Math.min(p.x,w.x-14-p.w);p.vx=0;openQ(w)}
     }
@@ -1733,6 +1742,7 @@ function step(p,dt){
     if(p.taken.has(g.qi)||p.y>=g.y)continue;
     p.taken.add(g.qi);
     if(p.bot){const ok=Math.random()<p.acc;p.stun=1+Math.random()*1.2;if(ok){p.correct++;L.freeze=Math.max(L.freeze,3.5)}else p.stun+=1}
+    else if(SUP&&p===me){breakWall(g)}
     else if(TEST){breakWall(g);p.correct++;L.freeze=Math.max(L.freeze,3.5);updScore();flash('Modo prueba: compuerta superada',900)}
     else{p.vy=0;p.vx=0;openQ(g)}
   }
@@ -1786,7 +1796,7 @@ function setupRound(){
 }
 function dropWrong(){
   const ok=L.tiles.find(t=>t.ok);
-  if(TEST&&me&&!me.out){me.x=ok.x+ok.w/2-me.w/2;me.y=Math.min(me.y,430-me.h);me.vx=0}
+  if((TEST||SUP)&&me&&!me.out){me.x=ok.x+ok.w/2-me.w/2;me.y=Math.min(me.y,430-me.h);me.vx=0}
   const on=roster.filter(p=>!p.out&&p.x+p.w>ok.x&&p.x<ok.x+ok.w);
   if(!on.length)flash('¡Nadie acertó!',1500);
   on.forEach(p=>p.correct++);
@@ -1832,7 +1842,7 @@ function updateLluvia(dt){
       if(p.x<k.x+55&&p.x+p.w>k.x-55&&p.y<k.y+34&&p.y+p.h>k.y){
         k.dead=true;
         if(k.ok){p.correct++;L.pops.push({x:k.x,y:k.y,txt:'+25',col:'#5ed17a',life:.9})}
-        else if(!(TEST&&p===me)){p.correct=Math.max(0,p.correct-1);p.wrong++;p.stun=.9;L.pops.push({x:k.x,y:k.y,txt:'−25',col:'#ff6b6b',life:.9})}
+        else if(!((TEST||SUP)&&p===me)){p.correct=Math.max(0,p.correct-1);p.wrong++;p.stun=.9;L.pops.push({x:k.x,y:k.y,txt:'−25',col:'#ff6b6b',life:.9})}
         if(p===me)updScore();
         break;
       }
@@ -2212,6 +2222,7 @@ $('#gExit').onclick=()=>{ask('¿Salir de la carrera?','Perderás el avance de es
 function jumpPress(){if(me&&state==='race'&&!me.frozen&&!me.out)me.buf=.12}
 addEventListener('keydown',e=>{
   if(!$('#game').classList.contains('on'))return;
+  if(e.target&&e.target.tagName==='INPUT')return;
   const k=e.key;
   if(qs&&!qs.done&&/^[1-4]$/.test(k)){answer(+k-1);return}
   if(k==='ArrowLeft'||k==='a'||k==='A')keys.l=1;
@@ -2345,17 +2356,28 @@ function spawnBots(n){
 }
 function paintCheat(){const b=$('#hCheat');b.textContent=CHEAT.on?'CHEAT ✓ ('+CHEAT.n+' bots)':'CHEAT';b.classList.toggle('alt',CHEAT.on)}
 $('#hCheat').onclick=()=>{
-  if(CHEAT.on){CHEAT.on=false;paintCheat();msg('CHEAT desactivado.');return}
-  const d=$('#cheatDlg');$('#cheatCode').value='';$('#cheatErr').textContent='';$('#cheatN').value=CHEAT.n;
-  const fin=ok=>{d.close();if(!ok)return;CHEAT.on=true;CHEAT.n=clamp(parseInt($('#cheatN').value,10)||6,1,20);paintCheat();msg('CHEAT activado: al crear la sala entrarán '+CHEAT.n+' bots.','ok')};
-  const go=()=>{if($('#cheatCode').value.trim()!==TEST_CODE){$('#cheatErr').textContent='Código incorrecto.';$('#cheatCode').select();return}fin(true)};
-  $('#cheatOk').onclick=go;$('#cheatNo').onclick=()=>fin(false);
-  $('#cheatCode').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();go()}};
-  d.oncancel=e=>{e.preventDefault();fin(false)};
-  d.showModal();$('#cheatCode').focus();
+  if(CHEAT.on){CHEAT.on=false;paintCheat();$('#hCheatRow').hidden=true;msg('CHEAT desactivado.');return}
+  adminDialog({title:'CHEAT · solo administradores',text:'Botón solo para ADM de AulaGame. Sirve para simular alumnos (bots) en línea, probar el juego y entrar como supervisor. Pide un código.',bots:true}).then(r=>{
+    if(!r)return;CHEAT.on=true;CHEAT.n=r.n;paintCheat();msg('CHEAT activado: al crear la sala entrarán '+CHEAT.n+' bots. Dentro de la sala podrás entrar como supervisor.','ok');
+  });
 };
 $('#hBotsAdd').onclick=()=>spawnBots(Math.max(1,CHEAT.n));
 $('#hBotsClear').onclick=botFarmClear;
+/* ---------- Supervisor (solo administradores): entra a jugar con los alumnos sin responder y escribe mensajes ---------- */
+function adminDialog(o){return new Promise(res=>{
+  const d=$('#cheatDlg');$('#cheatT').textContent=o.title;$('#cheatP').textContent=o.text;
+  $('#cheatCode').value='';$('#cheatErr').textContent='';
+  const nEl=$('#cheatN'),nL=document.querySelector('label[for="cheatN"]');nEl.hidden=nL.hidden=!o.bots;nEl.value=CHEAT.n;
+  let done=false;const fin=v=>{if(done)return;done=true;d.close();res(v)};
+  const go=()=>{if($('#cheatCode').value.trim()!==TEST_CODE){$('#cheatErr').textContent='Código incorrecto.';$('#cheatCode').select();return}fin({n:clamp(parseInt(nEl.value,10)||6,1,20)})};
+  $('#cheatOk').onclick=go;$('#cheatNo').onclick=()=>fin(null);
+  $('#cheatCode').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();go()}};
+  d.oncancel=e=>{e.preventDefault();fin(null)};
+  d.showModal();$('#cheatCode').focus();
+})}
+function openSupervisor(){if(ROLE==='host'&&roomCode)window.open(location.pathname.split('?')[0]+'?sala='+roomCode+'&sup=1','_blank')}
+$('#hSupOpen').onclick=openSupervisor;$('#liveSup').onclick=openSupervisor;
+$('#supChat').onsubmit=e=>{e.preventDefault();const i=$('#supTxt');if(sendSupText(i.value))i.value='';i.focus()};
 function teardown(){
   botFarmClear();
   clearInterval(hbT);clearInterval(joinT);clearInterval(HS.tick);hbT=joinT=null;HS.tick=null;
@@ -2378,7 +2400,7 @@ async function joinRoom(code,name){
   ROLE='player';roomCode=code;netPlayers=[];joinFail='';lastLevelKey='';
   down=await Net.sub('berry:'+code+':down',onDown);
   upCh=await Net.sub('berry:'+code+':up:'+myId,()=>{});
-  const hello=()=>down.send({t:'join',id:myId,name:cleanName(name),av:cleanAv(avatar)});
+  const hello=()=>down.send({t:'join',id:myId,name:cleanName(name),av:cleanAv(avatar),sup:SUP?1:0});
   hello();
   await new Promise((res,rej)=>{
     let n=0;
@@ -2408,7 +2430,7 @@ function onDown(m){
     case 'results':showResultsNet(m);break;
     case 'final':showFinalNet(m);break;
     case 'closed':leaveRoom('El profesor cerró la sala.');break;
-    case 'emo':if(m.id!==myId&&ROLE==='player')showEmo(m.id,m.k);break;
+    case 'emo':if(m.id!==myId&&ROLE==='player'){if(m.k===-1&&typeof m.x==='string')showTxt(m.id,m.x.slice(0,60));else showEmo(m.id,m.k)}break;
     case 'kick':if(m.id===myId&&ROLE==='player')leaveRoom('El profesor te sacó de la sala.');break;
   }
 }
@@ -2527,7 +2549,7 @@ async function createRoomUI(){
     $('#hCodeBig').textContent=code.slice(0,3)+' '+code.slice(3);$('#hCodeBig').setAttribute('aria-label','Código '+code.split('').join(' '));
     $('#hUrl').textContent=url;$('#hDemo').hidden=Net.mode==='supabase';
     renderHostLobby();show('lobbyHost');
-    $('#hCheatRow').hidden=!CHEAT.on;if(CHEAT.on)spawnBots(CHEAT.n);
+    $('#hCheatRow').hidden=!CHEAT.on;$('#liveSup').hidden=!CHEAT.on;if(CHEAT.on)spawnBots(CHEAT.n);
     /* Registra el PIN en aulagame.cl (para "¿Tienes el PIN de la sala?") y crea el link corto aulagame.cl/H0799.
        No bloquea: si falla, queda el enlace largo de siempre. */
     if(window.AG_registrarSala)window.AG_registrarSala(code).then(sc=>{
@@ -2543,7 +2565,7 @@ async function hostAddPlayer(m){
   let pl=HS.players.get(id);
   if(!pl){
     if(HS.players.size>=MAXP){down.send({t:'full',id});return}
-    pl={id,name:cleanName(m.name),av:cleanAv(m.av),last:Date.now(),d:null,total:0,lvlPts:0,gone:false,inLevel:false,sub:null};
+    pl={id,name:cleanName(m.name),av:cleanAv(m.av),last:Date.now(),d:null,total:0,lvlPts:0,gone:false,inLevel:false,sub:null,sup:!!m.sup};
     HS.players.set(id,pl);
     try{pl.sub=await Net.sub('berry:'+roomCode+':up:'+id,u=>onHostUp(id,u))}catch(e){HS.players.delete(id);return}
   }else{pl.name=cleanName(m.name);pl.av=cleanAv(m.av);pl.last=Date.now();pl.gone=false}
@@ -2553,6 +2575,10 @@ function onHostUp(id,u){
   const pl=HS.players.get(id);if(!pl||!u)return;
   pl.last=Date.now();pl.gone=false;
   if(u.t==='pos'&&Array.isArray(u.d)&&u.d.length>=16&&HS.phase==='play'){pl.d=u.d.slice(0,17).map(Number);pl.dirty=true;HS.up++}
+  else if(u.t==='emo'&&pl.sup&&u.k===-1&&typeof u.x==='string'&&HS.phase!=='lobby'){
+    const now=Date.now(),x=u.x.replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,60);
+    if(x&&now-(pl.emoT||0)>600){pl.emoT=now;try{down.send({t:'emo',id:id,k:-1,x:x})}catch(e){}}
+  }
   else if(u.t==='emo'&&HS.phase!=='lobby'&&Number.isInteger(u.k)&&u.k>=0&&u.k<EMOS.length){
     const now=Date.now();if(now-(pl.emoT||0)>900){pl.emoT=now;try{down.send({t:'emo',id:id,k:u.k})}catch(e){}}
   }
@@ -2589,9 +2615,9 @@ function hostTick(){
     const list=all.filter(p=>p.inLevel),hz=clamp(Math.max(BUDGET/2,BUDGET-HS.upRate)/Math.max(1,list.length),1,10);
     HS.snapAcc+=.1;
     if(HS.snapAcc>=1/hz-.001){HS.snapAcc=0;sendSnap(list)}
-    if(!HS.limit&&!HS.graceAt&&list.some(p=>p.d&&p.d[7]))HS.graceAt=now+GRACE*1000;
+    if(!HS.limit&&!HS.graceAt&&list.some(p=>!p.sup&&p.d&&p.d[7]))HS.graceAt=now+GRACE*1000;
     const done=p=>p.gone||(p.d&&(p.d[7]||p.d[11]));
-    if(HS.forceEnd||list.every(done)||(HS.graceAt&&now>HS.graceAt)||(HS.deadline&&now>HS.deadline)||(now-HS.t0)/1000>CAP)endLevelHost();
+    if(HS.forceEnd||list.filter(p=>!p.sup).every(done)||(HS.graceAt&&now>HS.graceAt)||(HS.deadline&&now>HS.deadline)||(now-HS.t0)/1000>CAP)endLevelHost();
   }
   if(++HS.liveN%5===0)renderLive();
   if(HS.liveN%20===0){const rate=(HS.up+HS.dn)/2;HS.upRate=HS.up/2;HS.up=HS.dn=0;HS.lf=clamp(rate/(.7*BUDGET),1,6)}
@@ -2627,7 +2653,7 @@ function endLevelHost(){
   if(HS.phase!=='play')return;
   HS.phase='results';
   const lv=quiz.levels[HS.idx],unit=lv.type==='lluvia'?25:100,pts=[300,220,170,130,100,80,60,40,30,20,10,5];
-  const arr=[...HS.players.values()].filter(p=>p.inLevel).map(p=>Object.assign({p},toFields(p.d)));
+  const arr=[...HS.players.values()].filter(p=>p.inLevel&&!p.sup).map(p=>Object.assign({p},toFields(p.d)));
   const rk=rankHost(lv.type,arr),r={},dbRows=[];
   rk.forEach((o,i)=>{
     const lp=(HS.limit&&!o.fin)?0:(pts[i]||0)+o.correct*unit;o.p.lvlPts=lp;o.p.total+=lp;
@@ -2644,7 +2670,7 @@ function hostNext(){
   if(HS.phase!=='results')return;
   if(HS.lastRes.last){
     HS.phase='final';
-    const rk=[...HS.players.values()].filter(p=>p.inLevel||p.total).sort((a,b)=>b.total-a.total);
+    const rk=[...HS.players.values()].filter(p=>(p.inLevel||p.total)&&!p.sup).sort((a,b)=>b.total-a.total);
     const m={t:'final',rk:rk.map(p=>p.id),tot:Object.fromEntries(rk.map(p=>[p.id,p.total]))};
     down.send(m);setTimeout(()=>{if(ROLE==='host')down.send(m)},1500);
   }else{HS.idx++;startLevelHost();return}
@@ -2663,7 +2689,7 @@ function renderLive(){
     $('#liveSub').textContent=rk.filter(o=>o.fin).length+' de '+rk.length+' terminaron'+(HS.deadline?' · quedan '+Math.max(0,Math.ceil((HS.deadline-Date.now())/1000-1.5))+' s':(HS.graceAt?' · el nivel termina en '+Math.max(0,Math.ceil((HS.graceAt-Date.now())/1000))+' s':''));
     html=rk.slice(0,30).map((o,i)=>'<li><span class="rk">'+(i+1)+'</span><img alt="" src="'+avURL(o.p.av)+'"><span class="nm"><b>'+esc(o.p.name)+'</b>'+bar(o.fin?1000:o.pr)+'</span><span class="st'+(o.fin?' ok':'')+'">'+(o.out?'fuera':o.fin?ic('check')+' '+o.time.toFixed(1)+'s':(o.p.gone?'sin conexión':R(o.pr/10)+'%'))+'</span></li>').join('');
   }else{
-    const rk=HS.phase==='final'?[...HS.players.values()].filter(p=>p.inLevel||p.total).sort((a,b)=>b.total-a.total):HS.lastRes.rk.map(id=>HS.players.get(id)).filter(Boolean);
+    const rk=HS.phase==='final'?[...HS.players.values()].filter(p=>(p.inLevel||p.total)&&!p.sup).sort((a,b)=>b.total-a.total):HS.lastRes.rk.map(id=>HS.players.get(id)).filter(Boolean);
     $('#liveSub').textContent=HS.phase==='final'?'La partida terminó.':'Los estudiantes ven los resultados de este nivel.';
     html=rk.slice(0,30).map((p,i)=>'<li><span class="rk">'+(i+1)+'</span><img alt="" src="'+avURL(p.av)+'"><span class="nm"><b>'+esc(p.name)+'</b></span><span class="st">'+(HS.phase==='final'?p.total+' pts':'+'+p.lvlPts+' · '+p.total+' pts')+'</span></li>').join('');
   }
@@ -2699,6 +2725,18 @@ function showEmo(id,k){
   p.emo={k:k,t:performance.now()};
   if(typeof sfxTone==='function')sfxTone(740+(k%4)*110,.09,'triangle',.07);
 }
+function sendSupText(raw){
+  const now=performance.now();if(!SUP||ROLE!=='player'||now<emoCool)return false;
+  const x=String(raw||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,60);if(!x)return false;
+  emoCool=now+700;showTxt(myId,x);
+  try{if(upCh)upCh.send({t:'emo',k:-1,x:x})}catch(e){}
+  return true;
+}
+function showTxt(id,text){
+  const p=roster.find(q=>q.id===id);if(!p)return;
+  p.emo={k:-1,text:text,t:performance.now()};
+  flash(p.name+': '+text,4500);
+}
 function sendEmo(k){
   const now=performance.now();if(now<emoCool||ROLE!=='player'||!EMOS[k])return;
   emoCool=now+1200;showEmo(myId,k);
@@ -2707,9 +2745,19 @@ function sendEmo(k){
 function drawEmos(t){
   const now=performance.now();
   roster.forEach(p=>{
-    const e=p.emo;if(!e)return;const age=(now-e.t)/1000;
-    if(age>3.4){p.emo=null;return}
+    const e=p.emo;if(!e)return;const age=(now-e.t)/1000,txt=e.k===-1,life=txt?5.4:3.4;
+    if(age>life){p.emo=null;return}
     if(p.out&&p.x<-500)return;
+    if(txt){
+      ctx.save();ctx.globalAlpha=age>life-.6?Math.max(0,(life-age)/.6):1;
+      ctx.font='700 17px '+FONT;const lines=wrap(ctx,e.text,230).slice(0,3),lw=Math.max(...lines.map(l=>ctx.measureText(l).width)),w=lw+28,h=lines.length*21+14;
+      const cx=p.x+p.w/2,by=p.y-(p.av&&p.av.hat?80:68);
+      ctx.translate(cx,by);ctx.textAlign='center';ctx.shadowColor='rgba(42,21,53,.3)';ctx.shadowBlur=10;ctx.shadowOffsetY=3;
+      ctx.fillStyle='#fffaf1';rr(ctx,-w/2,-h,w,h,14);ctx.fill();ctx.beginPath();ctx.moveTo(-8,-1);ctx.lineTo(8,-1);ctx.lineTo(0,10);ctx.closePath();ctx.fill();
+      ctx.shadowColor='transparent';ctx.strokeStyle='rgba(214,39,90,.55)';ctx.lineWidth=2;rr(ctx,-w/2,-h,w,h,14);ctx.stroke();
+      ctx.fillStyle='#2a1535';lines.forEach((l,i)=>ctx.fillText(l,0,-h+22+i*21));
+      ctx.restore();return;
+    }
     const E=EMOS[e.k],big=!E.b;
     const sc=age<.3?.5+age/.3*.65:(age<.45?1.15-(age-.3)/.15*.15:1),al=age>2.8?Math.max(0,(3.4-age)/.6):1;
     const cx=p.x+p.w/2,by=p.y-(p.av&&p.av.hat?78:66)-Math.min(age,1.2)*10;
@@ -2830,7 +2878,7 @@ function camTarget(){
   const ty=Math.min(0,m.y-(H*.6-OY));
   return[tx,ty];
 }
-addEventListener('keydown',e=>{if(!specActive())return;if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')cycleSpec(-1);else if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')cycleSpec(1)});
+addEventListener('keydown',e=>{if(!specActive()||(e.target&&e.target.tagName==='INPUT'))return;if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')cycleSpec(-1);else if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')cycleSpec(1)});
 cv.addEventListener('pointerdown',()=>{if(specActive())cycleSpec(1)});
 function updCamera(dt){
   OX=isArena()?(W-AW)/2:0;
@@ -3525,6 +3573,16 @@ if(typeof showResultsNet==='function'){const f=showResultsNet;showResultsNet=fun
 if(typeof showFinalNet==='function'){const f=showFinalNet;showFinalNet=function(){f.apply(this,arguments);decorateResults()}}
 
 /*ENGINE2-END*/
+/* ---------- Pestaña de supervisor ---------- */
+if(!BOTMODE&&new URLSearchParams(location.search).get('sup')==='1'){
+  setTimeout(()=>{
+    adminDialog({title:'Supervisor · solo administradores',text:'Entras a jugar con los alumnos sin responder preguntas y puedes escribirles mensajes. No cuentas en los puntajes. Pide un código.',bots:false}).then(r=>{
+      if(!r)return;
+      SUP=true;const base=String(avatar.name||'Supervisor').replace(/^🛡\s*/,'');avatar.name='🛡 '+base;$('#pname').value=avatar.name;
+      $('#supChat').classList.add('on');$('#bPlay').click();
+    });
+  },400);
+}
 /* ---------- Modo bot (solo administradores): esta ventana entra sola a la sala y juega con la IA de bots ---------- */
 if(BOTMODE){
   SFX.on=false;draw=function(){};
