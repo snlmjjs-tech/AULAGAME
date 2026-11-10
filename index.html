@@ -595,6 +595,7 @@
     color: var(--tinta-fija); font-size:15.5px; font-weight:700; line-height:1.65;
     display:flex; align-items:flex-start; gap:10px;
   }
+  .anuncio-acciones{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
   .anuncio-texto .i{ width:22px; height:22px; margin-top:2px; flex-shrink:0; }
   .anuncio-texto strong{ font-size:19px; }
   .anuncio .btn-whatsapp{
@@ -1191,8 +1192,9 @@
       <span class="conf" style="top:14px; right:26%;" aria-hidden="true">🎉</span>
       <span class="conf" style="bottom:14px; right:8%; animation-delay:1.6s;" aria-hidden="true">⭐</span>
       <span class="anuncio-badge"><svg class="i" aria-hidden="true"><use href="#i-sparkle"/></svg> Recién comenzando</span>
-      <p class="anuncio-texto"><svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg> <span><strong>¡Bienvenido a AulaGame!</strong> Gracias por ser uno de los primeros profesores en probar la plataforma. El plan gratuito permite crear 2 juegos. Si necesitas más juegos o quieres acceder a funciones exclusivas, escríbeme directamente por WhatsApp para pasarte a Premium. Siempre estaré disponible para ayudarte.</span></p>
-      <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20pasarme%20a%20Premium%20en%20AulaGame." target="_blank" rel="noopener"><svg class="i" aria-hidden="true"><use href="#i-whatsapp"/></svg> Hablar por WhatsApp</a>
+      <p class="anuncio-texto"><svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg> <span><strong>¡Bienvenido a AulaGame!</strong> Gracias por ser uno de los primeros profesores en probar la plataforma. El plan gratuito permite crear 2 juegos. Si necesitas más juegos o quieres acceder a funciones exclusivas, hazte Premium con un <b>pago único y de por vida</b>: lo compras aquí mismo y se activa solo en tu cuenta. Y si tienes dudas, charla con nosotros por WhatsApp: siempre estaré disponible para ayudarte.</span></p>
+      <div class="anuncio-acciones"><button class="btn btn-pagar-premium" id="anuncio-pagar" type="button"><svg class="ic-pago" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/></svg><span class="tx"><b>Comprar Premium</b><small>Pago único · de por vida</small></span></button>
+      <a class="btn btn-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20conversar%20sobre%20AulaGame." target="_blank" rel="noopener"><svg class="i" aria-hidden="true"><use href="#i-whatsapp"/></svg> Charla con nosotros</a></div>
     </div>
   </section>
 
@@ -1922,7 +1924,7 @@
   // ---------- Cupos y contadores ----------
   function actualizarBotonesPagar(){
     var mostrar = !(uidActual && estadoActual.plan === "premium");
-    ["plan-gratuito-pagar", "btn-limite-pagar"].forEach(function(id){
+    ["plan-gratuito-pagar", "btn-limite-pagar", "anuncio-pagar"].forEach(function(id){
       var el = document.getElementById(id);
       if(el) el.classList.toggle("oculto", !mostrar);
     });
@@ -2403,7 +2405,7 @@
       }
     });
   }
-  ["plan-gratuito-pagar", "btn-limite-pagar"].forEach(function(id){
+  ["plan-gratuito-pagar", "btn-limite-pagar", "anuncio-pagar"].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.addEventListener("click", iniciarCompraPremium);
   });
