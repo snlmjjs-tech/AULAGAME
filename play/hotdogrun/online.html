@@ -1148,15 +1148,16 @@ function defaultQuiz(){return{v:4,bots:7,levels:[
   {q:'They ___ happy yesterday.',o:['was','were','are','is'],a:1},
   {q:'Opposite of “always”?',o:['never','often','usually','sometimes'],a:0}]}
 ]}}
-let quiz=store.get('br_quiz2',null); if(!quiz||!quiz.levels||!quiz.levels.length) quiz=defaultQuiz();
-if(!quiz.v){const have=quiz.levels.map(l=>l.type);defaultQuiz().levels.forEach(l=>{if(!have.includes(l.type))quiz.levels.push(l)});quiz.v=3;store.set('br_quiz2',quiz)}
+const QKEY='br_quiz2'+(()=>{const c=new URLSearchParams(location.search).get('c');return c&&/^[\w-]{1,60}$/.test(c)?'_'+c:''})();
+let quiz=store.get(QKEY,null); if(!quiz||!quiz.levels||!quiz.levels.length) quiz=defaultQuiz();
+if(!quiz.v){const have=quiz.levels.map(l=>l.type);defaultQuiz().levels.forEach(l=>{if(!have.includes(l.type))quiz.levels.push(l)});quiz.v=3;store.set(QKEY,quiz)}
 if((quiz.v||0)<4){ /* v4: el nivel «cuadro» de ejemplo pasa a 6 opciones */
   const dq=defaultQuiz().levels.find(l=>l.type==='cuadro');
   quiz.levels.forEach(l=>{if(l.type==='cuadro')l.questions.forEach(q=>{const d=dq.questions.find(x=>x.q===q.q);if(d&&q.o.length<6){q.o=d.o.slice();q.a=d.a}})});
-  quiz.v=4;store.set('br_quiz2',quiz);
+  quiz.v=4;store.set(QKEY,quiz);
 }
 quiz.levels.forEach((l,i)=>{if(!TYPES[l.type])l.type=TYPE_ORDER[i%TYPE_ORDER.length]});
-const saveQuiz=()=>store.set('br_quiz2',quiz);
+const saveQuiz=()=>store.set(QKEY,quiz);
 
 /* ---------- Avatar ---------- */
 const COLORS=['#e2493a','#a8281f','#ff7a3d','#e8a21c','#ffd23f','#5ed17a','#2ec4b6','#4da3ff','#8e6bff','#c77dff','#ff5d8f','#6c757d'];

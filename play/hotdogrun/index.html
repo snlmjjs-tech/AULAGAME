@@ -487,6 +487,8 @@ document.querySelectorAll('.mode').forEach(a=>a.addEventListener('click',e=>{
   setTimeout(()=>{location.href=a.href},Snd.on?520:430);
 }));
 addEventListener('pageshow',e=>{if(e.persisted){wipe.classList.remove('go');menu.classList.remove('leaving')}});
+/* Copia del juego (?c=…): los enlaces conservan el identificador para usar sus propias preguntas */
+(()=>{const c=new URLSearchParams(location.search).get('c');if(!c||!/^[\w-]{1,60}$/.test(c))return;document.querySelectorAll('a.mode').forEach(a=>{a.href=a.getAttribute('href').split('?')[0]+'?c='+encodeURIComponent(c)})})();
 })();
 </script>
 </body>
