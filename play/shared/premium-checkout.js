@@ -137,7 +137,7 @@ export function abrirCompraPremium(options) {
       b.onclick = async () => {
         msg("");
         b.disabled = true;
-        b.textContent = "Abriendo Mercado Pago…";
+        b.textContent = "Cargando pago…";
         try {
           const idToken = await options.getIdToken();
           const r = await postWorker("/mercadopago/create-checkout", idToken);
