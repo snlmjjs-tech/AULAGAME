@@ -12,7 +12,7 @@ es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
 - `404.html` — página de error, también usada por GitHub Pages en el dominio viejo.
 - `play/<juego>/index.html` — cada juego es una app de una sola página (HTML+CSS+JS inline,
   sin build step). Carpetas actuales: `agrupados`, `battlecastle3d`, `betyouranswer`, `bingo`,
-  `colgado`, `evilgame`, `impostor`, `jeopardy`, `memorice`, `millonario`, `monopoly`,
+  `colgado`, `evilgame`, `impostor`, `jeopardy`, `memorice`, `mathquest`, `millonario`, `monopoly`,
   `quizlive`, `raceboard`, `robotfight`, `rosco`, `hotdogrun` (menú + `offline.html` + `online.html`; el modo online usa Supabase, no Firebase; `play/berryrun/` solo redirige a `hotdogrun`).
   `mathquest` es el juego de fracciones y fórmulas: genera las preguntas solo (sin contenido editable; guarda solo los ajustes en `profes/{uid}/datosJuegos/mathquest`), por turnos entre equipos o individual.
 - `play/shared/*.js` — módulos JS compartidos entre juegos: `ai-questions.js` (llama al Worker
