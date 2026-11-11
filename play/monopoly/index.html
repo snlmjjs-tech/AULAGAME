@@ -455,6 +455,7 @@
   <div class="row">
     <button class="btn" id="btnGoSetup">▶ PLAY</button>
     <button class="btn secondary" id="btnEditor">✏ Editar preguntas y precios</button>
+    <button class="btn secondary" id="shareTaskBtn">📚 Enviar a estudiantes</button>
     <button class="btn music musicBtn" id="btnMusicTitle">🔇 Music</button>
   </div>
   <footer class="note">Basado en el tablero original de Mr. Núñez</footer>
@@ -550,12 +551,29 @@ import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 import { refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
 import { pintarQR } from "../shared/qr-inline.js";
 import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
+import { abrirCompartirTarea } from "../shared/task-share.js";
 import { renderAIButton } from "../shared/ai-questions.js";
 
 /* ================= MODO QR: alumno vs. profesor ================= */
 const _paramsMonopoly = new URLSearchParams(location.search);
 const SALA_ALUMNO = _paramsMonopoly.get("room");
 const ES_ALUMNO = !!SALA_ALUMNO;
+/* Modo tarea: un estudiante abre el link de su profe (?tarea=ID) y juega solo contra 3 equipos bot, sin cuenta ni sala.
+   Las tarjetas "?" son abiertas: el estudiante se autoevalúa. La partida dura 15 vueltas. */
+const TAREA_ID = (()=>{ const t = _paramsMonopoly.get("tarea"); return t && /^[a-z0-9]{6,24}$/i.test(t) && !SALA_ALUMNO ? t.toLowerCase() : ""; })();
+const ES_TAREA = !!TAREA_ID;
+const TAREA_VUELTAS = 15;
+let TAREA_DATA = null, TAREA_TITULO = "", TAREA_ERROR = "";
+if(ES_TAREA){
+  try{
+    const _res = await fetch("https://aulagame-ai-questions.aulagame-snlmjjs.workers.dev/task/get?id=" + encodeURIComponent(TAREA_ID));
+    const _j = await _res.json().catch(function(){ return null; });
+    if(!_res.ok || !_j || !_j.ok || _j.game !== "monopoly" || !_j.data || !Array.isArray(_j.data.questionCards) || !_j.data.questionCards.length) throw new Error((_j && _j.error) || "No se pudo abrir la tarea. Revisa tu conexión.");
+    TAREA_DATA = _j.data; TAREA_TITULO = _j.title || "";
+  }catch(e){ TAREA_ERROR = e.message || String(e); }
+  document.documentElement.style.visibility = "";
+}
+const esBotTurno = () => ES_TAREA && state.currentTeam > 0;
 
 /* ==================================================================
    AUDIO — procedural Web Audio API, no external files
@@ -648,7 +666,8 @@ document.getElementById('btnMusicGame').onclick = toggleMusic;
 /* Espera la sesión y carga (si existen) las preguntas/precios guardados del profesor en Firestore.
    Un alumno que entra con ?room=... no tiene sesión de profesor: se salta el gate. */
 let SAVED_MONOPOLY = null, CURRENT_UID = null;
-if(!ES_ALUMNO){
+if(ES_TAREA){ SAVED_MONOPOLY = TAREA_DATA ? { prices: TAREA_DATA.prices, questionCards: TAREA_DATA.questionCards } : null; }
+if(!ES_ALUMNO && !ES_TAREA){
   const _r = await new Promise(function(resolve){
     initGameSync('monopoly', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
   });
@@ -1095,6 +1114,7 @@ function renderAll(){
   if(rollBtn){ rollBtn.disabled = false; rollBtn.classList.remove('hidden'); }
   document.querySelectorAll('.man-btn').forEach(b=>b.disabled = false);
   syncEstado();
+  botTurnMaybe();
 }
 
 /* ==================================================================
@@ -1176,7 +1196,29 @@ function onLand(team){
     default: finishLanding();
   }
   renderSidebar();
+  if(esBotTurno()) botResuelveModal(team);
 }
+
+/* Modo tarea: los bots deciden solos (compran con 70% si les alcanza; aciertan 55% de las preguntas) */
+function botResuelveModal(team){
+  setTimeout(()=>{
+    const root = document.getElementById('modalRoot');
+    if(!root || state.gameOver) return;
+    const q = id => root.querySelector(id);
+    if(q('#mBuy')){ const sp = SPACES[team.pos]; (team.money >= sp.price + 3000 && Math.random() < .7 ? q('#mBuy') : q('#mSkip')).click(); }
+    else if(q('#mWin')){ (Math.random() < .55 ? q('#mWin') : q('#mLose')).click(); }
+    else if(q('#mOk')){ q('#mOk').click(); }
+  }, 1500);
+}
+let botPendiente = false;
+function botTurnMaybe(){
+  if(!esBotTurno() || state.gameOver || botPendiente || !state.started) return;
+  botPendiente = true;
+  const rb = document.getElementById('btnRoll'); if(rb) rb.disabled = true;
+  document.querySelectorAll('.man-btn').forEach(b=>b.disabled = true);
+  setTimeout(()=>{ botPendiente = false; if(esBotTurno() && !state.gameOver) doRoll(); }, 1100);
+}
+let tareaVueltas = 0;
 
 function finishLanding(){
   checkBankrupt();
@@ -1269,7 +1311,7 @@ function drawQuestion(team){
     <div class="modal">
       <h3>❓ Verb / Question</h3>
       <div class="card-face">${card.t}</div>
-      <div class="desc">${team.name} — el profesor decide: ¿respondió bien?</div>
+      <div class="desc">${ES_TAREA ? (team.id===0 ? 'Piensa tu respuesta y dinos si la sabías.' : team.name+' responde…') : team.name+' — el profesor decide: ¿respondió bien?'}</div>
       <div class="btnrow">
         <button class="btn" id="mWin">✅ Correcto — gana ${fmt(card.win)}</button>
         <button class="btn danger" id="mLose">❌ Incorrecto — devuelve ${fmt(card.lose)}</button>
@@ -1375,6 +1417,10 @@ function advanceTurn(){
   if(state.gameOver) return;
   let next = state.currentTeam;
   do{ next = (next+1)%state.teams.length; } while(state.teams[next].bankrupt && next!==state.currentTeam);
+  if(ES_TAREA && next <= state.currentTeam){
+    tareaVueltas++;
+    if(tareaVueltas >= TAREA_VUELTAS){ state.currentTeam = next; endGame(); return; }
+  }
   state.currentTeam = next;
   renderAll();
 }
@@ -1399,8 +1445,9 @@ function endGame(){
   el.querySelector('#mAgain').onclick = ()=>{
     state.started = false;
     closeModal();
-    showScreen('setupScreen');
+    showScreen(ES_TAREA ? 'titleScreen' : 'setupScreen');
     buildTeamInputs();
+    tareaVueltas = 0;
   };
   openModal(el);
 }
@@ -1752,7 +1799,24 @@ if(ES_ALUMNO){
       'Mira la pantalla grande para ver el tablero y tu posición.'
     ]
   });
+} else if(ES_TAREA){
+  ["btnEditor","shareTaskBtn","btnBonus"].forEach(function(id){ const e=document.getElementById(id); if(e) e.style.display="none"; });
+  const sub = document.querySelector("#titleScreen .subtitle");
+  if(sub) sub.textContent = TAREA_ERROR ? TAREA_ERROR : (TAREA_TITULO ? TAREA_TITULO + " · " : "") + "juegas contra 3 equipos bot · " + TAREA_VUELTAS + " vueltas";
+  const go = document.getElementById("btnGoSetup");
+  if(TAREA_ERROR){ go.disabled = true; }
+  go.onclick = ()=>{
+    SFX.click(); teamCount = 4; showScreen("setupScreen"); buildTeamInputs();
+    ["Tú","Pebre (bot)","Mostaza (bot)","Tomate (bot)"].forEach(function(n,i){ document.getElementById("teamName"+i).value = n; });
+    document.getElementById("btnStartGame").onclick();
+  };
 } else {
+  document.getElementById("shareTaskBtn").addEventListener("click", function(){
+    abrirCompartirTarea({
+      game: "monopoly", defaultTitle: "Monopoly", studentPath: "/play/monopoly/",
+      getData: function(){ return { questionCards: QUESTION_CARDS, prices: SPACES.filter(function(s){ return s.type==="property" || s.type==="utility"; }).map(function(s){ return { name: s.name, price: s.price }; }) }; }
+    });
+  });
   iniciarSalaQR();
   mostrarTutorialSiPrimeraVez('monopoly_profe', {
     titulo: '¿Cómo se juega? 🎲',
