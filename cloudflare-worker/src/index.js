@@ -1179,9 +1179,22 @@ function sanitizarQuizlive(d) {
   return questions.length ? { questions } : null;
 }
 
-const TASK_GAMES = { quizlive: sanitizarQuizlive, hotdogrun: sanitizarHotdog, millonario: sanitizarMillonario, colgado: sanitizarColgado, memorice: sanitizarMemorice, rosco: sanitizarRosco };
+/** Jeopardy: tablero de 5 categorías x 5 puntajes (pregunta y respuesta) + preguntas bonus. */
+function sanitizarJeopardy(d) {
+  const cats = { azul: 1, rojo: 1, verde: 1, amarillo: 1, morado: 1 }, puntos = { 50: 1, 40: 1, 30: 1, 20: 1, 10: 1 };
+  const questions = (Array.isArray(d && d.questions) ? d.questions : []).slice(0, 25).map((x) => ({
+    cat: limpiarTexto(x && x.cat, 10), pts: parseInt(x && x.pts, 10), q: limpiarTexto(x && x.q, 300), a: limpiarTexto(x && x.a, 200),
+  })).filter((x) => cats[x.cat] && puntos[x.pts] && x.q && x.a);
+  if (questions.length < 5) return null;
+  const bonusQuestions = (Array.isArray(d && d.bonusQuestions) ? d.bonusQuestions : []).slice(0, 15).map((x) => ({
+    q: limpiarTexto(x && x.q, 300), a: limpiarTexto(x && x.a, 200),
+  })).filter((x) => x.q && x.a);
+  return { questions, bonusQuestions };
+}
+
+const TASK_GAMES = { jeopardy: sanitizarJeopardy, quizlive: sanitizarQuizlive, hotdogrun: sanitizarHotdog, millonario: sanitizarMillonario, colgado: sanitizarColgado, memorice: sanitizarMemorice, rosco: sanitizarRosco };
 // Tope de tamaño por juego (caracteres del JSON). Firestore admite ~1 MB por documento.
-const TASK_MAX = { hotdogrun: 150000, millonario: 150000, colgado: 150000, memorice: 940000, rosco: 150000, quizlive: 940000 };
+const TASK_MAX = { hotdogrun: 150000, millonario: 150000, colgado: 150000, memorice: 940000, rosco: 150000, quizlive: 940000, jeopardy: 150000 };
 
 function tareaDocUrl(env, id, query) {
   const projectId = env.FIREBASE_PROJECT_ID || "aulagame-4c019";
