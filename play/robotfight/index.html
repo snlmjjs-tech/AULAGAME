@@ -249,6 +249,7 @@
     <div class="btn-row">
       <button class="btn" id="startBtn">EMPEZAR PELEA</button>
       <button class="btn ghost" id="addQuestionsBtnTitle">➕ Añadir / editar preguntas</button>
+      <button class="btn ghost" id="shareTaskBtn">📚 Enviar a estudiantes</button>
     </div>
     <div class="instructions">
       Responde correctamente para atacar a tu rival.
@@ -381,6 +382,7 @@ import { refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/l
 import { pintarQR } from "../shared/qr-inline.js";
 import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
 import { renderAIButton } from "../shared/ai-questions.js";
+import { abrirCompartirTarea } from "../shared/task-share.js";
 /* ============================================================
    FIGHT!!! 3D - English Numbers Battle
    Single-file HTML educational game (Three.js r128)
@@ -390,11 +392,24 @@ import { renderAIButton } from "../shared/ai-questions.js";
 const _paramsRF = new URLSearchParams(location.search);
 const SALA_ALUMNO = _paramsRF.get("room");
 const ES_ALUMNO = !!SALA_ALUMNO;
+/* Modo tarea: un estudiante abre el link de su profe (?tarea=ID) y pelea solo contra el robot rival, sin cuenta ni sala. */
+const TAREA_ID = (()=>{ const t = _paramsRF.get("tarea"); return t && /^[a-z0-9]{6,24}$/i.test(t) && !SALA_ALUMNO ? t.toLowerCase() : ""; })();
+const ES_TAREA = !!TAREA_ID;
+let TAREA_DATA = null, TAREA_TITULO = "", TAREA_ERROR = "";
+if(ES_TAREA){
+  try{
+    const _res = await fetch("https://aulagame-ai-questions.aulagame-snlmjjs.workers.dev/task/get?id=" + encodeURIComponent(TAREA_ID));
+    const _j = await _res.json().catch(function(){ return null; });
+    if(!_res.ok || !_j || !_j.ok || _j.game !== "robotfight" || !_j.data || !Array.isArray(_j.data.questionBank) || !_j.data.questionBank.length) throw new Error((_j && _j.error) || "No se pudo abrir la tarea. Revisa tu conexión.");
+    TAREA_DATA = _j.data; TAREA_TITULO = _j.title || "";
+  }catch(e){ TAREA_ERROR = e.message || String(e); }
+  document.documentElement.style.visibility = "";
+}
 
 /* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore.
    Un alumno que entra con ?room=... no tiene sesión de profesor: se salta el gate. */
 let SAVED_ROBOTFIGHT = null, CURRENT_UID = null;
-if(!ES_ALUMNO){
+if(!ES_ALUMNO && !ES_TAREA){
   const _r = await new Promise(function(resolve){
     initGameSync('robotfight', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
   });
@@ -438,7 +453,7 @@ function questionBankFromSaved(saved){
 }
 
 /* ---------- Default question bank ---------- */
-let questionBank = questionBankFromSaved(SAVED_ROBOTFIGHT) || [
+let questionBank = (ES_TAREA && TAREA_DATA ? TAREA_DATA.questionBank : null) || questionBankFromSaved(SAVED_ROBOTFIGHT) || [
   {number:"320", correct:"Three hundred and twenty", wrong:["Three hundred and twelve","Thirty-two zero"]},
   {number:"580", correct:"Five hundred and eighty", wrong:["Five hundred and eighteen","Eighty-five hundred"]},
   {number:"999", correct:"Nine hundred and ninety-nine", wrong:["Nine hundred and nineteen","Ninety-nine hundred"]},
@@ -1400,7 +1415,22 @@ if(ES_ALUMNO){
       'Quien responda correcto primero ataca al rival. Si ambos responden casi al mismo tiempo, es empate y nadie ataca esa ronda.'
     ]
   });
+} else if(ES_TAREA){
+  ["addQuestionsBtnTitle","shareTaskBtn","qrBtn","editBtn"].forEach(function(id){ const e=document.getElementById(id); if(e) e.style.display="none"; });
+  const qp = document.getElementById("qrBoxMenu"); if(qp && qp.parentElement) qp.parentElement.style.display="none";
+  const ins = document.querySelector("#screen-title .instructions");
+  if(ins) ins.innerHTML = TAREA_ERROR ? "⚠ " + TAREA_ERROR.replace(/[<>]/g,"")
+    : (TAREA_TITULO ? "<b>" + TAREA_TITULO.replace(/[<>]/g,"") + "</b><br>" : "") + "Pelea solo contra el robot rival. Responde bien para golpearlo; si te equivocas, él te golpea a ti. ¡Déjalo fuera de combate!";
+  if(TAREA_ERROR) document.getElementById("startBtn").style.display = "none";
+  if(document.readyState === 'complete'){ initThree(); }
+  else { window.addEventListener('load', initThree); }
 } else {
+  document.getElementById("shareTaskBtn").addEventListener("click", function(){
+    abrirCompartirTarea({
+      game: "robotfight", defaultTitle: "Robot Fight", studentPath: "/play/robotfight/",
+      getData: function(){ return { questionBank: questionBank }; }
+    });
+  });
   iniciarSalaQR();
   mostrarTutorialSiPrimeraVez('robotfight_profe', {
     titulo: '¿Cómo se juega? 🤖',
