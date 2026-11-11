@@ -1,9 +1,9 @@
 // Módulo compartido: calcula el estado "Premium" combinado (plan pagado o demo
-// gratuita de 5 días activa) a partir de los datos crudos de profes/{uid} en
+// gratuita de 3 días activa) a partir de los datos crudos de profes/{uid} en
 // Firestore. Puro — sin dependencias de Firebase — para poder usarse igual
 // desde index.html y desde los editores de cada juego (play/shared/ai-questions.js).
 
-export const TRIAL_DIAS = 5;
+export const TRIAL_DIAS = 3;
 export const TRIAL_AI_LIMITE = 10;
 
 function aFecha(valor) {

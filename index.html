@@ -751,7 +751,9 @@
     box-shadow: 0 10px 0 rgba(0,0,0,0.4);
     animation: aparecer .25s ease;
     text-align:center;
+    max-height: calc(100dvh - 40px); overflow-y:auto; overscroll-behavior:contain;
   }
+  @media (max-height:640px){ .modal-caja{ padding:18px 20px 16px; } #modal-limite .modal-caja .icono{ font-size:30px; margin-bottom:2px; } }
   .modal-caja .icono{ font-size: 40px; margin-bottom: 10px; }
   .modal-caja h3{
     font-family:'Baloo 2', cursive; font-weight:800; font-size: 21px;
@@ -1169,7 +1171,7 @@
         <h2 id="mis-juegos">Mis juegos</h2>
       </div>
       <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-        <button class="btn btn-demo-premium oculto" id="btn-demo-premium" type="button">🎁 Prueba una demo gratis<small>5 días de Premium</small></button>
+        <button class="btn btn-demo-premium oculto" id="btn-demo-premium" type="button">🎁 Prueba una demo gratis<small>3 días de Premium</small></button>
         <span class="count-pill" id="pill-mis-juegos"></span>
       </div>
     </div>
@@ -1178,7 +1180,7 @@
       <span id="plan-gratuito-texto"></span>
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <button class="btn btn-pagar-premium oculto" id="plan-gratuito-pagar" type="button"><svg class="ic-pago" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/></svg><span class="tx"><b>Comprar Premium</b><small>Pago único · de por vida</small></span></button>
-        <button class="btn btn-demo-premium oculto" id="plan-gratuito-demo" type="button">🎁 Probar demo (5 días)</button>
+        <button class="btn btn-demo-premium oculto" id="plan-gratuito-demo" type="button">🎁 Probar demo (3 días)</button>
         <a class="btn btn-chat oculto" id="plan-gratuito-btn" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20conversar%20sobre%20AulaGame." target="_blank" rel="noopener"><svg class="i" aria-hidden="true"><use href="#i-whatsapp"/></svg> Charla con nosotros</a>
       </div>
     </div>
@@ -1659,7 +1661,7 @@
     <div class="modal-acciones">
       <button class="btn btn-cancelar" id="btn-limite-cerrar">Cerrar</button>
       <button class="btn btn-pagar-premium oculto" id="btn-limite-pagar" type="button"><svg class="ic-pago" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/></svg><span class="tx"><b>Comprar Premium</b><small>Pago único · de por vida</small></span></button>
-      <button class="btn btn-demo-premium oculto" id="btn-limite-demo" type="button">🎁 Probar demo (5 días)</button>
+      <button class="btn btn-demo-premium oculto" id="btn-limite-demo" type="button">🎁 Probar demo (3 días)</button>
       <a class="btn btn-chat" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20conversar%20sobre%20AulaGame." target="_blank" rel="noopener"><svg class="i" aria-hidden="true"><use href="#i-whatsapp"/></svg> Charla con nosotros</a>
     </div>
   </div>
@@ -1670,7 +1672,7 @@
   <div class="modal-caja" role="dialog" aria-modal="true" aria-labelledby="demo-confirmar-titulo">
     <div class="icono">🎁</div>
     <h3 id="demo-confirmar-titulo">Activar demo Premium</h3>
-    <p>Vas a activar <strong>5 días de Premium gratis</strong> en tu cuenta. ¿Continuar?</p>
+    <p>Vas a activar <strong>3 días de Premium gratis</strong> en tu cuenta. ¿Continuar?</p>
     <p class="aviso-error oculto" id="demo-confirmar-error" style="color:var(--rosa); font-size:13px; margin:-14px 0 16px;"></p>
     <div class="modal-acciones">
       <button class="btn btn-cancelar" id="btn-demo-confirmar-cancelar">Cancelar</button>
@@ -1706,7 +1708,7 @@
     <img class="anuncio-popup-img" src="img/anuncio-premium.webp" alt="AulaGame Premium: acceso a todas las plantillas, IA integrada para crear preguntas, actualizaciones incluidas y sin pagos mensuales.">
     <div class="anuncio-popup-botones">
       <button class="btn btn-pagar-premium" id="btn-anuncio-popup-pagar" type="button"><svg class="ic-pago" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/></svg><span class="tx"><b>Comprar Premium</b><small>Pago único · de por vida</small></span></button>
-      <button type="button" class="btn btn-demo-premium" id="btn-anuncio-popup-demo">🎁 Probar demo gratis (5 días)</button>
+      <button type="button" class="btn btn-demo-premium" id="btn-anuncio-popup-demo">🎁 Probar demo gratis (3 días)</button>
       <a class="btn btn-chat" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20conversar%20sobre%20AulaGame." target="_blank" rel="noopener"><svg class="i" aria-hidden="true"><use href="#i-whatsapp"/></svg> Charla con nosotros</a>
     </div>
   </div>
@@ -1739,7 +1741,7 @@
   // ---------- Estado ----------
   var CUPOS_PLAN_GRATIS = 2;
   var uidActual = null;
-  // Estado premium combinado (plan pagado o demo de 5 días activa) — se recalcula
+  // Estado premium combinado (plan pagado o demo de 3 días activa) — se recalcula
   // al leer profes/{uid} en cada inicio/cierre de sesión. Ver play/shared/premium-status.js.
   var estadoActual = calcularEstadoPremium({});
 
@@ -2007,14 +2009,14 @@
       if(libres > 0){
         planGratuito.classList.remove("lleno");
         planBtn.classList.add("oculto");
-        planTexto.textContent = (demoTerminada ? "Tu demo Premium de 5 días terminó. " : "")
+        planTexto.textContent = (demoTerminada ? "Tu demo Premium de 3 días terminó. " : "")
           + "Plan Gratuito — Has creado " + usados + " de " + cupos + " juegos. Te "
           + (libres === 1 ? "queda 1 juego disponible." : "quedan " + libres + " juegos disponibles.");
       } else {
         planGratuito.classList.add("lleno");
         planBtn.classList.remove("oculto");
         var bloqueados = document.querySelectorAll(".kard-mia.bloqueada").length;
-        planTexto.textContent = (demoTerminada ? "Tu demo Premium de 5 días terminó y volviste al plan gratuito. " : "")
+        planTexto.textContent = (demoTerminada ? "Tu demo Premium de 3 días terminó y volviste al plan gratuito. " : "")
           + (bloqueados > 0
             ? "Tus " + cupos + " primeros juegos siguen gratis. "
               + (bloqueados === 1 ? "El otro quedó bloqueado" : "Los otros " + bloqueados + " quedaron bloqueados")
@@ -2051,7 +2053,7 @@
     var snap = await getDoc(ref);
     if(snap.exists()){
       var data = snap.data();
-      // Calcula el estado premium combinado (plan pagado o demo de 5 días activa).
+      // Calcula el estado premium combinado (plan pagado o demo de 3 días activa).
       // Si la cuenta es de antes de este cambio (sin "plan"/"trialFin"), se trata
       // como "gratis" sin demo usada — no rompe a nadie.
       estadoActual = calcularEstadoPremium(data);
@@ -2336,7 +2338,7 @@
     if(e.key === "Escape" && !modalLimite.classList.contains("oculto")) cerrarModalLimite();
   });
 
-  // ---------- Demo Premium gratis (5 días) ----------
+  // ---------- Demo Premium gratis (3 días) ----------
   var modalDemoConfirmar = document.getElementById("modal-demo-confirmar");
   var demoConfirmarError = document.getElementById("demo-confirmar-error");
   var btnDemoConfirmarSi = document.getElementById("btn-demo-confirmar-si");

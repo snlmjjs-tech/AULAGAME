@@ -1,4 +1,4 @@
-// Módulo compartido: activación de la demo Premium gratuita de 5 días, vía el
+// Módulo compartido: activación de la demo Premium gratuita de 3 días, vía el
 // mismo Cloudflare Worker que genera preguntas con IA. La activación real (y la
 // verificación de que la cuenta no la haya usado antes) ocurre en el servidor
 // — este módulo solo llama al endpoint con el ID token de Firebase Auth del

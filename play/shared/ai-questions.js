@@ -168,7 +168,7 @@ function openAIGeneratorModal({ uid, game, defaultCount, fixedCount, extraFields
   });
 }
 
-/** Pide confirmación y activa la demo Premium de 5 días (el uid ya está logueado:
+/** Pide confirmación y activa la demo Premium de 3 días (el uid ya está logueado:
  * esta función solo se llama desde páginas de editor que ya exigen sesión). */
 function abrirConfirmacionDemo(uid, onActivada) {
   injectModalStyle();
@@ -218,7 +218,7 @@ function abrirConfirmacionDemo(uid, onActivada) {
 
 /** Muestra un mensaje claro (no un botón "premium" genérico) explicando qué función
  * se está bloqueando, ofrece contactar por WhatsApp para pasarse a Premium y,
- * si la cuenta todavía puede, probar la demo gratis de 5 días. */
+ * si la cuenta todavía puede, probar la demo gratis de 3 días. */
 function showPremiumUpsellModal(uid, estado, onActivada) {
   injectModalStyle();
   const overlay = document.createElement("div");

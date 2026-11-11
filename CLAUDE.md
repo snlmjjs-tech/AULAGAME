@@ -33,7 +33,7 @@ es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
   (`"gratis"` o `"premium"`). El campo `plan` **nunca** lo puede escribir el cliente directamente
   (ver `firestore.rules`): se activa a mano desde la consola de Firebase, o automáticamente por
   el Worker de Cloudflare al activar la demo.
-- **Demo Premium**: 5 días de Premium gratis, una sola vez por cuenta. La activa el Worker
+- **Demo Premium**: 3 días de Premium gratis, una sola vez por cuenta. La activa el Worker
   (`POST /start-trial`, verificado con el ID token de Firebase Auth) escribiendo
   `trialUsado`, `trialFin`, `trialInicio` — estos campos tampoco los puede tocar el cliente
   directamente, solo el Worker (que usa una cuenta de servicio y no pasa por las reglas de

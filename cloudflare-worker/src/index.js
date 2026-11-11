@@ -1,5 +1,5 @@
 // Cloudflare Worker: intermediario seguro entre AulaGame y la API de Anthropic (Claude)
-// para generar preguntas con IA, y activación segura de la demo Premium de 5 días.
+// para generar preguntas con IA, y activación segura de la demo Premium de 3 días.
 // Solo disponible para profesores con plan Premium o demo activa (verificado en
 // Firestore, en el servidor, nunca solo en el navegador).
 //
@@ -9,7 +9,7 @@
 //                       Respuesta error: { ok:false, error: "mensaje legible", code?: "..." }
 //
 //   POST /start-trial   Header: Authorization: Bearer <Firebase ID token>
-//                        Activa 5 días de Premium de prueba para la cuenta del token (una
+//                        Activa 3 días de Premium de prueba para la cuenta del token (una
 //                        sola vez por cuenta). Respuesta OK: { ok:true, trialFin: "<ISO>" }
 //
 //   GET  /paypal/config          -> { ok, clientId, price, currency } (datos públicos para el botón)
@@ -48,7 +48,7 @@ const LOCALHOST_RE = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 const CLAUDE_MODEL = "claude-haiku-4-5-20251001";
 const ANTHROPIC_VERSION = "2023-06-01";
 
-const TRIAL_DIAS = 5;
+const TRIAL_DIAS = 3;
 const TRIAL_AI_LIMITE = 10;
 
 function isAllowedOrigin(origin) {
@@ -207,7 +207,7 @@ async function patchProfeDoc(env, uid, fieldsTyped) {
   return res.json();
 }
 
-/** Calcula el estado "premium" combinado (plan pagado o demo de 5 días activa) a
+/** Calcula el estado "premium" combinado (plan pagado o demo de 3 días activa) a
  * partir del documento profes/{uid}. */
 function estadoPremiumDesdeDoc(data) {
   const plan = data.plan === "premium" ? "premium" : "gratis";
@@ -1286,13 +1286,27 @@ export default {
       if (actual.plan === "premium") {
         return json({ ok: false, code: "ALREADY_PREMIUM", error: "Tu cuenta ya tiene el plan Premium — no necesitas la demo." }, 409, origin);
       }
-      if (actual.trialUsado) {
-        return json({ ok: false, code: "TRIAL_USED", error: "Esta cuenta ya usó su demo gratuita de 5 días anteriormente." }, 409, origin);
+      // La marca "demo usada" también vive en usosJuegos/{uid}, que solo escribe este Worker: así no se
+      // puede volver a activar la demo borrando la ficha profes/{uid} (el profe sí puede borrar esa).
+      let marca = {};
+      try {
+        marca = await getUsosDoc(env, uid);
+      } catch (e) {
+        console.error("Error leyendo marca de demo:", e);
+        return json({ ok: false, error: "No se pudo verificar tu cuenta. Intenta de nuevo en unos segundos." }, 502, origin);
+      }
+      if (actual.trialUsado || marca.demoUsada === true) {
+        return json({ ok: false, code: "TRIAL_USED", error: "Esta cuenta ya usó su demo gratuita de " + TRIAL_DIAS + " días y no se puede activar otra vez." }, 409, origin);
       }
 
       const ahoraMs = Date.now();
       const trialFinMs = ahoraMs + TRIAL_DIAS * 24 * 60 * 60 * 1000;
       try {
+        // primero la marca permanente; si falla, no se activa la demo
+        await patchUsosDoc(env, uid, {
+          demoUsada: { booleanValue: true },
+          demoUsadaEn: { timestampValue: new Date(ahoraMs).toISOString() },
+        });
         await patchProfeDoc(env, uid, {
           trialUsado: { booleanValue: true },
           trialInicio: { timestampValue: new Date(ahoraMs).toISOString() },
