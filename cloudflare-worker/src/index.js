@@ -1251,7 +1251,22 @@ function sanitizarMonopoly(d) {
   return { questionCards, prices };
 }
 
-const TASK_GAMES = { monopoly: sanitizarMonopoly, evilgame: sanitizarEvilgame, robotfight: sanitizarRobotfight, raceboard: sanitizarRaceboard, betyouranswer: sanitizarBetyouranswer, jeopardy: sanitizarJeopardy, quizlive: sanitizarQuizlive, hotdogrun: sanitizarHotdog, millonario: sanitizarMillonario, colgado: sanitizarColgado, memorice: sanitizarMemorice, rosco: sanitizarRosco };
+function sanitizarBattlecastle(d) {
+  const t = (v, max) => limpiarTexto(v, max).replace(/['"`]/g, "\u2019");
+  const customQuestions = [];
+  (Array.isArray(d && d.customQuestions) ? d.customQuestions : []).slice(0, 60).forEach((q) => {
+    const question = t(q && q.question, 100), correct = t(q && q.correct, 80);
+    if (!question || !correct) return;
+    const opts = [correct];
+    (Array.isArray(q.options) ? q.options : []).slice(0, 6).forEach((o) => { const x = t(o, 80); if (x && !opts.includes(x) && opts.length < 4) opts.push(x); });
+    if (opts.length < 2) return;
+    customQuestions.push({ id: customQuestions.length + 1, question, correct, options: opts });
+  });
+  if (customQuestions.length < 5) return null;
+  return { customQuestions };
+}
+
+const TASK_GAMES = { battlecastle3d: sanitizarBattlecastle, monopoly: sanitizarMonopoly, evilgame: sanitizarEvilgame, robotfight: sanitizarRobotfight, raceboard: sanitizarRaceboard, betyouranswer: sanitizarBetyouranswer, jeopardy: sanitizarJeopardy, quizlive: sanitizarQuizlive, hotdogrun: sanitizarHotdog, millonario: sanitizarMillonario, colgado: sanitizarColgado, memorice: sanitizarMemorice, rosco: sanitizarRosco };
 // Tope de tamaño por juego (caracteres del JSON). Firestore admite ~1 MB por documento.
 const TASK_MAX = { hotdogrun: 150000, millonario: 150000, colgado: 150000, memorice: 940000, rosco: 150000, quizlive: 940000, jeopardy: 150000 };
 
