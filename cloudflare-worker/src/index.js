@@ -24,6 +24,11 @@
 //                        ilimitado. Gratis: HOTDOG_FREE_USOS usos (por defecto 5); más allá responde 403
 //                        { code:"HOTDOG_LIMIT" }. Con peek:true solo consulta, sin contar.
 //
+//   POST /task/create    Header: Authorization: Bearer <Firebase ID token>, Body: { game, title, data }
+//                        Solo Premium (pagado o demo). Guarda una copia del contenido del profe en
+//                        tareas/{id} y devuelve { ok, id } para armar el link de estudiante.
+//   GET  /task/get?id=…  Público (sin sesión): devuelve { ok, game, title, data } de esa tarea.
+//
 //   GET  /mercadopago/config           -> { ok, priceCLP }
 //   POST /mercadopago/create-checkout  Header: Authorization: Bearer <Firebase ID token>
 //                        Crea la preferencia de Mercado Pago (pesos chilenos) ligada al uid y
@@ -1088,6 +1093,110 @@ async function handleHotdog(request, env, url, origin, projectId) {
 }
 
 /* ======================================================================
+ * D5. TAREAS PARA ESTUDIANTES (link para jugar solo en casa, p. ej. desde Classroom)
+ *    El profe guarda una copia del contenido de su juego en tareas/{id} (colección que
+ *    las reglas de Firestore no exponen al cliente: solo este Worker la lee y la escribe).
+ *    Solo juegos de TASK_GAMES; el contenido se valida y se limita en tamaño.
+ * ====================================================================== */
+
+const TASK_GAMES = { hotdogrun: true };
+const TASK_ID_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"; // sin letras/números confundibles
+
+function limpiarTexto(v, max) {
+  return String(v == null ? "" : v).replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, max);
+}
+
+/** Valida y reduce el contenido de Hot Dog Run a la forma esperada por el juego. */
+function sanitizarHotdog(data) {
+  if (!data || !Array.isArray(data.levels)) return null;
+  const levels = data.levels.slice(0, 20).map((l, i) => {
+    const questions = (Array.isArray(l && l.questions) ? l.questions : []).slice(0, 60).map((q) => {
+      const o = (Array.isArray(q && q.o) ? q.o : []).slice(0, 6).map((t) => limpiarTexto(t, 120));
+      const a = Math.max(0, Math.min(o.length - 1, parseInt(q && q.a, 10) || 0));
+      return { q: limpiarTexto(q && q.q, 300), o, a };
+    }).filter((q) => q.q && q.o.filter(Boolean).length >= 2 && q.o[q.a]);
+    return { type: limpiarTexto(l && l.type, 24) || "parkour", name: limpiarTexto(l && l.name, 60) || "Nivel " + (i + 1), questions };
+  }).filter((l) => l.questions.length > 0);
+  if (!levels.length) return null;
+  const bots = Math.max(0, Math.min(11, parseInt(data.bots, 10) || 7));
+  return { v: 4, bots, levels };
+}
+
+function tareaDocUrl(env, id, query) {
+  const projectId = env.FIREBASE_PROJECT_ID || "aulagame-4c019";
+  return `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/tareas/${id}${query || ""}`;
+}
+
+async function handleTask(request, env, url, origin, projectId) {
+  if (request.method === "GET" && url.pathname === "/task/get") {
+    const id = (url.searchParams.get("id") || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 24);
+    if (!id) return json({ ok: false, error: "Falta el código de la tarea." }, 400, origin);
+    try {
+      const token = await getGoogleAccessToken(env);
+      const res = await fetchWithRetry(tareaDocUrl(env, id), { headers: { Authorization: "Bearer " + token } });
+      if (res.status === 404) return json({ ok: false, error: "No encontramos esta tarea. Pídele a tu profe que revise el link." }, 404, origin);
+      if (!res.ok) throw new Error("Firestore respondió " + res.status);
+      const f = parseFirestoreFields((await res.json()).fields || {});
+      let data = null;
+      try { data = JSON.parse(f.data); } catch (e) { data = null; }
+      if (!data) return json({ ok: false, error: "La tarea está dañada." }, 500, origin);
+      return json({ ok: true, game: f.game, title: f.title || "", data }, 200, origin);
+    } catch (e) {
+      console.error("Error leyendo tarea:", e);
+      return json({ ok: false, error: "No se pudo abrir la tarea. Intenta de nuevo en unos segundos." }, 502, origin);
+    }
+  }
+
+  if (request.method === "POST" && url.pathname === "/task/create") {
+    const auth = await uidDesdeRequest(request, projectId, origin);
+    if (auth.error) return auth.error;
+    const uid = auth.uid;
+    let body;
+    try { body = await request.json(); } catch (e) { body = null; }
+    const game = body && body.game;
+    if (!game || !TASK_GAMES[game]) return json({ ok: false, error: "Este juego todavía no se puede enviar a estudiantes." }, 400, origin);
+    let perfil;
+    try {
+      perfil = estadoPremiumDesdeDoc(await getProfeDoc(env, uid));
+    } catch (e) {
+      console.error("Error verificando plan (task):", e);
+      return json({ ok: false, error: "No se pudo verificar tu plan. Intenta de nuevo en unos segundos." }, 502, origin);
+    }
+    if (!perfil.premium) {
+      return json({ ok: false, code: "NOT_PREMIUM", error: "Enviar juegos a estudiantes es una función exclusiva de Premium." }, 403, origin);
+    }
+    const data = sanitizarHotdog(body.data);
+    if (!data) return json({ ok: false, error: "Agrega al menos una pregunta válida antes de enviar." }, 400, origin);
+    const serial = JSON.stringify(data);
+    if (serial.length > 150000) return json({ ok: false, error: "El juego es demasiado grande para enviarlo." }, 413, origin);
+    const title = limpiarTexto(body.title, 80) || "Hot Dog Run";
+    const bytes = new Uint8Array(10);
+    crypto.getRandomValues(bytes);
+    const id = Array.from(bytes, (b) => TASK_ID_ALPHABET[b % TASK_ID_ALPHABET.length]).join("");
+    try {
+      const token = await getGoogleAccessToken(env);
+      const res = await fetchWithRetry(tareaDocUrl(env, id, "?currentDocument.exists=false"), {
+        method: "PATCH",
+        headers: { Authorization: "Bearer " + token, "content-type": "application/json" },
+        body: JSON.stringify({ fields: {
+          game: { stringValue: game },
+          title: { stringValue: title },
+          uid: { stringValue: uid },
+          data: { stringValue: serial },
+          creadoEn: { timestampValue: new Date().toISOString() },
+        } }),
+      });
+      if (!res.ok) throw new Error("Firestore PATCH respondió " + res.status + ": " + (await res.text()));
+    } catch (e) {
+      console.error("No se pudo guardar la tarea:", e);
+      return json({ ok: false, error: "No se pudo crear el link. Intenta de nuevo." }, 502, origin);
+    }
+    return json({ ok: true, id }, 200, origin);
+  }
+  return null;
+}
+
+/* ======================================================================
  * E. HANDLER PRINCIPAL
  * ====================================================================== */
 
@@ -1109,6 +1218,12 @@ export default {
     /* ---------------- PayPal: /paypal/config, /paypal/create-order, /paypal/capture-order ---------------- */
     if (url.pathname.startsWith("/paypal/")) {
       const r = await handlePaypal(request, env, url, origin, projectId);
+      if (r) return r;
+    }
+
+    /* ---------------- Tareas para estudiantes: /task/* ---------------- */
+    if (url.pathname.startsWith("/task/")) {
+      const r = await handleTask(request, env, url, origin, projectId);
       if (r) return r;
     }
 
@@ -1174,7 +1289,7 @@ export default {
 
     /* ---------------- POST /generate ---------------- */
     if (request.method !== "POST" || url.pathname !== "/generate") {
-      return json({ ok: false, error: "Ruta no encontrada. Usa POST /generate, POST /start-trial, /paypal/*, /mercadopago/* o /hotdog/use." }, 404, origin);
+      return json({ ok: false, error: "Ruta no encontrada. Usa POST /generate, POST /start-trial, /paypal/*, /mercadopago/*, /hotdog/use o /task/*." }, 404, origin);
     }
 
     if (!env.ANTHROPIC_API_KEY) {

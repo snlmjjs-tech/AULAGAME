@@ -67,6 +67,10 @@ es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
   - Hot Dog Run, sala de espera: chat de texto entre alumnos y profe (solo en la sala de espera; el profe lo silencia/activa;
     el anfitrión retransmite y limita 1 mensaje/s por alumno). La IA usa la config `hotdogrun` del Worker (hasta 45
     preguntas, ~5 por nivel; `maxCount` configurable en `play/shared/ai-questions.js`).
+  - `tareas/{id}` — copias de juegos que un profe Premium (o en demo) envía a estudiantes (link para jugar solo en
+    casa, p. ej. desde Classroom). Solo el Worker la lee y escribe (`POST /task/create`, `GET /task/get?id=`); las reglas
+    de Firestore no la exponen. Hoy solo `hotdogrun` (`TASK_GAMES` en el Worker): el estudiante abre
+    `play/hotdogrun/offline.html?tarea=<id>` sin cuenta y juega contra bots con las preguntas guardadas.
   - `clasesIngles/{claseId}` — contenido de la intranet de inglés (sin Firebase Auth real ahí).
 - **Realtime Database** — salas en vivo (`salasVivo/{juego}/{sala}/...`): jugadores, equipos,
   buzz, respuestas, estado de la partida en tiempo real. También `pines/{pin}` para resolver PIN

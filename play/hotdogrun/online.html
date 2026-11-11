@@ -822,6 +822,11 @@ body[data-arena="1"] #game .rot svg{stroke:#2a1535;width:44px;height:44px}
         <button class="btn danger sm" id="hDelLvl"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>Borrar nivel</button>
       </div>
     </section>
+    <section class="hsec" aria-label="Enviar a estudiantes">
+      <div><span class="l">Enviar a estudiantes (Classroom)</span>
+      <p class="hint">Crea un link para que cada estudiante juegue solo en su casa, contra bots y con tus preguntas. Sin sala y sin cuenta. Puedes compartirlo en Google Classroom. Función Premium.</p></div>
+      <div class="row"><button class="btn alt" id="hShare" type="button">📚 Enviar a Classroom / crear link</button></div>
+    </section>
     <section class="hsec" aria-label="Respaldo">
       <div><label class="l" for="hBackup">Respaldo (copia este texto o pega uno y carga)</label>
       <textarea id="hBackup" rows="4" placeholder="Aquí aparece el respaldo en JSON" spellcheck="false"></textarea></div>
@@ -937,6 +942,19 @@ body[data-arena="1"] #game .rot svg{stroke:#2a1535;width:44px;height:44px}
   <label class="l" for="cheatN" style="margin-top:var(--s2)">Cantidad de bots</label><input type="number" id="cheatN" min="1" max="20" value="6">
   <p class="warn" id="cheatErr" role="alert"></p>
   <div class="row" style="justify-content:flex-end"><button class="btn ghost" id="cheatNo" type="button">Cancelar</button><button class="btn" id="cheatOk" type="button">Activar</button></div>
+</dialog>
+<dialog class="dlg" id="shareDlg" aria-labelledby="shareT">
+  <h3 id="shareT">Enviar a estudiantes</h3>
+  <p class="hint" id="shareP">Se guarda una copia de tus preguntas de ahora. Si después las cambias, el link no cambia: crea uno nuevo.</p>
+  <div id="shareForm">
+    <label class="l" for="shareTitle">Nombre de la tarea</label><input type="text" id="shareTitle" maxlength="80" placeholder="Ej: Verbos irregulares 7°A">
+  </div>
+  <div id="shareOut" hidden>
+    <label class="l" for="shareLink">Link para tus estudiantes</label><input type="text" id="shareLink" readonly>
+    <div class="row" style="margin-top:var(--s2)"><button class="btn ghost sm" id="shareCopy" type="button">Copiar link</button><a class="btn sm" id="shareClass" target="_blank" rel="noopener">Compartir en Classroom</a></div>
+  </div>
+  <p class="warn" id="shareErr" role="alert"></p>
+  <div class="row" style="justify-content:flex-end"><button class="btn ghost" id="shareClose" type="button">Cerrar</button><button class="btn" id="shareGo" type="button">Crear link</button></div>
 </dialog>
 <dialog class="dlg" id="dlg" aria-labelledby="dlgT" aria-describedby="dlgP">
   <h3 id="dlgT"></h3><p id="dlgP"></p>
@@ -1437,6 +1455,36 @@ $('#hAddQ').onclick=()=>{quiz.levels[hostLvl].questions.push({q:'',o:['','','','
 $('#hDelLvl').onclick=()=>{if(quiz.levels.length<2){msg('Debe existir al menos un nivel.','err');return}ask('¿Borrar este nivel?','Se borrarán el nivel y todas sus preguntas.','Borrar',true).then(ok=>{if(!ok)return;quiz.levels.splice(hostLvl,1);hostLvl=0;saveQuiz();renderHost()})};
 $('#hExport').onclick=()=>{$('#hBackup').value=JSON.stringify(quiz);$('#hBackup').select();try{navigator.clipboard.writeText($('#hBackup').value).then(()=>msg('Respaldo copiado.','ok'),()=>msg('Selecciona y copia el texto.'))}catch(e){msg('Selecciona y copia el texto.')}};
 $('#hImport').onclick=()=>{try{const d=JSON.parse($('#hBackup').value);if(!d.levels||!d.levels.length)throw 0;d.bots=clamp(+d.bots||0,0,11);d.levels.forEach((l,i)=>{if(!TYPES[l.type])l.type=TYPE_ORDER[i%TYPE_ORDER.length]});quiz=d;saveQuiz();hostLvl=0;renderHost();msg('Respaldo cargado.','ok')}catch(e){msg('Ese texto no es un respaldo válido.','err')}};
+/* ---------- Enviar a estudiantes: link para jugar solo en casa (Classroom) ---------- */
+function shareLinkFor(id){return location.origin+'/play/hotdogrun/offline.html?tarea='+id}
+$('#hShare').onclick=()=>{
+  const d=$('#shareDlg'),L0=quiz.levels[hostLvl]||quiz.levels[0];
+  $('#shareForm').hidden=false;$('#shareOut').hidden=true;$('#shareErr').textContent='';$('#shareGo').hidden=false;$('#shareGo').disabled=false;$('#shareGo').textContent='Crear link';
+  $('#shareTitle').value=($('#shareTitle').value||'').trim()||'Hot Dog Run · '+(L0&&L0.name||'');
+  const n=quiz.levels.reduce((a,l)=>a+validQs(l).length,0);
+  if(!n){$('#shareErr').textContent='Agrega al menos una pregunta válida antes de enviar.'}
+  $('#shareClose').onclick=()=>d.close();
+  $('#shareGo').onclick=async()=>{
+    const err=$('#shareErr'),b=$('#shareGo');err.textContent='';
+    if(!window.AG_crearTarea){err.textContent='Todavía se está cargando. Intenta en unos segundos.';return}
+    b.disabled=true;b.textContent='Creando…';
+    const r=await AG_crearTarea($('#shareTitle').value.trim(),quiz);
+    if(!r.ok){
+      b.disabled=false;b.textContent='Crear link';
+      if(r.code==='NO_LOGIN')err.innerHTML='Inicia sesión en <a href="https://aulagame.cl/?login=1" target="_blank" rel="noopener">aulagame.cl</a> para crear links.';
+      else if(r.code==='NOT_PREMIUM')err.innerHTML='Esta función es de Premium. <a href="https://aulagame.cl/?premium=1" target="_blank" rel="noopener">Hazte Premium</a> para enviar juegos a tus estudiantes.';
+      else err.textContent=r.error||'No se pudo crear el link. Intenta de nuevo.';
+      return;
+    }
+    const link=shareLinkFor(r.id);
+    $('#shareLink').value=link;
+    $('#shareClass').href='https://classroom.google.com/share?url='+encodeURIComponent(link)+'&title='+encodeURIComponent($('#shareTitle').value.trim()||'Hot Dog Run');
+    $('#shareForm').hidden=true;$('#shareOut').hidden=false;b.hidden=true;
+    $('#shareP').textContent='¡Listo! Pega este link en Classroom, WhatsApp o donde quieras. Cada estudiante juega solo, sin sala ni cuenta.';
+    $('#shareCopy').onclick=()=>{const t=$('#shareLink');t.select();try{navigator.clipboard.writeText(link).then(()=>{$('#shareCopy').textContent='¡Copiado!';setTimeout(()=>$('#shareCopy').textContent='Copiar link',1600)},()=>{document.execCommand('copy')})}catch(e){document.execCommand('copy')}};
+  };
+  d.showModal();
+};
 /* ---------- Preguntas con IA (botones del editor; los crea el módulo del final) ---------- */
 window.AG_applyAI=function(data,all){
   const list=(data&&Array.isArray(data.questions)?data.questions:[]).map(x=>{
@@ -3702,6 +3750,18 @@ window.AG_cloud = {
   key: HD_KEY,
   async load(){ const r = await loadGameData(HD_KEY); _hdUid = r.uid; return r; },
   save(quiz){ if(!_hdUid) return; return saveGameDataDebounced(HD_KEY, _hdUid, { quiz: JSON.parse(JSON.stringify(quiz)), updatedAt: Date.now() }, 900); }
+};
+window.AG_crearTarea = async function(title, quiz){
+  const au = getAuth(getApp());
+  await au.authStateReady();
+  const u = au.currentUser;
+  if(!u) return { ok: false, code: "NO_LOGIN" };
+  try{
+    const token = await u.getIdToken();
+    const res = await fetch(TRIAL_WORKER_BASE + "/task/create", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ game: "hotdogrun", title: title, data: { v: quiz.v, bots: quiz.bots, levels: quiz.levels } }) });
+    const j = await res.json().catch(() => null);
+    return j && typeof j === "object" ? j : { ok: false, error: "No se pudo crear el link. Intenta de nuevo." };
+  }catch(e){ return { ok: false, error: "No hay conexión. Revisa tu internet e intenta de nuevo." }; }
 };
 window.AG_usarHotdog = async function(kind, peek){
   const au = getAuth(getApp());
