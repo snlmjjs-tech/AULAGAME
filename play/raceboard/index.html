@@ -437,6 +437,7 @@
     <div style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;">
       <button class="btn-green" id="startGameBtn">🏎️ ¡Empezar la carrera!</button>
       <button class="btn-ghost" id="openEditorFromSetup">✏️ Editar preguntas</button>
+      <button class="btn-ghost" id="shareTaskBtn">📚 Enviar a estudiantes</button>
     </div>
 
     <div class="panel" style="margin-top:20px; padding:16px; display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
@@ -657,6 +658,7 @@ import { refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/l
 import { pintarQR } from "../shared/qr-inline.js";
 import { mostrarTutorial, mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
 import { renderAIButton } from "../shared/ai-questions.js";
+import { abrirCompartirTarea } from "../shared/task-share.js";
 /* ================= CONFIG ================= */
 const TOTAL_TILES = 31;
 const KART_COLORS = [
@@ -720,12 +722,27 @@ const DEFAULT_QUESTIONS = [
 const _paramsRace = new URLSearchParams(location.search);
 const SALA_ALUMNO = _paramsRace.get("room");
 const ES_ALUMNO = !!SALA_ALUMNO;
+/* Modo tarea: un estudiante abre el link de su profe (?tarea=ID) y corre solo contra 3 bots, sin cuenta ni sala.
+   Las preguntas son abiertas (sin respuesta guardada): el estudiante se autoevalúa. */
+const TAREA_ID = (()=>{ const t = _paramsRace.get("tarea"); return t && /^[a-z0-9]{6,24}$/i.test(t) && !SALA_ALUMNO ? t.toLowerCase() : ""; })();
+const ES_TAREA = !!TAREA_ID;
+let TAREA_DATA = null, TAREA_TITULO = "", TAREA_ERROR = "";
+if(ES_TAREA){
+  try{
+    const _res = await fetch("https://aulagame-ai-questions.aulagame-snlmjjs.workers.dev/task/get?id=" + encodeURIComponent(TAREA_ID));
+    const _j = await _res.json().catch(function(){ return null; });
+    if(!_res.ok || !_j || !_j.ok || _j.game !== "raceboard" || !_j.data || !Array.isArray(_j.data.questions) || !_j.data.questions.length) throw new Error((_j && _j.error) || "No se pudo abrir la tarea. Revisa tu conexión.");
+    TAREA_DATA = _j.data; TAREA_TITULO = _j.title || "";
+  }catch(e){ TAREA_ERROR = e.message || String(e); }
+  document.documentElement.style.visibility = "";
+}
+const esBot = p => ES_TAREA && p && p.id > 0;
 
 /* ================= STATE ================= */
 /* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore.
    Un alumno que entra con ?room=... no tiene sesión de profesor: se salta el gate. */
 let SAVED_RACE = null, CURRENT_UID = null;
-if(!ES_ALUMNO){
+if(!ES_ALUMNO && !ES_TAREA){
   const _r = await new Promise(function(resolve){
     initGameSync('raceboard', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
   });
@@ -745,7 +762,7 @@ if(!ES_ALUMNO){
   });
 }
 
-let questions = (SAVED_RACE && Array.isArray(SAVED_RACE.questions) && SAVED_RACE.questions.length)
+let questions = (ES_TAREA && TAREA_DATA) ? TAREA_DATA.questions.slice() : (SAVED_RACE && Array.isArray(SAVED_RACE.questions) && SAVED_RACE.questions.length)
   ? SAVED_RACE.questions
   : JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
 let tileMeta = buildTileMeta();
@@ -803,6 +820,10 @@ function renderPlayerCountRow(){
 }
 
 let playerDrafts = [];
+if(ES_TAREA){
+  playerCount = 4;
+  playerDrafts = [{name:'Tú', color:KART_COLORS[0].hex},{name:'Pebre (bot)', color:KART_COLORS[1].hex},{name:'Mostaza (bot)', color:KART_COLORS[2].hex},{name:'Tomate (bot)', color:KART_COLORS[3].hex}];
+}
 function renderPlayerForm(){
   const prev = playerDrafts;
   playerDrafts = [];
@@ -835,6 +856,7 @@ function renderPlayerForm(){
     });
   });
   playerForm.querySelectorAll('.pname').forEach(inp => {
+    if(ES_TAREA && inp.dataset.idx !== '0') inp.disabled = true;
     inp.addEventListener('input', e => {
       playerDrafts[e.target.dataset.idx].name = e.target.value || `Jugador ${parseInt(e.target.dataset.idx)+1}`;
     });
@@ -1299,6 +1321,7 @@ function showSpecialPopup(iconChar, text){
   const modalEl = document.querySelector('#specialOverlay .modal');
   iconEl.textContent = iconChar;
   textEl.textContent = text;
+  if(esBot(state.players[state.currentIndex])) setTimeout(()=>document.getElementById('specialOkBtn').click(), 1800);
   // reiniciar animaciones cada vez que se muestra
   iconEl.style.animation = 'none';
   textEl.style.animation = 'none';
@@ -1331,6 +1354,10 @@ function askQuestion(isShell){
   isShellQuestion = !!isShell;
   const bank = questions.length ? questions : ['(No hay preguntas todavía. ¡Agrega algunas en el editor!)'];
   const q = bank[Math.floor(Math.random()*bank.length)];
+  if(esBot(state.players[state.currentIndex])){
+    setTimeout(()=>document.getElementById(Math.random() < .6 ? 'qCorrectBtn' : 'qWrongBtn').click(), 900);
+    return;
+  }
   document.getElementById('qText').textContent = q;
   document.getElementById('qBonusBanner').classList.toggle('hidden', !isShellQuestion);
   document.getElementById('questionOverlay').classList.remove('hidden');
@@ -1391,6 +1418,24 @@ function nextTurn(){
   renderSidebar();
   rollBtn.disabled = false;
   document.querySelectorAll('#physicalRow button').forEach(b=>b.disabled=false);
+  botTurnMaybe();
+}
+
+/* Modo tarea: los bots lanzan solos (y a veces atacan con caparazón) */
+function botTurnMaybe(){
+  const p = state.players[state.currentIndex];
+  if(!esBot(p) || state.gameOver) return;
+  rollBtn.disabled = true;
+  document.querySelectorAll('#physicalRow button').forEach(b=>b.disabled=true);
+  const roll = () => { if(!state.gameOver) handleRoll(1+Math.floor(Math.random()*6)); };
+  setTimeout(()=>{
+    if(state.gameOver) return;
+    if(p.shells > 0){
+      const objetivos = state.players.filter(x=>x!==p && x.position>0).sort((a,b)=>b.position-a.position);
+      if(objetivos.length && Math.random() < .6){ useShellOn(objetivos[0]); setTimeout(roll, 2400); return; }
+    }
+    roll();
+  }, 1100);
 }
 
 /* ================= SHELL ATTACK ================= */
@@ -1438,7 +1483,7 @@ function useShellOn(target){
 
 function endGame(player){
   state.gameOver = true;
-  document.getElementById('winText').textContent = `🏆 ¡${player.name} ganó la carrera! 🏆`;
+  document.getElementById('winText').textContent = (ES_TAREA && player.id===0) ? '🏆 ¡Ganaste la carrera! 🏆' : `🏆 ¡${player.name} ganó la carrera! 🏆`;
   document.getElementById('winOverlay').classList.remove('hidden');
   launchConfetti();
   stopMusic();
@@ -1931,7 +1976,25 @@ if(ES_ALUMNO){
       '¡Gana quien llegue primero a la meta!'
     ]
   });
+} else if(ES_TAREA){
+  ["openEditorFromSetup","shareTaskBtn","helpBtn","qrBtn","modePhysicalBtn"].forEach(function(id){ const e=document.getElementById(id); if(e) e.style.display="none"; });
+  const qp = document.getElementById("qrBoxMenu"); if(qp && qp.closest(".panel")) qp.closest(".panel").style.display="none";
+  const qb = document.getElementById("qrBtn"); if(qb && qb.closest(".panel")) qb.closest(".panel").style.display="none";
+  document.getElementById("playerCountRow").style.display = "none";
+  const h2 = document.querySelector("#setup-screen h2"); if(h2) h2.textContent = "🏎️ Tu carrera";
+  document.getElementById("qCorrectBtn").textContent = "✅ La sabía";
+  document.getElementById("qWrongBtn").textContent = "❌ No la sabía";
+  const rb = document.querySelector("#setup-screen .rules-box");
+  rb.innerHTML = TAREA_ERROR ? "<h3>⚠ No se pudo abrir la tarea</h3><p>" + TAREA_ERROR.replace(/[<>]/g,"") + "</p>"
+    : "<h3>🏁 " + (TAREA_TITULO ? TAREA_TITULO.replace(/[<>]/g,"") : "¿Cómo se juega?") + "</h3><ul><li>Corres solo contra 3 bots. Lanza el dado y avanza.</li><li>En las casillas de pregunta, piensa tu respuesta y marca si la sabías. Si fallas, retrocedes 2 casillas.</li><li>Las casillas 🐢 dan caparazones para atacar a otros; ⭐ da escudo.</li><li>¡Gana quien llegue primero a la meta!</li></ul>";
+  if(TAREA_ERROR) document.getElementById("startGameBtn").style.display = "none";
 } else {
+  document.getElementById("shareTaskBtn").addEventListener("click", function(){
+    abrirCompartirTarea({
+      game: "raceboard", defaultTitle: "Race Board", studentPath: "/play/raceboard/",
+      getData: function(){ return { questions: questions.filter(function(q){ return typeof q === "string" && q.trim(); }) }; }
+    });
+  });
   iniciarSalaQR();
   mostrarTutorialSiPrimeraVez('raceboard_profe', TUTORIAL_PROFE);
   // Accesible en cualquier momento durante la partida, no solo al principio.

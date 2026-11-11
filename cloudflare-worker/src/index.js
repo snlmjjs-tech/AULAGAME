@@ -1209,7 +1209,14 @@ function sanitizarBetyouranswer(d) {
   return { questions };
 }
 
-const TASK_GAMES = { betyouranswer: sanitizarBetyouranswer, jeopardy: sanitizarJeopardy, quizlive: sanitizarQuizlive, hotdogrun: sanitizarHotdog, millonario: sanitizarMillonario, colgado: sanitizarColgado, memorice: sanitizarMemorice, rosco: sanitizarRosco };
+function sanitizarRaceboard(d) {
+  const questions = (Array.isArray(d && d.questions) ? d.questions : []).slice(0, 100)
+    .map((q) => limpiarTexto(q, 300)).filter(Boolean);
+  if (questions.length < 3) return null;
+  return { questions };
+}
+
+const TASK_GAMES = { raceboard: sanitizarRaceboard, betyouranswer: sanitizarBetyouranswer, jeopardy: sanitizarJeopardy, quizlive: sanitizarQuizlive, hotdogrun: sanitizarHotdog, millonario: sanitizarMillonario, colgado: sanitizarColgado, memorice: sanitizarMemorice, rosco: sanitizarRosco };
 // Tope de tamaño por juego (caracteres del JSON). Firestore admite ~1 MB por documento.
 const TASK_MAX = { hotdogrun: 150000, millonario: 150000, colgado: 150000, memorice: 940000, rosco: 150000, quizlive: 940000, jeopardy: 150000 };
 
