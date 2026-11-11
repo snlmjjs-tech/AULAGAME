@@ -526,6 +526,7 @@
   .kard-body{ padding: 16px 18px 18px; display:flex; flex-direction:column; gap:9px; flex:1; }
   .kard-title{ font-family: var(--font); font-weight:750; letter-spacing:-.02em; font-size:17.5px; line-height:1.25; }
   .kard-meta{ font-family: var(--font); font-weight:600; font-size:11px; color: var(--texto-suave); }
+  .kard-qr{ margin:0; font-size:12px; font-weight:700; line-height:1.4; padding:7px 11px; border-radius:11px; background:rgba(45,212,191,.12); border:1px solid rgba(45,212,191,.3); color:var(--texto-suave); }
   .kard-desc{ margin:0; font-size:13.5px; color: var(--texto-suave); font-weight:600; line-height:1.55; flex:1; }
 
   .btn{
@@ -1328,7 +1329,7 @@
 <path d="M38 17v58M9 46h58" stroke="#1b1340" stroke-opacity=".55" stroke-width="2" stroke-linecap="round"/><circle cx="38" cy="46" r="29" stroke="#1b1340" stroke-opacity=".35" stroke-width="1.6"/>
 <g transform="translate(60 52) rotate(8)"><rect width="34" height="30" rx="7" fill="url(#ag-blue)" stroke="#fff" stroke-width="2"/>
 <g font-family="'Baloo 2','Segoe UI',sans-serif" font-weight="800" fill="#fff" text-anchor="middle"><text x="17" y="14" font-size="12">a²+b²</text><text x="17" y="25.5" font-size="10">= c²</text></g></g>
-<path transform="translate(86 20) scale(1.1)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="url(#ag-gold)" stroke="#fff" stroke-width="1"/></svg></span><span class="chip">📽️ Modo sala</span></div>
+<path transform="translate(86 20) scale(1.1)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="url(#ag-gold)" stroke="#fff" stroke-width="1"/></svg></span></div>
         <div class="kard-body">
           <div class="kard-title">MathQuest: Fracciones y Fórmulas</div>
           <p class="kard-desc">Juego de matemáticas con preguntas automáticas: fracciones con dibujos, áreas, porcentajes, ecuaciones y Pitágoras. Por equipos o individual, con racha, tiempo y explicación paso a paso.</p>
@@ -1346,10 +1347,11 @@
 <path d="M54 41h5v15h-5z" fill="none"/><path d="M57 63l3 3 6-7" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" transform="translate(-12 -2) scale(.9)"/>
 <rect x="43" y="9.5" width="14" height="2.6" rx="1.3" fill="#000" opacity=".45"/><circle cx="50" cy="87" r="2.6" fill="#fff" opacity=".45"/>
 <path d="M30 14h17L33 82h-3z" fill="#fff" opacity=".18"/>
-<path transform="translate(13 26) scale(1.4)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/><path transform="translate(88 50) scale(1.1)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/><path transform="translate(85 18) scale(0.8)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/></svg></span><span class="chip">📱 Código QR</span></div>
+<path transform="translate(13 26) scale(1.4)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/><path transform="translate(88 50) scale(1.1)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/><path transform="translate(85 18) scale(0.8)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/></svg></span></div>
         <div class="kard-body">
           <div class="kard-title">QuizLive</div>
           <p class="kard-desc">Trivia en vivo estilo Kahoot: los alumnos entran desde su celular con un código.</p>
+          <p class="kard-qr">📱 Opcional: los alumnos pueden usar su celular o PC en este juego.</p>
           <button class="btn btn-dup" type="button" data-url="/play/quizlive/" data-play="/play/quizlive/">⧉ Duplicar</button>
         </div>
       </article>
@@ -1366,10 +1368,11 @@
 <path d="M47 36a3 3 0 0 1 6 0v9h-6z" fill="#1b1340"/><path d="M20 49a2.6 2.6 0 0 1 5.2 0v7H20z" fill="#1b1340"/><path d="M74.8 49a2.6 2.6 0 0 1 5.2 0v7h-5.2z" fill="#1b1340"/>
 <path d="M50 3v11" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><path d="M50 3l12 4.2-12 4.2z" fill="url(#ag-red)"/>
 <path d="M12 84h76" stroke="#000" stroke-opacity=".12" stroke-width="2"/>
-<g transform="translate(82 21) rotate(-125)"><path d="M0 -13L4.4 -6H-4.4z" fill="url(#ag-red)"/><rect x="-4.4" y="-6" width="8.8" height="14" rx="1.5" fill="url(#ag-w)"/><circle cx="0" cy="-1" r="2.3" fill="url(#ag-blue)"/><path d="M-4.4 3L-9 10L-4.4 8z" fill="url(#ag-red)"/><path d="M4.4 3L9 10L4.4 8z" fill="url(#ag-red)"/><path d="M-3 8Q0 19 3 8z" fill="url(#ag-gold)"/></g></svg></span><span class="chip">📱 QR + 📽️ Sala</span></div>
+<g transform="translate(82 21) rotate(-125)"><path d="M0 -13L4.4 -6H-4.4z" fill="url(#ag-red)"/><rect x="-4.4" y="-6" width="8.8" height="14" rx="1.5" fill="url(#ag-w)"/><circle cx="0" cy="-1" r="2.3" fill="url(#ag-blue)"/><path d="M-4.4 3L-9 10L-4.4 8z" fill="url(#ag-red)"/><path d="M4.4 3L9 10L4.4 8z" fill="url(#ag-red)"/><path d="M-3 8Q0 19 3 8z" fill="url(#ag-gold)"/></g></svg></span></div>
         <div class="kard-body">
           <div class="kard-title">Battle Castle 3D</div>
           <p class="kard-desc">Batalla de castillos en 3D: cada equipo lanza el misil desde su celular al castillo que elija.</p>
+          <p class="kard-qr">📱 Opcional: los alumnos pueden usar su celular o PC en este juego.</p>
           <button class="btn btn-dup" type="button" data-url="/play/battlecastle3d/" data-play="/play/battlecastle3d/">⧉ Duplicar</button>
         </div>
       </article>
@@ -1379,10 +1382,11 @@
 <circle cx="50" cy="52" r="19" fill="#000" opacity=".2"/><circle cx="50" cy="50" r="19" fill="url(#ag-ink)" stroke="#fff" stroke-width="2"/>
 <rect x="47" y="28" width="6" height="4" rx="1.5" fill="#fff"/><circle cx="50" cy="50" r="14" fill="url(#ag-w)"/>
 <path d="M50 50V40M50 50l7 4" stroke="#1b1340" stroke-width="2.6" stroke-linecap="round"/><circle cx="50" cy="50" r="2.2" fill="url(#ag-red)"/>
-<path d="M50 38v2M50 60v2M38 50h2M60 50h2" stroke="#1b1340" stroke-opacity=".5" stroke-width="1.4" stroke-linecap="round"/></svg></span><span class="chip">📱 Código QR</span></div>
+<path d="M50 38v2M50 60v2M38 50h2M60 50h2" stroke="#1b1340" stroke-opacity=".5" stroke-width="1.4" stroke-linecap="round"/></svg></span></div>
         <div class="kard-body">
           <div class="kard-title">Rosco de Palabras</div>
           <p class="kard-desc">Pasapalabra clásico: vocabulario letra por letra contra el reloj.</p>
+          <p class="kard-qr">📱 Opcional: los alumnos pueden usar su celular o PC en este juego.</p>
           <button class="btn btn-dup" type="button" data-url="/play/rosco/" data-play="/play/rosco/">⧉ Duplicar</button>
         </div>
       </article>
@@ -1390,10 +1394,11 @@
       <article class="kard c-violeta">
         <div class="kard-top"><span class="kard-icon"><svg width="80" height="80" viewBox="0 0 100 100" fill="none"><ellipse cx="50" cy="91" rx="44" ry="3.4" fill="#000" opacity=".2"/><rect x="6" y="74" width="17" height="14" rx="2" fill="url(#ag-w)" stroke="#fff" stroke-width=".8"/><rect x="6" y="74" width="17" height="4.5" rx="2" fill="url(#ag-gold)"/><text x="14.5" y="91" font-size="9" font-weight="800" text-anchor="middle" fill="#1b1340" fill-opacity=".45" font-family="'Baloo 2','Segoe UI',sans-serif">1</text><rect x="23" y="60" width="17" height="28" rx="2" fill="url(#ag-w)" stroke="#fff" stroke-width=".8"/><rect x="23" y="60" width="17" height="4.5" rx="2" fill="url(#ag-gold)"/><text x="31.5" y="77" font-size="9" font-weight="800" text-anchor="middle" fill="#1b1340" fill-opacity=".45" font-family="'Baloo 2','Segoe UI',sans-serif">2</text><rect x="40" y="46" width="17" height="42" rx="2" fill="url(#ag-w)" stroke="#fff" stroke-width=".8"/><rect x="40" y="46" width="17" height="4.5" rx="2" fill="url(#ag-gold)"/><text x="48.5" y="63" font-size="9" font-weight="800" text-anchor="middle" fill="#1b1340" fill-opacity=".45" font-family="'Baloo 2','Segoe UI',sans-serif">3</text><rect x="57" y="32" width="17" height="56" rx="2" fill="url(#ag-w)" stroke="#fff" stroke-width=".8"/><rect x="57" y="32" width="17" height="4.5" rx="2" fill="url(#ag-gold)"/><text x="65.5" y="49" font-size="9" font-weight="800" text-anchor="middle" fill="#1b1340" fill-opacity=".45" font-family="'Baloo 2','Segoe UI',sans-serif">4</text><rect x="74" y="18" width="17" height="70" rx="2" fill="url(#ag-w)" stroke="#fff" stroke-width=".8"/><rect x="74" y="18" width="17" height="4.5" rx="2" fill="url(#ag-gold)"/><text x="82.5" y="35" font-size="9" font-weight="800" text-anchor="middle" fill="#1b1340" fill-opacity=".45" font-family="'Baloo 2','Segoe UI',sans-serif">5</text>
 <circle cx="83" cy="9.5" r="9" fill="url(#ag-gold)" stroke="#fff" stroke-width="1.6"/><circle cx="83" cy="9.5" r="5.8" stroke="#c78500" stroke-width="1" stroke-opacity=".7"/><text x="83" y="13.5" font-size="11" font-weight="800" text-anchor="middle" fill="#9a6200" font-family="'Baloo 2','Segoe UI',sans-serif">$</text>
-<path transform="translate(64 18) scale(1)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/><path transform="translate(92 30) scale(0.8)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/><path d="M8 62L40 30" stroke="#fff" stroke-opacity=".0"/></svg></span><span class="chip">📱 Código QR</span></div>
+<path transform="translate(64 18) scale(1)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/><path transform="translate(92 30) scale(0.8)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/><path d="M8 62L40 30" stroke="#fff" stroke-opacity=".0"/></svg></span></div>
         <div class="kard-body">
           <div class="kard-title">Escalera Millonaria</div>
           <p class="kard-desc">Preguntas en escalera de dificultad con comodines, editable para cualquier materia.</p>
+          <p class="kard-qr">📱 Opcional: los alumnos pueden usar su celular o PC en este juego.</p>
           <button class="btn btn-dup" type="button" data-url="/play/millonario/" data-play="/play/millonario/">⧉ Duplicar</button>
         </div>
       </article>
@@ -1402,10 +1407,11 @@
         <div class="kard-top"><span class="kard-icon"><svg width="80" height="80" viewBox="0 0 100 100" fill="none"><ellipse cx="50" cy="93" rx="30" ry="3.6" fill="#000" opacity=".2"/><rect x="10" y="10" width="80" height="80" rx="9" fill="url(#ag-w)"/><rect x="14.0" y="14" width="14.4" height="14" fill="url(#ag-red)" stroke="#fff" stroke-width=".9"/><rect x="71.6" y="72" width="14.4" height="14" fill="url(#ag-gold)" stroke="#fff" stroke-width=".9"/><rect x="28.4" y="14" width="14.4" height="14" fill="url(#ag-ora)" stroke="#fff" stroke-width=".9"/><rect x="57.2" y="72" width="14.4" height="14" fill="url(#ag-grn)" stroke="#fff" stroke-width=".9"/><rect x="42.8" y="14" width="14.4" height="14" fill="url(#ag-gold)" stroke="#fff" stroke-width=".9"/><rect x="42.8" y="72" width="14.4" height="14" fill="url(#ag-blue)" stroke="#fff" stroke-width=".9"/><rect x="57.2" y="14" width="14.4" height="14" fill="url(#ag-grn)" stroke="#fff" stroke-width=".9"/><rect x="28.4" y="72" width="14.4" height="14" fill="url(#ag-red)" stroke="#fff" stroke-width=".9"/><rect x="71.6" y="14" width="14.4" height="14" fill="url(#ag-blue)" stroke="#fff" stroke-width=".9"/><rect x="14.0" y="72" width="14.4" height="14" fill="url(#ag-ora)" stroke="#fff" stroke-width=".9"/><rect x="14" y="28.0" width="14" height="14.67" fill="url(#ag-pur)" stroke="#fff" stroke-width=".9"/><rect x="72" y="28.0" width="14" height="14.67" fill="url(#ag-gold)" stroke="#fff" stroke-width=".9"/><rect x="14" y="42.7" width="14" height="14.67" fill="url(#ag-blue)" stroke="#fff" stroke-width=".9"/><rect x="72" y="42.7" width="14" height="14.67" fill="url(#ag-red)" stroke="#fff" stroke-width=".9"/><rect x="14" y="57.3" width="14" height="14.67" fill="url(#ag-grn)" stroke="#fff" stroke-width=".9"/><rect x="72" y="57.3" width="14" height="14.67" fill="url(#ag-ora)" stroke="#fff" stroke-width=".9"/>
 <rect x="28" y="28" width="44" height="44" fill="url(#ag-mint)"/>
 <path d="M50 33L66 47H34z" fill="url(#ag-red)"/><rect x="39" y="47" width="22" height="16" fill="url(#ag-w)"/><rect x="46" y="53" width="8" height="10" rx="1" fill="url(#ag-gold)"/><rect x="41.5" y="50" width="5" height="5" fill="url(#ag-blue)"/><rect x="53.5" y="50" width="5" height="5" fill="url(#ag-blue)"/><rect x="58" y="36" width="4" height="8" fill="url(#ag-stone2)"/>
-<rect x="10" y="10" width="80" height="80" rx="9" stroke="#1b1340" stroke-opacity=".35" stroke-width="2"/></svg></span><span class="chip">📽️ Modo sala</span></div>
+<rect x="10" y="10" width="80" height="80" rx="9" stroke="#1b1340" stroke-opacity=".35" stroke-width="2"/></svg></span></div>
         <div class="kard-body">
           <div class="kard-title">Magnates de San Fernando</div>
           <p class="kard-desc">Tablero temático local: se proyecta y se juega con turnos por grupo.</p>
+          <p class="kard-qr">📱 Opcional: los alumnos pueden usar su celular o PC en este juego.</p>
           <button class="btn btn-dup" type="button" data-url="/play/monopoly/" data-play="/play/monopoly/">⧉ Duplicar</button>
         </div>
       </article>
@@ -1419,10 +1425,11 @@
 <ellipse cx="48" cy="37" rx="8" ry="3.2" fill="#fff" opacity=".75"/>
 <circle cx="72" cy="68" r="15" fill="#bfe6ff" fill-opacity=".35"/><circle cx="72" cy="68" r="15" stroke="#1b1340" stroke-width="4.6"/><path d="M63 62a10 10 0 0 1 8-5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
 <path d="M83 79L92 90" stroke="#1b1340" stroke-width="6.6" stroke-linecap="round"/><path d="M83 79L88 85" stroke="#f0a500" stroke-width="2.4" stroke-linecap="round"/>
-<path transform="translate(16 22) scale(1.2)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/></svg></span><span class="chip">📱 Código QR</span></div>
+<path transform="translate(16 22) scale(1.2)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/></svg></span></div>
         <div class="kard-body">
           <div class="kard-title">Descubre al Impostor</div>
           <p class="kard-desc">Misiones de vocabulario con impostor incluido: ideal para repasos rápidos.</p>
+          <p class="kard-qr">📱 Opcional: los alumnos pueden usar su celular o PC en este juego.</p>
           <button class="btn btn-dup" type="button" data-url="/play/impostor/" data-play="/play/impostor/">⧉ Duplicar</button>
         </div>
       </article>
@@ -1434,10 +1441,11 @@
 <circle cx="20.6" cy="34.1" r="2.7" fill="#1b1340"/><circle cx="29.4" cy="48.9" r="2.7" fill="#1b1340"/>
 <circle cx="41.5" cy="37.8" r="2.7" fill="#1b1340"/><circle cx="47" cy="41.5" r="2.7" fill="#1b1340"/><circle cx="52.5" cy="45.3" r="2.7" fill="#1b1340"/>
 <path d="M36 12L58 23V49L36 60L14 49V23z" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/>
-<rect x="56" y="82" width="32" height="6" fill="url(#ag-red)"/><ellipse cx="72" cy="88" rx="16" ry="5.5" fill="url(#ag-red)"/><ellipse cx="72" cy="82" rx="16" ry="5.5" fill="url(#ag-red)" stroke="#fff" stroke-width=".9"/><ellipse cx="72" cy="82" rx="10.5" ry="3.3" stroke="#fff" stroke-width="1.6" stroke-dasharray="3 3" stroke-opacity=".9"/><rect x="56" y="76" width="32" height="6" fill="url(#ag-w)"/><ellipse cx="72" cy="82" rx="16" ry="5.5" fill="url(#ag-w)"/><ellipse cx="72" cy="76" rx="16" ry="5.5" fill="url(#ag-w)" stroke="#fff" stroke-width=".9"/><ellipse cx="72" cy="76" rx="10.5" ry="3.3" stroke="#fff" stroke-width="1.6" stroke-dasharray="3 3" stroke-opacity=".9"/><rect x="56" y="70" width="32" height="6" fill="url(#ag-blue)"/><ellipse cx="72" cy="76" rx="16" ry="5.5" fill="url(#ag-blue)"/><ellipse cx="72" cy="70" rx="16" ry="5.5" fill="url(#ag-blue)" stroke="#fff" stroke-width=".9"/><ellipse cx="72" cy="70" rx="10.5" ry="3.3" stroke="#fff" stroke-width="1.6" stroke-dasharray="3 3" stroke-opacity=".9"/><rect x="56" y="64" width="32" height="6" fill="url(#ag-gold)"/><ellipse cx="72" cy="70" rx="16" ry="5.5" fill="url(#ag-gold)"/><ellipse cx="72" cy="64" rx="16" ry="5.5" fill="url(#ag-gold)" stroke="#fff" stroke-width=".9"/><ellipse cx="72" cy="64" rx="10.5" ry="3.3" stroke="#fff" stroke-width="1.6" stroke-dasharray="3 3" stroke-opacity=".9"/><path transform="translate(14 76) scale(1.3)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/><path transform="translate(88 40) scale(1)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/></svg></span><span class="chip">📱 Código QR</span></div>
+<rect x="56" y="82" width="32" height="6" fill="url(#ag-red)"/><ellipse cx="72" cy="88" rx="16" ry="5.5" fill="url(#ag-red)"/><ellipse cx="72" cy="82" rx="16" ry="5.5" fill="url(#ag-red)" stroke="#fff" stroke-width=".9"/><ellipse cx="72" cy="82" rx="10.5" ry="3.3" stroke="#fff" stroke-width="1.6" stroke-dasharray="3 3" stroke-opacity=".9"/><rect x="56" y="76" width="32" height="6" fill="url(#ag-w)"/><ellipse cx="72" cy="82" rx="16" ry="5.5" fill="url(#ag-w)"/><ellipse cx="72" cy="76" rx="16" ry="5.5" fill="url(#ag-w)" stroke="#fff" stroke-width=".9"/><ellipse cx="72" cy="76" rx="10.5" ry="3.3" stroke="#fff" stroke-width="1.6" stroke-dasharray="3 3" stroke-opacity=".9"/><rect x="56" y="70" width="32" height="6" fill="url(#ag-blue)"/><ellipse cx="72" cy="76" rx="16" ry="5.5" fill="url(#ag-blue)"/><ellipse cx="72" cy="70" rx="16" ry="5.5" fill="url(#ag-blue)" stroke="#fff" stroke-width=".9"/><ellipse cx="72" cy="70" rx="10.5" ry="3.3" stroke="#fff" stroke-width="1.6" stroke-dasharray="3 3" stroke-opacity=".9"/><rect x="56" y="64" width="32" height="6" fill="url(#ag-gold)"/><ellipse cx="72" cy="70" rx="16" ry="5.5" fill="url(#ag-gold)"/><ellipse cx="72" cy="64" rx="16" ry="5.5" fill="url(#ag-gold)" stroke="#fff" stroke-width=".9"/><ellipse cx="72" cy="64" rx="10.5" ry="3.3" stroke="#fff" stroke-width="1.6" stroke-dasharray="3 3" stroke-opacity=".9"/><path transform="translate(14 76) scale(1.3)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/><path transform="translate(88 40) scale(1)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/></svg></span></div>
         <div class="kard-body">
           <div class="kard-title">Bet Your Answer</div>
           <p class="kard-desc">Trivia con apuestas de puntos: la tensión sube en la recta final.</p>
+          <p class="kard-qr">📱 Opcional: los alumnos pueden usar su celular o PC en este juego.</p>
           <button class="btn btn-dup" type="button" data-url="/play/betyouranswer/" data-play="/play/betyouranswer/">⧉ Duplicar</button>
         </div>
       </article>
@@ -1453,10 +1461,11 @@
 <line x1="50" y1="5" x2="50" y2="15" stroke="#1b1340" stroke-width="2.4"/><circle cx="50" cy="5.5" r="4" fill="url(#ag-gold)" stroke="#fff" stroke-width="1"/>
 <rect x="28" y="14" width="44" height="31" rx="11" fill="url(#ag-metal)" stroke="#fff" stroke-width="1.2"/><rect x="23" y="23" width="6" height="12" rx="3" fill="#1b1340"/><rect x="71" y="23" width="6" height="12" rx="3" fill="#1b1340"/>
 <rect x="34" y="21" width="32" height="16" rx="8" fill="#1b1340"/><circle cx="43.5" cy="29" r="4.4" fill="#7fe7ff"/><circle cx="56.5" cy="29" r="4.4" fill="#7fe7ff"/><circle cx="42.4" cy="27.8" r="1.4" fill="#fff"/><circle cx="55.4" cy="27.8" r="1.4" fill="#fff"/>
-<path d="M44 40h12" stroke="#1b1340" stroke-opacity=".35" stroke-width="2" stroke-linecap="round"/></svg></span><span class="chip">📱 Código QR</span></div>
+<path d="M44 40h12" stroke="#1b1340" stroke-opacity=".35" stroke-width="2" stroke-linecap="round"/></svg></span></div>
         <div class="kard-body">
           <div class="kard-title">Robot Fight</div>
           <p class="kard-desc">Duelo de robots por respuestas correctas: ritmo rápido y muy visual.</p>
+          <p class="kard-qr">📱 Opcional: los alumnos pueden usar su celular o PC en este juego.</p>
           <button class="btn btn-dup" type="button" data-url="/play/robotfight/" data-play="/play/robotfight/">⧉ Duplicar</button>
         </div>
       </article>
@@ -1470,10 +1479,11 @@
 <ellipse cx="23" cy="91" rx="9" ry="2.6" fill="#1b1340" opacity=".35"/>
 <ellipse cx="62" cy="90" rx="12" ry="3.4" fill="#1b1340" opacity=".3"/>
 <path d="M52 88Q55 76 62 66Q69 76 72 88Z" fill="url(#ag-red)"/><circle cx="62" cy="62" r="7.5" fill="url(#ag-red)" stroke="#fff" stroke-width="1.2"/><ellipse cx="59.8" cy="59.6" rx="2.6" ry="1.8" fill="#fff" opacity=".8"/>
-<rect x="55" y="86" width="14" height="4" rx="2" fill="url(#ag-gold)"/></svg></span><span class="chip">📽️ Modo sala</span></div>
+<rect x="55" y="86" width="14" height="4" rx="2" fill="url(#ag-gold)"/></svg></span></div>
         <div class="kard-body">
           <div class="kard-title">Race Board</div>
           <p class="kard-desc">Carrera por equipos en tablero: se avanza respondiendo bien.</p>
+          <p class="kard-qr">📱 Opcional: los alumnos pueden usar su celular o PC en este juego.</p>
           <button class="btn btn-dup" type="button" data-url="/play/raceboard/" data-play="/play/raceboard/">⧉ Duplicar</button>
         </div>
       </article>
@@ -1482,10 +1492,11 @@
         <div class="kard-top"><span class="kard-icon"><svg width="80" height="80" viewBox="0 0 100 100" fill="none"><ellipse cx="50" cy="93" rx="30" ry="3.6" fill="#000" opacity=".2"/><rect x="42" y="74" width="16" height="9" fill="url(#ag-metal)"/><rect x="30" y="82" width="40" height="7" rx="3.5" fill="url(#ag-metal)"/>
 <rect x="7" y="12" width="86" height="64" rx="9" fill="url(#ag-ink)"/><rect x="12" y="17" width="76" height="54" rx="5" fill="url(#ag-screen)"/>
 <rect x="14.5" y="22.0" width="22" height="14" rx="2" fill="url(#ag-pur)" stroke="#fff" stroke-opacity=".7" stroke-width=".9"/><path d="M19.5 29.0h12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-opacity=".85"/><rect x="39.0" y="22.0" width="22" height="14" rx="2" fill="url(#ag-pur)" stroke="#fff" stroke-opacity=".7" stroke-width=".9"/><path d="M44.0 29.0h12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-opacity=".85"/><rect x="63.5" y="22.0" width="22" height="14" rx="2" fill="url(#ag-pur)" stroke="#fff" stroke-opacity=".7" stroke-width=".9"/><path d="M68.5 29.0h12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-opacity=".85"/><rect x="14.5" y="39.5" width="22" height="14" rx="2" fill="url(#ag-blue)" stroke="#fff" stroke-opacity=".7" stroke-width=".9"/><text x="25.5" y="49.9" font-size="9.5" font-weight="800" text-anchor="middle" fill="#ffe27a" stroke="#8a5a00" stroke-width=".5" font-family="'Baloo 2','Segoe UI',sans-serif">100</text><rect x="39.0" y="39.5" width="22" height="14" rx="2" fill="url(#ag-blue)" stroke="#fff" stroke-opacity=".7" stroke-width=".9"/><text x="50.0" y="49.9" font-size="9.5" font-weight="800" text-anchor="middle" fill="#ffe27a" stroke="#8a5a00" stroke-width=".5" font-family="'Baloo 2','Segoe UI',sans-serif">100</text><rect x="63.5" y="39.5" width="22" height="14" rx="2" fill="url(#ag-blue)" stroke="#fff" stroke-opacity=".7" stroke-width=".9"/><text x="74.5" y="49.9" font-size="9.5" font-weight="800" text-anchor="middle" fill="#ffe27a" stroke="#8a5a00" stroke-width=".5" font-family="'Baloo 2','Segoe UI',sans-serif">100</text><rect x="14.5" y="57.0" width="22" height="14" rx="2" fill="url(#ag-blue)" stroke="#fff" stroke-opacity=".7" stroke-width=".9"/><text x="25.5" y="67.4" font-size="9.5" font-weight="800" text-anchor="middle" fill="#ffe27a" stroke="#8a5a00" stroke-width=".5" font-family="'Baloo 2','Segoe UI',sans-serif">200</text><rect x="39.0" y="57.0" width="22" height="14" rx="2" fill="url(#ag-blue)" stroke="#fff" stroke-opacity=".7" stroke-width=".9"/><text x="50.0" y="67.4" font-size="9.5" font-weight="800" text-anchor="middle" fill="#ffe27a" stroke="#8a5a00" stroke-width=".5" font-family="'Baloo 2','Segoe UI',sans-serif">200</text><rect x="63.5" y="57.0" width="22" height="14" rx="2" fill="url(#ag-blue)" stroke="#fff" stroke-opacity=".7" stroke-width=".9"/><text x="74.5" y="67.4" font-size="9.5" font-weight="800" text-anchor="middle" fill="#ffe27a" stroke="#8a5a00" stroke-width=".5" font-family="'Baloo 2','Segoe UI',sans-serif">200</text><path d="M12 17h30L28 71H12z" fill="#fff" opacity=".1"/>
-<circle cx="84" cy="73" r="1.6" fill="#7be495"/></svg></span><span class="chip">📽️ Modo sala</span></div>
+<circle cx="84" cy="73" r="1.6" fill="#7be495"/></svg></span></div>
         <div class="kard-body">
           <div class="kard-title">Jeopardy</div>
           <p class="kard-desc">Tablero de categorías y puntajes al estilo clásico: perfecto para repasar unidades completas.</p>
+          <p class="kard-qr">📱 Opcional: los alumnos pueden usar su celular o PC en este juego.</p>
           <button class="btn btn-dup" type="button" data-url="/play/jeopardy/" data-play="/play/jeopardy/">⧉ Duplicar</button>
         </div>
       </article>
@@ -1498,10 +1509,11 @@
 <path d="M31 47L46 53Q45 61 38 61Q31 61 31 54Z" fill="url(#ag-gold)"/><path d="M69 47L54 53Q55 61 62 61Q69 61 69 54Z" fill="url(#ag-gold)"/>
 <circle cx="40.5" cy="56.5" r="2.6" fill="#1b1340"/><circle cx="59.5" cy="56.5" r="2.6" fill="#1b1340"/>
 <path d="M31 67Q50 86 69 67Z" fill="#fff"/><path d="M35 68h5l-2.5 5.5z" fill="#1b1340"/><path d="M43 68h5l-2.5 5.5z" fill="#1b1340"/><path d="M51.5 68h5l-2.5 5.5z" fill="#1b1340"/><path d="M60 68h5l-2.5 5.5z" fill="#1b1340"/>
-<path d="M27 33h20" stroke="#fff" stroke-opacity=".25" stroke-width="2" stroke-linecap="round"/></g></svg></span><span class="chip">📱 QR + 📽️ Sala</span></div>
+<path d="M27 33h20" stroke="#fff" stroke-opacity=".25" stroke-width="2" stroke-linecap="round"/></g></svg></span></div>
         <div class="kard-body">
           <div class="kard-title">Evil Game</div>
           <p class="kard-desc">Trivia con giros y penalizaciones: cada equipo tira el dado desde su propio celular.</p>
+          <p class="kard-qr">📱 Opcional: los alumnos pueden usar su celular o PC en este juego.</p>
           <button class="btn btn-dup" type="button" data-url="/play/evilgame/" data-play="/play/evilgame/">⧉ Duplicar</button>
         </div>
       </article>
@@ -1512,7 +1524,7 @@
 <g transform="rotate(9 67 53)"><rect x="48" y="26" width="38" height="54" rx="8" fill="url(#ag-w)" stroke="#fff" stroke-width="2"/>
 <path d="M67 36l5.6 11.6 12.6 1.6-9.3 8.8 2.4 12.5-11.3-6.1-11.3 6.1 2.4-12.5-9.3-8.8 12.6-1.6z" transform="translate(0 -1) scale(.9) translate(7.4 5)" fill="url(#ag-gold)" stroke="#c78500" stroke-width="1.2" stroke-linejoin="round"/>
 <path d="M54 33l1.4 2.8 3 .4-2.2 2.1.5 3-2.7-1.4-2.7 1.4.5-3-2.2-2.1 3-.4z" fill="url(#ag-red)" transform="scale(.8) translate(14 8)"/></g>
-<path transform="translate(14 14) scale(1.2)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/><path transform="translate(90 14) scale(1)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/></svg></span><span class="chip">📽️ Modo sala</span></div>
+<path transform="translate(14 14) scale(1.2)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/><path transform="translate(90 14) scale(1)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/></svg></span></div>
         <div class="kard-body">
           <div class="kard-title">Memorice</div>
           <p class="kard-desc">El clásico juego de memoria por parejas: se proyecta y se juega por turnos entre equipos.</p>
@@ -1527,10 +1539,11 @@
 <path d="M62 18v10" stroke="#e9d9b6" stroke-width="2.8" stroke-linecap="round" stroke-dasharray="3 1.4"/><ellipse cx="62" cy="30" rx="5" ry="2.4" stroke="#e9d9b6" stroke-width="2.4"/>
 <circle cx="62" cy="39" r="8" fill="url(#ag-w)" stroke="#1b1340" stroke-opacity=".25" stroke-width="1"/><path d="M58.8 37.4l2.2 2M61 37.4l-2.2 2M63 37.4l2.2 2M65.2 37.4l-2.2 2" stroke="#1b1340" stroke-width="1.2" stroke-linecap="round"/><path d="M59 43q3-2.2 6 0" stroke="#1b1340" stroke-width="1.3" stroke-linecap="round"/>
 <path d="M62 47v18M62 52l-10 8M62 52l10 8M62 65l-8 14M62 65l8 14" stroke="#fff" stroke-width="4.2" stroke-linecap="round"/>
-<g font-family="'Baloo 2','Segoe UI',sans-serif" font-weight="800" text-anchor="middle"><rect x="76" y="60" width="17" height="17" rx="4" fill="url(#ag-w)"/><text x="84.5" y="73" font-size="13" fill="#1b1340">A</text><rect x="76" y="80" width="17" height="12" rx="4" fill="url(#ag-gold)"/><path d="M80 87h9" stroke="#1b1340" stroke-width="2.4" stroke-linecap="round"/></g></svg></span><span class="chip">📱 QR + 📽️ Sala</span></div>
+<g font-family="'Baloo 2','Segoe UI',sans-serif" font-weight="800" text-anchor="middle"><rect x="76" y="60" width="17" height="17" rx="4" fill="url(#ag-w)"/><text x="84.5" y="73" font-size="13" fill="#1b1340">A</text><rect x="76" y="80" width="17" height="12" rx="4" fill="url(#ag-gold)"/><path d="M80 87h9" stroke="#1b1340" stroke-width="2.4" stroke-linecap="round"/></g></svg></span></div>
         <div class="kard-body">
           <div class="kard-title">El Colgado</div>
           <p class="kard-desc">El clásico ahorcado con pistas: juega proyectado con todo el curso, por equipos o desde el celular de cada estudiante con QR.</p>
+          <p class="kard-qr">📱 Opcional: los alumnos pueden usar su celular o PC en este juego.</p>
           <button class="btn btn-dup" type="button" data-url="/play/colgado/" data-play="/play/colgado/">⧉ Duplicar</button>
         </div>
       </article>
@@ -1538,7 +1551,7 @@
       <article class="kard c-turquesa">
         <div class="kard-top"><span class="kard-icon"><svg width="80" height="80" viewBox="0 0 100 100" fill="none"><ellipse cx="50" cy="93" rx="30" ry="3.6" fill="#000" opacity=".2"/><rect x="8" y="10" width="62" height="80" rx="8" fill="url(#ag-w)" stroke="#fff" stroke-width="1.5"/><circle cx="17" cy="20" r="5.2" fill="url(#ag-red)"/><text x="17" y="23.2" font-size="8" font-weight="800" text-anchor="middle" fill="#fff" font-family="'Baloo 2','Segoe UI',sans-serif">B</text><circle cx="28" cy="20" r="5.2" fill="url(#ag-ora)"/><text x="28" y="23.2" font-size="8" font-weight="800" text-anchor="middle" fill="#fff" font-family="'Baloo 2','Segoe UI',sans-serif">I</text><circle cx="39" cy="20" r="5.2" fill="url(#ag-grn)"/><text x="39" y="23.2" font-size="8" font-weight="800" text-anchor="middle" fill="#fff" font-family="'Baloo 2','Segoe UI',sans-serif">N</text><circle cx="50" cy="20" r="5.2" fill="url(#ag-blue)"/><text x="50" y="23.2" font-size="8" font-weight="800" text-anchor="middle" fill="#fff" font-family="'Baloo 2','Segoe UI',sans-serif">G</text><circle cx="61" cy="20" r="5.2" fill="url(#ag-pur)"/><text x="61" y="23.2" font-size="8" font-weight="800" text-anchor="middle" fill="#fff" font-family="'Baloo 2','Segoe UI',sans-serif">O</text><rect x="12.0" y="31.0" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="22.6" y="31.0" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="33.2" y="31.0" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="43.8" y="31.0" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="54.4" y="31.0" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="12.0" y="41.6" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="22.6" y="41.6" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="33.2" y="41.6" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="43.8" y="41.6" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="54.4" y="41.6" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="12.0" y="52.2" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="22.6" y="52.2" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="33.2" y="52.2" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="43.8" y="52.2" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="54.4" y="52.2" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="12.0" y="62.8" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="22.6" y="62.8" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="33.2" y="62.8" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="43.8" y="62.8" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><rect x="54.4" y="62.8" width="9.2" height="9.2" rx="2" fill="#1b1340" fill-opacity=".09"/><circle cx="27.2" cy="35.6" r="4.1" fill="url(#ag-red)"/><ellipse cx="26.0" cy="34.0" rx="1.5" ry="1" fill="#fff" opacity=".7"/><circle cx="37.8" cy="46.2" r="4.1" fill="url(#ag-red)"/><ellipse cx="36.6" cy="44.6" rx="1.5" ry="1" fill="#fff" opacity=".7"/><circle cx="37.8" cy="56.8" r="4.1" fill="url(#ag-red)"/><ellipse cx="36.6" cy="55.2" rx="1.5" ry="1" fill="#fff" opacity=".7"/><circle cx="16.6" cy="67.4" r="4.1" fill="url(#ag-red)"/><ellipse cx="15.4" cy="65.8" rx="1.5" ry="1" fill="#fff" opacity=".7"/><circle cx="59.0" cy="56.8" r="4.1" fill="url(#ag-red)"/><ellipse cx="57.8" cy="55.2" rx="1.5" ry="1" fill="#fff" opacity=".7"/><circle cx="59.0" cy="46.2" r="4.1" fill="url(#ag-red)"/><ellipse cx="57.8" cy="44.6" rx="1.5" ry="1" fill="#fff" opacity=".7"/><circle cx="48.4" cy="67.4" r="4.1" fill="url(#ag-red)"/><ellipse cx="47.2" cy="65.8" rx="1.5" ry="1" fill="#fff" opacity=".7"/><circle cx="48.4" cy="35.6" r="4.1" fill="url(#ag-red)"/><ellipse cx="47.2" cy="34.0" rx="1.5" ry="1" fill="#fff" opacity=".7"/>
 <circle cx="73" cy="70" r="20" fill="#000" opacity=".2" transform="translate(0 2)"/><circle cx="73" cy="70" r="20" fill="url(#ag-gold)" stroke="#fff" stroke-width="2"/><circle cx="73" cy="70" r="12.6" fill="#fff"/>
-<text x="73" y="75.4" font-size="15" font-weight="800" text-anchor="middle" fill="#1b1340" font-family="'Baloo 2','Segoe UI',sans-serif">89</text><ellipse cx="65" cy="58" rx="6.5" ry="3.4" fill="#fff" opacity=".6" transform="rotate(-30 65 58)"/></svg></span><span class="chip">📽️ Modo sala</span></div>
+<text x="73" y="75.4" font-size="15" font-weight="800" text-anchor="middle" fill="#1b1340" font-family="'Baloo 2','Segoe UI',sans-serif">89</text><ellipse cx="65" cy="58" rx="6.5" ry="3.4" fill="#fff" opacity=".6" transform="rotate(-30 65 58)"/></svg></span></div>
         <div class="kard-body">
           <div class="kard-title">Bingo Game</div>
           <p class="kard-desc">Bingo clásico proyectado: se cantan los números y los cartones se generan y marcan en pantalla.</p>
@@ -1553,7 +1566,7 @@
 <circle cx="80" cy="25" r="14.5" fill="url(#ag-red)" stroke="#fff" stroke-width="1.6"/><circle cx="80" cy="25" r="10.6" fill="#fff"/>
 <circle cx="69.5" cy="12" r="4.4" fill="url(#ag-red)" stroke="#fff" stroke-width="1"/><circle cx="90.5" cy="12" r="4.4" fill="url(#ag-red)" stroke="#fff" stroke-width="1"/>
 <path d="M80 25V18M80 25l5.6 3.4" stroke="#1b1340" stroke-width="2.4" stroke-linecap="round"/><circle cx="80" cy="25" r="1.8" fill="#1b1340"/>
-<path transform="translate(14 22) scale(1.3)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/><path transform="translate(40 10) scale(0.9)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/></svg></span><span class="chip">📽️ Modo sala</span></div>
+<path transform="translate(14 22) scale(1.3)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/><path transform="translate(40 10) scale(0.9)" d="M0 -6 l1.8 3.8 4.2 .5 -3.1 2.9 .8 4.1 -3.7 -2 -3.7 2 .8 -4.1 -3.1 -2.9 4.2 -.5z" fill="#fff"/></svg></span></div>
         <div class="kard-body">
           <div class="kard-title">Agrupados</div>
           <p class="kard-desc">Juego de hacer grupos en el aula, contra el reloj y muy divertido: ideal como calentamiento antes de empezar la clase.</p>
