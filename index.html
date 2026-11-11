@@ -650,6 +650,13 @@
   .btn-chat .i{ width:20px; height:20px; color:#25D366; }
   .btn-chat:hover{ background: rgba(37,211,102,.2); border-color:#25D366; transform:translateY(-1px); filter:none; }
   .modal-acciones .btn-chat{ flex:1; }
+  /* aviso de límite: los botones van apilados, completos y sin cortarse */
+  #modal-limite .modal-acciones{ flex-direction:column; flex-wrap:nowrap; align-items:stretch; gap:10px; }
+  #modal-limite .modal-acciones .btn{ width:100%; flex:0 0 auto; justify-content:center; }
+  #modal-limite .modal-acciones .btn-pagar-premium{ order:1; padding:12px 18px; }
+  #modal-limite .modal-acciones .btn-demo-premium{ order:2; }
+  #modal-limite .modal-acciones .btn-chat{ order:3; }
+  #modal-limite .modal-acciones .btn-cancelar{ order:4; }
   @media (prefers-color-scheme: light){
     .btn-chat{ color:#0a5f33; background:rgba(37,211,102,.14); border-color:#1fa855; box-shadow:none; }
     .btn-chat .i{ color:#17a558; }
@@ -1648,7 +1655,7 @@
   <div class="modal-caja" role="dialog" aria-modal="true" aria-labelledby="limite-titulo">
     <div class="icono">🔒</div>
     <h3 id="limite-titulo">Llegaste al límite del plan gratuito</h3>
-    <p>Tu plan gratuito permite guardar 2 juegos a la vez. Elimina uno para reemplazarlo, o escríbenos por WhatsApp para pasarte a Premium y crear todos los que quieras.</p>
+    <p>Tu plan gratuito permite guardar 2 juegos a la vez. Elimina uno para reemplazarlo, o hazte Premium con un pago único y crea todos los que quieras.</p>
     <div class="modal-acciones">
       <button class="btn btn-cancelar" id="btn-limite-cerrar">Cerrar</button>
       <button class="btn btn-pagar-premium oculto" id="btn-limite-pagar" type="button"><svg class="ic-pago" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/></svg><span class="tx"><b>Comprar Premium</b><small>Pago único · de por vida</small></span></button>
