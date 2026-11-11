@@ -1157,9 +1157,31 @@ function sanitizarRosco(d) {
   return sets.length ? { sets } : null;
 }
 
-const TASK_GAMES = { hotdogrun: sanitizarHotdog, millonario: sanitizarMillonario, colgado: sanitizarColgado, memorice: sanitizarMemorice, rosco: sanitizarRosco };
+/** QuizLive: preguntas (quiz, verdadero/falso, ordenar y respuesta corta; la respuesta larga la corrige el profe y no se envía). */
+function sanitizarQuizlive(d) {
+  const tipos = { quiz: 1, vf: 1, orden: 1, corta: 1 };
+  const questions = (Array.isArray(d && d.questions) ? d.questions : []).slice(0, 80).map((q) => {
+    const type = limpiarTexto(q && q.type, 8);
+    if (!tipos[type]) return null;
+    const out = { type, text: limpiarTexto(q.text, 300), time: Math.max(5, Math.min(240, parseInt(q.time, 10) || 20)), points: Math.max(50, Math.min(5000, parseInt(q.points, 10) || 1000)) };
+    if (!out.text) return null;
+    if (type === "quiz" || type === "orden") {
+      out.options = (Array.isArray(q.options) ? q.options : []).slice(0, type === "quiz" ? 4 : 6).map((t) => limpiarTexto(t, 120));
+      if (out.options.filter(Boolean).length < 2 || out.options.some((t) => !t)) return null;
+    }
+    if (type === "quiz") { out.correct = parseInt(q.correct, 10); if (!(out.correct >= 0 && out.correct < out.options.length)) return null; }
+    if (type === "vf") out.correct = parseInt(q.correct, 10) === 1 ? 1 : 0;
+    if (type === "corta") { out.accepted = (Array.isArray(q.accepted) ? q.accepted : []).slice(0, 8).map((t) => limpiarTexto(t, 80)).filter(Boolean); if (!out.accepted.length) return null; }
+    if (typeof q.img === "string" && q.img.length <= 200000 && /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+\/=]+$/.test(q.img)) out.img = q.img;
+    if (typeof q.yt === "string" && /^[A-Za-z0-9_-]{11}$/.test(q.yt)) { out.yt = q.yt; out.ytStart = Math.max(0, parseInt(q.ytStart, 10) || 0); out.ytEnd = Math.max(0, parseInt(q.ytEnd, 10) || 0); }
+    return out;
+  }).filter(Boolean);
+  return questions.length ? { questions } : null;
+}
+
+const TASK_GAMES = { quizlive: sanitizarQuizlive, hotdogrun: sanitizarHotdog, millonario: sanitizarMillonario, colgado: sanitizarColgado, memorice: sanitizarMemorice, rosco: sanitizarRosco };
 // Tope de tamaño por juego (caracteres del JSON). Firestore admite ~1 MB por documento.
-const TASK_MAX = { hotdogrun: 150000, millonario: 150000, colgado: 150000, memorice: 940000, rosco: 150000 };
+const TASK_MAX = { hotdogrun: 150000, millonario: 150000, colgado: 150000, memorice: 940000, rosco: 150000, quizlive: 940000 };
 
 function tareaDocUrl(env, id, query) {
   const projectId = env.FIREBASE_PROJECT_ID || "aulagame-4c019";

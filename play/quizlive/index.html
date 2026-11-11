@@ -8,7 +8,7 @@
   import { firebaseConfig } from "../../firebase-config.js";
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-  if(new URLSearchParams(location.search).get("pin")){
+  if(new URLSearchParams(location.search).get("pin") || new URLSearchParams(location.search).get("tarea")){
     document.documentElement.style.visibility = "";
   } else {
     var app = initializeApp(firebaseConfig);
@@ -443,6 +443,7 @@ button.ans:active{transform:scale(.97);transition-duration:.08s}
     <button class="icon-btn" onclick="openLibrary()" title="Volver" aria-label="Volver"><svg class="i" aria-hidden="true"><use href="#i-caret-left"/></svg></button>
     <h2>Editor</h2>
     <span class="spacer"></span>
+    <button class="btn small amarillo" id="btnShareTask" type="button">📚 Enviar a estudiantes</button>
     <button class="btn small amarillo" onclick="exportExcel()"><svg class="i" aria-hidden="true"><use href="#i-download-simple"/></svg> Exportar Excel</button>
     <button class="btn small amarillo" onclick="document.getElementById('fileExcel').click()"><svg class="i" aria-hidden="true"><use href="#i-upload-simple"/></svg> Importar Excel</button>
     <input type="file" id="fileExcel" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)">
@@ -541,6 +542,21 @@ button.ans:active{transform:scale(.97);transition-duration:.08s}
   <div class="stu-shell">
     <div class="scorebar"><span id="stuName"></span><span id="stuScore">0 pts</span></div>
     <div id="stuBody"></div>
+  </div>
+</section>
+
+<!-- ================= TAREA (ESTUDIANTE SOLO, CON BOTS) ================= -->
+<section class="screen" id="scr-solo">
+  <div class="stu-shell">
+    <div style="text-align:center"><div class="logo" style="font-size:2.6rem">Quiz<span>Live</span></div></div>
+    <div class="card">
+      <p class="muted" id="soloInfo" style="font-weight:700;margin-bottom:6px"></p>
+      <label class="fld" style="margin-top:0">Tu nombre</label>
+      <input type="text" id="soloName" maxlength="20" placeholder="Ej: Cata M.">
+      <label class="fld">Elige tu animal</label>
+      <div class="avatar-grid" id="soloAvatarGrid"></div>
+      <button class="btn big azul" id="soloGo" style="width:100%;margin-top:20px" onclick="soloStart()">Jugar ▶</button>
+    </div>
   </div>
 </section>
 
@@ -648,8 +664,20 @@ import { registrarPinExterno } from "../shared/live-room.js";
 import { renderAIButton } from "../shared/ai-questions.js";
 import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
 import { parseYouTubeId, checkEmbeddable, mountYouTubePlayer } from "../shared/youtube.js";
+import { abrirCompartirTarea } from "../shared/task-share.js";
 
-const _isPinJoin = !!new URLSearchParams(location.search).get("pin");
+const _isPinJoin = !!new URLSearchParams(location.search).get("pin") || !!new URLSearchParams(location.search).get("tarea");
+/* Modo tarea: un estudiante abre el link de su profe (?tarea=ID) y juega solo en su casa contra bots, sin cuenta ni PIN. */
+const TAREA_ID = (()=>{ const sp = new URLSearchParams(location.search); const t = sp.get("tarea"); return t && /^[a-z0-9]{6,24}$/i.test(t) && !sp.get("pin") ? t.toLowerCase() : ""; })();
+let TAREA_DATA = null, TAREA_TITULO = "", TAREA_ERROR = "";
+if(TAREA_ID){
+  try{
+    const _res = await fetch("https://aulagame-ai-questions.aulagame-snlmjjs.workers.dev/task/get?id=" + encodeURIComponent(TAREA_ID));
+    const _j = await _res.json().catch(function(){ return null; });
+    if(!_res.ok || !_j || !_j.ok || _j.game !== "quizlive" || !_j.data || !Array.isArray(_j.data.questions) || !_j.data.questions.length) throw new Error((_j && _j.error) || "No se pudo abrir la tarea. Revisa tu conexión.");
+    TAREA_DATA = _j.data; TAREA_TITULO = _j.title || "";
+  }catch(e){ TAREA_ERROR = e.message || String(e); }
+}
 // Un alumno que entra con ?pin=... no tiene sesión de profesor: no se toca
 // Firestore para ese caso.
 const { saved: SAVED_QUIZLIVE, uid: CURRENT_UID } = _isPinJoin
@@ -1602,7 +1630,92 @@ function localReveal(){
 // cargar la biblioteca desde Firestore. Los módulos no exponen sus funciones
 // en el scope global, así que los atributos onclick/onchange inline del HTML
 // necesitan que se re-expongan explícitamente en `window` para seguir funcionando.
+/* ================= TAREA: ESTUDIANTE SOLO CONTRA BOTS ================= */
+const SOLO={q:[],i:0,score:0,name:'',avatar:'',bots:[],answered:false};
+const BOT_NAMES=['Mostaza','Kétchup','Palta','Tomate','Pebre','Chucrut','Longaniza','Vienesa','Italiano','Crujiente','Dinámico','Mayo'];
+function soloSetup(){
+  document.body.classList.add('tarea');
+  $('#soloInfo').textContent=TAREA_ERROR?TAREA_ERROR:('Tarea'+(TAREA_TITULO?': '+TAREA_TITULO:'')+' · juegas solo, contra bots, con las preguntas de tu profe.');
+  if(TAREA_ERROR){ $('#soloGo').style.display='none'; }
+  else SOLO.q=TAREA_DATA.questions.filter(q=>q.type!=='larga');
+  state.avatar=AVATARS[Math.floor(Math.random()*AVATARS.length)];
+  const ag=$('#soloAvatarGrid');
+  ag.innerHTML=AVATARS.map(a=>`<button class="av${a===state.avatar?' sel':''}" data-av="${a}">${a}</button>`).join('');
+  ag.addEventListener('click',e=>{ const b=e.target.closest('.av'); if(!b) return; state.avatar=b.dataset.av; ag.querySelectorAll('.av').forEach(x=>x.classList.toggle('sel',x===b)); sfx.click(); });
+  go('scr-solo');
+}
+function soloStart(){
+  const nm=sanitizeName($('#soloName').value);
+  if(!nm) return toast('⚠️ Escribe tu nombre');
+  SOLO.name=nm; SOLO.avatar=state.avatar; SOLO.i=0; SOLO.score=0;
+  SOLO.bots=shuffle(BOT_NAMES).slice(0,5).map(n=>({n,a:AVATARS[Math.floor(Math.random()*AVATARS.length)],s:0,skill:.45+Math.random()*.45}));
+  $('#stuName').textContent=SOLO.avatar+' '+SOLO.name; $('#stuScore').textContent='0 pts';
+  go('scr-student'); musicStart('q'); soloRender();
+}
+function soloRender(){
+  const q=SOLO.q[SOLO.i], w=$('#stuBody'); SOLO.answered=false; state.orderSel=[]; state.current=q;
+  let h=`<div class="qheader" style="font-size:1.1rem;padding:14px">${esc(q.text)}</div>
+    ${q.img?'<img class="qimg" style="max-height:26vh" src="'+q.img+'" alt="">':''}
+    ${q.yt?`<button class="btn small azul" style="margin:10px auto 0" onclick="playStudentVideo(this,'${q.yt}',${q.ytStart||0},${q.ytEnd||0})">🎬 Ver video</button>`:''}
+    <div class="row" style="justify-content:space-between;margin:12px 0"><b class="muted">Pregunta ${SOLO.i+1} de ${SOLO.q.length}</b><div class="timer" id="stuTimer" style="width:64px;height:64px;font-size:1.5rem">${q.time}</div></div>`;
+  if(q.type==='quiz') h+='<div class="ans-grid">'+q.options.map((o,i)=>`<button class="ans a${i}" onclick="soloAnswer(${i})"><span class="shape">${SHAPES[i]}</span><span>${esc(o)}</span></button>`).join('')+'</div>';
+  else if(q.type==='vf') h+=`<div class="ans-grid"><button class="ans a3" onclick="soloAnswer(0)"><span class="shape">✔</span><span>Verdadero</span></button><button class="ans a0" onclick="soloAnswer(1)"><span class="shape">✘</span><span>Falso</span></button></div>`;
+  else if(q.type==='orden') h+=`<p class="muted" style="font-weight:800;margin-bottom:8px">Tu orden:</p><div class="order-out" id="orderOut"></div><p class="muted" style="font-weight:800;margin:12px 0 8px">Opciones:</p><div class="order-pool" id="orderPool"></div><div class="row" style="margin-top:14px"><button class="btn small gris" onclick="orderReset()">↺ Reiniciar</button><button class="btn verde grow" id="orderSend" onclick="soloAnswer(null)" disabled>Enviar ✔</button></div>`;
+  else h+=`<input type="text" id="stuText" placeholder="Escribe tu respuesta…" style="font-size:1.2rem" onkeydown="if(event.key==='Enter')soloAnswer(null)"><button class="btn big verde" style="width:100%;margin-top:14px" onclick="soloAnswer(null)">Enviar ✔</button>`;
+  w.innerHTML=h;
+  if(q.type==='orden'){ state.orderPool=shuffle(q.options); orderPaint(); }
+  startTimer(q.time,'#stuTimer',()=>{ if(!SOLO.answered) soloAnswer(undefined); });
+}
+function soloAnswer(v){
+  if(SOLO.answered) return;
+  const q=SOLO.q[SOLO.i]; let val=v;
+  if(v===null){
+    if($('#orderOut')){ if(state.orderPool.length) return toast('⚠️ Ordena todos los elementos'); val=state.orderSel; }
+    else { const t=$('#stuText'); val=t?t.value.trim():''; if(!val) return toast('⚠️ Escribe tu respuesta'); }
+  } else if(v===undefined){ // se acabó el tiempo: si hay algo escrito u ordenado completo, se envía
+    val=null; const t=$('#stuText'); if(t&&t.value.trim()) val=t.value.trim();
+    if($('#orderOut')&&state.orderSel.length&&!state.orderPool.length) val=state.orderSel;
+  }
+  SOLO.answered=true; clearInterval(state.timerH); state.timerH=null;
+  const rem=v===undefined?0:Math.max(0,state.timeLeft);
+  let ok=false;
+  if(val!==null){
+    if(q.type==='quiz'||q.type==='vf') ok=(val===q.correct);
+    else if(q.type==='corta') ok=q.accepted.some(x=>norm(x)===norm(val));
+    else if(q.type==='orden') ok=JSON.stringify(val)===JSON.stringify(q.options);
+  }
+  const pts=ok?Math.round(q.points*(0.5+0.5*Math.max(0,Math.min(1,rem/q.time)))):0;
+  SOLO.score+=pts; $('#stuScore').textContent=SOLO.score+' pts';
+  SOLO.bots.forEach(b=>{ if(Math.random()<b.skill) b.s+=Math.round(q.points*(0.5+0.5*(.15+Math.random()*.7))); });
+  const ans=q.type==='quiz'?q.options[q.correct]:q.type==='vf'?(q.correct===0?'Verdadero':'Falso'):q.type==='corta'?q.accepted[0]:q.options.join(' → ');
+  const all=[{n:SOLO.name,a:SOLO.avatar,s:SOLO.score,me:1},...SOLO.bots].sort((a,b)=>b.s-a.s);
+  const last=SOLO.i+1>=SOLO.q.length;
+  $('#stuBody').innerHTML=`<div class="feedback ${ok?'ok':'bad'}"><h2>${ok?'✅ ¡Correcto!':(val===null?'⏰ ¡Se acabó el tiempo!':'❌ Incorrecto')}</h2><div class="pts">${ok?'+'+pts+' puntos':'+0 puntos'}</div>${ok?'':`<p class="muted" style="font-weight:700;margin-top:6px">Respuesta: ${esc(ans)}</p>`}</div>
+    <div class="ranking" style="margin-top:14px">${all.slice(0,6).map((p,i)=>`<div class="rk"><span class="pos">${i+1}º</span><span class="grow" ${p.me?'style="font-weight:800"':''}>${esc(p.a)} ${esc(p.n)}${p.me?' (tú)':''}</span><span>${p.s} pts</span></div>`).join('')}</div>
+    <button class="btn big verde" style="width:100%;margin-top:16px" onclick="soloNext()">${last?'🏁 Ver resultados':'Siguiente ▶'}</button>`;
+  ok?sfx.ok():sfx.bad();
+}
+function soloNext(){
+  SOLO.i++;
+  if(SOLO.i>=SOLO.q.length){
+    musicStop();
+    const arr=[{n:SOLO.name,a:SOLO.avatar,s:SOLO.score},...SOLO.bots.map(b=>({n:b.n,a:b.a,s:b.s}))].sort((a,b)=>b.s-a.s);
+    renderPodium(arr); sfx.fanfare(); go('scr-podium'); return;
+  }
+  soloRender();
+}
+if(TAREA_ID){ soloSetup(); }
+else {
+  $('#btnShareTask').addEventListener('click', function(){
+    abrirCompartirTarea({
+      game: 'quizlive', defaultTitle: ($('#quizTitle').value || 'QuizLive').trim(), studentPath: '/play/quizlive/',
+      getData: function(){ const qs = state.questions.filter(function(q){ return q.type !== 'larga'; }); return qs.length ? { questions: qs } : null; }
+    });
+  });
+}
+
 Object.assign(window, {
+  soloStart, soloAnswer, soloNext,
   autoSave, cancelLive, clearImg, closeModal, confirmKick, delQ, delQuizLib, dupQuiz, exportExcel,
   go, gradeSet, hostEndQuestion, hostNext, hostStartGame, importExcel, joinGame,
   localNext, localReveal, moveQ, musicStop, newQuiz, openLibrary,
