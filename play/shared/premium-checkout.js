@@ -42,7 +42,7 @@ function cargarSdkPayPal(clientId, currency) {
   return new Promise((resolve, reject) => {
     const s = document.createElement("script");
     s.src = "https://www.paypal.com/sdk/js?client-id=" + encodeURIComponent(clientId) +
-      "&currency=" + encodeURIComponent(currency) + "&intent=capture&components=buttons&disable-funding=credit,paylater";
+      "&currency=" + encodeURIComponent(currency) + "&intent=capture&components=buttons&disable-funding=card,credit,paylater";
     s.onload = () => (window.paypal && window.paypal.Buttons ? resolve(window.paypal) : reject(new Error("PayPal no cargó.")));
     s.onerror = () => reject(new Error("No se pudo cargar PayPal. Revisa tu conexión."));
     document.head.appendChild(s);
@@ -86,7 +86,7 @@ export function abrirCompraPremium(options) {
       </ul>
       <div class="pp-acct" id="pp-acct"></div>
       <button type="button" class="pp-btn pp-btn-mp" id="pp-mp" style="display:none"></button>
-      <div class="pp-or" id="pp-or" style="display:none">o paga en dólares con PayPal</div>
+      <div class="pp-or" id="pp-or" style="display:none">o paga en dólares con tu cuenta PayPal</div>
       <div id="pp-buttons"></div>
       <div class="pp-msg" id="pp-msg"></div>
       <div class="pp-actions">
@@ -133,7 +133,7 @@ export function abrirCompraPremium(options) {
     if (mp) {
       const b = $("pp-mp");
       b.style.display = "block";
-      b.textContent = "Pagar " + fmtCLP(mp.priceCLP) + " con Mercado Pago";
+      b.textContent = "💳 Tarjeta de débito o crédito (Chile) · " + fmtCLP(mp.priceCLP);
       b.onclick = async () => {
         msg("");
         b.disabled = true;
@@ -144,7 +144,7 @@ export function abrirCompraPremium(options) {
           window.location.href = r.url;
         } catch (e) {
           b.disabled = false;
-          b.textContent = "Pagar " + fmtCLP(mp.priceCLP) + " con Mercado Pago";
+          b.textContent = "💳 Tarjeta de débito o crédito (Chile) · " + fmtCLP(mp.priceCLP);
           msg(e.message, "pp-err");
           $("pp-wa").style.display = "inline-block";
         }
