@@ -424,7 +424,9 @@
     background: var(--amarillo); color: var(--tinta-fija); font-weight:800;
     padding:3px 10px; border-radius:20px; font-size:11px; white-space:nowrap; margin-left:4px;
   }
+  button.badge-demo-header:hover{ filter:brightness(1.08); }
   .badge-demo-header{
+    border:none; font-family:inherit; cursor:pointer;
     background: linear-gradient(135deg, var(--amarillo), var(--rosa)); color: var(--tinta-fija); font-weight:800;
     padding:3px 10px; border-radius:20px; font-size:11px; white-space:nowrap; margin-left:4px;
   }
@@ -997,7 +999,7 @@
       <span class="avatar-circle" id="avatar-circle">P</span>
       <span id="avatar-email">Mi cuenta</span>
       <span class="badge-premium-header oculto" id="badge-premium-header">⭐ PREMIUM</span>
-      <span class="badge-demo-header oculto" id="badge-demo-header"></span>
+      <button type="button" class="badge-demo-header oculto" id="badge-demo-header" title="Compra Premium de por vida"></button>
     </button>
     <button class="btn btn-mini oculto" id="btn-salir" type="button" title="Cerrar sesión">⏻</button>
   </div>
@@ -1962,7 +1964,7 @@
 
     document.getElementById("badge-premium-header").classList.toggle("oculto", !(uidActual && estadoActual.plan === "premium"));
     if(uidActual && estadoActual.trialActiva){
-      badgeDemo.textContent = "DEMO · " + (estadoActual.diasRestantes === 1 ? "queda 1 día" : "quedan " + estadoActual.diasRestantes + " días");
+      badgeDemo.textContent = "DEMO · " + (estadoActual.diasRestantes === 1 ? "queda 1 día" : "quedan " + estadoActual.diasRestantes + " días") + " · Comprar";
       badgeDemo.classList.remove("oculto");
     } else {
       badgeDemo.classList.add("oculto");
@@ -1978,7 +1980,7 @@
       planGratuito.classList.add("premium");
       if(estadoActual.trialActiva){
         planTexto.innerHTML = '<span class="badge-premium">🎁 DEMO PREMIUM</span> Tienes juegos ilimitados por ' +
-          (estadoActual.diasRestantes === 1 ? "1 día más" : estadoActual.diasRestantes + " días más") + ". ¡Disfrútala!";
+          (estadoActual.diasRestantes === 1 ? "1 día más" : estadoActual.diasRestantes + " días más") + ". ¿Quieres conservar Premium para siempre? Cómpralo aquí 👉";
       } else {
         planTexto.innerHTML = '<span class="badge-premium">⭐ PREMIUM</span> Tienes juegos ilimitados. ¡Gracias por apoyar AulaGame!';
       }
@@ -2447,7 +2449,7 @@
       }
     });
   }
-  ["plan-gratuito-pagar", "btn-limite-pagar", "anuncio-pagar"].forEach(function(id){
+  ["plan-gratuito-pagar", "btn-limite-pagar", "anuncio-pagar", "badge-demo-header"].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.addEventListener("click", iniciarCompraPremium);
   });
@@ -2493,7 +2495,9 @@
     anuncioPopupYaDecidido = true;
     var yaCerrado = false;
     try{ yaCerrado = sessionStorage.getItem(ANUNCIO_POPUP_STORAGE_KEY) === "1"; }catch(e){}
-    if(yaCerrado || estadoActual.esPremium) return;
+    if(yaCerrado || estadoActual.plan === "premium") return;
+    var bd = document.getElementById("btn-anuncio-popup-demo");
+    if(bd) bd.classList.toggle("oculto", !estadoActual.puedeActivarDemo);
     modalAnuncioPremium.classList.remove("oculto");
   }
 
