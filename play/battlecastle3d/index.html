@@ -1523,6 +1523,7 @@
         }
 
         function nextTurn() {
+            if (gameState.status === "victory") return; // la partida ya terminó: ignora turnos pendientes
             if (checkVictory()) return;
 
             const totalCastles = gameState.castles.length;
@@ -1602,6 +1603,7 @@
 
         function checkVictory() {
             if (ES_TAREA) {
+                if (gameState.status === "victory") return true;
                 const c = gameState.castles;
                 const enemigosCaidos = c[2].destroyed && c[3].destroyed;
                 const yoCaido = c[0].destroyed;
@@ -1889,6 +1891,7 @@
          * K. LANZAMIENTO, COLISIONES Y RESOLUCIÓN DE DAÑOS
          *************************************************************/
         function executeCatapultAttack(targetIndex) {
+            if (gameState.status === "victory") return; // la partida ya terminó
             if (ES_TAREA && gameState.currentTurn === 0 && targetIndex === 1) {
                 logAction('🤝 Ese castillo es tu aliado: elige a uno de los enemigos.', 'warning');
                 return;
