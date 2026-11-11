@@ -1140,7 +1140,17 @@ function sanitizarColgado(d) {
   return words.length ? { words } : null;
 }
 
-const TASK_GAMES = { hotdogrun: sanitizarHotdog, millonario: sanitizarMillonario, colgado: sanitizarColgado };
+/** Memorice: de 2 a 15 imágenes (data URL ya reducidas por el juego) con una palabra opcional. */
+function sanitizarMemorice(d) {
+  const images = (Array.isArray(d && d.images) ? d.images : []).slice(0, 15).map((im) => ({
+    src: String((im && im.src) || ""), label: limpiarTexto(im && im.label, 30),
+  })).filter((im) => im.src.length <= 200000 && /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+\/=]+$/.test(im.src));
+  return images.length >= 2 ? { images } : null;
+}
+
+const TASK_GAMES = { hotdogrun: sanitizarHotdog, millonario: sanitizarMillonario, colgado: sanitizarColgado, memorice: sanitizarMemorice };
+// Tope de tamaño por juego (caracteres del JSON). Firestore admite ~1 MB por documento.
+const TASK_MAX = { hotdogrun: 150000, millonario: 150000, colgado: 150000, memorice: 940000 };
 
 function tareaDocUrl(env, id, query) {
   const projectId = env.FIREBASE_PROJECT_ID || "aulagame-4c019";
@@ -1186,9 +1196,9 @@ async function handleTask(request, env, url, origin, projectId) {
       return json({ ok: false, code: "NOT_PREMIUM", error: "Enviar juegos a estudiantes es una función exclusiva de Premium." }, 403, origin);
     }
     const data = TASK_GAMES[game](body.data);
-    if (!data) return json({ ok: false, error: "No hay contenido válido para enviar: revisa que tengas preguntas o palabras completas (Millonario necesita al menos 3 preguntas)." }, 400, origin);
+    if (!data) return json({ ok: false, error: "No hay contenido válido para enviar: revisa que tengas preguntas, palabras o imágenes completas (Millonario necesita al menos 3 preguntas y Memorice al menos 2 imágenes)." }, 400, origin);
     const serial = JSON.stringify(data);
-    if (serial.length > 150000) return json({ ok: false, error: "El juego es demasiado grande para enviarlo." }, 413, origin);
+    if (serial.length > (TASK_MAX[game] || 150000)) return json({ ok: false, error: game === "memorice" ? "Las imágenes pesan demasiado para enviarlas. Prueba con menos imágenes." : "El juego es demasiado grande para enviarlo." }, 413, origin);
     const title = limpiarTexto(body.title, 80) || "Tarea de AulaGame";
     const bytes = new Uint8Array(10);
     crypto.getRandomValues(bytes);

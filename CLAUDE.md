@@ -70,7 +70,7 @@ es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
   - `tareas/{id}` — copias de juegos que un profe Premium (o en demo) envía a estudiantes (link para jugar solo en
     casa, p. ej. desde Classroom). Solo el Worker la lee y escribe (`POST /task/create`, `GET /task/get?id=`); las reglas
     de Firestore no la exponen. Juegos con esta opción (`TASK_GAMES` en el Worker, cada uno con su validador): `hotdogrun`
-    (`offline.html?tarea=<id>`, contra bots), `millonario` y `colgado` (`index.html?tarea=<id>`, un solo jugador). El estudiante
+    (`offline.html?tarea=<id>`, contra bots), `millonario`, `colgado` y `memorice` (`index.html?tarea=<id>`, un solo jugador). El estudiante
     entra sin cuenta. Botón del profe: `play/shared/task-share.js` (`abrirCompartirTarea`) en Millonario y Colgado.
   - `clasesIngles/{claseId}` — contenido de la intranet de inglés (sin Firebase Auth real ahí).
 - **Realtime Database** — salas en vivo (`salasVivo/{juego}/{sala}/...`): jugadores, equipos,

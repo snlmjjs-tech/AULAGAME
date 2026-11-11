@@ -285,6 +285,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
       <div class="actions" style="margin-top:14px">
         <button class="btn btn-secondary" id="saveSetBtn">💾 Guardar set</button>
         <button class="btn btn-secondary" id="loadSetBtn">📂 Cargar set</button>
+        <button class="btn btn-secondary" id="shareTaskBtn">📚 Enviar a estudiantes</button>
         <input type="file" id="setInput" accept=".json,application/json" style="display:none">
         <span id="aiGenerateBtnContainer" style="display:inline-block;"></span>
       </div>
@@ -369,6 +370,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 <script type="module">
 import { initGameSync, saveGameData, saveGameDataDebounced } from "../shared/game-storage.js";
 import { renderAIButton } from "../shared/ai-questions.js";
+import { abrirCompartirTarea } from "../shared/task-share.js";
 /* ============================================================
    MEMORICE EN CLASE — un solo archivo, sin servidor.
    ============================================================ */
@@ -377,9 +379,23 @@ const TEAM_COLORS = ['#ff6b5e','#38a3d8','#9b6ddf','#7fc94f','#f26fa8','#f28b30'
 const DEFAULT_NAMES = ['Equipo Rojo','Equipo Azul','Equipo Morado','Equipo Verde','Equipo Rosado','Equipo Naranjo'];
 const MAX_IMAGES = 15, MIN_IMAGES = 2, POINTS_PER_PAIR = 10;
 
-const { saved: SAVED_MEMORICE, uid: CURRENT_UID } = await new Promise(function(resolve){
-  initGameSync('memorice', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
-});
+/* Modo tarea: un estudiante abre el link de su profe (?tarea=ID) y juega solo en su casa, sin cuenta ni sala. */
+const TAREA_ID = (()=>{ const t = new URLSearchParams(location.search).get('tarea'); return t && /^[a-z0-9]{6,24}$/i.test(t) ? t.toLowerCase() : ''; })();
+let TAREA_DATA = null, TAREA_TITULO = '', TAREA_ERROR = '';
+if(TAREA_ID){
+  try{
+    const _res = await fetch('https://aulagame-ai-questions.aulagame-snlmjjs.workers.dev/task/get?id=' + encodeURIComponent(TAREA_ID));
+    const _j = await _res.json().catch(function(){ return null; });
+    if(!_res.ok || !_j || !_j.ok || _j.game !== 'memorice' || !_j.data || !Array.isArray(_j.data.images)) throw new Error((_j && _j.error) || 'No se pudo abrir la tarea. Revisa tu conexión.');
+    TAREA_DATA = _j.data; TAREA_TITULO = _j.title || '';
+  }catch(e){ TAREA_ERROR = e.message || String(e); }
+}
+const { saved: SAVED_MEMORICE, uid: CURRENT_UID } = TAREA_ID
+  ? { saved: TAREA_DATA ? { images: TAREA_DATA.images, mode: 'class' } : null, uid: null }
+  : await new Promise(function(resolve){
+      initGameSync('memorice', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
+    });
+if(TAREA_ID) document.documentElement.style.visibility = ''; /* sin sesión de profe: se muestra la página de una vez */
 
 let images = (SAVED_MEMORICE && Array.isArray(SAVED_MEMORICE.images)) ? SAVED_MEMORICE.images : [];              // {src, label}
 let mode = (SAVED_MEMORICE && (SAVED_MEMORICE.mode==='teams'||SAVED_MEMORICE.mode==='class')) ? SAVED_MEMORICE.mode : 'teams';           // 'teams' | 'class'
@@ -600,6 +616,22 @@ const turnBannerEl = document.getElementById('turnBanner');
 const classStatsEl = document.getElementById('classStats');
 
 startBtn.addEventListener('click', startGame);
+if(TAREA_ID){
+  /* Pantalla del estudiante: sin subir imágenes ni elegir modo; juega solo ("toda la clase" = pares e intentos) */
+  document.querySelectorAll('#setupScreen .panel').forEach(function(p){ p.style.display = 'none'; });
+  const _tag = document.querySelector('#setupScreen .tagline');
+  if(_tag) _tag.textContent = TAREA_ERROR ? TAREA_ERROR : ('Tarea' + (TAREA_TITULO ? ': ' + TAREA_TITULO : '') + ' · juegas solo. Encuentra todos los pares con la menor cantidad de intentos.');
+  mode = 'class';
+  startBtn.disabled = !!TAREA_ERROR || images.length < MIN_IMAGES;
+  startBtn.textContent = TAREA_ERROR ? 'No se pudo cargar' : '▶ EMPEZAR JUEGO';
+} else {
+  document.getElementById('shareTaskBtn').addEventListener('click', function(){
+    abrirCompartirTarea({
+      game: 'memorice', defaultTitle: 'Memorice', studentPath: '/play/memorice/',
+      getData: function(){ return images.length >= MIN_IMAGES ? { images: images.map(function(im){ return { src: im.src, label: im.label || '' }; }) } : null; }
+    });
+  });
+}
 document.getElementById('restartBtn').addEventListener('click', ()=>startGame());
 document.getElementById('exitBtn').addEventListener('click', ()=>{
   gameScreen.classList.remove('active');
