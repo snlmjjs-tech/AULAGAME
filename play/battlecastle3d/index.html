@@ -1562,7 +1562,7 @@
             if (ci === 0) return;
             const cur = gameState.castles[ci], me = gameState.castles[0];
             if (cur.destroyed) { nextTurn(); return; }
-            const aliado = ci === 1;
+            const aliado = false; /* 1 contra 1: el Bot Profe es el rival */
             const nombre = `<strong class="text-white">${cur.name}</strong>`;
 
             if (aliado) {
@@ -1593,7 +1593,7 @@
             sound.playCorrect(); gameState.kingMoods[ci] = "correct";
             logAction(`✅ ${nombre} acertó la pregunta #${q.id} (${q.question} → ${q.correct}).`, "success");
             const vivos = i => !gameState.castles[i].destroyed;
-            let objetivos = aliado ? [2, 3].filter(vivos) : [0, 1].filter(vivos);
+            let objetivos = [0].filter(vivos);
             if (!objetivos.length) { updateUI(); setTimeout(nextTurn, 1200); return; }
             let objetivo = objetivos[Math.floor(Math.random() * objetivos.length)];
             if (!aliado && objetivos.includes(0) && Math.random() < 0.55) objetivo = 0;
@@ -1605,17 +1605,17 @@
             if (ES_TAREA) {
                 if (gameState.status === "victory") return true;
                 const c = gameState.castles;
-                const enemigosCaidos = c[2].destroyed && c[3].destroyed;
+                const enemigosCaidos = c[1].destroyed;
                 const yoCaido = c[0].destroyed;
                 if (!enemigosCaidos && !yoCaido) return false;
                 gameState.status = "victory";
                 document.getElementById("screen-victory").classList.remove("hidden");
                 if (enemigosCaidos) {
                     gameState.kingMoods[0] = "victory";
-                    document.getElementById("victory-castle-name").innerText = "¡Tu equipo ganó!";
+                    document.getElementById("victory-castle-name").innerText = "¡Ganaste!";
                     if (window.Arena3D) { window.Arena3D.refresh(gameState); window.Arena3D.playVictory(0); }
                     sound.playFanfare(); triggerConfetti(); createFireworks();
-                    logAction("👑 ¡Tú y tu aliado conquistaron el trono!", "success");
+                    logAction("👑 ¡Destruiste el castillo del Bot Profe y conquistaste el trono!", "success");
                 } else {
                     const h = document.querySelector("#screen-victory h2"); if (h) h.innerText = "DERROTA";
                     document.getElementById("victory-castle-name").innerText = "Tu castillo cayó";
@@ -1892,7 +1892,7 @@
          *************************************************************/
         function executeCatapultAttack(targetIndex) {
             if (gameState.status === "victory") return; // la partida ya terminó
-            if (ES_TAREA && gameState.currentTurn === 0 && targetIndex === 1) {
+            if (false) {
                 logAction('🤝 Ese castillo es tu aliado: elige a uno de los enemigos.', 'warning');
                 return;
             }
@@ -2184,7 +2184,7 @@
         const ES_TAREA = !!TAREA_ID;
         let TAREA_ERROR = "";
         if (ES_TAREA) {
-            setupCastles = ["Tu castillo", "Aliado (bot)", "Enemigo Carmesí (bot)", "Enemigo Azur (bot)"];
+            setupCastles = ["Tu castillo", "Bot Profe"];
             document.documentElement.style.visibility = "";
         }
 
@@ -2209,7 +2209,7 @@
                     if (!res.ok || !j || !j.ok || j.game !== "battlecastle3d" || !j.data || !Array.isArray(j.data.customQuestions) || !j.data.customQuestions.length) throw new Error((j && j.error) || "No se pudo abrir la tarea. Revisa tu conexión.");
                     customQuestions = j.data.customQuestions;
                     const sub = document.querySelector("#screen-setup p.text-xs");
-                    if (sub) sub.innerHTML = (j.title ? "<b>" + String(j.title).replace(/[<>]/g, "") + "</b> · " : "") + "Tú y tu aliado (bot) contra dos castillos enemigos (bots). Responde bien para atacar; ¡destruye a los dos enemigos sin que caiga tu castillo!";
+                    if (sub) sub.innerHTML = (j.title ? "<b>" + String(j.title).replace(/[<>]/g, "") + "</b> · " : "") + "Tú contra el Bot Profe. Responde bien para atacar; ¡destruye su castillo antes de que caiga el tuyo!";
                     updateQuestionCountBadge();
                 } catch (e) {
                     TAREA_ERROR = e.message || String(e);

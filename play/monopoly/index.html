@@ -1802,12 +1802,12 @@ if(ES_ALUMNO){
 } else if(ES_TAREA){
   ["btnEditor","shareTaskBtn","btnBonus"].forEach(function(id){ const e=document.getElementById(id); if(e) e.style.display="none"; });
   const sub = document.querySelector("#titleScreen .subtitle");
-  if(sub) sub.textContent = TAREA_ERROR ? TAREA_ERROR : (TAREA_TITULO ? TAREA_TITULO + " · " : "") + "juegas contra 3 equipos bot · " + TAREA_VUELTAS + " vueltas";
+  if(sub) sub.textContent = TAREA_ERROR ? TAREA_ERROR : (TAREA_TITULO ? TAREA_TITULO + " · " : "") + "juegas contra el Bot Profe · " + TAREA_VUELTAS + " vueltas";
   const go = document.getElementById("btnGoSetup");
   if(TAREA_ERROR){ go.disabled = true; }
   go.onclick = ()=>{
-    SFX.click(); teamCount = 4; showScreen("setupScreen"); buildTeamInputs();
-    ["Tú","Pebre (bot)","Mostaza (bot)","Tomate (bot)"].forEach(function(n,i){ document.getElementById("teamName"+i).value = n; });
+    SFX.click(); teamCount = 2; showScreen("setupScreen"); buildTeamInputs();
+    ["Tú","Bot Profe"].forEach(function(n,i){ document.getElementById("teamName"+i).value = n; });
     document.getElementById("btnStartGame").onclick();
   };
 } else {

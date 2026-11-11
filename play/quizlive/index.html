@@ -1635,7 +1635,7 @@ const SOLO={q:[],i:0,score:0,name:'',avatar:'',bots:[],answered:false};
 const BOT_NAMES=['Mostaza','Kétchup','Palta','Tomate','Pebre','Chucrut','Longaniza','Vienesa','Italiano','Crujiente','Dinámico','Mayo'];
 function soloSetup(){
   document.body.classList.add('tarea');
-  $('#soloInfo').textContent=TAREA_ERROR?TAREA_ERROR:('Tarea'+(TAREA_TITULO?': '+TAREA_TITULO:'')+' · juegas solo, contra bots, con las preguntas de tu profe.');
+  $('#soloInfo').textContent=TAREA_ERROR?TAREA_ERROR:('Tarea'+(TAREA_TITULO?': '+TAREA_TITULO:'')+' · juegas solo, contra el Bot Profe, con las preguntas de tu profe.');
   if(TAREA_ERROR){ $('#soloGo').style.display='none'; }
   else SOLO.q=TAREA_DATA.questions.filter(q=>q.type!=='larga');
   state.avatar=AVATARS[Math.floor(Math.random()*AVATARS.length)];
@@ -1648,7 +1648,7 @@ function soloStart(){
   const nm=sanitizeName($('#soloName').value);
   if(!nm) return toast('⚠️ Escribe tu nombre');
   SOLO.name=nm; SOLO.avatar=state.avatar; SOLO.i=0; SOLO.score=0;
-  SOLO.bots=shuffle(BOT_NAMES).slice(0,5).map(n=>({n,a:AVATARS[Math.floor(Math.random()*AVATARS.length)],s:0,skill:.45+Math.random()*.45}));
+  SOLO.bots=['Bot Profe'].map(n=>({n,a:'🤖',s:0,skill:.6}));
   $('#stuName').textContent=SOLO.avatar+' '+SOLO.name; $('#stuScore').textContent='0 pts';
   go('scr-student'); musicStart('q'); soloRender();
 }

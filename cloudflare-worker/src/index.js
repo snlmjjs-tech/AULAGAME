@@ -1229,14 +1229,15 @@ function sanitizarRobotfight(d) {
 
 function sanitizarEvilgame(d) {
   const src = d && d.questions && typeof d.questions === "object" ? d.questions : {};
-  const questions = {};
+  const questions = {}, answers = {};
+  const srcA = d && d.answers && typeof d.answers === "object" ? d.answers : {};
   let n = 0;
   for (let i = 1; i <= 33; i++) {
     const t = limpiarTexto(src[i], 120);
-    if (t) { questions[i] = t; n++; }
+    if (t) { questions[i] = t; n++; const a = limpiarTexto(srcA[i], 120); if (a) answers[i] = a; }
   }
   if (n < 5) return null;
-  return { questions };
+  return { questions, answers };
 }
 
 function sanitizarMonopoly(d) {

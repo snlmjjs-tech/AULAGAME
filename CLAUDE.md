@@ -79,7 +79,10 @@ es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
     casa, p. ej. desde Classroom). Solo el Worker la lee y escribe (`POST /task/create`, `GET /task/get?id=`); las reglas
     de Firestore no la exponen. Juegos con esta opción (`TASK_GAMES` en el Worker, cada uno con su validador): `hotdogrun`
     (`offline.html?tarea=<id>`, contra bots), `millonario`, `colgado` y `memorice`, `rosco`, `quizlive`, `jeopardy`, `betyouranswer`, `raceboard`, `robotfight`, `evilgame`, `monopoly`, `mathquest` (el alumno juega contra 2 bots con los ajustes del profe) y `battlecastle3d` (Battle Castle: tú + un aliado bot que repara/protege/ataca contra 2 castillos enemigos bot; Monopoly: contra 3 equipos bot, 15 vueltas, tarjetas "?" con autoevaluación; Evil Game: el alumno juega contra 3 equipos bot, preguntas abiertas con autoevaluación; Robot Fight: el alumno pelea contra el robot rival con las preguntas del profe; Race Board: preguntas abiertas, autoevaluación, el alumno corre contra 3 bots que lanzan solos; Bet Your Answer: solo trivia y regalo, contra 3 bots, autoevaluación; `index.html?tarea=<id>`; Jeopardy solo contra 3 bots, el alumno marca "la sabía"/"no la sabía"; QuizLive juega solo contra bots que aparecen en el ranking y no incluye las preguntas de respuesta larga, un solo jugador; el Rosco es de autoevaluación porque solo guarda pistas). El estudiante
-    entra sin cuenta. Botón del profe: `play/shared/task-share.js` (`abrirCompartirTarea`) en Millonario y Colgado.
+    entra sin cuenta. En todos los juegos con bots el alumno juega contra un único **"Bot Profe"** (partidas cortas); la excepción es Hot Dog Run, que
+    sigue con varios bots porque es una carrera. Battle Castle es 1 contra 1 (sin aliado). Evil Game: el estudiante primero toca "Revelar respuesta"
+    y recién ahí marca "La sabía / No la sabía"; el profe puede escribir una respuesta opcional por casilla (`answers`) que se muestra al revelar.
+    Botón del profe: `play/shared/task-share.js` (`abrirCompartirTarea`) en Millonario y Colgado.
   - `clasesIngles/{claseId}` — contenido de la intranet de inglés (sin Firebase Auth real ahí).
 - **Realtime Database** — salas en vivo (`salasVivo/{juego}/{sala}/...`): jugadores, equipos,
   buzz, respuestas, estado de la partida en tiempo real. También `pines/{pin}` para resolver PIN

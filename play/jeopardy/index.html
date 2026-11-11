@@ -877,8 +877,7 @@ document.getElementById("startBtn").addEventListener("click", ()=>{
   if(ES_TAREA){
     const nm = (document.getElementById("soloName").value || "").trim() || "Tú";
     const palette = CATEGORIES.map(function(c){ return c.color; });
-    const bots = BOT_NAMES.slice().sort(function(){ return Math.random() - .5; }).slice(0, 3);
-    teams = [{ name: nm, score: 0, color: palette[0] }].concat(bots.map(function(n, i){ return { name: n + " (bot)", score: 0, color: palette[i+1], skill: .35 + Math.random()*.4 }; }));
+    teams = [{ name: nm, score: 0, color: palette[0] }, { name: "Bot Profe", score: 0, color: palette[1], skill: .5 }];
     currentTeam = 0; usedCells = new Set();
     renderScoreboard(); renderBoard(); showScreen("gameScreen"); sfxSelect();
     return;
@@ -1547,7 +1546,7 @@ if(ES_TAREA){
   ["qrBtn","editorBtn","setupEditorBtn","shareTaskBtn","noAciertaBtn"].forEach(function(id){ const e = document.getElementById(id); if(e) e.style.display = "none"; });
   const _qr = document.getElementById("qrBoxMenu"); if(_qr && _qr.parentElement) _qr.parentElement.style.display = "none";
   const _rules = document.querySelector("#setupScreen .rules-box");
-  if(_rules) _rules.innerHTML = "<h3>🎯 Tarea" + (TAREA_TITULO ? ": " + escapeHtml(TAREA_TITULO) : "") + "</h3><ul><li>Juegas solo contra tres bots, con las preguntas de tu profe.</li><li>Toca una casilla del tablero, lee la pregunta, piensa tu respuesta y presiona <b>Revelar respuesta</b>.</li><li>Dinos si la sabías: si es así, ganas los puntos; si no, un bot puede quedárselos.</li><li>Con <b>🎁 Bonus</b> tienes una pregunta extra al azar.</li></ul>";
+  if(_rules) _rules.innerHTML = "<h3>🎯 Tarea" + (TAREA_TITULO ? ": " + escapeHtml(TAREA_TITULO) : "") + "</h3><ul><li>Juegas solo contra el Bot Profe, con las preguntas de tu profe.</li><li>Toca una casilla del tablero, lee la pregunta, piensa tu respuesta y presiona <b>Revelar respuesta</b>.</li><li>Dinos si la sabías: si es así, ganas los puntos; si no, un bot puede quedárselos.</li><li>Con <b>🎁 Bonus</b> tienes una pregunta extra al azar.</li></ul>";
   const _h = document.querySelector("#setupScreen h2"); if(_h) _h.textContent = TAREA_ERROR ? "No se pudo abrir la tarea" : "¿Cómo te llamas?";
   const _sub = document.querySelector("#setupScreen .sub"); if(_sub) _sub.textContent = TAREA_ERROR || "Escribe tu nombre y empieza a jugar.";
   document.getElementById("teamInputs").innerHTML = TAREA_ERROR ? "" : '<div class="team-input"><label>Tu nombre</label><input type="text" id="soloName" maxlength="20" placeholder="Tu nombre"></div>';

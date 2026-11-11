@@ -803,7 +803,7 @@
     <div class="modal-icon">📱</div>
     <h2>Conecta a tus jugadores</h2>
     <div class="qr-box-wrap"><div id="qrBox"></div></div>
-    <p id="q-sub" style="opacity:.8;">Cada equipo escanea el mismo código y elige su equipo en el celular</p>
+    <p id="qr-sub" style="opacity:.8;">Cada equipo escanea el mismo código y elige su equipo en el celular</p>
     <div id="qrSalaCode" style="font-size:1.6rem; font-weight:800;">------</div>
     <p id="qrLinkCorto" style="font-size:.85rem; opacity:.8;"></p>
     <button class="btn" onclick="cerrarModalQR()">Cerrar</button>
@@ -953,6 +953,7 @@ renderAIButton(document.getElementById('aiGenerateBtnContainer'), {
     const list = (data && Array.isArray(data.questions)) ? data.questions : [];
     if(!list.length) return;
     let i = 0;
+    Object.keys(ANSWERS).forEach(k=>delete ANSWERS[k]);
     CELLS.forEach(c=>{
       if(c.type === 'question' && i < list.length){
         c.q = String(list[i]).trim();
@@ -977,6 +978,11 @@ function teamNamesMap(){
   return map;
 }
 
+const ANSWERS = {};
+(function loadSavedAnswers(){
+  const m = ES_TAREA ? (TAREA_DATA && TAREA_DATA.answers) : (SAVED_EVIL && SAVED_EVIL.answers);
+  if(m && typeof m === 'object') Object.keys(m).forEach(k=>{ if(typeof m[k] === 'string' && m[k].trim()) ANSWERS[k] = m[k].slice(0, 120); });
+})();
 (function loadSavedQuestions(){
   const m = ES_TAREA ? (TAREA_DATA && TAREA_DATA.questions) : (SAVED_EVIL && SAVED_EVIL.questions);
   if(!m || typeof m !== 'object') return;
@@ -1019,6 +1025,11 @@ function buildEditor(){
       inp.dataset.n = c.n;
       inp.placeholder = 'Escribe la pregunta / contenido...';
       row.appendChild(inp);
+      const ai = document.createElement('input');
+      ai.type = 'text'; ai.maxLength = 120; ai.value = ANSWERS[c.n] || ''; ai.dataset.a = c.n;
+      ai.placeholder = 'Respuesta (opcional): se muestra al estudiante al revelar';
+      ai.style.cssText = 'margin-top:6px;font-size:.85em;opacity:.9';
+      row.appendChild(ai);
     } else {
       const fx = document.createElement('div');
       fx.className = 'q-fixed';
@@ -1033,13 +1044,14 @@ function buildEditor(){
 
 function saveQuestions(){
   document.querySelectorAll('#editor-list input').forEach(inp=>{
+    if(inp.dataset.a){ const v = inp.value.trim().slice(0, 120); if(v) ANSWERS[inp.dataset.a] = v; else delete ANSWERS[inp.dataset.a]; return; }
     const n = parseInt(inp.dataset.n);
     const val = inp.value.trim();
     const c = CELLS.find(c=>c.n===n);
     if(c) c.q = val !== '' ? val : DEFAULT_QUESTIONS[n];
   });
   document.getElementById('editor-msg').textContent = '✅ Preguntas aplicadas. Guardando y sincronizando...';
-  saveGameData('evilgame', CURRENT_UID, { questions: questionsMap(), teamNames: teamNamesMap() }).then(function(ok){
+  saveGameData('evilgame', CURRENT_UID, { questions: questionsMap(), answers: ANSWERS, teamNames: teamNamesMap() }).then(function(ok){
     document.getElementById('editor-msg').textContent = ok
       ? '✅ Preguntas guardadas y sincronizadas.'
       : '✅ Preguntas aplicadas para esta sesión (no se pudo sincronizar con la nube).';
@@ -1049,9 +1061,10 @@ function saveQuestions(){
 
 function restoreQuestions(){
   CELLS.forEach(c=>{ if(DEFAULT_QUESTIONS[c.n]!==undefined) c.q = DEFAULT_QUESTIONS[c.n]; });
+  Object.keys(ANSWERS).forEach(k=>delete ANSWERS[k]);
   buildEditor();
   document.getElementById('editor-msg').textContent = '↺ Preguntas originales restauradas. Guardando...';
-  saveGameData('evilgame', CURRENT_UID, { questions: questionsMap(), teamNames: teamNamesMap() }).then(function(ok){
+  saveGameData('evilgame', CURRENT_UID, { questions: questionsMap(), answers: ANSWERS, teamNames: teamNamesMap() }).then(function(ok){
     document.getElementById('editor-msg').textContent = '↺ Preguntas originales restauradas.';
     if(ok) toast('✓ Guardado y sincronizado');
   });
@@ -1293,7 +1306,7 @@ async function importExcel(file){
     }
     buildEditor();
     editorMsg(`✅ ${applied} preguntas importadas desde "${file.name}". Guardando y sincronizando...`);
-    saveGameData('evilgame', CURRENT_UID, { questions: questionsMap(), teamNames: teamNamesMap() }).then(function(ok){
+    saveGameData('evilgame', CURRENT_UID, { questions: questionsMap(), answers: ANSWERS, teamNames: teamNamesMap() }).then(function(ok){
       editorMsg(`✅ ${applied} preguntas importadas desde "${file.name}"` + (ok ? ' y guardadas/sincronizadas.' : ' (no se pudo sincronizar con la nube).'));
       if(ok) toast('✓ Guardado y sincronizado');
     });
@@ -1318,7 +1331,7 @@ function renameTeam(id, val){
   if(!t) return;
   t.name = val.trim() !== '' ? val.trim() : DEFAULT_TEAM_NAMES[id];
   // persist en Firestore (con respaldo local), en silencio
-  saveGameData('evilgame', CURRENT_UID, { questions: questionsMap(), teamNames: teamNamesMap() });
+  saveGameData('evilgame', CURRENT_UID, { questions: questionsMap(), answers: ANSWERS, teamNames: teamNamesMap() });
 }
 loadSavedTeamNames();
 
@@ -1825,6 +1838,7 @@ function showQuestion(c){
     const tq = teams[currentTurn];
     if(tq) limpiarRespuestaEquipo(tq.id);
     document.getElementById('question-modal').classList.add('active');
+    if(ES_TAREA) prepararRevelar(c);
     renderRespuestaModal();
     if(salaActual){
       escribir(refSala('evilgame', salaActual, 'estado/resultado'), null);
@@ -1833,7 +1847,23 @@ function showQuestion(c){
   });
 }
 
+function prepararRevelar(c){
+  /* Modo tarea: primero piensa, luego revela la respuesta y recién ahí se autoevalúa */
+  const ab = document.getElementById('q-buttons-answer'), sub = document.getElementById('q-sub');
+  let rb = document.getElementById('q-reveal');
+  if(!rb){ rb = document.createElement('button'); rb.id = 'q-reveal'; rb.type = 'button'; rb.className = 'btn secondary'; ab.parentNode.insertBefore(rb, ab); }
+  rb.textContent = '👀 Revelar respuesta'; rb.style.display = 'inline-block'; ab.style.display = 'none';
+  sub.textContent = 'Piensa tu respuesta y luego toca «Revelar respuesta».';
+  rb.onclick = ()=>{
+    rb.style.display = 'none';
+    const a = ANSWERS[c.n];
+    sub.textContent = a ? 'Respuesta: ' + a + ' — ¿La sabías?' : 'Esta pregunta es abierta y no tiene una sola respuesta. ¿Tu respuesta estaba bien?';
+    ab.style.display = 'flex';
+  };
+}
+
 function answerQuestion(ok){
+  { const rb = document.getElementById('q-reveal'); if(rb) rb.style.display = 'none'; }
   document.getElementById('question-modal').classList.remove('active');
   { const tq = teams[currentTurn]; if(tq) limpiarRespuestaEquipo(tq.id); }
   renderRespuestaModal();
@@ -2165,9 +2195,9 @@ if(ES_ALUMNO){
     ]
   });
 } else if(ES_TAREA){
-  const nombres = {1:'Tú', 2:'Pebre (bot)', 3:'Mostaza (bot)', 4:'Tomate (bot)'};
+  const nombres = {1:'Tú', 2:'Bot Profe'};
   TEAM_DEFS.forEach(t=>{ if(nombres[t.id]) t.name = nombres[t.id]; });
-  selectedTeams = [1,2,3,4];
+  selectedTeams = [1,2];
   const tb = document.querySelector("#screen-title .title-buttons");
   tb.children[0].setAttribute("onclick", "startGame()");
   tb.children[0].textContent = TAREA_ERROR ? "No se pudo abrir la tarea" : "Jugar ▶";
@@ -2176,7 +2206,7 @@ if(ES_ALUMNO){
   const sh = document.getElementById("shareTaskBtn"); if(sh) sh.style.display = "none";
   const qp = document.getElementById("qrBoxMenu"); if(qp && qp.parentElement) qp.parentElement.style.display = "none";
   const by = document.querySelector("#screen-title .by");
-  if(by) by.textContent = TAREA_ERROR ? TAREA_ERROR : (TAREA_TITULO ? TAREA_TITULO + " · " : "") + "juegas contra 3 equipos bot";
+  if(by) by.textContent = TAREA_ERROR ? TAREA_ERROR : (TAREA_TITULO ? TAREA_TITULO + " · " : "") + "juegas contra el Bot Profe";
   const qb = document.getElementById("qr-btn"); if(qb) qb.style.display = "none";
   const sw = document.querySelector(".dice-mode-switch"); if(sw) sw.style.display = "none";
   const ab = document.querySelectorAll("#q-buttons-answer button");
@@ -2185,7 +2215,7 @@ if(ES_ALUMNO){
   document.getElementById("shareTaskBtn").addEventListener("click", function(){
     abrirCompartirTarea({
       game: "evilgame", defaultTitle: "The Evil Game", studentPath: "/play/evilgame/",
-      getData: function(){ return { questions: questionsMap() }; }
+      getData: function(){ return { questions: questionsMap(), answers: ANSWERS }; }
     });
   });
   iniciarSalaQR();

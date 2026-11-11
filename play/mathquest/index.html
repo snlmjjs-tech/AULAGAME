@@ -534,7 +534,7 @@ function startGame() {
     turn: 0, qIndex: 0, q: null, locked: false, lastText: '',
   };
   if (ES_TAREA) {
-    game.teams = [{ name: settings.names[0] || 'Tú', color: TEAM_COLORS[0] }, { name: 'Pebre (bot)', color: TEAM_COLORS[1] }, { name: 'Tomate (bot)', color: TEAM_COLORS[2] }]
+    game.teams = [{ name: settings.names[0] || 'Tú', color: TEAM_COLORS[0] }, { name: 'Bot Profe', color: TEAM_COLORS[1] }]
       .map(t => ({ ...t, pts: 0, streak: 0, best: 0, ok: 0, tot: 0, byTopic: { fracciones: [0, 0], formulas: [0, 0] } }));
   }
   showScreen('screen-game'); nextQuestion();
@@ -659,7 +659,7 @@ async function arrancarTarea() {
     if (!res.ok || !j || !j.ok || j.game !== 'mathquest' || !j.data) throw new Error((j && j.error) || 'No se pudo abrir la tarea. Revisa tu conexión.');
     loadSettings({ settings: { ...j.data, teamCount: 1 } });
     $('#tareaTitulo').textContent = (j.title || 'MathQuest');
-    $('#tareaInfo').textContent = `${settings.rounds} preguntas · ${settings.topics.map(t => t === 'fracciones' ? 'fracciones' : 'fórmulas').join(' y ')} · juegas contra 2 bots.`;
+    $('#tareaInfo').textContent = `${settings.rounds} preguntas · ${settings.topics.map(t => t === 'fracciones' ? 'fracciones' : 'fórmulas').join(' y ')} · juegas contra el Bot Profe.`;
     play.disabled = false; play.textContent = '▶ ¡JUGAR!';
     play.onclick = () => { const n = $('#tareaNombre').value.trim(); settings.names[0] = n || 'Tú'; startGame(); };
     $('#btnAgain').onclick = startGame;

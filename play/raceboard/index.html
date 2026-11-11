@@ -821,8 +821,8 @@ function renderPlayerCountRow(){
 
 let playerDrafts = [];
 if(ES_TAREA){
-  playerCount = 4;
-  playerDrafts = [{name:'Tú', color:KART_COLORS[0].hex},{name:'Pebre (bot)', color:KART_COLORS[1].hex},{name:'Mostaza (bot)', color:KART_COLORS[2].hex},{name:'Tomate (bot)', color:KART_COLORS[3].hex}];
+  playerCount = 2;
+  playerDrafts = [{name:'Tú', color:KART_COLORS[0].hex},{name:'Bot Profe', color:KART_COLORS[1].hex}];
 }
 function renderPlayerForm(){
   const prev = playerDrafts;
@@ -1986,7 +1986,7 @@ if(ES_ALUMNO){
   document.getElementById("qWrongBtn").textContent = "❌ No la sabía";
   const rb = document.querySelector("#setup-screen .rules-box");
   rb.innerHTML = TAREA_ERROR ? "<h3>⚠ No se pudo abrir la tarea</h3><p>" + TAREA_ERROR.replace(/[<>]/g,"") + "</p>"
-    : "<h3>🏁 " + (TAREA_TITULO ? TAREA_TITULO.replace(/[<>]/g,"") : "¿Cómo se juega?") + "</h3><ul><li>Corres solo contra 3 bots. Lanza el dado y avanza.</li><li>En las casillas de pregunta, piensa tu respuesta y marca si la sabías. Si fallas, retrocedes 2 casillas.</li><li>Las casillas 🐢 dan caparazones para atacar a otros; ⭐ da escudo.</li><li>¡Gana quien llegue primero a la meta!</li></ul>";
+    : "<h3>🏁 " + (TAREA_TITULO ? TAREA_TITULO.replace(/[<>]/g,"") : "¿Cómo se juega?") + "</h3><ul><li>Corres solo contra el Bot Profe. Lanza el dado y avanza.</li><li>En las casillas de pregunta, piensa tu respuesta y marca si la sabías. Si fallas, retrocedes 2 casillas.</li><li>Las casillas 🐢 dan caparazones para atacar a otros; ⭐ da escudo.</li><li>¡Gana quien llegue primero a la meta!</li></ul>";
   if(TAREA_ERROR) document.getElementById("startGameBtn").style.display = "none";
 } else {
   document.getElementById("shareTaskBtn").addEventListener("click", function(){

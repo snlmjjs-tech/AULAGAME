@@ -611,9 +611,7 @@ if(ES_TAREA && TAREA_DATA){
   gameData.questions = TAREA_DATA.questions.map(function(q,i){ return { id:i+1, type:q.type, value:q.value, question:q.question, answer:q.answer, explanation:q.explanation||'', used:false }; });
   gameData.teams = [
     {id:1, name:'Tú', color:'#cf3864', score:0},
-    {id:2, name:'Pebre (bot)', color:'#5a7fe0', score:0, skill:.55},
-    {id:3, name:'Mostaza (bot)', color:'#1f9d6f', score:0, skill:.45},
-    {id:4, name:'Tomate (bot)', color:'#d9711f', score:0, skill:.35},
+    {id:2, name:'Bot Profe', color:'#5a7fe0', score:0, skill:.55},
   ];
 }
 let presentBoxesState = [...gameData.presentBoxes];
@@ -1430,7 +1428,7 @@ if(ES_ALUMNO){
   document.querySelectorAll(".menu-qr-panel,.turn-bar").forEach(function(e){ e.style.display="none"; });
   document.querySelector("#screen-instructions p").innerHTML = TAREA_ERROR
     ? "⚠ " + TAREA_ERROR
-    : (TAREA_TITULO ? "<b>"+TAREA_TITULO.replace(/[<>]/g,"")+"</b><br>" : "") + "Juegas solo contra 3 bots. Elige una casilla, piensa tu respuesta, revísala y dinos si la sabías. Si aciertas ganas el dinero, si fallas lo pierdes. Puedes cambiar tu nombre:";
+    : (TAREA_TITULO ? "<b>"+TAREA_TITULO.replace(/[<>]/g,"")+"</b><br>" : "") + "Juegas solo contra el Bot Profe. Elige una casilla, piensa tu respuesta, revísala y dinos si la sabías. Si aciertas ganas el dinero, si fallas lo pierdes. Puedes cambiar tu nombre:";
   if(TAREA_ERROR) document.getElementById("playBoardBtn").style.display = "none";
   renderTeamSetup();
 } else {
