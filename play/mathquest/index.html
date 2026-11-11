@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script>if(/^(www\.)?aulagames\.teacherseba\.com$/.test(location.hostname)){location.replace("https://aulagame.cl"+location.pathname+location.search+location.hash);}</script>
+<link rel="canonical" href="https://aulagame.cl/play/mathquest/">
+<script>document.documentElement.style.visibility="hidden";</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MathQuest · Fracciones y Fórmulas · AulaGame</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#1b1340; --bg2:#3a1c8c; --bg3:#6a2bd9;
+  --gold:#FFC93C; --gold-d:#E59E00; --pink:#FF4D8D; --pink-d:#C91F62;
+  --mint:#2DD4BF; --mint-d:#0E9F8E; --blue:#4DA3FF; --blue-d:#1F6FD1;
+  --violet:#8B5CF6; --violet-d:#5B35C4;
+  --ok:#22C55E; --no:#EF4444; --ink:#1b1340; --card:#ffffff;
+  --font:'Baloo 2','Segoe UI',system-ui,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:var(--font);color:#fff;font-size:18px;
+  background:radial-gradient(1100px 600px at 15% -10%,var(--bg3),transparent 60%),radial-gradient(900px 600px at 100% 100%,#c026d3 -20%,transparent 55%),linear-gradient(160deg,var(--bg2),var(--bg1));
+  background-attachment:fixed;min-height:100vh;overflow-x:hidden;
+}
+button{font:inherit;color:inherit;cursor:pointer;border:0}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+/* símbolos flotantes de fondo */
+#floaters{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+#floaters span{position:absolute;font-weight:800;color:rgba(255,255,255,.09);animation:flota linear infinite}
+@keyframes flota{from{transform:translateY(110vh) rotate(0)}to{transform:translateY(-20vh) rotate(360deg)}}
+.screen{display:none;position:relative;z-index:1;min-height:100vh;padding:24px 20px 40px;max-width:1080px;margin:0 auto}
+.screen.active{display:block}
+/* ---------- botones ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  background:linear-gradient(180deg,#FFE27A,var(--gold) 55%,var(--gold-d));color:#3a2300;
+  font-weight:800;font-size:22px;padding:14px 34px;border-radius:20px;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.7),0 6px 0 #B77700,0 14px 24px -8px rgba(0,0,0,.5);
+  transition:transform .12s;text-shadow:0 1px 0 rgba(255,255,255,.4)
+}
+.btn:hover{transform:translateY(-2px)} .btn:active{transform:translateY(4px);box-shadow:inset 0 2px 0 rgba(255,255,255,.7),0 2px 0 #B77700}
+.btn.ghost{background:rgba(255,255,255,.14);color:#fff;box-shadow:inset 0 0 0 2px rgba(255,255,255,.3);text-shadow:none;font-size:18px;padding:10px 22px}
+.btn.sm{font-size:16px;padding:8px 18px;border-radius:14px}
+/* ---------- menú ---------- */
+.hero{text-align:center;padding-top:8px}
+.logo{font-size:clamp(44px,9vw,84px);font-weight:800;line-height:.95;margin:6px 0 0;letter-spacing:-.02em;
+  background:linear-gradient(180deg,#fff 10%,var(--gold) 60%,#ff9d2e);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 6px 0 rgba(0,0,0,.28))}
+.logo small{display:block;font-size:.34em;letter-spacing:.14em;color:#fff;-webkit-text-fill-color:#fff;opacity:.9;margin-top:6px;filter:none}
+.mascot{font-size:84px;display:inline-block;animation:rebota 2.4s ease-in-out infinite;filter:drop-shadow(0 8px 6px rgba(0,0,0,.35))}
+@keyframes rebota{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-14px) rotate(4deg)}}
+.panel{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.22);border-radius:26px;padding:22px 24px;margin-top:20px;backdrop-filter:blur(6px);text-align:left}
+.panel h3{margin:0 0 12px;font-size:22px;color:var(--gold)}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.25);border-radius:999px;padding:8px 18px;font-weight:700;font-size:17px;transition:.15s}
+.chip.on{background:var(--gold);color:#3a2300;border-color:#fff;box-shadow:0 4px 0 var(--gold-d)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:720px){.row2{grid-template-columns:1fr}}
+.stepper{display:inline-flex;align-items:center;gap:14px;font-size:26px;font-weight:800}
+.stepper button{width:44px;height:44px;border-radius:14px;background:var(--violet);box-shadow:0 4px 0 var(--violet-d);font-size:26px;font-weight:800}
+.team-in{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.team-in label{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.2);padding:6px 12px;border-radius:14px}
+.team-in .dot{width:16px;height:16px;border-radius:50%}
+.team-in input{background:transparent;border:0;border-bottom:2px solid rgba(255,255,255,.4);color:#fff;font:inherit;font-weight:700;width:150px;padding:2px 4px}
+.hint{opacity:.8;font-size:15px;margin:8px 0 0}
+.switch{display:flex;align-items:center;gap:10px;margin-top:8px;font-weight:700;cursor:pointer}
+.switch input{width:22px;height:22px;accent-color:var(--gold)}
+.actions{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:26px}
+/* ---------- juego ---------- */
+.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.score-row{display:flex;gap:10px;flex-wrap:wrap;flex:1}
+.team{background:rgba(255,255,255,.12);border:2.5px solid transparent;border-radius:18px;padding:6px 16px;min-width:130px;transition:.2s}
+.team.turn{border-color:var(--gold);background:rgba(255,201,60,.22);transform:scale(1.05);box-shadow:0 0 0 4px rgba(255,201,60,.25)}
+.team b{display:block;font-size:15px;opacity:.9;white-space:nowrap}
+.team .pts{font-size:28px;font-weight:800;line-height:1}
+.team .fire{font-size:15px;color:#ffb347;font-weight:800;min-height:20px}
+.round-pill{background:rgba(0,0,0,.25);padding:6px 16px;border-radius:999px;font-weight:700}
+.progress{height:12px;background:rgba(255,255,255,.15);border-radius:99px;margin:14px 0;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--mint),var(--gold),var(--pink));border-radius:99px;transition:width .4s}
+.stage{display:grid;grid-template-columns:140px 1fr;gap:18px;align-items:start}
+@media(max-width:720px){.stage{grid-template-columns:1fr}.mascot-side{display:none}}
+.mascot-side{text-align:center}
+.mascot-side .m{font-size:92px;display:block;animation:rebota 2.4s ease-in-out infinite}
+.bubble{background:#fff;color:var(--ink);border-radius:18px;padding:8px 12px;font-weight:700;font-size:15px;position:relative;margin-top:6px}
+.qcard{background:var(--card);color:var(--ink);border-radius:28px;padding:22px 24px 26px;box-shadow:0 10px 0 rgba(0,0,0,.18),0 24px 40px -14px rgba(0,0,0,.55);position:relative}
+.tag{display:inline-block;font-weight:800;font-size:14px;letter-spacing:.06em;padding:4px 14px;border-radius:99px;color:#fff;margin-bottom:8px}
+.tag.t-fr{background:var(--pink)} .tag.t-fo{background:var(--blue-d)}
+.qtext{font-size:clamp(22px,3.4vw,32px);font-weight:800;line-height:1.25;margin:2px 0 6px}
+.qvisual{display:flex;justify-content:center;gap:26px;flex-wrap:wrap;margin:10px 0;min-height:10px}
+.qvisual svg{max-width:100%;height:auto}
+.chuleta{background:#FFF6D6;border:2px dashed var(--gold-d);color:#6b4a00;border-radius:14px;padding:6px 14px;font-weight:700;font-size:16px;margin:8px 0}
+.timer{height:10px;background:#e5e7f5;border-radius:99px;overflow:hidden;margin:10px 0 4px}
+.timer i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--ok),var(--gold));border-radius:99px;transform-origin:left}
+.timer.low i{background:linear-gradient(90deg,var(--no),#ff8a8a)}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+@media(max-width:560px){.answers{grid-template-columns:1fr}}
+.ans{display:flex;align-items:center;justify-content:center;gap:10px;min-height:76px;border-radius:20px;font-weight:800;font-size:clamp(22px,3vw,30px);color:#fff;position:relative;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.35),0 7px 0 var(--d);background:var(--c);transition:transform .1s,filter .2s}
+.ans:nth-child(1){--c:var(--pink);--d:var(--pink-d)} .ans:nth-child(2){--c:var(--blue);--d:var(--blue-d)}
+.ans:nth-child(3){--c:var(--mint);--d:var(--mint-d)} .ans:nth-child(4){--c:var(--violet);--d:var(--violet-d)}
+.ans:hover:not(:disabled){transform:translateY(-3px)} .ans:active:not(:disabled){transform:translateY(5px)}
+.ans .k{position:absolute;left:12px;top:8px;font-size:13px;opacity:.7}
+.ans:disabled{cursor:default}
+.ans.good{--c:var(--ok);--d:#15803d;animation:salto .5s} .ans.bad{--c:var(--no);--d:#b91c1c;animation:tiembla .4s}
+.ans.dim{filter:grayscale(.7) brightness(.8)}
+@keyframes salto{40%{transform:scale(1.08)}} @keyframes tiembla{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+/* fracciones en HTML */
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 4px;font-weight:800}
+.fr b{padding:0 6px;font-weight:800}
+.fr b:first-child{border-bottom:3px solid currentColor}
+.mx{margin-right:2px}
+.feedback{margin-top:16px;border-radius:20px;padding:14px 18px;font-weight:700;font-size:19px;display:none}
+.feedback.show{display:block;animation:sube .3s}
+.feedback.ok{background:#DCFCE7;color:#14532d} .feedback.no{background:#FEE2E2;color:#7f1d1d}
+.feedback .why{font-weight:600;font-size:17px;margin-top:4px}
+.feedback .btn{margin-top:12px;font-size:20px;padding:10px 28px}
+@keyframes sube{from{opacity:0;transform:translateY(10px)}}
+.float-pts{position:fixed;z-index:60;font-size:44px;font-weight:800;color:var(--gold);text-shadow:0 3px 0 #b77700;pointer-events:none;animation:vuela 1.2s ease-out forwards}
+@keyframes vuela{to{transform:translateY(-120px) scale(1.3);opacity:0}}
+/* ---------- resultados ---------- */
+.podium{display:flex;justify-content:center;align-items:flex-end;gap:14px;margin:26px 0;flex-wrap:wrap}
+.pod{width:150px;border-radius:20px 20px 0 0;text-align:center;padding:12px 8px;background:rgba(255,255,255,.16);border:2px solid rgba(255,255,255,.3)}
+.pod .n{font-size:40px} .pod b{display:block;word-break:break-word} .pod .p{font-size:30px;font-weight:800;color:var(--gold)}
+.pod.p1{height:230px;background:linear-gradient(180deg,rgba(255,201,60,.5),rgba(255,201,60,.15));border-color:var(--gold)}
+.pod.p2{height:190px} .pod.p3{height:160px} .pod.p4{height:140px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.stat{background:rgba(0,0,0,.22);border-radius:16px;padding:12px 16px}
+.stat b{display:block;font-size:26px;color:var(--gold)}
+.confetti{position:fixed;top:-20px;width:10px;height:16px;z-index:70;pointer-events:none;animation:cae linear forwards}
+@keyframes cae{to{transform:translateY(110vh) rotate(720deg)}}
+.mute{position:fixed;right:14px;top:12px;z-index:80;background:rgba(0,0,0,.35);width:46px;height:46px;border-radius:50%;font-size:22px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="floaters" aria-hidden="true"></div>
+<button class="mute" id="mute" title="Sonido" aria-label="Activar o silenciar sonido">🔊</button>
+
+<!-- ================= MENÚ ================= -->
+<section class="screen active" id="screen-menu">
+  <div class="hero">
+    <div class="mascot" aria-hidden="true">🤖</div>
+    <h1 class="logo">MathQuest<small>FRACCIONES Y FÓRMULAS</small></h1>
+  </div>
+
+  <div class="panel">
+    <h3>📚 ¿Qué quieren practicar?</h3>
+    <div class="chips" id="chipTopics">
+      <button class="chip on" data-topic="fracciones" type="button">🍕 Fracciones</button>
+      <button class="chip on" data-topic="formulas" type="button">📐 Fórmulas</button>
+    </div>
+    <div class="row2" style="margin-top:16px">
+      <div>
+        <h3 style="font-size:19px">⭐ Dificultad</h3>
+        <div class="chips" id="chipLevel">
+          <button class="chip" data-v="1" type="button">Fácil</button>
+          <button class="chip on" data-v="2" type="button">Medio</button>
+          <button class="chip" data-v="3" type="button">Difícil</button>
+        </div>
+      </div>
+      <div>
+        <h3 style="font-size:19px">🎯 Preguntas</h3>
+        <div class="chips" id="chipRounds">
+          <button class="chip" data-v="8" type="button">8</button>
+          <button class="chip on" data-v="12" type="button">12</button>
+          <button class="chip" data-v="20" type="button">20</button>
+        </div>
+      </div>
+    </div>
+    <div class="row2" style="margin-top:16px">
+      <div>
+        <h3 style="font-size:19px">⏱️ Tiempo por pregunta</h3>
+        <div class="chips" id="chipTime">
+          <button class="chip" data-v="0" type="button">Sin tiempo</button>
+          <button class="chip on" data-v="30" type="button">30 s</button>
+          <button class="chip" data-v="15" type="button">15 s</button>
+        </div>
+      </div>
+      <div>
+        <h3 style="font-size:19px">💡 Ayuda</h3>
+        <label class="switch"><input type="checkbox" id="chk-chuleta" checked> Mostrar la fórmula en las preguntas de fórmulas</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>👥 ¿Quiénes juegan?</h3>
+    <div class="stepper"><button id="tMinus" type="button" aria-label="Menos equipos">−</button><span id="tCount">3</span><button id="tPlus" type="button" aria-label="Más equipos">+</button><small id="tLabel" style="font-size:16px;font-weight:700;opacity:.85"></small></div>
+    <div class="team-in" id="teamInputs"></div>
+    <p class="hint">Se juega por turnos en una sola pantalla: ideal para proyectar. Con 1 jugador es modo individual.</p>
+  </div>
+
+  <div class="actions">
+    <button class="btn" id="btnPlay" type="button">▶ ¡JUGAR!</button>
+  </div>
+</section>
+
+<!-- ================= JUEGO ================= -->
+<section class="screen" id="screen-game">
+  <div class="topbar">
+    <div class="score-row" id="scoreRow"></div>
+    <div class="round-pill" id="roundPill">Pregunta 1/12</div>
+    <button class="btn ghost sm" id="btnQuit" type="button">🏠 Salir</button>
+  </div>
+  <div class="progress"><i id="progBar"></i></div>
+  <div class="stage">
+    <div class="mascot-side"><span class="m" id="mascot">🤖</span><div class="bubble" id="bubble">¡Vamos!</div></div>
+    <div>
+      <div class="qcard">
+        <span class="tag t-fr" id="qTag">FRACCIONES</span>
+        <div class="qtext" id="qText"></div>
+        <div class="qvisual" id="qVisual"></div>
+        <div class="chuleta" id="qChuleta" hidden></div>
+        <div class="timer" id="timer"><i id="timerBar"></i></div>
+        <div class="answers" id="answers" role="group" aria-label="Alternativas"></div>
+        <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RESULTADOS ================= -->
+<section class="screen" id="screen-end">
+  <div class="hero">
+    <div class="mascot" aria-hidden="true">🏆</div>
+    <h1 class="logo" style="font-size:clamp(36px,7vw,64px)" id="endTitle">¡Fin del juego!</h1>
+  </div>
+  <div class="podium" id="podium"></div>
+  <div class="panel"><h3>📊 Resumen</h3><div class="stats" id="stats"></div></div>
+  <div class="actions">
+    <button class="btn" id="btnAgain" type="button">🔄 Jugar de nuevo</button>
+    <button class="btn ghost" id="btnMenu" type="button">⚙️ Cambiar ajustes</button>
+  </div>
+</section>
+
+<script type="module">
+import { initGameSync, saveGameData } from "../shared/game-storage.js";
+import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
+
+/* ===================================================================
+   GENERADOR DE PREGUNTAS (puro: no toca el DOM)
+=================================================================== */
+/*GEN-START*/
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const gcd = (a, b) => b ? gcd(b, a % b) : Math.abs(a);
+const fr = (n, d) => (d === 1 ? String(n) : `<span class="fr"><b>${n}</b><b>${d}</b></span>`);
+const mixed = (w, n, d) => `<span class="mx">${w}</span>${fr(n, d)}`;
+const NUM = (n, unit) => (unit ? `${n} ${unit}` : String(n));
+
+/* Una opción es {k: clave-única-para-comparar, h: html}. */
+const optNum = (n, unit) => ({ k: 'n' + n, h: NUM(n, unit) });
+const optFr = (n, d) => { const g = gcd(n, d) || 1; return { k: 'f' + (n / g) + '/' + (d / g) + (g === 1 ? '' : '*' + n + '/' + d), h: fr(n, d), v: n / d }; };
+
+/* Arma la pregunta: respuesta correcta + distractores únicos (máx. 4 opciones). */
+function build(o) {
+  const seen = new Set([o.answer.k]);
+  const wrong = [];
+  for (const d of o.distractors) {
+    if (!d || seen.has(d.k)) continue;
+    if (o.answer.v !== undefined && d.v !== undefined && Math.abs(d.v - o.answer.v) < 1e-9) continue; /* equivalente = también correcta */
+    seen.add(d.k); wrong.push(d);
+  }
+  const need = Math.min(3, Math.max(1, o.minWrong || 3));
+  const options = shuffle([o.answer, ...wrong.slice(0, Math.max(need, Math.min(3, wrong.length)))]);
+  return { topic: o.topic, text: o.text, visual: o.visual || '', chuleta: o.chuleta || '', options, correct: o.answer.k, explain: o.explain };
+}
+
+/* ---------- dibujos ---------- */
+function pie(n, d, color) {
+  const R = 58, cx = 64, cy = 64; let s = `<svg width="132" height="132" viewBox="0 0 128 128" role="img" aria-label="${n} de ${d} partes pintadas">`;
+  for (let i = 0; i < d; i++) {
+    const a0 = (i / d) * 2 * Math.PI - Math.PI / 2, a1 = ((i + 1) / d) * 2 * Math.PI - Math.PI / 2;
+    const x0 = cx + R * Math.cos(a0), y0 = cy + R * Math.sin(a0), x1 = cx + R * Math.cos(a1), y1 = cy + R * Math.sin(a1);
+    const large = (a1 - a0) > Math.PI ? 1 : 0;
+    const path = d === 1 ? `<circle cx="${cx}" cy="${cy}" r="${R}"/>` : `<path d="M${cx} ${cy} L${x0.toFixed(1)} ${y0.toFixed(1)} A${R} ${R} 0 ${large} 1 ${x1.toFixed(1)} ${y1.toFixed(1)} Z"/>`;
+    s += `<g fill="${i < n ? color : '#fff'}" stroke="#1b1340" stroke-width="3" stroke-linejoin="round">${path}</g>`;
+  }
+  return s + '</svg>';
+}
+function bar(n, d, color) {
+  const w = 200, h = 36; let s = `<svg width="${w + 4}" height="${h + 4}" viewBox="0 0 ${w + 4} ${h + 4}" role="img" aria-label="${n} de ${d}">`;
+  for (let i = 0; i < d; i++) s += `<rect x="${2 + i * w / d}" y="2" width="${w / d}" height="${h}" fill="${i < n ? color : '#fff'}" stroke="#1b1340" stroke-width="3"/>`;
+  return s + '</svg>';
+}
+function shapeSVG(type, a, b) {
+  const lab = (x, y, t) => `<text x="${x}" y="${y}" font-size="17" font-weight="800" fill="#1b1340" text-anchor="middle" font-family="Baloo 2,sans-serif">${t}</text>`;
+  if (type === 'rect') return `<svg width="220" height="130" viewBox="0 0 220 130"><rect x="30" y="20" width="160" height="80" rx="4" fill="#9ad1ff" stroke="#1b1340" stroke-width="4"/>${lab(110, 118, a + ' cm')}${lab(14, 66, b)}</svg>`;
+  if (type === 'square') return `<svg width="150" height="150" viewBox="0 0 150 150"><rect x="25" y="15" width="100" height="100" rx="4" fill="#ffb3d1" stroke="#1b1340" stroke-width="4"/>${lab(75, 140, a + ' cm')}</svg>`;
+  if (type === 'tri') return `<svg width="230" height="140" viewBox="0 0 230 140"><polygon points="20,110 210,110 150,20" fill="#fde68a" stroke="#1b1340" stroke-width="4"/><line x1="150" y1="20" x2="150" y2="110" stroke="#1b1340" stroke-width="3" stroke-dasharray="6 5"/>${lab(115, 132, 'base ' + a + ' cm')}${lab(190, 70, 'h=' + b)}</svg>`;
+  if (type === 'right') return `<svg width="230" height="150" viewBox="0 0 230 150"><polygon points="30,120 190,120 30,25" fill="#b8f0e6" stroke="#1b1340" stroke-width="4"/><rect x="30" y="105" width="15" height="15" fill="none" stroke="#1b1340" stroke-width="3"/>${lab(110, 142, a)}${lab(14, 78, b)}${lab(130, 62, 'c = ?')}</svg>`;
+  if (type === 'box') return `<svg width="230" height="150" viewBox="0 0 230 150"><polygon points="30,60 150,60 150,125 30,125" fill="#c4b5fd" stroke="#1b1340" stroke-width="4"/><polygon points="30,60 70,25 190,25 150,60" fill="#ddd6fe" stroke="#1b1340" stroke-width="4"/><polygon points="150,60 190,25 190,90 150,125" fill="#a78bfa" stroke="#1b1340" stroke-width="4"/>${lab(90, 145, a[0])}${lab(206, 70, a[1])}${lab(15, 95, a[2])}</svg>`;
+  return '';
+}
+
+/* ---------- FRACCIONES ---------- */
+function qIdentify(L) {
+  const d = pick(L === 1 ? [2, 3, 4, 5, 6] : [4, 5, 6, 8, 10, 12]); const n = rnd(1, d - 1);
+  const vis = pick([() => pie(n, d, '#FF4D8D'), () => bar(n, d, '#4DA3FF')])();
+  return build({ topic: 'fracciones', text: '¿Qué fracción está pintada?', visual: vis, answer: optFr(n, d),
+    distractors: [optFr(d - n, d), optFr(n, d - n || d + 1), optFr(Math.min(d - 1, n + 1), d), optFr(Math.max(1, n - 1), d), optFr(d, n)],
+    explain: `Hay ${d} partes iguales y ${n} están pintadas: ${fr(n, d)}. El denominador cuenta todas las partes y el numerador las pintadas.` });
+}
+function qSimplify(L) {
+  const bases = L === 1 ? [[1, 2], [1, 3], [2, 3], [3, 4], [1, 4]] : L === 2 ? [[2, 3], [3, 4], [3, 5], [2, 5], [5, 6], [3, 8], [5, 8]] : [[5, 7], [4, 9], [7, 9], [5, 12], [7, 12], [8, 11], [3, 7]];
+  const [a, b] = pick(bases); const k = pick(L === 1 ? [2, 3] : L === 2 ? [2, 3, 4, 5] : [4, 6, 8, 9]);
+  const d = [optFr(a + 1, b), optFr(a, b + 1), optFr(b, a)];
+  if (k % 2 === 0 && k > 2) d.unshift(optFr(a * 2, b * 2)); else d.unshift(optFr(a * k, b * k));
+  return build({ topic: 'fracciones', text: `Simplifica la fracción ${fr(a * k, b * k)} hasta que no se pueda más.`, answer: optFr(a, b), distractors: d,
+    explain: `Dividimos arriba y abajo por ${k}: ${a * k} ÷ ${k} = ${a} y ${b * k} ÷ ${k} = ${b}. Queda ${fr(a, b)}, que ya no se puede simplificar.` });
+}
+function qEquivalent(L) {
+  const [a, b] = pick([[1, 2], [2, 3], [3, 4], [1, 3], [3, 5], [2, 5]]); const k = pick(L === 1 ? [2, 3] : [3, 4, 5, 6]);
+  const ans = a * k;
+  return build({ topic: 'fracciones', text: `Completa para que sean equivalentes: ${fr(a, b)} = ${fr('?', b * k)}`, answer: optNum(ans),
+    distractors: [optNum(a + k), optNum(ans + b), optNum(Math.max(1, ans - 1)), optNum(b * k - a)],
+    explain: `Pasamos de ${b} a ${b * k} multiplicando por ${k}; el numerador también se multiplica por ${k}: ${a} × ${k} = ${ans}.` });
+}
+function qCompare(L) {
+  let a, b, c, d;
+  for (let t = 0; t < 50; t++) {
+    if (L === 1) { b = d = pick([4, 5, 6, 8]); a = rnd(1, b - 1); c = rnd(1, b - 1); }
+    else if (L === 2) { a = c = rnd(1, 4); b = rnd(a + 1, 9); d = rnd(a + 1, 9); }
+    else { b = rnd(3, 9); d = rnd(3, 9); a = rnd(1, b - 1); c = rnd(1, d - 1); }
+    if (a * d !== c * b) break;
+  }
+  const first = a * d > c * b;
+  const v = L === 1 ? pie(a, b, '#FF4D8D') + pie(c, d, '#4DA3FF') : '';
+  const opts = [optFr(a, b), optFr(c, d)];
+  const ans = first ? opts[0] : opts[1];
+  const why = L === 1 ? `Tienen el mismo denominador, así que gana la que tiene el numerador más grande: ${fr(first ? a : c, first ? b : d)}.`
+    : L === 2 ? `Tienen el mismo numerador: mientras más grande es el denominador, más pequeñas son las partes. Por eso gana ${fr(first ? a : c, first ? b : d)}.`
+    : `Cruzamos: ${a} × ${d} = ${a * d} y ${c} × ${b} = ${c * b}. Como ${first ? a * d : c * b} es mayor, la fracción mayor es ${fr(first ? a : c, first ? b : d)}.`;
+  return build({ topic: 'fracciones', text: '¿Cuál de estas fracciones es MAYOR?', visual: v, answer: ans, minWrong: 1, distractors: [first ? opts[1] : opts[0]], explain: why });
+}
+function qAdd(L) {
+  const sub = L >= 2 && Math.random() < 0.4;
+  for (let t = 0; t < 80; t++) {
+    let a, b, c, d;
+    if (L === 1) { d = pick([3, 4, 5, 6, 8]); a = rnd(1, d - 1); c = rnd(1, d - 1); b = d; }
+    else if (L === 2) { b = pick([2, 3, 4, 5]); d = b * pick([2, 3]); a = rnd(1, b - 1); c = rnd(1, d - 1); }
+    else { b = pick([2, 3, 4, 5]); d = pick([3, 4, 5, 6, 7].filter(x => x !== b)); a = rnd(1, b - 1); c = rnd(1, d - 1); }
+    const num = sub ? a * d - c * b : a * d + c * b, den = b * d; if (num <= 0) continue;
+    const g = gcd(num, den), rn = num / g, rd = den / g; if (L === 1 && rn / rd > 1.01) continue;
+    const op = sub ? '−' : '+', sgn = sub ? -1 : 1;
+    const ans = optFr(rn, rd);
+    const wrongN = a + sgn * c; const wrongD = (L === 1 ? b : b + d);
+    const dist = [optFr(Math.max(1, wrongN), wrongD), optFr(rn + 1, rd), optFr(Math.max(1, rn - 1), rd), optFr(num, den === rd ? rd + 1 : den)];
+    if (L === 1 && !sub) dist.unshift(optFr(a + c, b + d));
+    const expl = b === d ? `Los denominadores son iguales: ${sub ? 'restamos' : 'sumamos'} los numeradores (${a} ${op} ${c} = ${a + sgn * c}) y dejamos el denominador ${b}.${g > 1 ? ' Luego simplificamos.' : ''}`
+      : `Buscamos un denominador común (${den}): ${fr(a * d, den)} ${op} ${fr(c * b, den)} = ${fr(num, den)}${g > 1 ? ' = ' + fr(rn, rd) : ''}. ¡No se suman los denominadores!`;
+    return build({ topic: 'fracciones', text: `Calcula: ${fr(a, b)} ${op} ${fr(c, d)}`, answer: ans, distractors: dist, explain: expl });
+  }
+  return qIdentify(L);
+}
+function qOfQuantity(L) {
+  const d = pick(L === 1 ? [2, 3, 4, 5] : [3, 4, 5, 6, 8]), n = rnd(1, d - 1), m = rnd(2, L === 1 ? 6 : 9), N = d * m, ans = m * n;
+  return build({ topic: 'fracciones', text: `¿Cuánto es ${fr(n, d)} de ${N}?`, answer: optNum(ans),
+    distractors: [optNum(m), optNum(N - ans), optNum(ans + m), optNum(N * n)],
+    explain: `Primero dividimos ${N} en ${d} partes iguales: ${N} ÷ ${d} = ${m}. Luego tomamos ${n}: ${m} × ${n} = ${ans}.` });
+}
+function qMixed(L) {
+  const d = pick([2, 3, 4, 5]), w = rnd(1, 3), r = rnd(1, d - 1), n = w * d + r;
+  return build({ topic: 'fracciones', text: `Escribe ${fr(n, d)} como número mixto.`, answer: { k: 'm' + w + '/' + r + '/' + d, h: mixed(w, r, d) },
+    distractors: [{ k: 'm' + r + '/' + w + '/' + d, h: mixed(r, w, d) }, { k: 'm' + (w + 1) + '/' + r + '/' + d, h: mixed(w + 1, r, d) }, { k: 'm' + w + '/' + d + '/' + r, h: mixed(w, d, r) }, { k: 'm' + Math.max(1, w - 1) + '/' + r + '/' + d, h: mixed(Math.max(1, w - 1), r, d) }],
+    explain: `${n} ÷ ${d} = ${w} y sobran ${r}. Entonces son ${w} enteros y ${fr(r, d)} más: ${mixed(w, r, d)}.` });
+}
+
+/* ---------- FÓRMULAS ---------- */
+function qArea(L) {
+  const t = pick(L === 1 ? ['rect', 'square'] : ['rect', 'square', 'tri']);
+  if (t === 'rect') { const a = rnd(3, L === 1 ? 9 : 14), b = rnd(2, L === 1 ? 8 : 12); const ans = a * b;
+    return build({ topic: 'formulas', text: `Área del rectángulo de ${a} cm de largo y ${b} cm de ancho.`, visual: shapeSVG('rect', a, b), chuleta: 'Área = largo × ancho', answer: optNum(ans, 'cm²'),
+      distractors: [optNum(2 * (a + b), 'cm²'), optNum(a + b, 'cm²'), optNum(ans / 2 % 1 === 0 ? ans / 2 : ans + a, 'cm²'), optNum(ans + b, 'cm²')], explain: `Área = largo × ancho = ${a} × ${b} = ${ans} cm². (2×(${a}+${b}) sería el perímetro.)` }); }
+  if (t === 'square') { const a = rnd(2, L === 1 ? 9 : 13); const ans = a * a;
+    return build({ topic: 'formulas', text: `Área de un cuadrado de lado ${a} cm.`, visual: shapeSVG('square', a), chuleta: 'Área = lado × lado', answer: optNum(ans, 'cm²'),
+      distractors: [optNum(4 * a, 'cm²'), optNum(2 * a, 'cm²'), optNum(a * a + a, 'cm²'), optNum(a * a - a, 'cm²')], explain: `Área = lado × lado = ${a} × ${a} = ${ans} cm². (4 × ${a} = ${4 * a} sería el perímetro.)` }); }
+  let b = 2 * rnd(2, 8), h = rnd(3, 11); const ans = b * h / 2;
+  return build({ topic: 'formulas', text: `Área de un triángulo de base ${b} cm y altura ${h} cm.`, visual: shapeSVG('tri', b, h), chuleta: 'Área = base × altura ÷ 2', answer: optNum(ans, 'cm²'),
+    distractors: [optNum(b * h, 'cm²'), optNum(b + h, 'cm²'), optNum(ans + h, 'cm²'), optNum(b * h / 4 % 1 === 0 ? b * h / 4 : ans - 1, 'cm²')], explain: `Área = base × altura ÷ 2 = ${b} × ${h} ÷ 2 = ${ans} cm². Si no dividimos entre 2 obtenemos el área de un rectángulo (${b * h}).` });
+}
+function qPerimeter(L) {
+  if (Math.random() < 0.5) { const a = rnd(3, 14), b = rnd(2, 11) + (L > 1 ? 1 : 0); const ans = 2 * (a + b);
+    return build({ topic: 'formulas', text: `Perímetro del rectángulo de ${a} cm × ${b} cm.`, visual: shapeSVG('rect', a, b), chuleta: 'Perímetro = 2 × (largo + ancho)', answer: optNum(ans, 'cm'),
+      distractors: [optNum(a * b, 'cm'), optNum(a + b, 'cm'), optNum(2 * a + b, 'cm'), optNum(ans + 2, 'cm')], explain: `Perímetro = 2 × (${a} + ${b}) = 2 × ${a + b} = ${ans} cm. Es la suma de todos los lados.` }); }
+  const a = rnd(2, 15); const ans = 4 * a;
+  return build({ topic: 'formulas', text: `Perímetro de un cuadrado de lado ${a} cm.`, visual: shapeSVG('square', a), chuleta: 'Perímetro = 4 × lado', answer: optNum(ans, 'cm'),
+    distractors: [optNum(a * a, 'cm'), optNum(2 * a, 'cm'), optNum(3 * a, 'cm'), optNum(ans + a, 'cm')], explain: `Un cuadrado tiene 4 lados iguales: 4 × ${a} = ${ans} cm. (${a} × ${a} = ${a * a} es el área.)` });
+}
+function qPercent(L) {
+  const ps = L === 1 ? [10, 50, 25] : L === 2 ? [10, 20, 25, 50, 75] : [5, 15, 30, 40, 60, 75, 90];
+  const p = pick(ps), step = 100 / gcd(p, 100), N = step * rnd(1, L === 1 ? 4 : 6), ans = N * p / 100;
+  return build({ topic: 'formulas', text: `¿Cuánto es el ${p}% de ${N}?`, chuleta: 'Porcentaje de N = N × % ÷ 100', answer: optNum(ans),
+    distractors: [optNum(N - ans), optNum(ans * 2), optNum(Math.round(ans / 2) || ans + 1), optNum(ans + 10)],
+    explain: `${p}% de ${N} = ${N} × ${p} ÷ 100 = ${ans}. (El ${p}% significa ${p} de cada 100.)` });
+}
+function qEquation(L) {
+  const x = rnd(2, 12); let text, ans = x, expl, dist;
+  if (L === 1) { const b = rnd(2, 15); text = `Resuelve: x + ${b} = ${x + b}`; expl = `Restamos ${b} a ambos lados: x = ${x + b} − ${b} = ${x}.`; dist = [x + b, x + 2 * b, b, Math.max(1, x - 1)]; }
+  else if (L === 2) { const a = rnd(2, 9); text = `Resuelve: ${a}x = ${a * x}`; expl = `Dividimos ambos lados entre ${a}: x = ${a * x} ÷ ${a} = ${x}.`; dist = [a * x, a * x - a, x + a, Math.max(1, x - 1)]; }
+  else { const a = rnd(2, 6), b = rnd(1, 12); text = `Resuelve: ${a}x + ${b} = ${a * x + b}`; expl = `Primero restamos ${b}: ${a}x = ${a * x}. Luego dividimos entre ${a}: x = ${x}.`; dist = [a * x + b - b, (a * x + b) / a % 1 === 0 ? (a * x + b) / a : x + b, x + b, a * x - b > 0 ? a * x - b : x + 2]; }
+  return build({ topic: 'formulas', text, chuleta: 'Lo que hacemos a un lado, lo hacemos al otro', answer: { k: 'x' + ans, h: 'x = ' + ans }, distractors: dist.map(v => ({ k: 'x' + v, h: 'x = ' + v })), explain: expl });
+}
+const TRIPLES = [[3, 4, 5], [6, 8, 10], [5, 12, 13], [9, 12, 15], [8, 15, 17], [7, 24, 25], [12, 16, 20]];
+function qPyth(L) {
+  const [a, b, c] = pick(TRIPLES);
+  if (Math.random() < 0.65) return build({ topic: 'formulas', text: `Un triángulo rectángulo tiene catetos de ${a} y ${b}. ¿Cuánto mide la hipotenusa?`, visual: shapeSVG('right', a, b), chuleta: 'c² = a² + b²', answer: optNum(c),
+    distractors: [optNum(a + b), optNum(a * b), optNum(c + 1), optNum(Math.abs(b - a))], explain: `c² = ${a}² + ${b}² = ${a * a} + ${b * b} = ${c * c}. Entonces c = √${c * c} = ${c}.` });
+  return build({ topic: 'formulas', text: `En un triángulo rectángulo la hipotenusa mide ${c} y un cateto ${a}. ¿Cuánto mide el otro cateto?`, chuleta: 'a² + b² = c²', answer: optNum(b),
+    distractors: [optNum(c - a), optNum(c + a), optNum(b + 1), optNum(Math.max(1, b - 1))], explain: `b² = ${c}² − ${a}² = ${c * c} − ${a * a} = ${b * b}. Entonces b = √${b * b} = ${b}.` });
+}
+function qVolume(L) {
+  const l = rnd(2, L === 1 ? 6 : 9), w = rnd(2, 7), h = rnd(2, 8); const ans = l * w * h;
+  return build({ topic: 'formulas', text: `Volumen de una caja de ${l} cm × ${w} cm × ${h} cm.`, visual: shapeSVG('box', [l + ' cm', w + ' cm', h + ' cm']), chuleta: 'Volumen = largo × ancho × alto', answer: optNum(ans, 'cm³'),
+    distractors: [optNum(l + w + h, 'cm³'), optNum(l * w, 'cm³'), optNum(2 * (l * w + w * h + l * h), 'cm³'), optNum(ans + l, 'cm³')], explain: `Volumen = ${l} × ${w} × ${h} = ${ans} cm³. Es cuántos cubitos de 1 cm caben dentro.` });
+}
+
+const POOL = {
+  fracciones: { 1: [qIdentify, qSimplify, qEquivalent, qCompare, qAdd, qOfQuantity], 2: [qIdentify, qSimplify, qEquivalent, qCompare, qAdd, qOfQuantity, qMixed], 3: [qSimplify, qEquivalent, qCompare, qAdd, qOfQuantity, qMixed] },
+  formulas: { 1: [qArea, qPerimeter, qPercent, qEquation, qVolume], 2: [qArea, qPerimeter, qPercent, qEquation, qVolume], 3: [qArea, qPercent, qEquation, qPyth, qVolume] },
+};
+function makeQuestion(topics, level, avoidText) {
+  for (let t = 0; t < 12; t++) {
+    const topic = pick(topics), gen = pick(POOL[topic][level]); const q = gen(level);
+    if (q.text !== avoidText) return q;
+  }
+  return pick(POOL[pick(topics)][level])(level);
+}
+/*GEN-END*/
+
+/* ===================================================================
+   ESTADO Y AJUSTES
+=================================================================== */
+const $ = s => document.querySelector(s);
+const TEAM_COLORS = ['#FF4D8D', '#4DA3FF', '#2DD4BF', '#FFC93C'];
+const settings = { topics: ['fracciones', 'formulas'], level: 2, rounds: 12, time: 30, chuleta: true, teamCount: 3, names: ['Equipo 1', 'Equipo 2', 'Equipo 3', 'Equipo 4'] };
+let CURRENT_UID = null;
+let game = null; /* {teams, turn, qIndex, q, locked, ...} */
+let timerRef = null;
+
+function loadSettings(saved) {
+  const s = saved && saved.settings; if (!s || typeof s !== 'object') return;
+  if (Array.isArray(s.topics) && s.topics.length) settings.topics = s.topics.filter(t => POOL[t]);
+  if ([1, 2, 3].includes(+s.level)) settings.level = +s.level;
+  if ([8, 12, 20].includes(+s.rounds)) settings.rounds = +s.rounds;
+  if ([0, 15, 30].includes(+s.time)) settings.time = +s.time;
+  if (typeof s.chuleta === 'boolean') settings.chuleta = s.chuleta;
+  if (s.teamCount >= 1 && s.teamCount <= 4) settings.teamCount = +s.teamCount;
+  if (Array.isArray(s.names)) s.names.slice(0, 4).forEach((n, i) => { if (typeof n === 'string' && n.trim()) settings.names[i] = n.trim().slice(0, 18); });
+  if (!settings.topics.length) settings.topics = ['fracciones', 'formulas'];
+}
+
+/* ---------- sonido ---------- */
+let actx = null, muted = false;
+function ac() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { } } if (actx && actx.state === 'suspended') actx.resume(); return actx; }
+function tone(f, t0, dur, type = 'triangle', g = 0.18) {
+  if (muted) return; const c = ac(); if (!c) return;
+  const o = c.createOscillator(), v = c.createGain(); o.type = type; o.frequency.value = f; o.connect(v); v.connect(c.destination);
+  const t = c.currentTime + t0; v.gain.setValueAtTime(0.0001, t); v.gain.exponentialRampToValueAtTime(g, t + 0.02); v.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.start(t); o.stop(t + dur + 0.05);
+}
+const sfx = {
+  click() { tone(660, 0, .07, 'square', .08); },
+  ok() { [523, 659, 784, 1046].forEach((f, i) => tone(f, i * .09, .22)); },
+  no() { tone(220, 0, .22, 'sawtooth', .16); tone(165, .16, .3, 'sawtooth', .16); },
+  tick() { tone(900, 0, .04, 'square', .05); },
+  win() { [523, 659, 784, 1046, 784, 1046, 1318].forEach((f, i) => tone(f, i * .14, .28)); },
+};
+$('#mute').onclick = () => { muted = !muted; $('#mute').textContent = muted ? '🔇' : '🔊'; if (!muted) sfx.click(); };
+
+/* ---------- fondo animado ---------- */
+(function floaters() {
+  const sy = ['½', '¾', '+', '−', '×', '÷', 'π', '√', '%', '=', '⅔', 'x²', '△', '∑', '⅝', '7', '12'];
+  const box = $('#floaters');
+  for (let i = 0; i < 22; i++) {
+    const s = document.createElement('span'); s.textContent = sy[i % sy.length];
+    s.style.left = (Math.random() * 100) + 'vw'; s.style.fontSize = (28 + Math.random() * 70) + 'px';
+    s.style.animationDuration = (16 + Math.random() * 22) + 's'; s.style.animationDelay = (-Math.random() * 30) + 's'; box.appendChild(s);
+  }
+})();
+
+/* ===================================================================
+   MENÚ
+=================================================================== */
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id)); window.scrollTo(0, 0); }
+function paintChips() {
+  document.querySelectorAll('#chipTopics .chip').forEach(c => c.classList.toggle('on', settings.topics.includes(c.dataset.topic)));
+  document.querySelectorAll('#chipLevel .chip').forEach(c => c.classList.toggle('on', +c.dataset.v === settings.level));
+  document.querySelectorAll('#chipRounds .chip').forEach(c => c.classList.toggle('on', +c.dataset.v === settings.rounds));
+  document.querySelectorAll('#chipTime .chip').forEach(c => c.classList.toggle('on', +c.dataset.v === settings.time));
+  $('#chk-chuleta').checked = settings.chuleta;
+  $('#tCount').textContent = settings.teamCount;
+  $('#tLabel').textContent = settings.teamCount === 1 ? 'jugador (individual)' : 'equipos';
+  const box = $('#teamInputs'); box.innerHTML = '';
+  for (let i = 0; i < settings.teamCount; i++) {
+    const lab = document.createElement('label');
+    lab.innerHTML = `<span class="dot" style="background:${TEAM_COLORS[i]}"></span>`;
+    const inp = document.createElement('input'); inp.value = settings.names[i]; inp.maxLength = 18; inp.setAttribute('aria-label', 'Nombre del equipo ' + (i + 1));
+    inp.addEventListener('input', () => { settings.names[i] = inp.value.trim() || ('Equipo ' + (i + 1)); });
+    lab.appendChild(inp); box.appendChild(lab);
+  }
+}
+$('#chipTopics').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return; sfx.click();
+  const t = b.dataset.topic, i = settings.topics.indexOf(t);
+  if (i > -1) { if (settings.topics.length > 1) settings.topics.splice(i, 1); } else settings.topics.push(t);
+  paintChips();
+});
+[['#chipLevel', 'level'], ['#chipRounds', 'rounds'], ['#chipTime', 'time']].forEach(([sel, key]) => {
+  $(sel).addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; sfx.click(); settings[key] = +b.dataset.v; paintChips(); });
+});
+$('#chk-chuleta').addEventListener('change', e => { settings.chuleta = e.target.checked; });
+$('#tMinus').onclick = () => { if (settings.teamCount > 1) { settings.teamCount--; sfx.click(); paintChips(); } };
+$('#tPlus').onclick = () => { if (settings.teamCount < 4) { settings.teamCount++; sfx.click(); paintChips(); } };
+
+/* ===================================================================
+   JUEGO
+=================================================================== */
+function startGame() {
+  ac(); sfx.click();
+  if (CURRENT_UID) saveGameData('mathquest', CURRENT_UID, { settings: { topics: settings.topics, level: settings.level, rounds: settings.rounds, time: settings.time, chuleta: settings.chuleta, teamCount: settings.teamCount, names: settings.names } });
+  game = {
+    teams: Array.from({ length: settings.teamCount }, (_, i) => ({ name: settings.names[i] || 'Equipo ' + (i + 1), color: TEAM_COLORS[i], pts: 0, streak: 0, best: 0, ok: 0, tot: 0, byTopic: { fracciones: [0, 0], formulas: [0, 0] } })),
+    turn: 0, qIndex: 0, q: null, locked: false, lastText: '',
+  };
+  showScreen('screen-game'); nextQuestion();
+}
+function renderScores() {
+  const row = $('#scoreRow'); row.innerHTML = '';
+  game.teams.forEach((t, i) => {
+    const d = document.createElement('div'); d.className = 'team' + (i === game.turn ? ' turn' : ''); d.style.borderColor = i === game.turn ? '' : 'transparent';
+    d.innerHTML = `<b style="color:${t.color}">● ${esc(t.name)}</b><span class="pts">${t.pts}</span><div class="fire">${t.streak >= 2 ? '🔥 racha ×' + t.streak : ''}</div>`; row.appendChild(d);
+  });
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function mascot(face, text) { $('#mascot').textContent = face; $('#bubble').textContent = text; }
+
+function nextQuestion() {
+  if (game.qIndex >= settings.rounds) return endGame();
+  const q = makeQuestion(settings.topics, settings.level, game.lastText); game.q = q; game.lastText = q.text; game.locked = false;
+  game.qIndex++; game.turn = (game.qIndex - 1) % game.teams.length;
+  renderScores();
+  $('#roundPill').textContent = `Pregunta ${game.qIndex}/${settings.rounds}`;
+  $('#progBar').style.width = ((game.qIndex - 1) / settings.rounds * 100) + '%';
+  const tag = $('#qTag'); tag.textContent = q.topic === 'fracciones' ? '🍕 FRACCIONES' : '📐 FÓRMULAS'; tag.className = 'tag ' + (q.topic === 'fracciones' ? 't-fr' : 't-fo');
+  $('#qText').innerHTML = (game.teams.length > 1 ? `<small style="display:block;font-size:.55em;color:${game.teams[game.turn].color};filter:brightness(.8)">Turno de ${esc(game.teams[game.turn].name)}</small>` : '') + q.text;
+  $('#qVisual').innerHTML = q.visual;
+  const ch = $('#qChuleta'); if (settings.chuleta && q.chuleta) { ch.hidden = false; ch.innerHTML = '📌 ' + esc(q.chuleta); } else ch.hidden = true;
+  const box = $('#answers'); box.innerHTML = '';
+  q.options.forEach((o, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'ans'; b.dataset.k = o.k;
+    b.innerHTML = `<span class="k">${i + 1}</span><span>${o.h}</span>`; b.addEventListener('click', () => answer(o.k, b)); box.appendChild(b);
+  });
+  box.className = 'answers'; box.style.gridTemplateColumns = q.options.length === 2 ? '1fr 1fr' : '';
+  const fb = $('#feedback'); fb.className = 'feedback'; fb.innerHTML = '';
+  mascot('🤔', pick(['¡Tú puedes!', 'Piensa con calma…', '¿Cuál será?', '¡A concentrarse!']));
+  startTimer();
+}
+function startTimer() {
+  clearInterval(timerRef); const tm = $('#timer'), bar = $('#timerBar');
+  if (!settings.time) { tm.style.display = 'none'; return; }
+  tm.style.display = ''; tm.classList.remove('low'); bar.style.transition = 'none'; bar.style.transform = 'scaleX(1)';
+  game.t0 = performance.now(); game.limit = settings.time * 1000;
+  timerRef = setInterval(() => {
+    const left = Math.max(0, game.limit - (performance.now() - game.t0)); bar.style.transform = `scaleX(${left / game.limit})`;
+    const low = left < game.limit * 0.3; tm.classList.toggle('low', low); if (low && left > 0 && Math.floor(left / 1000) !== game.lastTick) { game.lastTick = Math.floor(left / 1000); sfx.tick(); }
+    if (left <= 0) { clearInterval(timerRef); answer(null, null); }
+  }, 100);
+}
+function answer(key, btn) {
+  if (game.locked) return; game.locked = true; clearInterval(timerRef);
+  const q = game.q, t = game.teams[game.turn], ok = key === q.correct;
+  t.tot++; t.byTopic[q.topic][1]++;
+  let gain = 0;
+  if (ok) {
+    t.ok++; t.byTopic[q.topic][0]++; t.streak++; t.best = Math.max(t.best, t.streak);
+    const frac = settings.time ? Math.max(0, 1 - (performance.now() - game.t0) / game.limit) : 0.5;
+    gain = 100 + Math.round(frac * 50) + (t.streak >= 2 ? Math.min(100, (t.streak - 1) * 25) : 0); t.pts += gain;
+    sfx.ok(); mascot('🎉', pick(['¡Excelente!', '¡Eres un crack!', '¡Correcto!', '¡Bravo!']));
+    if (btn) floatPoints(btn, '+' + gain);
+  } else { t.streak = 0; sfx.no(); mascot('😅', key === null ? '¡Se acabó el tiempo!' : pick(['¡Casi!', 'Revisemos juntos', 'La próxima sale']));  }
+  document.querySelectorAll('.ans').forEach(b => { b.disabled = true; if (b.dataset.k === q.correct) b.classList.add('good'); else if (b === btn) b.classList.add('bad'); else b.classList.add('dim'); });
+  renderScores();
+  const fb = $('#feedback'); fb.className = 'feedback show ' + (ok ? 'ok' : 'no');
+  fb.innerHTML = `${ok ? '✅ ¡Correcto! +' + gain + ' puntos' : (key === null ? '⏰ Se acabó el tiempo.' : '❌ No era esa.')}<div class="why">${q.explain}</div><button class="btn" id="btnNext" type="button">${game.qIndex >= settings.rounds ? 'Ver resultados 🏆' : 'Siguiente ➜'}</button>`;
+  $('#btnNext').onclick = () => { sfx.click(); nextQuestion(); }; $('#btnNext').focus({ preventScroll: true });
+  if (ok && game.teams.length >= 1) confettiBurst(10);
+}
+function floatPoints(el, text) {
+  const r = el.getBoundingClientRect(); const s = document.createElement('div'); s.className = 'float-pts'; s.textContent = text;
+  s.style.left = (r.left + r.width / 2 - 40) + 'px'; s.style.top = (r.top) + 'px'; document.body.appendChild(s); setTimeout(() => s.remove(), 1300);
+}
+function confettiBurst(n) {
+  const cols = ['#FFC93C', '#FF4D8D', '#2DD4BF', '#4DA3FF', '#8B5CF6'];
+  for (let i = 0; i < n; i++) { const c = document.createElement('div'); c.className = 'confetti'; c.style.left = Math.random() * 100 + 'vw'; c.style.background = cols[i % cols.length]; c.style.animationDuration = (1.8 + Math.random() * 1.8) + 's'; document.body.appendChild(c); setTimeout(() => c.remove(), 3800); }
+}
+document.addEventListener('keydown', e => {
+  if (!game || !$('#screen-game').classList.contains('active')) return;
+  if (e.key === 'Enter' && game.locked && $('#btnNext')) { $('#btnNext').click(); return; }
+  const i = ['1', '2', '3', '4'].indexOf(e.key); if (i > -1 && !game.locked) { const b = document.querySelectorAll('.ans')[i]; if (b) b.click(); }
+});
+
+function endGame() {
+  clearInterval(timerRef); $('#progBar').style.width = '100%'; showScreen('screen-end'); sfx.win(); confettiBurst(90);
+  const ranked = game.teams.slice().sort((a, b) => b.pts - a.pts); const medals = ['🥇', '🥈', '🥉', '4º'];
+  const solo = game.teams.length === 1;
+  $('#endTitle').textContent = solo ? '¡Terminaste!' : '¡Ganó ' + ranked[0].name + '!';
+  $('#podium').innerHTML = (solo ? ranked : [ranked[1], ranked[0], ranked[2], ranked[3]].filter(Boolean)).map(t => {
+    const idx = ranked.indexOf(t); return `<div class="pod p${idx + 1}"><div class="n">${medals[idx]}</div><b style="color:${t.color}">${esc(t.name)}</b><div class="p">${t.pts}</div></div>`;
+  }).join('');
+  const totOk = game.teams.reduce((a, t) => a + t.ok, 0), tot = game.teams.reduce((a, t) => a + t.tot, 0);
+  const bt = k => { const a = game.teams.reduce((s, t) => s + t.byTopic[k][0], 0), b = game.teams.reduce((s, t) => s + t.byTopic[k][1], 0); return b ? Math.round(a / b * 100) + '%' : '—'; };
+  const best = Math.max(...game.teams.map(t => t.best));
+  $('#stats').innerHTML = `<div class="stat"><b>${tot ? Math.round(totOk / tot * 100) : 0}%</b>de aciertos (${totOk}/${tot})</div>
+    <div class="stat"><b>🔥 ${best}</b>mejor racha seguida</div>
+    ${settings.topics.includes('fracciones') ? `<div class="stat"><b>${bt('fracciones')}</b>aciertos en fracciones 🍕</div>` : ''}
+    ${settings.topics.includes('formulas') ? `<div class="stat"><b>${bt('formulas')}</b>aciertos en fórmulas 📐</div>` : ''}`;
+}
+$('#btnPlay').onclick = startGame;
+$('#btnAgain').onclick = startGame;
+$('#btnMenu').onclick = () => { sfx.click(); paintChips(); showScreen('screen-menu'); };
+$('#btnQuit').onclick = () => { if (confirm('¿Salir de la partida actual?')) { clearInterval(timerRef); paintChips(); showScreen('screen-menu'); } };
+
+/* ---------- arranque: sesión de profe + ajustes guardados ---------- */
+initGameSync('mathquest', function (saved, uid) {
+  CURRENT_UID = uid; loadSettings(saved); paintChips();
+  mostrarTutorialSiPrimeraVez('mathquest_profe', {
+    titulo: '¿Cómo se juega? 🤖',
+    pasos: [
+      'Elige el tema (fracciones, fórmulas o ambos), la dificultad y cuántas preguntas habrá.',
+      'Pon los nombres de los equipos (o juega solo). Cada pregunta le toca a un equipo por turnos.',
+      'Responde tocando una alternativa o con las teclas 1 a 4. Mientras más rápido y más racha, más puntos.',
+      'Si alguien falla, la mascota explica el paso a paso. ¡Gana el equipo con más puntos!'
+    ]
+  });
+});
+paintChips();
+</script>
+</body>
+</html>
