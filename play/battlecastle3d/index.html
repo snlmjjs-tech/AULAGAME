@@ -1930,6 +1930,7 @@
             gameState.kingMoods[targetIndex] = "hit";
 
             setTimeout(() => {
+                if (gameState.status === "victory") return; // la partida terminó mientras volaba el proyectil
                 if (target.shield > 0) {
                     target.shield--;
                     sound.playShield();
