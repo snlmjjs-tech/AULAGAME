@@ -641,6 +641,7 @@
   <div class="title-buttons">
     <button class="btn" onclick="goTo('screen-instructions')">Start ▶</button>
     <button class="btn secondary" onclick="openEditor()">✏️ Modificar preguntas</button>
+    <button class="btn secondary" id="shareTaskBtn">📚 Enviar a estudiantes</button>
   </div>
   <div style="margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:6px;">
     <div style="display:flex; align-items:center; gap:8px; font-size:.85rem; opacity:.9;">
@@ -869,11 +870,27 @@ import { refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/l
 import { pintarQR } from "../shared/qr-inline.js";
 import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
 import { renderAIButton } from "../shared/ai-questions.js";
+import { abrirCompartirTarea } from "../shared/task-share.js";
 
 /* ================= MODO QR: alumno vs. profesor ================= */
 const _paramsEvil = new URLSearchParams(location.search);
 const SALA_ALUMNO = _paramsEvil.get("room");
 const ES_ALUMNO = !!SALA_ALUMNO;
+/* Modo tarea: un estudiante abre el link de su profe (?tarea=ID) y juega solo contra 3 equipos bot, sin cuenta ni sala.
+   Las preguntas son abiertas: el estudiante se autoevalúa ("la sabía" / "no la sabía"). */
+const TAREA_ID = (()=>{ const t = _paramsEvil.get("tarea"); return t && /^[a-z0-9]{6,24}$/i.test(t) && !SALA_ALUMNO ? t.toLowerCase() : ""; })();
+const ES_TAREA = !!TAREA_ID;
+let TAREA_DATA = null, TAREA_TITULO = "", TAREA_ERROR = "";
+if(ES_TAREA){
+  try{
+    const _res = await fetch("https://aulagame-ai-questions.aulagame-snlmjjs.workers.dev/task/get?id=" + encodeURIComponent(TAREA_ID));
+    const _j = await _res.json().catch(function(){ return null; });
+    if(!_res.ok || !_j || !_j.ok || _j.game !== "evilgame" || !_j.data || !_j.data.questions || typeof _j.data.questions !== "object") throw new Error((_j && _j.error) || "No se pudo abrir la tarea. Revisa tu conexión.");
+    TAREA_DATA = _j.data; TAREA_TITULO = _j.title || "";
+  }catch(e){ TAREA_ERROR = e.message || String(e); }
+  document.documentElement.style.visibility = "";
+}
+const esBot = t => ES_TAREA && t && t.id > 1;
 
 /* ============ DATA: exact layout extracted from the original .pptm ============ */
 const CELLS = [
@@ -920,7 +937,7 @@ CELLS.forEach(c=>{ if(c.q !== undefined) DEFAULT_QUESTIONS[c.n] = c.q; });
 /* Espera la sesión y carga (si existen) las preguntas/nombres de equipo guardados del profesor en Firestore.
    Un alumno que entra con ?room=... no tiene sesión de profesor: se salta el gate. */
 let SAVED_EVIL = null, CURRENT_UID = null;
-if(!ES_ALUMNO){
+if(!ES_ALUMNO && !ES_TAREA){
   const _r = await new Promise(function(resolve){
     initGameSync('evilgame', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
   });
@@ -961,7 +978,7 @@ function teamNamesMap(){
 }
 
 (function loadSavedQuestions(){
-  const m = SAVED_EVIL && SAVED_EVIL.questions;
+  const m = ES_TAREA ? (TAREA_DATA && TAREA_DATA.questions) : (SAVED_EVIL && SAVED_EVIL.questions);
   if(!m || typeof m !== 'object') return;
   CELLS.forEach(c=>{
     if((c.type==='question'||c.type==='finish') && typeof m[c.n]==='string' && m[c.n].trim()!==''){
@@ -1485,7 +1502,7 @@ function startGame(){
 function resetGame(){
   stopMusic();
   document.getElementById('win-overlay').classList.remove('active');
-  goTo('screen-setup');
+  goTo(ES_TAREA ? 'screen-title' : 'screen-setup');
 }
 
 /* ============ BOARD ============ */
@@ -1793,6 +1810,11 @@ async function afterLandingSecondary(t){
 
 function showQuestion(c){
   return new Promise(resolve=>{
+    if(esBot(teams[currentTurn])){
+      const ok = Math.random() < .6;
+      setTimeout(()=>{ if(ok) sfxCorrect(); else sfxWrong(); resolve(ok); }, 900);
+      return;
+    }
     document.getElementById('q-icon').textContent = '🃏';
     document.getElementById('q-tag').textContent = 'CASILLA ' + c.n;
     document.getElementById('q-text').textContent = c.q;
@@ -1833,6 +1855,10 @@ function endTurn(){
   renderTeams();
   busy = false;
   setControlsEnabled(true);
+  if(esBot(teams[currentTurn])){
+    setControlsEnabled(false);
+    setTimeout(()=>{ if(!gameOver && esBot(teams[currentTurn])) rollDice(); }, 1000);
+  }
 }
 
 /* ============ EVENT OVERLAY ============ */
@@ -1927,7 +1953,7 @@ function finishGame(t){
   stopMusic();
   sfxWin();
   renderTeams();
-  document.getElementById('win-text').textContent = `${t.name} ¡ganó el juego!`;
+  document.getElementById('win-text').textContent = (ES_TAREA && t.id===1) ? '¡Ganaste el juego! 🏆' : `${t.name} ¡ganó el juego!`;
   launchConfetti();
   setTimeout(()=>{ document.getElementById('win-overlay').classList.add('active'); }, 500);
 }
@@ -2138,7 +2164,30 @@ if(ES_ALUMNO){
       '¡Gana el primer equipo que llegue exacto a la casilla 33!'
     ]
   });
+} else if(ES_TAREA){
+  const nombres = {1:'Tú', 2:'Pebre (bot)', 3:'Mostaza (bot)', 4:'Tomate (bot)'};
+  TEAM_DEFS.forEach(t=>{ if(nombres[t.id]) t.name = nombres[t.id]; });
+  selectedTeams = [1,2,3,4];
+  const tb = document.querySelector("#screen-title .title-buttons");
+  tb.children[0].setAttribute("onclick", "startGame()");
+  tb.children[0].textContent = TAREA_ERROR ? "No se pudo abrir la tarea" : "Jugar ▶";
+  if(TAREA_ERROR){ tb.children[0].disabled = true; }
+  tb.children[1].style.display = "none";
+  const sh = document.getElementById("shareTaskBtn"); if(sh) sh.style.display = "none";
+  const qp = document.getElementById("qrBoxMenu"); if(qp && qp.parentElement) qp.parentElement.style.display = "none";
+  const by = document.querySelector("#screen-title .by");
+  if(by) by.textContent = TAREA_ERROR ? TAREA_ERROR : (TAREA_TITULO ? TAREA_TITULO + " · " : "") + "juegas contra 3 equipos bot";
+  const qb = document.getElementById("qr-btn"); if(qb) qb.style.display = "none";
+  const sw = document.querySelector(".dice-mode-switch"); if(sw) sw.style.display = "none";
+  const ab = document.querySelectorAll("#q-buttons-answer button");
+  if(ab[0]) ab[0].textContent = "✅ La sabía"; if(ab[1]) ab[1].textContent = "❌ No la sabía";
 } else {
+  document.getElementById("shareTaskBtn").addEventListener("click", function(){
+    abrirCompartirTarea({
+      game: "evilgame", defaultTitle: "The Evil Game", studentPath: "/play/evilgame/",
+      getData: function(){ return { questions: questionsMap() }; }
+    });
+  });
   iniciarSalaQR();
   mostrarTutorialSiPrimeraVez('evilgame_profe', {
     titulo: '¿Cómo se juega? 😈',

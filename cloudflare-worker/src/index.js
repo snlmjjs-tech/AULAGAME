@@ -1227,7 +1227,19 @@ function sanitizarRobotfight(d) {
   return { questionBank };
 }
 
-const TASK_GAMES = { robotfight: sanitizarRobotfight, raceboard: sanitizarRaceboard, betyouranswer: sanitizarBetyouranswer, jeopardy: sanitizarJeopardy, quizlive: sanitizarQuizlive, hotdogrun: sanitizarHotdog, millonario: sanitizarMillonario, colgado: sanitizarColgado, memorice: sanitizarMemorice, rosco: sanitizarRosco };
+function sanitizarEvilgame(d) {
+  const src = d && d.questions && typeof d.questions === "object" ? d.questions : {};
+  const questions = {};
+  let n = 0;
+  for (let i = 1; i <= 33; i++) {
+    const t = limpiarTexto(src[i], 120);
+    if (t) { questions[i] = t; n++; }
+  }
+  if (n < 5) return null;
+  return { questions };
+}
+
+const TASK_GAMES = { evilgame: sanitizarEvilgame, robotfight: sanitizarRobotfight, raceboard: sanitizarRaceboard, betyouranswer: sanitizarBetyouranswer, jeopardy: sanitizarJeopardy, quizlive: sanitizarQuizlive, hotdogrun: sanitizarHotdog, millonario: sanitizarMillonario, colgado: sanitizarColgado, memorice: sanitizarMemorice, rosco: sanitizarRosco };
 // Tope de tamaño por juego (caracteres del JSON). Firestore admite ~1 MB por documento.
 const TASK_MAX = { hotdogrun: 150000, millonario: 150000, colgado: 150000, memorice: 940000, rosco: 150000, quizlive: 940000, jeopardy: 150000 };
 
