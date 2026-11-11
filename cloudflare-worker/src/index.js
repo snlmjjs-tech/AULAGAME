@@ -1148,9 +1148,18 @@ function sanitizarMemorice(d) {
   return images.length >= 2 ? { images } : null;
 }
 
-const TASK_GAMES = { hotdogrun: sanitizarHotdog, millonario: sanitizarMillonario, colgado: sanitizarColgado, memorice: sanitizarMemorice };
+/** Rosco: hasta 3 roscos (cada uno con las 26 pistas, una por letra). El estudiante se autoevalúa. */
+function sanitizarRosco(d) {
+  const sets = (Array.isArray(d && d.sets) ? d.sets : []).slice(0, 3).map((arr) => {
+    const a = Array.isArray(arr) ? arr : [];
+    return Array.from({ length: 26 }, (_, i) => limpiarTexto(a[i], 160));
+  }).filter((a) => a.filter(Boolean).length >= 10);
+  return sets.length ? { sets } : null;
+}
+
+const TASK_GAMES = { hotdogrun: sanitizarHotdog, millonario: sanitizarMillonario, colgado: sanitizarColgado, memorice: sanitizarMemorice, rosco: sanitizarRosco };
 // Tope de tamaño por juego (caracteres del JSON). Firestore admite ~1 MB por documento.
-const TASK_MAX = { hotdogrun: 150000, millonario: 150000, colgado: 150000, memorice: 940000 };
+const TASK_MAX = { hotdogrun: 150000, millonario: 150000, colgado: 150000, memorice: 940000, rosco: 150000 };
 
 function tareaDocUrl(env, id, query) {
   const projectId = env.FIREBASE_PROJECT_ID || "aulagame-4c019";

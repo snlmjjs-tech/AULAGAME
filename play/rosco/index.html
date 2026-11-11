@@ -631,6 +631,7 @@
     .util-btns{ flex-direction:row; top:auto; bottom:3vh; right:3vw; }
     .util-btn{ width:40px; height:40px; font-size:16px; }
   }
+  body.tarea #switchCol{ display:none !important; }
 </style>
 </head>
 <body>
@@ -660,6 +661,7 @@
   <button class="play-btn" id="playBtn">PLAY</button>
   <button class="edit-btn" id="qrBtn">📱 CONECTAR CELULARES</button>
   <button class="edit-btn" id="editBtn">✏️ MODIFICAR PREGUNTAS</button>
+  <button class="edit-btn" id="shareTaskBtn">📚 ENVIAR A ESTUDIANTES</button>
   <div class="subtitle">Cada equipo tiene su propio rosco. Usa ✓ / ✗ para responder, y PASO cuando no sepan: pasa el turno al siguiente equipo y detiene el tiempo hasta que confirmen que están listos. Gana quien complete el rosco en menos tiempo.</div>
 </div>
 
@@ -827,11 +829,25 @@
 import { initGameSync, saveGameData, saveGameDataDebounced, toast } from "../shared/game-storage.js";
 import { crearSala, refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
 import { renderAIButton } from "../shared/ai-questions.js";
+import { abrirCompartirTarea } from "../shared/task-share.js";
 
 /* ================= MODO QR: alumno vs. profesor ================= */
 const _paramsRosco = new URLSearchParams(location.search);
 const SALA_ALUMNO = _paramsRosco.get("room");
 const ES_ALUMNO = !!SALA_ALUMNO;
+/* Modo tarea: un estudiante abre el link de su profe (?tarea=ID) y juega solo en su casa, sin cuenta ni sala.
+   Se autoevalúa: ✓ "la sabía" / ✗ "no la sabía" (el Rosco solo guarda las pistas, no las respuestas). */
+const TAREA_ID = (()=>{ const t = _paramsRosco.get("tarea"); return t && /^[a-z0-9]{6,24}$/i.test(t) && !SALA_ALUMNO ? t.toLowerCase() : ""; })();
+const ES_TAREA = !!TAREA_ID;
+let TAREA_SETS = null, TAREA_TITULO = "", TAREA_ERROR = "";
+if(ES_TAREA){
+  try{
+    const _res = await fetch("https://aulagame-ai-questions.aulagame-snlmjjs.workers.dev/task/get?id=" + encodeURIComponent(TAREA_ID));
+    const _j = await _res.json().catch(function(){ return null; });
+    if(!_res.ok || !_j || !_j.ok || _j.game !== "rosco" || !_j.data || !Array.isArray(_j.data.sets) || !_j.data.sets.length) throw new Error((_j && _j.error) || "No se pudo abrir la tarea. Revisa tu conexión.");
+    TAREA_SETS = _j.data.sets; TAREA_TITULO = _j.title || "";
+  }catch(e){ TAREA_ERROR = e.message || String(e); }
+}
 
 /* ================= DATA ================= */
 /* Vocabulario fácil de inglés. Cada respuesta empieza con la letra correspondiente. */
@@ -879,7 +895,9 @@ let activeTeamCount = MAX_TEAMS;
    Un alumno que entra con ?room=... no tiene sesión de profesor: se salta el gate de
    login por completo y su vista de pistas llega por Realtime Database, no Firestore. */
 let SAVED_ROSCO = null, CURRENT_UID = null;
-if(!ES_ALUMNO){
+if(ES_TAREA){
+  document.documentElement.style.visibility = ""; /* sin sesión de profe: se muestra la página de una vez */
+} else if(!ES_ALUMNO){
   const _r = await new Promise(function(resolve){
     initGameSync('rosco', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
   });
@@ -925,10 +943,14 @@ function activeTeamCountFromSaved(saved){
   return (n>=MIN_TEAMS && n<=MAX_TEAMS) ? n : null;
 }
 activeTeamCount = activeTeamCountFromSaved(SAVED_ROSCO) || MAX_TEAMS;
+if(ES_TAREA && TAREA_SETS){
+  TEAM_CLUES = Array.from({length:MAX_TEAMS}, function(_,i){ return LETTERS.map(function(_l,j){ const set = TAREA_SETS[i] || TAREA_SETS[0]; return set[j] || DEFAULT_CLUES[j]; }); });
+  activeTeamCount = 1;
+}
 /* Guarda (con debounce) la cantidad activa junto con las preguntas de los 3 equipos:
    saveGameData reemplaza el documento completo, asi que siempre van juntas. */
 function persistTeamSetup(){
-  if(ES_ALUMNO) return;
+  if(ES_ALUMNO || ES_TAREA) return;
   saveGameDataDebounced('rosco', CURRENT_UID, { teamClues: teamCluesToSaveShape(TEAM_CLUES), activeTeamCount: activeTeamCount }, 500);
 }
 const TOTAL_TIME = 240; // seconds (4 min) per team
@@ -1868,6 +1890,36 @@ function initStudentView(){
 
 if(ES_ALUMNO){
   initStudentView();
+} else if(ES_TAREA){
+  document.body.classList.add('tarea');
+  ['qrBtn','editBtn','shareTaskBtn'].forEach(function(id){ const e = document.getElementById(id); if(e) e.style.display = 'none'; });
+  const _sub = document.querySelector('#title-screen .subtitle');
+  if(_sub) _sub.innerHTML = TAREA_ERROR ? TAREA_ERROR : ('Tarea' + (TAREA_TITULO ? ': <b>' + TAREA_TITULO.replace(/[<>&]/g,'') + '</b>' : '') + ' · juegas solo. Lee la pista de cada letra, piensa la respuesta y toca <b>✓</b> si la sabías o <b>✗</b> si no. Con <b>PASO</b> saltas la letra y vuelve más tarde.');
+  const _playBtn = document.getElementById('playBtn');
+  teamsSetupEl.innerHTML = '';
+  if(TAREA_ERROR){ _playBtn.style.display = 'none'; }
+  else if(TAREA_SETS.length > 1){
+    const _wrap = document.createElement('div'); _wrap.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:6px 0';
+    TAREA_SETS.forEach(function(set, k){
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'edit-btn'; b.textContent = 'ROSCO ' + (k+1);
+      b.addEventListener('click', function(){
+        TEAM_CLUES[0] = LETTERS.map(function(_l,j){ return set[j] || DEFAULT_CLUES[j]; });
+        _wrap.querySelectorAll('button').forEach(function(x){ x.style.outline = ''; }); b.style.outline = '3px solid #ffd45e';
+        _playBtn.style.display = '';
+      });
+      _wrap.appendChild(b);
+    });
+    teamsSetupEl.appendChild(_wrap);
+    _playBtn.style.display = 'none';
+  }
+  rebuildPregameTeams();
+} else {
+  document.getElementById('shareTaskBtn').addEventListener('click', function(){
+    abrirCompartirTarea({
+      game: 'rosco', defaultTitle: 'Rosco de palabras', studentPath: '/play/rosco/',
+      getData: function(){ const seen = {}, sets = []; TEAM_CLUES.slice(0, activeTeamCount).forEach(function(a){ const k = JSON.stringify(a); if(!seen[k]){ seen[k] = 1; sets.push(a.slice()); } }); return { sets: sets }; }
+    });
+  });
 }
 </script>
 </body>
