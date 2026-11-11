@@ -957,6 +957,7 @@ renderAIButton(document.getElementById('aiGenerateBtnContainer'), {
     CELLS.forEach(c=>{
       if(c.type === 'question' && i < list.length){
         c.q = String(list[i]).trim();
+        { const a = data && Array.isArray(data.answers) ? data.answers[i] : ''; if(typeof a === 'string' && a.trim()) ANSWERS[c.n] = a.trim().slice(0, 120); }
         i++;
       }
     });

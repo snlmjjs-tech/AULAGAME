@@ -467,6 +467,8 @@
   .ctrl-btn:active{ transform:translateY(4px); box-shadow:0 0 0 rgba(0,0,0,.3);}
   .ctrl-btn.correct-btn{ background:#fff; color:var(--green-dark);}
   .ctrl-btn.wrong-btn{ background:#fff; color:var(--red-dark);}
+  .ctrl-btn.reveal-btn{ background:#fff3cf; color:#7a5400; width:auto; padding:0 18px; font-size:15px; font-weight:800; }
+  .ctrl-btn.off{ opacity:.3; pointer-events:none; filter:grayscale(.7); }
 
   /* ---------- END MODAL ---------- */
   @keyframes roscoOverlayIn{ from{opacity:0;} to{opacity:1;} }
@@ -703,6 +705,7 @@
       <div class="center-clue" id="centerClue">Pulsa PLAY para comenzar</div>
       <div class="center-respuesta" id="centerRespuesta"></div>
       <div class="center-controls">
+        <div class="ctrl-btn reveal-btn" id="revealBtn" style="display:none" title="Revelar respuesta">👁 Revelar</div>
         <div class="ctrl-btn correct-btn" id="correctBtn">✓</div>
         <div class="ctrl-btn wrong-btn" id="wrongBtn">✗</div>
       </div>
@@ -839,13 +842,13 @@ const ES_ALUMNO = !!SALA_ALUMNO;
    Se autoevalúa: ✓ "la sabía" / ✗ "no la sabía" (el Rosco solo guarda las pistas, no las respuestas). */
 const TAREA_ID = (()=>{ const t = _paramsRosco.get("tarea"); return t && /^[a-z0-9]{6,24}$/i.test(t) && !SALA_ALUMNO ? t.toLowerCase() : ""; })();
 const ES_TAREA = !!TAREA_ID;
-let TAREA_SETS = null, TAREA_TITULO = "", TAREA_ERROR = "";
+let TAREA_SETS = null, TAREA_ANS = null, TAREA_TITULO = "", TAREA_ERROR = "";
 if(ES_TAREA){
   try{
     const _res = await fetch("https://aulagame-ai-questions.aulagame-snlmjjs.workers.dev/task/get?id=" + encodeURIComponent(TAREA_ID));
     const _j = await _res.json().catch(function(){ return null; });
     if(!_res.ok || !_j || !_j.ok || _j.game !== "rosco" || !_j.data || !Array.isArray(_j.data.sets) || !_j.data.sets.length) throw new Error((_j && _j.error) || "No se pudo abrir la tarea. Revisa tu conexión.");
-    TAREA_SETS = _j.data.sets; TAREA_TITULO = _j.title || "";
+    TAREA_SETS = _j.data.sets; TAREA_ANS = Array.isArray(_j.data.answers) ? _j.data.answers : []; TAREA_TITULO = _j.title || "";
   }catch(e){ TAREA_ERROR = e.message || String(e); }
 }
 
@@ -907,6 +910,7 @@ if(ES_TAREA){
     onGenerated(data){
       if(!data || !Array.isArray(data.clues) || data.clues.length !== 26) return;
       draftClues[editingTeamIdx] = data.clues.slice();
+      draftAns[editingTeamIdx] = LETTERS.map(function(_,i){ return (Array.isArray(data.answers) && typeof data.answers[i]==='string') ? data.answers[i].trim().slice(0,60) : ''; });
       buildEditList(editingTeamIdx);
       toast('✨ Pistas generadas. Revísalas y guarda cuando estés conforme.');
     }
@@ -935,6 +939,17 @@ function teamCluesToSaveShape(teamClues){
 
 /* Cada equipo tiene su propio set de 26 preguntas, editable de forma independiente. */
 let TEAM_CLUES = teamCluesFromSaved(SAVED_ROSCO) || Array.from({length:MAX_TEAMS}, ()=> DEFAULT_CLUES.slice());
+/* Respuestas opcionales (la palabra de cada letra), con la misma forma que TEAM_CLUES: el estudiante las ve al revelar. */
+function teamAnsFromSaved(saved){
+  const src = saved && saved.teamAnswers, out = [];
+  for(let t=0;t<MAX_TEAMS;t++){
+    const arr = src && (src[t] || src[String(t)]);
+    out.push(LETTERS.map(function(_,i){ return (Array.isArray(arr) && typeof arr[i]==='string') ? arr[i] : ''; }));
+  }
+  return out;
+}
+let TEAM_ANS = teamAnsFromSaved(SAVED_ROSCO);
+const teamAnsToSaveShape = a => { const o = {}; a.forEach(function(arr,i){ o[i] = arr.slice(); }); return o; };
 
 /* Restaura la cantidad de equipos que el profe eligio la ultima vez (1-3). */
 function activeTeamCountFromSaved(saved){
@@ -945,13 +960,14 @@ function activeTeamCountFromSaved(saved){
 activeTeamCount = activeTeamCountFromSaved(SAVED_ROSCO) || MAX_TEAMS;
 if(ES_TAREA && TAREA_SETS){
   TEAM_CLUES = Array.from({length:MAX_TEAMS}, function(_,i){ return LETTERS.map(function(_l,j){ const set = TAREA_SETS[i] || TAREA_SETS[0]; return set[j] || DEFAULT_CLUES[j]; }); });
+  TEAM_ANS = Array.from({length:MAX_TEAMS}, function(_,i){ const a = (TAREA_ANS && (TAREA_ANS[i] || TAREA_ANS[0])) || []; return LETTERS.map(function(_l,j){ return a[j] || ''; }); });
   activeTeamCount = 1;
 }
 /* Guarda (con debounce) la cantidad activa junto con las preguntas de los 3 equipos:
    saveGameData reemplaza el documento completo, asi que siempre van juntas. */
 function persistTeamSetup(){
   if(ES_ALUMNO || ES_TAREA) return;
-  saveGameDataDebounced('rosco', CURRENT_UID, { teamClues: teamCluesToSaveShape(TEAM_CLUES), activeTeamCount: activeTeamCount }, 500);
+  saveGameDataDebounced('rosco', CURRENT_UID, { teamClues: teamCluesToSaveShape(TEAM_CLUES), teamAnswers: teamAnsToSaveShape(TEAM_ANS), activeTeamCount: activeTeamCount }, 500);
 }
 const TOTAL_TIME = 240; // seconds (4 min) per team
 
@@ -1226,7 +1242,7 @@ function spawnConfetti(){
 }
 
 /* ================= EDIT QUESTIONS (per team) ================= */
-let draftClues = null;   // working copy while the modal is open: [ [26 clues team0], [26 clues team1], ... ]
+let draftClues = null, draftAns = null;   // working copy while the modal is open: [ [26 clues team0], [26 clues team1], ... ]
 let editingTeamIdx = 0;
 
 function buildEditList(teamIdx){
@@ -1234,9 +1250,10 @@ function buildEditList(teamIdx){
   LETTERS.forEach((ch,i)=>{
     const row = document.createElement('div');
     row.className = 'edit-row';
-    row.innerHTML = `<div class="edit-letter">${ch}</div><input class="edit-input" data-idx="${i}" maxlength="120" value="">`;
+    row.innerHTML = `<div class="edit-letter">${ch}</div><input class="edit-input" data-idx="${i}" maxlength="120" value="" placeholder="Pista"><input class="edit-input edit-ans" data-idx="${i}" maxlength="60" value="" placeholder="Respuesta" style="max-width:170px">`;
     editList.appendChild(row);
     row.querySelector('.edit-input').value = draftClues[teamIdx][i];
+    row.querySelector('.edit-ans').value = draftAns[teamIdx][i] || '';
   });
 }
 function saveInputsToDraft(teamIdx){
@@ -1244,7 +1261,8 @@ function saveInputsToDraft(teamIdx){
   inputs.forEach(inp=>{
     const idx = parseInt(inp.dataset.idx,10);
     const val = inp.value.trim();
-    if(val) draftClues[teamIdx][idx] = val;
+    if(inp.classList.contains('edit-ans')) draftAns[teamIdx][idx] = val;
+    else if(val) draftClues[teamIdx][idx] = val;
   });
 }
 function switchEditTab(teamIdx){
@@ -1256,6 +1274,7 @@ function switchEditTab(teamIdx){
 }
 function openEditModal(){
   draftClues = TEAM_CLUES.map(arr=>arr.slice());
+  draftAns = TEAM_ANS.map(arr=>arr.slice());
   editingTeamIdx = 0;
   /* Solo se muestran las pestañas de los equipos activos (activeTeamCount, elegido
      en la pantalla de inicio); las preguntas de los equipos inactivos quedan
@@ -1268,17 +1287,18 @@ function openEditModal(){
   buildEditList(0);
   editModal.classList.remove('hidden');
 }
-function closeEditModal(){ editModal.classList.add('hidden'); draftClues = null; }
+function closeEditModal(){ editModal.classList.add('hidden'); draftClues = null; draftAns = null; }
 function resetQuestionsToDefault(){
   draftClues[editingTeamIdx] = DEFAULT_CLUES.slice();
+  draftAns[editingTeamIdx] = LETTERS.map(()=>'');
   buildEditList(editingTeamIdx);
 }
 function exportQuestions(){
   if(typeof XLSX === 'undefined'){ alert('No se pudo cargar el componente de Excel. Revisa tu conexión a internet e inténtalo de nuevo.'); return; }
   saveInputsToDraft(editingTeamIdx);
-  const data = LETTERS.map((ch,i)=>({ Letra: ch, Pista: draftClues[editingTeamIdx][i] }));
+  const data = LETTERS.map((ch,i)=>({ Letra: ch, Pista: draftClues[editingTeamIdx][i], Respuesta: draftAns[editingTeamIdx][i] || '' }));
   const ws = XLSX.utils.json_to_sheet(data);
-  ws['!cols'] = [{wch:8},{wch:80}];
+  ws['!cols'] = [{wch:8},{wch:80},{wch:30}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Preguntas');
   const teamLabel = getTeamSetupName(editingTeamIdx).replace(/[^a-zA-Z0-9]+/g,'_');
@@ -1297,11 +1317,13 @@ function importQuestionsFromFile(file){
       rows.forEach(row=>{
         const letraKey = Object.keys(row).find(k=> k.trim().toLowerCase()==='letra');
         const pistaKey = Object.keys(row).find(k=> k.trim().toLowerCase()==='pista');
+        const respKey = Object.keys(row).find(k=> k.trim().toLowerCase()==='respuesta');
         if(!letraKey || !pistaKey) return;
         const letra = String(row[letraKey]).trim().toUpperCase();
         const pista = String(row[pistaKey]).trim();
         const idx = LETTERS.findIndex(ch=> ch === letra);
         if(idx>-1 && pista) draftClues[editingTeamIdx][idx] = pista;
+        if(idx>-1 && respKey && String(row[respKey]).trim()) draftAns[editingTeamIdx][idx] = String(row[respKey]).trim().slice(0,60);
       });
       buildEditList(editingTeamIdx);
     }catch(err){
@@ -1353,6 +1375,18 @@ function renderRosco(){
   document.getElementById('centerRespuesta').textContent = (resp && resp.texto)
     ? ('📱 ' + (resp.jugadorNombre || 'Un alumno') + ': "' + resp.texto + '"')
     : '';
+  if(ES_TAREA) pintarRevelar();
+}
+
+/* Modo tarea: primero piensa, luego revela la respuesta y recién ahí marca ✓ o ✗ */
+let rosRevealed = -1;
+function pintarRevelar(){
+  const team = teams[activeTeam], rb = document.getElementById('revealBtn'), cb = document.getElementById('correctBtn'), wb = document.getElementById('wrongBtn'), box = document.getElementById('centerRespuesta');
+  if(gameOver || !team || team.finished || !team.queue.length){ rb.style.display = 'none'; cb.classList.remove('off'); wb.classList.remove('off'); return; }
+  const cur = team.queue[0], shown = rosRevealed === cur;
+  rb.style.display = shown ? 'none' : '';
+  cb.classList.toggle('off', !shown); wb.classList.toggle('off', !shown);
+  box.textContent = shown ? ('Respuesta: ' + ((TEAM_ANS[activeTeam] && TEAM_ANS[activeTeam][cur]) || 'no hay una respuesta guardada para esta pista') + ' — ¿La sabías?') : 'Piensa tu respuesta y toca «Revelar».';
 }
 
 function render(){
@@ -1631,8 +1665,9 @@ document.getElementById('confirmStartBtn').addEventListener('click', ()=>{
 document.getElementById('pauseBtn').addEventListener('click', togglePause);
 document.getElementById('exitBtn').addEventListener('click', exitToMenu);
 
-document.getElementById('correctBtn').addEventListener('click', ()=> advance('correct'));
-document.getElementById('wrongBtn').addEventListener('click', ()=> advance('wrong'));
+document.getElementById('revealBtn').addEventListener('click', ()=>{ const t = teams[activeTeam]; if(t && t.queue.length){ rosRevealed = t.queue[0]; render(); } });
+document.getElementById('correctBtn').addEventListener('click', ()=>{ if(ES_TAREA && rosRevealed !== (teams[activeTeam].queue[0])) return; rosRevealed = -1; advance('correct'); });
+document.getElementById('wrongBtn').addEventListener('click', ()=>{ if(ES_TAREA && rosRevealed !== (teams[activeTeam].queue[0])) return; rosRevealed = -1; advance('wrong'); });
 document.getElementById('pasaBtn').addEventListener('click', triggerPassToNextTeam);
 document.getElementById('switchTeamBtn').addEventListener('click', ()=> switchTeam());
 document.getElementById('confirmPassBtn').addEventListener('click', confirmPassContinue);
@@ -1641,8 +1676,9 @@ document.getElementById('editBtn').addEventListener('click', openEditModal);
 document.getElementById('saveQuestionsBtn').addEventListener('click', ()=>{
   saveInputsToDraft(editingTeamIdx);
   TEAM_CLUES = draftClues.map(arr=>arr.slice());
+  TEAM_ANS = draftAns.map(arr=>arr.slice());
   closeEditModal();
-  saveGameData('rosco', CURRENT_UID, { teamClues: teamCluesToSaveShape(TEAM_CLUES), activeTeamCount: activeTeamCount }).then(function(ok){
+  saveGameData('rosco', CURRENT_UID, { teamClues: teamCluesToSaveShape(TEAM_CLUES), teamAnswers: teamAnsToSaveShape(TEAM_ANS), activeTeamCount: activeTeamCount }).then(function(ok){
     if(ok) toast('✓ Preguntas guardadas y sincronizadas');
   });
 });
@@ -1904,6 +1940,7 @@ if(ES_ALUMNO){
       const b = document.createElement('button'); b.type = 'button'; b.className = 'edit-btn'; b.textContent = 'ROSCO ' + (k+1);
       b.addEventListener('click', function(){
         TEAM_CLUES[0] = LETTERS.map(function(_l,j){ return set[j] || DEFAULT_CLUES[j]; });
+        TEAM_ANS[0] = LETTERS.map(function(_l,j){ const a = (TAREA_ANS && TAREA_ANS[k]) || []; return a[j] || ''; });
         _wrap.querySelectorAll('button').forEach(function(x){ x.style.outline = ''; }); b.style.outline = '3px solid #ffd45e';
         _playBtn.style.display = '';
       });
@@ -1917,7 +1954,7 @@ if(ES_ALUMNO){
   document.getElementById('shareTaskBtn').addEventListener('click', function(){
     abrirCompartirTarea({
       game: 'rosco', defaultTitle: 'Rosco de palabras', studentPath: '/play/rosco/',
-      getData: function(){ const seen = {}, sets = []; TEAM_CLUES.slice(0, activeTeamCount).forEach(function(a){ const k = JSON.stringify(a); if(!seen[k]){ seen[k] = 1; sets.push(a.slice()); } }); return { sets: sets }; }
+      getData: function(){ const seen = {}, sets = [], answers = []; TEAM_CLUES.slice(0, activeTeamCount).forEach(function(a, t){ const k = JSON.stringify([a, TEAM_ANS[t]]); if(!seen[k]){ seen[k] = 1; sets.push(a.slice()); answers.push(TEAM_ANS[t].slice()); } }); return { sets: sets, answers: answers }; }
     });
   });
 }

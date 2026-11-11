@@ -569,8 +569,10 @@
     <div id="qBonusBanner" class="hidden" style="background:#fff3cf; border:2px dashed #e0ac00; border-radius:12px; padding:8px; font-weight:800; margin-bottom:10px; color:#946f00;">🐢 ¡Casilla Bonus! Responde bien y ganas un caparazón</div>
     <span class="cat-badge" style="background:var(--blue);">❓ Pregunta</span>
     <div id="qText" class="question-text">Pregunta</div>
-    <p style="font-size:13px; color:#666; margin-top:-10px;">El profesor decide si la respuesta oral del estudiante fue correcta.</p>
-    <div class="btnrow">
+    <p id="qNote" style="font-size:13px; color:#666; margin-top:-10px;">El profesor decide si la respuesta oral del estudiante fue correcta.</p>
+    <div id="qAnswer" class="hidden" style="background:#e9fbe9;border:2px solid #7ccf7c;border-radius:12px;padding:10px 14px;margin:6px 0 12px;font-weight:800;color:#1d5d1d"></div>
+    <button class="btn-ghost" id="qRevealBtn" style="display:none;margin:0 auto 12px">👀 Revelar respuesta</button>
+    <div class="btnrow" id="qBtnRow">
       <button class="btn-green" id="qCorrectBtn">✅ Correcto</button>
       <button class="btn-red" id="qWrongBtn">❌ Incorrecto</button>
     </div>
@@ -624,12 +626,13 @@
       <input type="file" id="importExcelInput" accept=".xlsx,.xls" class="hidden">
       <span id="aiGenerateBtnContainer" style="display:inline-block;"></span>
     </div>
-    <p style="font-size:12px; color:#888; margin-top:-10px;">El Excel debe tener una pregunta por fila, en la primera columna (puedes usar el botón "Exportar" para obtener una plantilla con tus preguntas actuales).</p>
+    <p style="font-size:12px; color:#888; margin-top:-10px;">El Excel debe tener una pregunta por fila en la primera columna y, si quieres, su respuesta en la segunda (puedes usar el botón "Exportar" para obtener una plantilla con tus preguntas actuales).</p>
 
     <div class="qedit-list" id="qeditList"></div>
     <h3 style="font-size:15px;">➕ Agregar pregunta</h3>
     <div class="add-row">
       <input type="text" id="newQText" placeholder="Escribe la nueva pregunta...">
+      <input type="text" id="newAText" placeholder="Respuesta (opcional)">
       <button class="btn-green small" id="addQBtn">Agregar</button>
     </div>
     <div class="btnrow" style="margin-top:18px;">
@@ -755,7 +758,8 @@ if(!ES_ALUMNO && !ES_TAREA){
     onGenerated(data){
       const items=(data&&Array.isArray(data.questions))?data.questions:[];
       if(!items.length) return;
-      items.forEach(q=>{ if(typeof q==='string' && q.trim()) questions.push(q); });
+      const ans=(data&&Array.isArray(data.answers))?data.answers:[];
+      items.forEach((q,i)=>{ if(typeof q==='string' && q.trim()){ questions.push(q); answers.push(typeof ans[i]==='string'?ans[i].trim():''); } });
       renderEditorList();
       toast('✨ '+items.length+' pregunta'+(items.length===1?'':'s')+' generada'+(items.length===1?'':'s')+' — revísalas y presiona "Guardar y cerrar"');
     }
@@ -765,6 +769,10 @@ if(!ES_ALUMNO && !ES_TAREA){
 let questions = (ES_TAREA && TAREA_DATA) ? TAREA_DATA.questions.slice() : (SAVED_RACE && Array.isArray(SAVED_RACE.questions) && SAVED_RACE.questions.length)
   ? SAVED_RACE.questions
   : JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
+/* respuestas opcionales (una por pregunta, en el mismo orden): el estudiante las ve al revelar */
+let answers = (ES_TAREA && TAREA_DATA && Array.isArray(TAREA_DATA.answers)) ? TAREA_DATA.answers.slice() : ((SAVED_RACE && Array.isArray(SAVED_RACE.answers)) ? SAVED_RACE.answers.map(String) : []);
+while(answers.length < questions.length) answers.push('');
+answers.length = questions.length;
 let tileMeta = buildTileMeta();
 
 let state = {
@@ -777,7 +785,7 @@ let salaActual = null; // código de sala en vivo (null = modo QR no activado)
 
 /* ================= QUESTION STORAGE ================= */
 function saveQuestions(){
-  saveGameData('raceboard', CURRENT_UID, { questions: questions }).then(function(ok){
+  saveGameData('raceboard', CURRENT_UID, { questions: questions, answers: answers }).then(function(ok){
     if(ok) toast('✓ Guardado y sincronizado');
   });
 }
@@ -1353,17 +1361,30 @@ let isShellQuestion = false;
 function askQuestion(isShell){
   isShellQuestion = !!isShell;
   const bank = questions.length ? questions : ['(No hay preguntas todavía. ¡Agrega algunas en el editor!)'];
-  const q = bank[Math.floor(Math.random()*bank.length)];
+  const qi = Math.floor(Math.random()*bank.length), q = bank[qi];
   if(esBot(state.players[state.currentIndex])){
     setTimeout(()=>document.getElementById(Math.random() < .6 ? 'qCorrectBtn' : 'qWrongBtn').click(), 900);
     return;
   }
   document.getElementById('qText').textContent = q;
+  if(ES_TAREA) prepararRevelar(questions.length ? answers[qi] : '');
   document.getElementById('qBonusBanner').classList.toggle('hidden', !isShellQuestion);
   document.getElementById('questionOverlay').classList.remove('hidden');
   if(salaActual) escribir(refSala('raceboard', salaActual, 'estado/preguntaAsignada'), { texto: q, esCaparazon: !!isShellQuestion });
 }
 
+/* Modo tarea: primero piensa, luego revela la respuesta y recién ahí marca si la sabía */
+function prepararRevelar(ans){
+  const rb = document.getElementById('qRevealBtn'), row = document.getElementById('qBtnRow'), box = document.getElementById('qAnswer');
+  document.getElementById('qNote').textContent = 'Piensa tu respuesta y luego toca «Revelar respuesta».';
+  box.classList.add('hidden'); box.textContent = ''; row.style.display = 'none'; rb.style.display = 'block';
+  rb.onclick = () => {
+    rb.style.display = 'none';
+    box.textContent = ans ? 'Respuesta: ' + ans : 'Esta pregunta es abierta y no tiene una sola respuesta.';
+    box.classList.remove('hidden'); row.style.display = '';
+    document.getElementById('qNote').textContent = '¿La sabías?';
+  };
+}
 document.getElementById('qCorrectBtn').onclick = () => {
   document.getElementById('questionOverlay').classList.add('hidden');
   const player = state.players[state.currentIndex];
@@ -1644,7 +1665,10 @@ function renderEditorList(){
     const row = document.createElement('div');
     row.className='qedit-row';
     row.innerHTML = `
-      <input type="text" value="${escapeHtml(q)}" data-idx="${idx}" class="qedit-input">
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px;min-width:0">
+        <input type="text" value="${escapeHtml(q)}" data-idx="${idx}" class="qedit-input" placeholder="Pregunta">
+        <input type="text" value="${escapeHtml(answers[idx]||'')}" data-idx="${idx}" class="qedit-ans" placeholder="Respuesta (recomendado: así el estudiante aprende al revelarla)" style="font-size:.85em">
+      </div>
       <button class="del-btn" data-idx="${idx}">✕</button>
     `;
     list.appendChild(row);
@@ -1654,10 +1678,13 @@ function renderEditorList(){
       questions[e.target.dataset.idx] = e.target.value;
     });
   });
+  list.querySelectorAll('.qedit-ans').forEach(inp => {
+    inp.addEventListener('input', e => { answers[e.target.dataset.idx] = e.target.value; });
+  });
   list.querySelectorAll('.del-btn').forEach(btn => {
     btn.addEventListener('click', e => {
       const idx = e.target.dataset.idx;
-      questions.splice(idx,1);
+      questions.splice(idx,1); answers.splice(idx,1);
       renderEditorList();
     });
   });
@@ -1665,13 +1692,13 @@ function renderEditorList(){
 document.getElementById('addQBtn').onclick = () => {
   const txt = document.getElementById('newQText').value.trim();
   if(!txt) return;
-  questions.push(txt);
-  document.getElementById('newQText').value = '';
+  questions.push(txt); answers.push((document.getElementById('newAText').value || '').trim());
+  document.getElementById('newQText').value = ''; document.getElementById('newAText').value = '';
   renderEditorList();
 };
 document.getElementById('restoreDefaultsBtn').onclick = () => {
   showConfirm('¿Restaurar todas las preguntas por defecto? Se perderán tus cambios.', () => {
-    questions = JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
+    questions = JSON.parse(JSON.stringify(DEFAULT_QUESTIONS)); answers = questions.map(()=>'');
     renderEditorList();
   });
 };
@@ -1682,9 +1709,9 @@ document.getElementById('exportExcelBtn').onclick = () => {
     showToast('⚠️ No se pudo cargar la librería de Excel. Revisa tu conexión a internet.');
     return;
   }
-  const wsData = [['Pregunta'], ...questions.map(q => [q])];
+  const wsData = [['Pregunta','Respuesta'], ...questions.map((q,i) => [q, answers[i]||''])];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
-  ws['!cols'] = [{wch:80}];
+  ws['!cols'] = [{wch:80},{wch:50}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Preguntas');
   XLSX.writeFile(wb, 'preguntas-kart-race.xlsx');
@@ -1711,14 +1738,15 @@ document.getElementById('importExcelInput').addEventListener('change', (e) => {
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, {header:1});
 
-      let imported = rows
-        .map(r => (r && r[0] !== undefined && r[0] !== null) ? String(r[0]).trim() : '')
-        .filter(v => v.length > 0);
+      let pairs = rows
+        .map(r => [(r && r[0] !== undefined && r[0] !== null) ? String(r[0]).trim() : '', (r && r[1] !== undefined && r[1] !== null) ? String(r[1]).trim() : ''])
+        .filter(v => v[0].length > 0);
 
       // quita el encabezado "Pregunta" si viene incluido
-      if(imported.length && /^pregunta$/i.test(imported[0])){
-        imported = imported.slice(1);
+      if(pairs.length && /^pregunta$/i.test(pairs[0][0])){
+        pairs = pairs.slice(1);
       }
+      let imported = pairs.map(v => v[0]);
 
       if(imported.length === 0){
         showToast('⚠️ No se encontraron preguntas en ese archivo.');
@@ -1726,7 +1754,7 @@ document.getElementById('importExcelInput').addEventListener('change', (e) => {
       }
 
       showConfirm(`Se encontraron ${imported.length} preguntas en el archivo. ¿Reemplazar el banco de preguntas actual con estas?`, () => {
-        questions = imported;
+        questions = imported; answers = pairs.map(v => v[1]);
         saveQuestions();
         renderEditorList();
         showToast(`✅ Se importaron ${imported.length} preguntas desde Excel.`);
@@ -1992,7 +2020,7 @@ if(ES_ALUMNO){
   document.getElementById("shareTaskBtn").addEventListener("click", function(){
     abrirCompartirTarea({
       game: "raceboard", defaultTitle: "Race Board", studentPath: "/play/raceboard/",
-      getData: function(){ return { questions: questions.filter(function(q){ return typeof q === "string" && q.trim(); }) }; }
+      getData: function(){ const qs = [], as = []; questions.forEach(function(q, i){ if(typeof q === "string" && q.trim()){ qs.push(q); as.push(answers[i] || ''); } }); return { questions: qs, answers: as }; }
     });
   });
   iniciarSalaQR();

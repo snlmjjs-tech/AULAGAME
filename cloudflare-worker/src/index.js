@@ -291,14 +291,18 @@ const GAME_CONFIG = {
           `del abecedario en este orden exacto: ${LETTERS.join(",")}. Cada pista debe describir, sin nombrarla, ` +
           `una palabra relacionada con el tema que EMPIECE con esa letra (si de verdad no existe ninguna palabra ` +
           `razonable que empiece con esa letra para el tema dado, usa una palabra que CONTENGA esa letra y acláralo ` +
-          `en la pista, ej. "Contiene la K:"). Pistas breves (máx. 20 palabras), claras y sin ambigüedad.`,
+          `en la pista, ej. "Contiene la K:"). Pistas breves (máx. 20 palabras), claras y sin ambigüedad. ` +
+          `Devuelve además en "answers" la palabra respuesta de cada pista (answers[i] corresponde a clues[i]).`,
         tool: {
           name: "devolver_rosco",
           description: "Devuelve las 26 pistas del rosco en orden alfabético A-Z.",
           input_schema: {
             type: "object",
-            properties: { clues: { type: "array", minItems: 26, maxItems: 26, items: { type: "string" } } },
-            required: ["clues"],
+            properties: {
+              clues: { type: "array", minItems: 26, maxItems: 26, items: { type: "string" } },
+              answers: { type: "array", minItems: 26, maxItems: 26, items: { type: "string" }, description: "La palabra respuesta de cada pista, en el mismo orden A-Z" },
+            },
+            required: ["clues", "answers"],
           },
         },
       };
@@ -596,14 +600,17 @@ const GAME_CONFIG = {
     minCount: 3, maxCount: 40, defaultCount: 12,
     build(subject, n) {
       return {
-        userPrompt: `Tema: "${subject}". Genera ${n} preguntas o consignas de respuesta abierta que el profesor leerá en voz alta a los alumnos.`,
+        userPrompt: `Tema: "${subject}". Genera ${n} preguntas o consignas de respuesta abierta que el profesor leerá en voz alta a los alumnos. Incluye también la respuesta modelo de cada una (corta y clara), para que el estudiante pueda comprobar si acertó.`,
         tool: {
           name: "devolver_preguntas",
           description: "Devuelve la lista de preguntas.",
           input_schema: {
             type: "object",
-            properties: { questions: { type: "array", minItems: n, maxItems: n, items: { type: "string" } } },
-            required: ["questions"],
+            properties: {
+              questions: { type: "array", minItems: n, maxItems: n, items: { type: "string" } },
+              answers: { type: "array", minItems: n, maxItems: n, items: { type: "string" }, description: "answers[i] es la respuesta modelo, corta (máx. 120 caracteres), de questions[i]" },
+            },
+            required: ["questions", "answers"],
           },
         },
       };
@@ -614,14 +621,17 @@ const GAME_CONFIG = {
     minCount: 3, maxCount: 30, defaultCount: 23,
     build(subject, n) {
       return {
-        userPrompt: `Tema: "${subject}". Genera ${n} consignas/preguntas cortas de respuesta abierta para casillas de un tablero tipo "juego de la oca".`,
+        userPrompt: `Tema: "${subject}". Genera ${n} consignas/preguntas cortas de respuesta abierta para casillas de un tablero tipo "juego de la oca". Incluye también la respuesta modelo de cada una (corta y clara), para que el estudiante pueda comprobar si acertó.`,
         tool: {
           name: "devolver_preguntas",
           description: "Devuelve la lista de consignas.",
           input_schema: {
             type: "object",
-            properties: { questions: { type: "array", minItems: n, maxItems: n, items: { type: "string" } } },
-            required: ["questions"],
+            properties: {
+              questions: { type: "array", minItems: n, maxItems: n, items: { type: "string" } },
+              answers: { type: "array", minItems: n, maxItems: n, items: { type: "string" }, description: "answers[i] es la respuesta modelo, corta (máx. 120 caracteres), de questions[i]" },
+            },
+            required: ["questions", "answers"],
           },
         },
       };
@@ -632,14 +642,17 @@ const GAME_CONFIG = {
     minCount: 3, maxCount: 40, defaultCount: 16,
     build(subject, n) {
       return {
-        userPrompt: `Tema: "${subject}". Genera ${n} consignas cortas de respuesta abierta (ej. "di una oración usando...", "nombra...") para tarjetas de un juego tipo Monopoly.`,
+        userPrompt: `Tema: "${subject}". Genera ${n} consignas cortas de respuesta abierta (ej. "di una oración usando...", "nombra...") para tarjetas de un juego tipo Monopoly. Incluye también la respuesta modelo de cada una (corta y clara), para que el estudiante pueda comprobar si acertó.`,
         tool: {
           name: "devolver_preguntas",
           description: "Devuelve la lista de consignas.",
           input_schema: {
             type: "object",
-            properties: { questions: { type: "array", minItems: n, maxItems: n, items: { type: "string" } } },
-            required: ["questions"],
+            properties: {
+              questions: { type: "array", minItems: n, maxItems: n, items: { type: "string" } },
+              answers: { type: "array", minItems: n, maxItems: n, items: { type: "string" }, description: "answers[i] es la respuesta modelo, corta (máx. 120 caracteres), de questions[i]" },
+            },
+            required: ["questions", "answers"],
           },
         },
       };
@@ -1150,11 +1163,12 @@ function sanitizarMemorice(d) {
 
 /** Rosco: hasta 3 roscos (cada uno con las 26 pistas, una por letra). El estudiante se autoevalúa. */
 function sanitizarRosco(d) {
-  const sets = (Array.isArray(d && d.sets) ? d.sets : []).slice(0, 3).map((arr) => {
-    const a = Array.isArray(arr) ? arr : [];
-    return Array.from({ length: 26 }, (_, i) => limpiarTexto(a[i], 160));
-  }).filter((a) => a.filter(Boolean).length >= 10);
-  return sets.length ? { sets } : null;
+  const srcA = Array.isArray(d && d.answers) ? d.answers : [];
+  const pares = (Array.isArray(d && d.sets) ? d.sets : []).slice(0, 3).map((arr, k) => {
+    const a = Array.isArray(arr) ? arr : [], r = Array.isArray(srcA[k]) ? srcA[k] : [];
+    return { clues: Array.from({ length: 26 }, (_, i) => limpiarTexto(a[i], 160)), ans: Array.from({ length: 26 }, (_, i) => limpiarTexto(r[i], 60)) };
+  }).filter((p) => p.clues.filter(Boolean).length >= 10);
+  return pares.length ? { sets: pares.map((p) => p.clues), answers: pares.map((p) => p.ans) } : null;
 }
 
 /** QuizLive: preguntas (quiz, verdadero/falso, ordenar y respuesta corta; la respuesta larga la corrige el profe y no se envía). */
@@ -1210,10 +1224,14 @@ function sanitizarBetyouranswer(d) {
 }
 
 function sanitizarRaceboard(d) {
-  const questions = (Array.isArray(d && d.questions) ? d.questions : []).slice(0, 100)
-    .map((q) => limpiarTexto(q, 300)).filter(Boolean);
+  const srcQ = Array.isArray(d && d.questions) ? d.questions : [], srcA = Array.isArray(d && d.answers) ? d.answers : [];
+  const questions = [], answers = [];
+  srcQ.slice(0, 100).forEach((q, i) => {
+    const t = limpiarTexto(q, 300);
+    if (t) { questions.push(t); answers.push(limpiarTexto(srcA[i], 200)); }
+  });
   if (questions.length < 3) return null;
-  return { questions };
+  return { questions, answers };
 }
 
 function sanitizarRobotfight(d) {
@@ -1243,7 +1261,7 @@ function sanitizarEvilgame(d) {
 function sanitizarMonopoly(d) {
   const num = (v, def) => Math.max(0, Math.min(100000, parseInt(v, 10) || def));
   const questionCards = (Array.isArray(d && d.questionCards) ? d.questionCards : []).slice(0, 60).map((c) => ({
-    t: limpiarTexto(c && c.t, 200), win: num(c && c.win, 3000), lose: num(c && c.lose, 3000),
+    t: limpiarTexto(c && c.t, 200), win: num(c && c.win, 3000), lose: num(c && c.lose, 3000), a: limpiarTexto(c && c.a, 200),
   })).filter((c) => c.t);
   if (questionCards.length < 3) return null;
   const prices = (Array.isArray(d && d.prices) ? d.prices : []).slice(0, 40).map((p) => ({

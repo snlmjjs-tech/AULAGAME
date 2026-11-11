@@ -1311,12 +1311,22 @@ function drawQuestion(team){
     <div class="modal">
       <h3>❓ Verb / Question</h3>
       <div class="card-face">${card.t}</div>
-      <div class="desc">${ES_TAREA ? (team.id===0 ? 'Piensa tu respuesta y dinos si la sabías.' : team.name+' responde…') : team.name+' — el profesor decide: ¿respondió bien?'}</div>
-      <div class="btnrow">
+      <div class="desc" id="qDesc">${ES_TAREA ? (team.id===0 ? 'Piensa tu respuesta y luego toca «Revelar respuesta».' : team.name+' responde…') : team.name+' — el profesor decide: ¿respondió bien?'}</div>
+      <div class="btnrow" id="qBtns">
         <button class="btn" id="mWin">✅ Correcto — gana ${fmt(card.win)}</button>
         <button class="btn danger" id="mLose">❌ Incorrecto — devuelve ${fmt(card.lose)}</button>
       </div>
     </div>`;
+  if(ES_TAREA && team.id===0){
+    /* el estudiante primero piensa y revela la respuesta; recién ahí marca si la sabía */
+    const btns = el.querySelector('#qBtns'), desc = el.querySelector('#qDesc'), rb = document.createElement('button');
+    rb.className = 'btn secondary'; rb.type = 'button'; rb.id = 'mReveal'; rb.textContent = '👀 Revelar respuesta';
+    btns.style.display = 'none'; btns.parentNode.insertBefore(rb, btns);
+    rb.onclick = ()=>{
+      rb.remove(); btns.style.display = '';
+      desc.textContent = card.a ? 'Respuesta: ' + card.a + ' — ¿La sabías?' : 'Esta pregunta es abierta y no tiene una sola respuesta. ¿Tu respuesta estaba bien?';
+    };
+  }
   el.querySelector('#mWin').onclick = ()=>{
     team.money += card.win; SFX.cash(); closeModal();
     if(salaActual) escribir(refSala('monopoly', salaActual, 'estado/resultado'), { correcto: true });
@@ -1505,8 +1515,8 @@ function editorModal(){
     <h3>✏ Editor</h3>
     <div class="editor-body">
       <div class="desc" style="margin-top:0;">También puedes editar todo directamente en Excel: exporta, edita las columnas <b>Texto / Gana / Pierde</b> (preguntas), <b>Texto / Tipo / Monto</b> (bonus) o <b>Propiedad / Precio</b>, y vuelve a importar el mismo archivo.</div>
-      <h4>Verb / Question Cards — una por línea: "Texto | gana | pierde"</h4>
-      <textarea id="editQ">${QUESTION_CARDS.map(c=>`${c.t} | ${c.win} | ${c.lose}`).join('\n')}</textarea>
+      <h4>Verb / Question Cards — una por línea: "Texto | gana | pierde | respuesta (opcional, el estudiante la ve al revelar)"</h4>
+      <textarea id="editQ">${QUESTION_CARDS.map(c=>`${c.t} | ${c.win} | ${c.lose}${c.a ? ' | ' + c.a : ''}`).join('\n')}</textarea>
       <h4>Bonus Chest Cards — "Texto | money:MONTO" / "collectAll:MONTO" / "payAll:MONTO"</h4>
       <textarea id="editBonus">${BONUS_CARDS.map(c=>`${c.t} | ${c.kind}:${c.amt}`).join('\n')}</textarea>
       <h4>Property Prices</h4>
@@ -1537,7 +1547,7 @@ function editorModal(){
     const qLines = el.querySelector('#editQ').value.split('\n').map(l=>l.trim()).filter(Boolean);
     const newQ = qLines.map(line=>{
       const parts = line.split('|').map(s=>s.trim());
-      return {t:parts[0], win:parseInt(parts[1])||0, lose:parseInt(parts[2])||parseInt(parts[1])||0};
+      return {t:parts[0], win:parseInt(parts[1])||0, lose:parseInt(parts[2])||parseInt(parts[1])||0, a:(parts.slice(3).join(' | ')||'').trim()};
     });
     if(newQ.length>0) QUESTION_CARDS = newQ;
 
@@ -1565,7 +1575,7 @@ function editorModal(){
   el.querySelector('#closeEdit').onclick = closeModal;
   el.querySelector('#expXlsx').onclick = ()=>{
     const wb = XLSX.utils.book_new();
-    const wsQ = XLSX.utils.json_to_sheet(QUESTION_CARDS.map(c=>({Texto:c.t, Gana:c.win, Pierde:c.lose})));
+    const wsQ = XLSX.utils.json_to_sheet(QUESTION_CARDS.map(c=>({Texto:c.t, Gana:c.win, Pierde:c.lose, Respuesta:c.a||''})));
     XLSX.utils.book_append_sheet(wb, wsQ, 'Preguntas');
     const wsB = XLSX.utils.json_to_sheet(BONUS_CARDS.map(c=>({Texto:c.t, Tipo:c.kind, Monto:c.amt})));
     XLSX.utils.book_append_sheet(wb, wsB, 'Bonus');
@@ -1586,7 +1596,8 @@ function editorModal(){
           const newQ = rows.filter(r=>r.Texto).map(r=>({
             t: String(r.Texto),
             win: parseInt(r.Gana)||0,
-            lose: parseInt(r.Pierde)||parseInt(r.Gana)||0
+            lose: parseInt(r.Pierde)||parseInt(r.Gana)||0,
+            a: r.Respuesta ? String(r.Respuesta) : ''
           }));
           if(newQ.length>0) QUESTION_CARDS = newQ;
         }
@@ -1631,7 +1642,8 @@ function editorModal(){
         if(!list.length) return;
         const ta = el.querySelector('#editQ');
         if(!ta) return;
-        const newLines = list.map(function(q){ return String(q).trim() + ' | 3000 | 3000'; });
+        const ans = (data && Array.isArray(data.answers)) ? data.answers : [];
+        const newLines = list.map(function(q, i){ return String(q).trim() + ' | 3000 | 3000' + (ans[i] ? ' | ' + String(ans[i]).trim() : ''); });
         ta.value = (ta.value.trim() ? ta.value.trim() + '\n' : '') + newLines.join('\n');
       }
     });

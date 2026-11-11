@@ -82,6 +82,9 @@ es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
     entra sin cuenta. En todos los juegos con bots el alumno juega contra un único **"Bot Profe"** (partidas cortas); la excepción es Hot Dog Run, que
     sigue con varios bots porque es una carrera. Battle Castle es 1 contra 1 (sin aliado). Evil Game: el estudiante primero toca "Revelar respuesta"
     y recién ahí marca "La sabía / No la sabía"; el profe puede escribir una respuesta opcional por casilla (`answers`) que se muestra al revelar.
+    Respuestas para aprender del error: Evil Game, Race Board, Monopoly y Rosco guardan una respuesta opcional por pregunta/pista (`answers` en Evil Game y Race Board,
+    campo `a` en las tarjetas de Monopoly, `teamAnswers` en Rosco) que el estudiante ve al tocar "Revelar respuesta" antes de marcar "La sabía / No la sabía"; la IA
+    del Worker (`raceboard`, `evilgame`, `monopoly`, `rosco`) devuelve también `answers`. Sin respuesta guardada se muestra "Esta pregunta es abierta…".
     Botón del profe: `play/shared/task-share.js` (`abrirCompartirTarea`) en Millonario y Colgado.
   - `clasesIngles/{claseId}` — contenido de la intranet de inglés (sin Firebase Auth real ahí).
 - **Realtime Database** — salas en vivo (`salasVivo/{juego}/{sala}/...`): jugadores, equipos,
