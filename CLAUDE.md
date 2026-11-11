@@ -68,6 +68,13 @@ es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
   - Hot Dog Run, sala de espera: chat de texto entre alumnos y profe (solo en la sala de espera; el profe lo silencia/activa;
     el anfitrión retransmite y limita 1 mensaje/s por alumno). La IA usa la config `hotdogrun` del Worker (hasta 45
     preguntas, ~5 por nivel; `maxCount` configurable en `play/shared/ai-questions.js`).
+  - Hot Dog Run, chat en juego (solo online): quien llega a la meta (o queda eliminado) puede escribir un mensaje de hasta 60 letras y sale
+    en un globo sobre su personaje. El profe, en la pantalla "en vivo", ve el registro de mensajes: 🚫 censura un mensaje (desaparece el globo
+    de todos), ⛔ saca al alumno de la partida y el botón "Chat: activado/silenciado" lo apaga para todos. El profe (anfitrión) valida y retransmite.
+  - Hot Dog Run, Parkour difícil: cada jugador tiene 5 balas de mostaza (tecla F o botón 🔫), cada una a un jugador distinto (el más cercano que
+    aún no haya recibido una suya); el impactado queda aturdido ~1,7 s. Online: el anfitrión valida (5 por jugador y por nivel, sin repetir objetivo);
+    offline: los bots también disparan. Persecución: la "pared" es ahora una carita tipo Pac-Man (algo más lenta: 92 + 1,5·t px/s).
+    Skins de completo: `BUNS` (12 estilos: normal, tostado, sin pan, Italiano, Dinámico, Chacarero, Con queso, Mexicano, Con tocino, Papas hilo, Dorado, Galaxia).
   - `tareas/{id}` — copias de juegos que un profe Premium (o en demo) envía a estudiantes (link para jugar solo en
     casa, p. ej. desde Classroom). Solo el Worker la lee y escribe (`POST /task/create`, `GET /task/get?id=`); las reglas
     de Firestore no la exponen. Juegos con esta opción (`TASK_GAMES` en el Worker, cada uno con su validador): `hotdogrun`
