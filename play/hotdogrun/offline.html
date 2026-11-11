@@ -807,6 +807,7 @@ body[data-arena="1"] #game .rot svg{stroke:#2a1535;width:44px;height:44px}
   <p class="hint" id="shareP">Se guarda una copia de tus preguntas de ahora. Si después las cambias, el link no cambia: crea uno nuevo.</p>
   <div id="shareForm">
     <label class="l" for="shareTitle">Nombre de la tarea</label><input type="text" id="shareTitle" maxlength="80" placeholder="Ej: Verbos irregulares 7°A">
+    <label class="l" for="shareDias" style="margin-top:var(--s2)">El link funciona durante</label><select id="shareDias" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line-strong);font:inherit;background:var(--surface);color:var(--ink)"><option value="7">1 semana</option><option value="14">2 semanas</option><option value="30" selected>1 mes (recomendado)</option><option value="90">3 meses</option></select>
   </div>
   <div id="shareOut" hidden>
     <label class="l" for="shareLink">Link para tus estudiantes</label><input type="text" id="shareLink" readonly>
@@ -1306,7 +1307,7 @@ $('#hShare').onclick=()=>{
     const err=$('#shareErr'),b=$('#shareGo');err.textContent='';
     if(!window.AG_crearTarea){err.textContent='Todavía se está cargando. Intenta en unos segundos.';return}
     b.disabled=true;b.textContent='Creando…';
-    const r=await AG_crearTarea($('#shareTitle').value.trim(),quiz);
+    const r=await AG_crearTarea($('#shareTitle').value.trim(),quiz,parseInt($('#shareDias').value,10));
     if(!r.ok){
       b.disabled=false;b.textContent='Crear link';
       if(r.code==='NO_LOGIN')err.innerHTML='Inicia sesión en <a href="https://aulagame.cl/?login=1" target="_blank" rel="noopener">aulagame.cl</a> para crear links.';
@@ -1318,7 +1319,7 @@ $('#hShare').onclick=()=>{
     $('#shareLink').value=link;
     $('#shareClass').href='https://classroom.google.com/share?url='+encodeURIComponent(link)+'&title='+encodeURIComponent($('#shareTitle').value.trim()||'Hot Dog Run');
     $('#shareForm').hidden=true;$('#shareOut').hidden=false;b.hidden=true;
-    $('#shareP').textContent='¡Listo! Pega este link en Classroom, WhatsApp o donde quieras. Cada estudiante juega solo, sin sala ni cuenta.';
+    $('#shareP').textContent='¡Listo! Pega este link en Classroom, WhatsApp o donde quieras. Cada estudiante juega solo, sin sala ni cuenta.'+(r.venceEn?' El link funciona hasta el '+new Date(r.venceEn).toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'})+'.':'');
     $('#shareCopy').onclick=()=>{const t=$('#shareLink');t.select();try{navigator.clipboard.writeText(link).then(()=>{$('#shareCopy').textContent='¡Copiado!';setTimeout(()=>$('#shareCopy').textContent='Copiar link',1600)},()=>{document.execCommand('copy')})}catch(e){document.execCommand('copy')}};
   };
   d.showModal();
@@ -3010,14 +3011,14 @@ window.AG_cloud = {
   async load(){ const r = await loadGameData(HD_KEY); _hdUid = r.uid; return r; },
   save(quiz){ if(!_hdUid) return; return saveGameDataDebounced(HD_KEY, _hdUid, { quiz: JSON.parse(JSON.stringify(quiz)), updatedAt: Date.now() }, 900); }
 };
-window.AG_crearTarea = async function(title, quiz){
+window.AG_crearTarea = async function(title, quiz, dias){
   const au = getAuth(getApp());
   await au.authStateReady();
   const u = au.currentUser;
   if(!u) return { ok: false, code: "NO_LOGIN" };
   try{
     const token = await u.getIdToken();
-    const res = await fetch(TRIAL_WORKER_BASE + "/task/create", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ game: "hotdogrun", title: title, data: { v: quiz.v, bots: quiz.bots, levels: quiz.levels } }) });
+    const res = await fetch(TRIAL_WORKER_BASE + "/task/create", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ game: "hotdogrun", title: title, dias: dias, data: { v: quiz.v, bots: quiz.bots, levels: quiz.levels } }) });
     const j = await res.json().catch(() => null);
     return j && typeof j === "object" ? j : { ok: false, error: "No se pudo crear el link. Intenta de nuevo." };
   }catch(e){ return { ok: false, error: "No hay conexión. Revisa tu internet e intenta de nuevo." }; }

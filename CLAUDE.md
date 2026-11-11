@@ -14,7 +14,7 @@ es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
   sin build step). Carpetas actuales: `agrupados`, `battlecastle3d`, `betyouranswer`, `bingo`,
   `colgado`, `evilgame`, `impostor`, `jeopardy`, `memorice`, `mathquest`, `millonario`, `monopoly`,
   `quizlive`, `raceboard`, `robotfight`, `rosco`, `hotdogrun` (menú + `offline.html` + `online.html`; el modo online usa Supabase, no Firebase; `play/berryrun/` solo redirige a `hotdogrun`).
-  `mathquest` es el juego de fracciones y fórmulas: genera las preguntas solo (sin contenido editable; guarda solo los ajustes en `profes/{uid}/datosJuegos/mathquest`), por turnos entre equipos o individual.
+  `mathquest` es el juego de matemáticas (7 temas: fracciones, decimales y %, operaciones, potencias y raíces, geometría, fórmulas y problemas): genera las preguntas solo (sin contenido editable; guarda solo los ajustes en `profes/{uid}/datosJuegos/mathquest`), por turnos entre equipos o individual.
 - `play/shared/*.js` — módulos JS compartidos entre juegos: `ai-questions.js` (llama al Worker
   de IA), `game-storage.js` (guardar/cargar preguntas en Firestore), `live-room.js` (salas en
   vivo con Realtime Database), `premium-status.js`, `qr-inline.js`, `short-links.js`,
@@ -79,7 +79,8 @@ es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
     casa, p. ej. desde Classroom). Solo el Worker la lee y escribe (`POST /task/create`, `GET /task/get?id=`); las reglas
     de Firestore no la exponen. Juegos con esta opción (`TASK_GAMES` en el Worker, cada uno con su validador): `hotdogrun`
     (`offline.html?tarea=<id>`, contra bots), `millonario`, `colgado` y `memorice`, `rosco`, `quizlive`, `jeopardy`, `betyouranswer`, `raceboard`, `robotfight`, `evilgame`, `monopoly`, `mathquest` (el alumno juega contra 2 bots con los ajustes del profe) y `battlecastle3d` (Battle Castle: tú + un aliado bot que repara/protege/ataca contra 2 castillos enemigos bot; Monopoly: contra 3 equipos bot, 15 vueltas, tarjetas "?" con autoevaluación; Evil Game: el alumno juega contra 3 equipos bot, preguntas abiertas con autoevaluación; Robot Fight: el alumno pelea contra el robot rival con las preguntas del profe; Race Board: preguntas abiertas, autoevaluación, el alumno corre contra 3 bots que lanzan solos; Bet Your Answer: solo trivia y regalo, contra 3 bots, autoevaluación; `index.html?tarea=<id>`; Jeopardy solo contra 3 bots, el alumno marca "la sabía"/"no la sabía"; QuizLive juega solo contra bots que aparecen en el ranking y no incluye las preguntas de respuesta larga, un solo jugador; el Rosco es de autoevaluación porque solo guarda pistas). El estudiante
-    entra sin cuenta. En todos los juegos con bots el alumno juega contra un único **"Bot Profe"** (partidas cortas); la excepción es Hot Dog Run, que
+    entra sin cuenta. Los links de tarea vencen: el profe elige 1 semana, 2, 1 mes (recomendado, por defecto) o 3 meses (`dias` en `POST /task/create`, campo `venceEn`);
+    pasada la fecha `GET /task/get` responde 410 "Esta tarea ya venció". En todos los juegos con bots el alumno juega contra un único **"Bot Profe"** (partidas cortas); la excepción es Hot Dog Run, que
     sigue con varios bots porque es una carrera. Battle Castle es 1 contra 1 (sin aliado). Evil Game: el estudiante primero toca "Revelar respuesta"
     y recién ahí marca "La sabía / No la sabía"; el profe puede escribir una respuesta opcional por casilla (`answers`) que se muestra al revelar.
     Respuestas para aprender del error: Evil Game, Race Board, Monopoly y Rosco guardan una respuesta opcional por pregunta/pista (`answers` en Evil Game y Race Board,

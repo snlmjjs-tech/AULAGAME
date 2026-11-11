@@ -25,7 +25,7 @@ function injectStyle() {
     .ts-box{background:#fff;color:#1c2233;border-radius:16px;max-width:440px;width:100%;padding:22px;box-shadow:0 14px 44px rgba(0,0,0,.4);max-height:94vh;overflow:auto}
     .ts-box h3{margin:0 0 6px;font-size:20px}.ts-box p{margin:0 0 12px;font-size:13.5px;color:#556;line-height:1.45}
     .ts-box label{display:block;font-size:13px;font-weight:700;margin:10px 0 4px}
-    .ts-box input{width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #ccd;border-radius:9px;font-size:15px}
+    .ts-box input,.ts-box select{width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #ccd;border-radius:9px;font-size:15px;background:#fff;color:#1c2233}
     .ts-err{color:#b3261e;font-size:13px;min-height:1.2em;margin:8px 0 0}.ts-err a{color:#5b3fd6;font-weight:700}
     .ts-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px}
     .ts-b{padding:10px 16px;border-radius:9px;border:none;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;display:inline-block;background:#7c5cff;color:#fff}
@@ -34,7 +34,7 @@ function injectStyle() {
   document.head.appendChild(st);
 }
 
-async function crear(game, title, data) {
+async function crear(game, title, data, dias) {
   await auth.authStateReady();
   const u = auth.currentUser;
   if (!u) return { ok: false, code: "NO_LOGIN" };
@@ -43,7 +43,7 @@ async function crear(game, title, data) {
     const res = await fetch(TRIAL_WORKER_BASE + "/task/create", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ game, title, data }),
+      body: JSON.stringify({ game, title, data, dias }),
     });
     const j = await res.json().catch(() => null);
     return j && typeof j === "object" ? j : { ok: false, error: "No se pudo crear el link. Intenta de nuevo." };
@@ -59,7 +59,8 @@ export function abrirCompartirTarea({ game, defaultTitle, getData, studentPath }
   ov.innerHTML = `<div class="ts-box" role="dialog" aria-modal="true" aria-label="Enviar a estudiantes">
     <h3>📚 Enviar a estudiantes</h3>
     <p id="ts-p">Crea un link para que cada estudiante juegue solo en su casa, con tu contenido. Sin sala y sin cuenta. Puedes compartirlo en Google Classroom. Función Premium. Se guarda una copia de lo que tienes ahora: si lo cambias después, crea un link nuevo.</p>
-    <div id="ts-form"><label for="ts-title">Nombre de la tarea</label><input id="ts-title" maxlength="80" placeholder="Ej: Repaso 7°A"></div>
+    <div id="ts-form"><label for="ts-title">Nombre de la tarea</label><input id="ts-title" maxlength="80" placeholder="Ej: Repaso 7°A">
+      <label for="ts-dias">El link funciona durante</label><select id="ts-dias"><option value="7">1 semana</option><option value="14">2 semanas</option><option value="30" selected>1 mes (recomendado)</option><option value="90">3 meses</option></select></div>
     <div id="ts-out" hidden><label for="ts-link">Link para tus estudiantes</label><input id="ts-link" readonly>
       <div class="ts-row" style="justify-content:flex-start"><button class="ts-b g" id="ts-copy" type="button">Copiar link</button><a class="ts-b c" id="ts-class" target="_blank" rel="noopener">Compartir en Classroom</a></div></div>
     <div class="ts-err" id="ts-err" role="alert"></div>
@@ -79,7 +80,7 @@ export function abrirCompartirTarea({ game, defaultTitle, getData, studentPath }
     if (!data) { err.textContent = "No hay contenido para enviar. Agrega preguntas o palabras primero."; return; }
     btn.disabled = true; btn.textContent = "Creando…";
     const title = $("ts-title").value.trim();
-    const r = await crear(game, title, data);
+    const r = await crear(game, title, data, parseInt($("ts-dias").value, 10));
     if (!r.ok) {
       btn.disabled = false; btn.textContent = "Crear link";
       if (r.code === "NO_LOGIN") err.innerHTML = 'Inicia sesión en <a href="/?login=1" target="_blank" rel="noopener">aulagame.cl</a> para crear links.';
@@ -91,7 +92,7 @@ export function abrirCompartirTarea({ game, defaultTitle, getData, studentPath }
     $("ts-link").value = link;
     $("ts-class").href = "https://classroom.google.com/share?url=" + encodeURIComponent(link) + "&title=" + encodeURIComponent(title || "Tarea de AulaGame");
     $("ts-form").hidden = true; $("ts-out").hidden = false; btn.hidden = true;
-    $("ts-p").textContent = "¡Listo! Pega este link en Classroom, WhatsApp o donde quieras. Cada estudiante juega solo, sin sala ni cuenta.";
+    $("ts-p").textContent = "¡Listo! Pega este link en Classroom, WhatsApp o donde quieras. Cada estudiante juega solo, sin sala ni cuenta." + (r.venceEn ? " El link funciona hasta el " + new Date(r.venceEn).toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" }) + "." : "");
     $("ts-copy").onclick = () => {
       $("ts-link").select();
       const ok = () => { $("ts-copy").textContent = "¡Copiado!"; setTimeout(() => ($("ts-copy").textContent = "Copiar link"), 1600); };

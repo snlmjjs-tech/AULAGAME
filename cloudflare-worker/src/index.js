@@ -1286,7 +1286,8 @@ function sanitizarBattlecastle(d) {
 }
 
 function sanitizarMathquest(d) {
-  const topics = (Array.isArray(d && d.topics) ? d.topics : []).filter((t) => t === "fracciones" || t === "formulas");
+  const TEMAS = ["fracciones", "decimales", "operaciones", "potencias", "geometria", "formulas", "problemas"];
+  const topics = (Array.isArray(d && d.topics) ? d.topics : []).filter((t) => TEMAS.includes(t));
   const level = [1, 2, 3].includes(parseInt(d && d.level, 10)) ? parseInt(d.level, 10) : 2;
   const rounds = [8, 12, 20].includes(parseInt(d && d.rounds, 10)) ? parseInt(d.rounds, 10) : 12;
   const time = [0, 15, 30].includes(parseInt(d && d.time, 10)) ? parseInt(d.time, 10) : 30;
@@ -1315,7 +1316,8 @@ async function handleTask(request, env, url, origin, projectId) {
       let data = null;
       try { data = JSON.parse(f.data); } catch (e) { data = null; }
       if (!data) return json({ ok: false, error: "La tarea está dañada." }, 500, origin);
-      return json({ ok: true, game: f.game, title: f.title || "", data }, 200, origin);
+      if (f.venceEn && Date.parse(f.venceEn) < Date.now()) return json({ ok: false, error: "Esta tarea ya venció. Pídele a tu profe un link nuevo." }, 410, origin);
+      return json({ ok: true, game: f.game, title: f.title || "", data, venceEn: f.venceEn || null }, 200, origin);
     } catch (e) {
       console.error("Error leyendo tarea:", e);
       return json({ ok: false, error: "No se pudo abrir la tarea. Intenta de nuevo en unos segundos." }, 502, origin);
@@ -1344,6 +1346,8 @@ async function handleTask(request, env, url, origin, projectId) {
     if (!data) return json({ ok: false, error: "No hay contenido válido para enviar: revisa que tengas preguntas, palabras o imágenes completas (Millonario necesita al menos 3 preguntas y Memorice al menos 2 imágenes)." }, 400, origin);
     const serial = JSON.stringify(data);
     if (serial.length > (TASK_MAX[game] || 150000)) return json({ ok: false, error: game === "memorice" ? "Las imágenes pesan demasiado para enviarlas. Prueba con menos imágenes." : "El juego es demasiado grande para enviarlo." }, 413, origin);
+    const dias = [7, 14, 30, 90].includes(parseInt(body.dias, 10)) ? parseInt(body.dias, 10) : 30; // el link vence (por defecto a los 30 días)
+    const venceEn = new Date(Date.now() + dias * 86400000).toISOString();
     const title = limpiarTexto(body.title, 80) || "Tarea de AulaGame";
     const bytes = new Uint8Array(10);
     crypto.getRandomValues(bytes);
@@ -1359,6 +1363,7 @@ async function handleTask(request, env, url, origin, projectId) {
           uid: { stringValue: uid },
           data: { stringValue: serial },
           creadoEn: { timestampValue: new Date().toISOString() },
+          venceEn: { timestampValue: venceEn },
         } }),
       });
       if (!res.ok) throw new Error("Firestore PATCH respondió " + res.status + ": " + (await res.text()));
@@ -1366,7 +1371,7 @@ async function handleTask(request, env, url, origin, projectId) {
       console.error("No se pudo guardar la tarea:", e);
       return json({ ok: false, error: "No se pudo crear el link. Intenta de nuevo." }, 502, origin);
     }
-    return json({ ok: true, id }, 200, origin);
+    return json({ ok: true, id, venceEn }, 200, origin);
   }
   return null;
 }

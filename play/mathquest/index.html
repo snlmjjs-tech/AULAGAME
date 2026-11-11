@@ -6,7 +6,7 @@
 <script>document.documentElement.style.visibility="hidden";</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>MathQuest · Fracciones y Fórmulas · AulaGame</title>
+<title>MathQuest · Matemáticas · AulaGame</title>
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -89,7 +89,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .bubble{background:#fff;color:var(--ink);border-radius:18px;padding:8px 12px;font-weight:700;font-size:15px;position:relative;margin-top:6px}
 .qcard{background:var(--card);color:var(--ink);border-radius:28px;padding:22px 24px 26px;box-shadow:0 10px 0 rgba(0,0,0,.18),0 24px 40px -14px rgba(0,0,0,.55);position:relative}
 .tag{display:inline-block;font-weight:800;font-size:14px;letter-spacing:.06em;padding:4px 14px;border-radius:99px;color:#fff;margin-bottom:8px}
-.tag.t-fr{background:var(--pink)} .tag.t-fo{background:var(--blue-d)}
+.tag.t-fr{background:var(--pink)} .tag.t-fo{background:var(--blue-d)} .tag.t-de{background:#0e9f8e} .tag.t-po{background:var(--violet-d)} .tag.t-ge{background:#e0701a} .tag.t-op{background:#16a34a} .tag.t-pr{background:var(--gold-d)}
 .qtext{font-size:clamp(22px,3.4vw,32px);font-weight:800;line-height:1.25;margin:2px 0 6px}
 .qvisual{display:flex;justify-content:center;gap:26px;flex-wrap:wrap;margin:10px 0;min-height:10px}
 .qvisual svg{max-width:100%;height:auto}
@@ -145,15 +145,12 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 <section class="screen active" id="screen-menu">
   <div class="hero">
     <div class="mascot" aria-hidden="true">🤖</div>
-    <h1 class="logo">MathQuest<small>FRACCIONES Y FÓRMULAS</small></h1>
+    <h1 class="logo">MathQuest<small>PRACTICA MATEMÁTICAS</small></h1>
   </div>
 
   <div class="panel">
     <h3>📚 ¿Qué quieren practicar?</h3>
-    <div class="chips" id="chipTopics">
-      <button class="chip on" data-topic="fracciones" type="button">🍕 Fracciones</button>
-      <button class="chip on" data-topic="formulas" type="button">📐 Fórmulas</button>
-    </div>
+    <div class="chips" id="chipTopics"></div>
     <div class="row2" style="margin-top:16px">
       <div>
         <h3 style="font-size:19px">⭐ Dificultad</h3>
@@ -254,7 +251,7 @@ const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0
 const gcd = (a, b) => b ? gcd(b, a % b) : Math.abs(a);
 const fr = (n, d) => (d === 1 ? String(n) : `<span class="fr"><b>${n}</b><b>${d}</b></span>`);
 const mixed = (w, n, d) => `<span class="mx">${w}</span>${fr(n, d)}`;
-const NUM = (n, unit) => (unit ? `${n} ${unit}` : String(n));
+const NUM = (n, unit) => (unit ? (unit === '°' ? `${n}°` : `${n} ${unit}`) : String(n));
 
 /* Una opción es {k: clave-única-para-comparar, h: html}. */
 const optNum = (n, unit) => ({ k: 'n' + n, h: NUM(n, unit) });
@@ -423,9 +420,293 @@ function qVolume(L) {
     distractors: [optNum(l + w + h, 'cm³'), optNum(l * w, 'cm³'), optNum(2 * (l * w + w * h + l * h), 'cm³'), optNum(ans + l, 'cm³')], explain: `Volumen = ${l} × ${w} × ${h} = ${ans} cm³. Es cuántos cubitos de 1 cm caben dentro.` });
 }
 
+/* ---------- helpers de formato ---------- */
+const MINUS = '−';
+const sgn = n => (n < 0 ? MINUS : '') + Math.abs(n);
+const optInt = n => ({ k: 'n' + n, h: sgn(n) });
+/* decimal con coma; n es un entero "escalado" por 10^d (así se evitan errores de coma flotante) */
+const dec = (n, d) => {
+  const neg = n < 0, s = String(Math.abs(n)).padStart(d + 1, '0');
+  const i = s.slice(0, s.length - d), f = s.slice(s.length - d).replace(/0+$/, '');
+  return (neg ? MINUS : '') + i + (f ? ',' + f : '');
+};
+const optDec = (n, d, unit) => { const v = n / Math.pow(10, d); return { k: 'd' + v.toFixed(6), h: dec(n, d) + (unit ? ' ' + unit : ''), v }; };
+const clp = n => '$' + String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+const optClp = n => ({ k: 'c' + n, h: clp(n) });
+const optPct = x => ({ k: 'p' + x.toFixed(3), h: dec(Math.round(x * 100), 2) + '%', v: x });
+const sup = (b, e) => `${b}<sup>${e}</sup>`;
+const nota = n => (n / 10).toFixed(1).replace('.', ',');
+const optNota = n => ({ k: 'd' + (n / 10).toFixed(6), h: nota(n), v: n / 10 });
+const NOMBRES = ['Camila', 'Matías', 'Sofía', 'Benjamín', 'Valentina', 'Diego', 'Antonia', 'Joaquín', 'Martina', 'Tomás'];
+const pickN = (k) => shuffle(NOMBRES).slice(0, k);
+const roundHalf = (n, pow) => Math.floor((n + pow / 2) / pow) * pow; /* redondea el entero n al múltiplo de pow */
+
+function angSVG(a, b) {
+  const lab = (x, y, t) => `<text x="${x}" y="${y}" font-size="17" font-weight="800" fill="#1b1340" text-anchor="middle" font-family="Baloo 2,sans-serif">${t}</text>`;
+  return `<svg width="240" height="150" viewBox="0 0 240 150"><polygon points="20,125 215,125 120,22" fill="#bde3ff" stroke="#1b1340" stroke-width="4"/>${lab(52, 117, a + '°')}${lab(186, 117, b + '°')}${lab(120, 62, '?')}</svg>`;
+}
+function circSVG(label) {
+  return `<svg width="170" height="150" viewBox="0 0 170 150"><circle cx="85" cy="75" r="58" fill="#ffd9e8" stroke="#1b1340" stroke-width="4"/><line x1="85" y1="75" x2="143" y2="75" stroke="#1b1340" stroke-width="4"/><circle cx="85" cy="75" r="4" fill="#1b1340"/><text x="116" y="66" font-size="17" font-weight="800" fill="#1b1340" text-anchor="middle" font-family="Baloo 2,sans-serif">${label}</text></svg>`;
+}
+
+/* ---------- DECIMALES ---------- */
+function qDecAdd(L) {
+  const sub = Math.random() < 0.4, d = L === 1 ? 1 : 2;
+  let a = rnd(11, L === 1 ? 99 : 999), b = rnd(11, L === 1 ? 99 : 999);
+  if (sub && b > a) [a, b] = [b, a];
+  const r = sub ? a - b : a + b; if (r <= 0) return qDecAdd(L);
+  const op = sub ? '−' : '+', st = L === 1 ? 1 : 10;
+  return build({ topic: 'decimales', text: `Calcula: ${dec(a, d)} ${op} ${dec(b, d)}`, chuleta: 'Alinea las comas antes de calcular', answer: optDec(r, d),
+    distractors: [optDec(r * 10, d), optDec(Math.max(1, Math.round(r / 10)), d), optDec(r + st, d), optDec(Math.abs(r - st) || r + 2 * st, d)],
+    explain: `Alineamos las comas y ${sub ? 'restamos' : 'sumamos'} como enteros: ${a} ${op} ${b} = ${r}. Luego ponemos la coma con ${d} decimal${d > 1 ? 'es' : ''}: ${dec(r, d)}.` });
+}
+function qDecMul(L) {
+  let a, b, txt, r, d;
+  if (L === 1) { a = rnd(11, 99); b = rnd(2, 9); txt = `${dec(a, 1)} × ${b}`; r = a * b; d = 1; }
+  else if (L === 2) { a = rnd(2, 29); b = rnd(2, 9); txt = `${dec(a, 1)} × ${dec(b, 1)}`; r = a * b; d = 2; }
+  else { a = rnd(11, 49); b = rnd(11, 49); txt = `${dec(a, 1)} × ${dec(b, 1)}`; r = a * b; d = 2; }
+  return build({ topic: 'decimales', text: `Calcula: ${txt}`, chuleta: 'Multiplica sin comas y cuenta los decimales', answer: optDec(r, d),
+    distractors: [optDec(r, d + 1), optDec(r, Math.max(0, d - 1)), optDec(r + 10, d), optDec(Math.max(1, r - 1), d)],
+    explain: `Multiplicamos sin las comas: ${a} × ${b} = ${r}. Los factores tienen ${L === 1 ? 1 : 2} decimal${L === 1 ? '' : 'es'} en total, así que el resultado lleva ${d}: ${dec(r, d)}.` });
+}
+function qDecCompare(L) {
+  const set = new Set();
+  while (set.size < 4) { set.add(pick([rnd(1, 9) * 100, rnd(10, 99) * 10, rnd(100, 999), rnd(1, 9) * 100 + rnd(1, 9)])); }
+  const vals = [...set], mayor = L === 1 || Math.random() < 0.6;
+  const sorted = vals.slice().sort((x, y) => x - y), tgt = mayor ? sorted[3] : sorted[0];
+  return build({ topic: 'decimales', text: `¿Cuál de estos números es el ${mayor ? 'MAYOR' : 'MENOR'}?`, chuleta: 'Compara de izquierda a derecha: décimas, centésimas, milésimas', answer: optDec(tgt, 3),
+    distractors: vals.filter(v => v !== tgt).map(v => optDec(v, 3)),
+    explain: `Ordenados de menor a mayor: ${sorted.map(v => dec(v, 3)).join(' < ')}. El ${mayor ? 'mayor' : 'menor'} es ${dec(tgt, 3)}. (Más cifras no significa más grande: 0,5 es mayor que 0,45.)` });
+}
+function qDecFrac(L) {
+  if (L === 1) {
+    const T = [[5, 1, 10], [25, 1, 4], [75, 3, 4], [2, 1, 5], [1, 1, 10], [4, 2, 5], [6, 3, 5], [8, 4, 5], [125, 1, 8]]; /* [num sobre 10^k, n, d] */
+    const [cnt, n, d] = pick(T), k = String(cnt).length >= 3 ? 3 : (cnt < 10 ? 1 : 2), den = Math.pow(10, k), txt = dec(cnt, k);
+    return build({ topic: 'decimales', text: `Escribe ${txt} como fracción irreducible.`, answer: optFr(n, d),
+      distractors: [optFr(cnt, den * 10), optFr(1, cnt), optFr(d, n), optFr(n + 1, d)],
+      explain: `${txt} = ${fr(cnt, den)}. Simplificamos dividiendo arriba y abajo por ${gcd(cnt, den)}: ${fr(n, d)}.` });
+  }
+  const T = [[1, 2], [1, 4], [3, 4], [1, 5], [2, 5], [3, 5], [1, 8], [3, 8], [7, 10], [9, 20], [13, 20], [3, 20], [4, 5], [1, 20]];
+  const [n, d] = pick(T), v = Math.round(n / d * 1000);
+  return build({ topic: 'decimales', text: `Escribe ${fr(n, d)} como número decimal.`, chuleta: 'Divide el numerador entre el denominador', answer: optDec(v, 3),
+    distractors: [optDec(Math.round(Number('0.' + n + d) * 1000), 3), optDec(Math.round(Number(n + '.' + d) * 1000), 3), optDec(1000 - v > 0 ? 1000 - v : v + 100, 3), optDec(v * 10, 3)],
+    explain: `${fr(n, d)} significa ${n} ÷ ${d} = ${dec(v, 3)}.` });
+}
+function qPercDec(L) {
+  const p = L === 1 ? pick([10, 25, 50, 75, 20, 40, 60]) : rnd(3, 97);
+  return build({ topic: 'decimales', text: `Escribe ${dec(p, 2)} como porcentaje.`, chuleta: 'Multiplica por 100 (corre la coma 2 lugares)', answer: optPct(p),
+    distractors: [optPct(p / 10), optPct(p * 10), optPct(p / 100), optPct(p + 5)],
+    explain: `Para pasar a porcentaje multiplicamos por 100: ${dec(p, 2)} × 100 = ${p}%.` });
+}
+function qRound(L) {
+  const n = rnd(1001, 98999); /* milésimas */
+  const mode = L === 1 ? pick(['entero', 'décima']) : pick(['décima', 'centésima']);
+  const pow = mode === 'entero' ? 1000 : mode === 'décima' ? 100 : 10, d = 3;
+  const ans = roundHalf(n, pow), floor = Math.floor(n / pow) * pow;
+  const other = roundHalf(n, pow === 100 ? 10 : pow === 10 ? 100 : 100);
+  return build({ topic: 'decimales', text: `Redondea ${dec(n, d)} a la ${mode === 'entero' ? 'unidad (número entero)' : mode}.`, chuleta: 'Mira la cifra siguiente: si es 5 o más, sube',
+    answer: optDec(ans, d), distractors: [optDec(floor, d), optDec(other, d), optDec(ans + pow, d), optDec(Math.max(0, ans - pow), d)],
+    explain: `Miramos la cifra que sigue a la ${mode === 'entero' ? 'unidad' : mode}: ${ans > floor ? 'es 5 o más, así que sube' : 'es menor que 5, así que se mantiene'}. Queda ${dec(ans, d)}.` });
+}
+
+/* ---------- POTENCIAS Y RAÍCES ---------- */
+function qPow(L) {
+  let b, e;
+  if (L === 1) { b = pick([2, 3, 4, 5, 10]); e = pick([2, 3]); }
+  else if (L === 2) { b = pick([2, 3, 4, 5, 6, 10]); e = rnd(2, 5); if (b >= 5 && e > 3) e = 3; }
+  else { b = pick([-2, -3, -4, 2, 3, 5]); e = pick([0, 2, 3, 4, 5]); if (Math.abs(b) >= 4 && e > 3) e = 2; }
+  const v = Math.pow(b, e), base = b < 0 ? `(${MINUS}${-b})` : String(b);
+  const expl = e === 0 ? `Todo número distinto de 0 elevado a 0 vale 1.` : `${base}<sup>${e}</sup> = ${Array(e).fill(base).join(' × ')} = ${sgn(v)}.${b < 0 ? ` Con exponente ${e % 2 ? 'impar' : 'par'} el resultado es ${e % 2 ? 'negativo' : 'positivo'}.` : ''}`;
+  return build({ topic: 'potencias', text: `¿Cuánto es ${base}<sup>${e}</sup>?`, chuleta: 'Base multiplicada por sí misma tantas veces como indica el exponente', answer: optInt(v),
+    distractors: [optInt(b * e), optInt(Math.pow(e, Math.abs(b) > 6 ? 2 : Math.abs(b))), optInt(-v), optInt(v + Math.abs(b)), optInt(Math.abs(v) * Math.abs(b))], explain: expl });
+}
+function qRoot(L) {
+  const cube = L === 3 && Math.random() < 0.5;
+  const r = cube ? pick([2, 3, 4, 5]) : (L === 1 ? rnd(2, 10) : L === 2 ? rnd(6, 15) : rnd(11, 20)), n = cube ? r * r * r : r * r;
+  return build({ topic: 'potencias', text: `¿Cuánto es ${cube ? '∛' : '√'}${n}?`, chuleta: cube ? 'Un número que multiplicado 3 veces por sí mismo da el resultado' : 'Un número que multiplicado por sí mismo da el resultado', answer: optInt(r),
+    distractors: [optInt(Math.round(n / (cube ? 3 : 2))), optInt(r + 1), optInt(Math.max(1, r - 1)), optInt(r * 2)],
+    explain: `${cube ? `${r} × ${r} × ${r} = ${n}` : `${r} × ${r} = ${n}`}, entonces ${cube ? '∛' : '√'}${n} = ${r}.` });
+}
+function qPowRule(L) {
+  const b = pick([2, 3, 5, 10]); let m = rnd(2, 6), n = rnd(2, 5), txt, ans, why, dist;
+  if (L <= 1 || (L === 2 && Math.random() < 0.5)) { txt = `${sup(b, m)} × ${sup(b, n)} = ${sup(b, '?')}`; ans = m + n; dist = [m * n, m + n + 1, Math.abs(m - n) || 1, m + n - 1]; why = `Al multiplicar potencias de igual base se suman los exponentes: ${m} + ${n} = ${ans}.`; }
+  else if (L === 2) { if (m <= n) m = n + rnd(1, 3); txt = `${sup(b, m)} ÷ ${sup(b, n)} = ${sup(b, '?')}`; ans = m - n; dist = [m + n, m * n, Math.max(1, m - n + 1), Math.max(1, m - n - 1) || 2]; why = `Al dividir potencias de igual base se restan los exponentes: ${m} − ${n} = ${ans}.`; }
+  else { txt = `(${sup(b, m)})<sup>${n}</sup> = ${sup(b, '?')}`; ans = m * n; dist = [m + n, m * n + m, m * n - n, Math.max(1, m * n - 1)]; why = `Una potencia elevada a otra potencia multiplica los exponentes: ${m} × ${n} = ${ans}.`; }
+  return build({ topic: 'potencias', text: `Completa el exponente: ${txt}`, chuleta: 'Mismas bases: suma, resta o multiplica los exponentes', answer: optInt(ans), distractors: dist.map(optInt), explain: why });
+}
+
+/* ---------- GEOMETRÍA ---------- */
+function qAngleTri(L) {
+  const a = 5 * rnd(L === 1 ? 6 : 4, L === 1 ? 14 : 20), b = 5 * rnd(L === 1 ? 6 : 4, L === 1 ? 14 : 22);
+  if (a + b >= 170) return qAngleTri(L);
+  const c = 180 - a - b;
+  return build({ topic: 'geometria', text: 'Un triángulo tiene dos ángulos conocidos. ¿Cuánto mide el tercero?', visual: angSVG(a, b), chuleta: 'Los ángulos de un triángulo suman 180°', answer: optNum(c, '°'),
+    distractors: [optNum(360 - a - b, '°'), optNum(a + b, '°'), optNum(90 - a > 0 ? 90 - a : c + 10, '°'), optNum(c + 10, '°')],
+    explain: `Los ángulos interiores de un triángulo suman 180°. Entonces ${a}° + ${b}° = ${a + b}° y el tercero mide 180° − ${a + b}° = ${c}°.` });
+}
+function qAngleCompSupp(L) {
+  const comp = Math.random() < 0.5, x = comp ? 5 * rnd(1, 17) : 5 * rnd(2, 34), ans = (comp ? 90 : 180) - x;
+  return build({ topic: 'geometria', text: `¿Cuánto mide el ${comp ? 'complemento' : 'suplemento'} de un ángulo de ${x}°?`, chuleta: 'Complementarios suman 90° · suplementarios suman 180°', answer: optNum(ans, '°'),
+    distractors: [optNum((comp ? 180 : 90) - x > 0 ? (comp ? 180 : 90) - x : x + 10, '°'), optNum(x, '°'), optNum(ans + 10, '°'), optNum(Math.abs(ans - 10) || ans + 5, '°')],
+    explain: `${comp ? 'Dos ángulos complementarios suman 90°' : 'Dos ángulos suplementarios suman 180°'}: ${comp ? 90 : 180}° − ${x}° = ${ans}°.` });
+}
+function qCircle(L) {
+  const area = Math.random() < 0.5, r = rnd(2, L === 1 ? 6 : 10), useD = L >= 2 && Math.random() < 0.5;
+  const label = useD ? 'd = ' + 2 * r + ' cm' : 'r = ' + r + ' cm';
+  const P = 628 * r, A = 314 * r * r; /* escalados por 100 (π = 3,14) */
+  const ans = area ? A : P;
+  return build({ topic: 'geometria', text: `${area ? 'Área' : 'Perímetro (largo de la circunferencia)'} de un círculo con ${useD ? 'diámetro ' + 2 * r : 'radio ' + r} cm. Usa π = 3,14.`, visual: circSVG(label),
+    chuleta: area ? 'Área = π × r × r' : 'Perímetro = 2 × π × r', answer: optDec(ans, 2, area ? 'cm²' : 'cm'),
+    distractors: area ? [optDec(P, 2, 'cm²'), optDec(314 * r, 2, 'cm²'), optDec(A * 2, 2, 'cm²'), optDec(A * 4, 2, 'cm²')]
+      : [optDec(A, 2, 'cm'), optDec(314 * r, 2, 'cm'), optDec(P * 2, 2, 'cm'), optDec(P + 100, 2, 'cm')],
+    explain: area ? `${useD ? `Primero el radio: ${2 * r} ÷ 2 = ${r}. ` : ''}Área = π × r² = 3,14 × ${r} × ${r} = ${dec(A, 2)} cm².` : `${useD ? `El radio es la mitad del diámetro: ${r} cm. ` : ''}Perímetro = 2 × π × r = 2 × 3,14 × ${r} = ${dec(P, 2)} cm.` });
+}
+const POLIS = [[3, 'triángulo'], [4, 'cuadrilátero'], [5, 'pentágono'], [6, 'hexágono'], [7, 'heptágono'], [8, 'octógono'], [10, 'decágono']];
+function qPolyAngles(L) {
+  const [n, nom] = pick(L === 2 ? POLIS.slice(1, 5) : POLIS.slice(1)), ans = (n - 2) * 180;
+  return build({ topic: 'geometria', text: `¿Cuánto suman los ángulos interiores de un ${nom}?`, chuleta: 'Suma = (lados − 2) × 180°', answer: optNum(ans, '°'),
+    distractors: [optNum(n * 180, '°'), optNum((n - 1) * 180, '°'), optNum((n - 2) * 90, '°'), optNum(360, '°')],
+    explain: `Un ${nom} tiene ${n} lados: (${n} − 2) × 180° = ${n - 2} × 180° = ${ans}°.` });
+}
+function qCylinder() {
+  const r = rnd(2, 6), h = rnd(3, 10), V = 314 * r * r * h;
+  return build({ topic: 'geometria', text: `Volumen de un cilindro de radio ${r} cm y altura ${h} cm. Usa π = 3,14.`, chuleta: 'Volumen = π × r² × altura', answer: optDec(V, 2, 'cm³'),
+    distractors: [optDec(314 * r * h, 2, 'cm³'), optDec(314 * r * r, 2, 'cm³'), optDec(2 * 314 * r * h, 2, 'cm³'), optDec(314 * r * r * h * 2, 2, 'cm³')],
+    explain: `Volumen = π × r² × h = 3,14 × ${r}² × ${h} = 3,14 × ${r * r} × ${h} = ${dec(V, 2)} cm³.` });
+}
+
+/* ---------- OPERACIONES ---------- */
+function qOrder(L) {
+  const a = rnd(2, 9), b = rnd(2, 9), c = rnd(2, 9), d = rnd(1, 9);
+  const T = L === 1 ? [
+    { t: `${a} + ${b} × ${c}`, v: a + b * c, w: (a + b) * c, why: `Primero la multiplicación: ${b} × ${c} = ${b * c}. Después la suma: ${a} + ${b * c} = ${a + b * c}.` },
+    { t: `${b * c + d} − ${b} × ${c}`, v: d, w: (b * c + d - b) * c, why: `Primero la multiplicación: ${b} × ${c} = ${b * c}. Luego ${b * c + d} − ${b * c} = ${d}.` },
+  ] : L === 2 ? [
+    { t: `(${a} + ${b}) × ${c} − ${d}`, v: (a + b) * c - d, w: a + b * c - d, why: `Primero el paréntesis: ${a} + ${b} = ${a + b}. Luego ${a + b} × ${c} = ${(a + b) * c} y al final − ${d} = ${(a + b) * c - d}.` },
+    { t: `${a} + ${b} × ${c} − ${d}`, v: a + b * c - d, w: (a + b) * c - d, why: `Primero la multiplicación: ${b} × ${c} = ${b * c}. Luego ${a} + ${b * c} − ${d} = ${a + b * c - d}.` },
+  ] : [
+    { t: `${a} + ${b}<sup>2</sup> × ${c}`, v: a + b * b * c, w: (a + b * b) * c, why: `Primero la potencia: ${b}² = ${b * b}. Luego ${b * b} × ${c} = ${b * b * c} y al final ${a} + ${b * b * c} = ${a + b * b * c}.` },
+    { t: `(${a + b} − ${a})<sup>2</sup> + ${c} × ${d}`, v: b * b + c * d, w: (b * b + c) * d, why: `Paréntesis: ${a + b} − ${a} = ${b}. Potencia: ${b}² = ${b * b}. Producto: ${c} × ${d} = ${c * d}. Suma: ${b * b + c * d}.` },
+  ];
+  const q = pick(T);
+  return build({ topic: 'operaciones', text: `Calcula: ${q.t}`, chuleta: 'Orden: paréntesis → potencias → × ÷ → + −', answer: optInt(q.v),
+    distractors: [optInt(q.w), optInt(q.v + 1), optInt(Math.max(1, q.v - 2)), optInt(q.v + 10)], explain: q.why });
+}
+function qTables(L) {
+  const div = L >= 2 && Math.random() < 0.4;
+  let a, b;
+  if (L === 1) { a = rnd(2, 9); b = rnd(2, 9); } else if (L === 2) { a = rnd(3, 12); b = rnd(3, 12); } else { a = rnd(12, 19); b = rnd(3, 9); }
+  const p = a * b;
+  if (div) return build({ topic: 'operaciones', text: `${p} ÷ ${b} = ?`, chuleta: 'Piensa: ¿qué número por ' + b + ' da ' + p + '?', answer: optNum(a),
+    distractors: [optNum(a + 1), optNum(a - 1 > 0 ? a - 1 : a + 2), optNum(b), optNum(a + 2)], explain: `${a} × ${b} = ${p}, así que ${p} ÷ ${b} = ${a}.` });
+  const swapD = Number(String(p).split('').reverse().join(''));
+  return build({ topic: 'operaciones', text: `${a} × ${b} = ?`, answer: optNum(p),
+    distractors: [optNum(p + a), optNum(p - b), optNum(p + b), optNum(swapD !== p ? swapD : p + 10)], explain: `${a} × ${b} = ${p}.` });
+}
+function qMcdMcm(L) {
+  const P = L === 1 ? [[4, 6], [6, 9], [8, 12], [10, 15], [6, 8], [9, 12]] : L === 2 ? [[12, 20], [18, 24], [15, 25], [16, 24], [14, 21], [20, 30]] : [[24, 36], [30, 45], [28, 42], [36, 48], [32, 40], [45, 60]];
+  const [a, b] = pick(P), g = gcd(a, b), m = a * b / g, mcd = Math.random() < 0.5;
+  return build({ topic: 'operaciones', text: `¿Cuál es el ${mcd ? 'MCD (máximo común divisor)' : 'MCM (mínimo común múltiplo)'} de ${a} y ${b}?`, chuleta: mcd ? 'El mayor número que divide a ambos' : 'El menor número que ambos dividen',
+    answer: optNum(mcd ? g : m), distractors: mcd ? [optNum(m), optNum(Math.min(a, b)), optNum(a * b), optNum(g * 2)] : [optNum(g), optNum(a * b), optNum(a + b), optNum(Math.max(a, b))],
+    explain: mcd ? `El MCD es el mayor número que divide a ${a} y a ${b}: es ${g}.` : `El MCM es el menor número al que llegan ambos al contar de ${a} en ${a} y de ${b} en ${b}. Se calcula (${a} × ${b}) ÷ MCD = ${a * b} ÷ ${g} = ${m}.` });
+}
+const PRIMOS = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97];
+function qPrimeMult(L) {
+  if (Math.random() < 0.5) {
+    const p = pick(PRIMOS.filter(x => x > (L === 1 ? 10 : 20))), comp = [];
+    for (let guard = 0; comp.length < 3 && guard < 400; guard++) { const c = pick([9, 15, 21, 25, 27, 33, 35, 39, 45, 49, 51, 55, 57, 63, 65, 69, 77, 81, 85, 87, 91, 93, 95]); if (c < p + 30 && c > p - 25 && !comp.includes(c)) comp.push(c); }
+    return build({ topic: 'operaciones', text: '¿Cuál de estos números es PRIMO?', chuleta: 'Primo: solo se divide por 1 y por sí mismo', answer: optNum(p), distractors: comp.map(c => optNum(c)),
+      explain: `${p} solo es divisible por 1 y por ${p}, por eso es primo. Los otros tienen más divisores (se pueden escribir como producto de dos números).` });
+  }
+  const k = pick(L === 1 ? [3, 4, 5, 6] : [7, 8, 9, 12]), m = k * rnd(3, 12), no = new Set();
+  while (no.size < 3) { const c = m + pick([-2, -1, 1, 2, 3]); if (c % k !== 0) no.add(c); }
+  return build({ topic: 'operaciones', text: `¿Cuál de estos números es múltiplo de ${k}?`, chuleta: `Múltiplo de ${k}: aparece en la tabla del ${k}`, answer: optNum(m), distractors: [...no].map(c => optNum(c)),
+    explain: `${m} = ${k} × ${m / k}, por eso es múltiplo de ${k}. Los demás no se pueden dividir exactamente entre ${k}.` });
+}
+function qIntegers(L) {
+  const par = x => (x < 0 ? `(${MINUS}${-x})` : String(x));
+  let a, b, txt, v, why, dist;
+  if (L === 1) { a = rnd(-9, -1); b = rnd(2, 12); txt = `${sgn(a)} + ${b}`; v = a + b; why = `Partimos en ${sgn(a)} y avanzamos ${b} hacia la derecha: ${sgn(v)}.`; dist = [Math.abs(a) + b, -v, a - b, v + 2]; }
+  else if (L === 2) { a = rnd(-9, 9); b = rnd(2, 12); txt = `${par(a)} − ${b}`; v = a - b; why = `Restar ${b} es retroceder ${b}: ${sgn(a)} − ${b} = ${sgn(v)}.`; dist = [a + b, -v, Math.abs(a) - b, v + 2]; }
+  else { const m = Math.random() < 0.5; a = rnd(-9, -2); b = rnd(2, 9) * (Math.random() < 0.5 ? -1 : 1); if (m) { txt = `${par(a)} × ${par(b)}`; v = a * b; why = `Signos iguales dan positivo y signos distintos dan negativo: ${par(a)} × ${par(b)} = ${sgn(v)}.`; dist = [-v, a + b, v + a, Math.abs(v) + 1]; } else { b = pick([2, 3, 4, 6]); a = -b * rnd(2, 9); txt = `${par(a)} ÷ ${b}`; v = a / b; why = `${sgn(a)} ÷ ${b} = ${sgn(v)} (signos distintos dan negativo).`; dist = [-v, v - 1, Math.abs(v) + b, v + 1]; } }
+  return build({ topic: 'operaciones', text: `Calcula: ${txt}`, chuleta: L === 3 ? 'Signos iguales (+) · signos distintos (−)' : 'Con números negativos, retrocede en la recta numérica', answer: optInt(v), distractors: dist.map(optInt), explain: why });
+}
+
+/* ---------- PROBLEMAS ---------- */
+function qRule3(L) {
+  const [n1] = pickN(1);
+  if (L === 3) {
+    const a = pick([2, 3, 4, 6]), k = pick([2, 3]), d = pick([6, 12, 18, 24]), b = a * k, ans = d / k;
+    return build({ topic: 'problemas', text: `${a} obreros tardan ${d} días en terminar una obra. ¿Cuántos días tardarían ${b} obreros trabajando al mismo ritmo?`, chuleta: 'Más obreros → menos días (proporción inversa)', answer: optNum(ans, 'días'),
+      distractors: [optNum(d * k, 'días'), optNum(d + k, 'días'), optNum(d - k > 0 ? d - k : d + 1, 'días'), optNum(ans + 2, 'días')],
+      explain: `La obra equivale a ${a} × ${d} = ${a * d} días de un obrero. Con ${b} obreros: ${a * d} ÷ ${b} = ${ans} días.` });
+  }
+  const u = pick(L === 1 ? [300, 400, 500, 600, 800] : [250, 350, 450, 750, 1200]), a = rnd(2, 6), b = a + rnd(1, 6), item = pick([['cuadernos', 'cuaderno'], ['helados', 'helado'], ['lápices', 'lápiz'], ['bebidas', 'bebida']]);
+  return build({ topic: 'problemas', text: `${n1} compró ${a} ${item[0]} por ${clp(a * u)}. ¿Cuánto pagaría por ${b} ${item[0]} iguales?`, chuleta: 'Primero busca el valor de 1 unidad', answer: optClp(b * u),
+    distractors: [optClp(a * u + b), optClp((b - a) * u), optClp(b * u + u), optClp(a * u * b)],
+    explain: `Un ${item[1]} cuesta ${clp(a * u)} ÷ ${a} = ${clp(u)}. Entonces ${b} cuestan ${clp(u)} × ${b} = ${clp(b * u)}.` });
+}
+function qAges(L) {
+  const [x, y] = pickN(2);
+  if (L === 1) { const t = rnd(3, 12), k = rnd(2, 8); return build({ topic: 'problemas', text: `${x} tiene ${k} años más que ${y}. Si ${y} tiene ${t} años, ¿cuántos años tiene ${x}?`, answer: optNum(t + k, 'años'), distractors: [optNum(t - k > 0 ? t - k : t + 1, 'años'), optNum(k, 'años'), optNum(t * k, 'años'), optNum(t + k + 1, 'años')], explain: `Si tiene ${k} años más, sumamos: ${t} + ${k} = ${t + k} años.` }); }
+  const kk = L === 2 ? 2 : pick([3, 4, 5]), c = rnd(3, 12), tot = (kk + 1) * c, askBig = Math.random() < 0.4;
+  return build({ topic: 'problemas', text: `${x} tiene ${kk === 2 ? 'el doble de la edad de' : kk === 3 ? 'el triple de la edad de' : kk + ' veces la edad de'} ${y}. Entre los dos suman ${tot} años. ¿Cuántos años tiene ${askBig ? x : y}?`, chuleta: 'Llama x a la edad menor: x + ' + kk + 'x = total',
+    answer: optNum(askBig ? kk * c : c, 'años'), distractors: [optNum(askBig ? c : kk * c, 'años'), optNum(tot / 2, 'años'), optNum(tot - c, 'años'), optNum(c + 2, 'años')],
+    explain: `Si ${y} tiene x años, ${x} tiene ${kk}x. Juntos: x + ${kk}x = ${kk + 1}x = ${tot}, así que x = ${tot} ÷ ${kk + 1} = ${c}. ${y} tiene ${c} y ${x} tiene ${kk * c}.` });
+}
+function qSpeed(L) {
+  const v = pick([40, 50, 60, 80, 90, 100]);
+  if (L === 1) { const t = rnd(2, 5); return build({ topic: 'problemas', text: `Un bus viaja a ${v} km/h durante ${t} horas. ¿Qué distancia recorre?`, chuleta: 'distancia = velocidad × tiempo', answer: optNum(v * t, 'km'), distractors: [optNum(v + t, 'km'), optNum(v / t > 0 ? Math.round(v / t) : v, 'km'), optNum(v * t + v, 'km'), optNum(v * (t + 1) - 10, 'km')], explain: `distancia = velocidad × tiempo = ${v} × ${t} = ${v * t} km.` }); }
+  if (L === 2) { const t = rnd(2, 6); return build({ topic: 'problemas', text: `Un auto recorre ${v * t} km a ${v} km/h. ¿Cuántas horas demora?`, chuleta: 'tiempo = distancia ÷ velocidad', answer: optNum(t, 'horas'), distractors: [optNum(v * t / 10 > 0 ? Math.round(v * t / 10) : t + 3, 'horas'), optNum(t + 1, 'horas'), optNum(t * 2, 'horas'), optNum(v, 'horas')], explain: `tiempo = distancia ÷ velocidad = ${v * t} ÷ ${v} = ${t} horas.` }); }
+  const t10 = pick([15, 25, 35]), d = v * t10 / 10;
+  if (!Number.isInteger(d)) return qSpeed(L);
+  return build({ topic: 'problemas', text: `Un tren recorre ${d} km en ${dec(t10, 1)} horas. ¿A qué velocidad promedio viaja?`, chuleta: 'velocidad = distancia ÷ tiempo', answer: optNum(v, 'km/h'), distractors: [optNum(d * t10 / 10, 'km/h'), optNum(Math.round(d - t10 / 10), 'km/h'), optNum(v + 10, 'km/h'), optNum(v - 10, 'km/h')],
+    explain: `velocidad = distancia ÷ tiempo = ${d} ÷ ${dec(t10, 1)} = ${v} km/h.` });
+}
+function qDiscount(L) {
+  const p = pick(L === 1 ? [10, 20, 50] : [10, 15, 20, 25, 30, 40]), P = pick(L === 1 ? [10000, 20000, 5000, 15000] : [12000, 18000, 24000, 32000, 8000, 16000]);
+  const up = L === 3 && Math.random() < 0.5, disc = P * p / 100; if (!Number.isInteger(disc)) return qDiscount(L);
+  const ans = up ? P + disc : P - disc, [art, obj] = pick([['una', 'polera'], ['una', 'mochila'], ['un', 'par de zapatillas'], ['un', 'juego de mesa']]), Art = art[0].toUpperCase() + art.slice(1);
+  return build({ topic: 'problemas', text: `${up ? `${Art} ${obj} que costaba ${clp(P)} sube un ${p}%. ¿Cuánto cuesta ahora?` : `${Art} ${obj} cuesta ${clp(P)} y tiene un ${p}% de descuento. ¿Cuánto pagas?`}`, chuleta: `${p}% de ${clp(P)} = ${clp(P)} × ${p} ÷ 100`, answer: optClp(ans),
+    distractors: [optClp(disc), optClp(up ? P - disc : P + disc), optClp(ans + 1000), optClp(Math.max(500, P - p))],
+    explain: `El ${p}% de ${clp(P)} es ${clp(disc)}. ${up ? `Como sube: ${clp(P)} + ${clp(disc)} = ${clp(ans)}.` : `Como es descuento: ${clp(P)} − ${clp(disc)} = ${clp(ans)}.`}` });
+}
+function qAverage(L) {
+  const nom = pickN(1)[0];
+  if (L === 1) {
+    const n = pick([3, 4, 5]), avg = rnd(6, 15), off = Array.from({ length: n - 1 }, () => rnd(-3, 3)); off.push(-off.reduce((x, y) => x + y, 0));
+    const arr = off.map(o => avg + o); if (arr.some(x => x <= 0) || new Set(arr).size === 1) return qAverage(L);
+    const s = n * avg;
+    return build({ topic: 'problemas', text: `${nom} anotó ${arr.join(', ')} puntos en ${n} juegos. ¿Cuál fue su promedio de puntos?`, chuleta: 'promedio = suma ÷ cantidad', answer: optNum(avg), distractors: [optNum(s), optNum(Math.max(...arr)), optNum(avg + 1), optNum(Math.round(s / (n + 1)))], explain: `Sumamos: ${arr.join(' + ')} = ${s}. Dividimos entre ${n}: ${s} ÷ ${n} = ${avg}.` });
+  }
+  if (L === 2) { let n1, n2, n3, s; do { n1 = rnd(40, 70); n2 = rnd(40, 70); n3 = rnd(40, 70); s = n1 + n2 + n3; } while (s % 3 !== 0);
+    return build({ topic: 'problemas', text: `Las notas de ${nom} en matemática fueron ${nota(n1)}, ${nota(n2)} y ${nota(n3)}. ¿Cuál es su promedio?`, chuleta: 'promedio = suma ÷ cantidad de notas', answer: optNota(s / 3, 1), distractors: [optNota(s, 1), optNota(Math.max(n1, n2, n3), 1), optNota(s / 3 + 3, 1), optNota(Math.round(s / 4), 1)], explain: `Suma: ${nota(n1)} + ${nota(n2)} + ${nota(n3)} = ${nota(s)}. Promedio: ${nota(s)} ÷ 3 = ${nota(s / 3)}.` }); }
+  let a, b, c, need, tgt = pick([50, 55, 60]);
+  do { a = rnd(35, 65); b = rnd(35, 65); c = rnd(35, 65); need = 4 * tgt - a - b - c; } while (need < 20 || need > 69);
+  return build({ topic: 'problemas', text: `${nom} tiene estas notas: ${nota(a)}, ${nota(b)} y ${nota(c)}. ¿Qué nota necesita en la cuarta prueba para tener promedio ${nota(tgt)}?`, chuleta: 'suma total necesaria = promedio × cantidad', answer: optNota(need, 1),
+    distractors: [optNota(tgt, 1), optNota(Math.round((a + b + c) / 3), 1), optNota(need + 5, 1), optNota(Math.max(10, need - 5), 1)],
+    explain: `Para promediar ${nota(tgt)} con 4 notas, la suma debe ser ${nota(tgt)} × 4 = ${nota(tgt * 4)}. Ya tiene ${nota(a + b + c)}, entonces necesita ${nota(tgt * 4)} − ${nota(a + b + c)} = ${nota(need)}.` });
+}
+function qChange(L) {
+  const bill = pick([2000, 5000, 10000, 20000]); let qty = rnd(2, 5), price = pick([350, 450, 650, 850, 1200, 1500]);
+  let total = qty * price, extra = 0, extraTxt = '';
+  if (L >= 2) { extra = pick([500, 700, 900, 1100, 1800]); extraTxt = ` y una bebida de ${clp(extra)}`; }
+  total += extra;
+  if (total >= bill) return qChange(L);
+  const ch = bill - total;
+  return build({ topic: 'problemas', text: `Compras ${qty} galletas de ${clp(price)} cada una${extraTxt}. Pagas con ${clp(bill)}. ¿Cuánto vuelto recibes?`, chuleta: 'vuelto = dinero entregado − total gastado', answer: optClp(ch),
+    distractors: [optClp(total), optClp(bill - price - extra > 0 ? bill - price - extra : ch + 200), optClp(ch + 100), optClp(Math.max(100, ch - 100))],
+    explain: `Gastas ${qty} × ${clp(price)} = ${clp(qty * price)}${extra ? ` + ${clp(extra)} = ${clp(total)}` : ''}. El vuelto es ${clp(bill)} − ${clp(total)} = ${clp(ch)}.` });
+}
+
 const POOL = {
   fracciones: { 1: [qIdentify, qSimplify, qEquivalent, qCompare, qAdd, qOfQuantity], 2: [qIdentify, qSimplify, qEquivalent, qCompare, qAdd, qOfQuantity, qMixed], 3: [qSimplify, qEquivalent, qCompare, qAdd, qOfQuantity, qMixed] },
   formulas: { 1: [qArea, qPerimeter, qPercent, qEquation, qVolume], 2: [qArea, qPerimeter, qPercent, qEquation, qVolume], 3: [qArea, qPercent, qEquation, qPyth, qVolume] },
+  decimales: { 1: [qDecAdd, qDecMul, qDecCompare, qDecFrac, qPercDec], 2: [qDecAdd, qDecMul, qDecCompare, qDecFrac, qPercDec, qRound], 3: [qDecMul, qDecCompare, qDecFrac, qPercDec, qRound, qDecAdd] },
+  potencias: { 1: [qPow, qRoot], 2: [qPow, qRoot, qPowRule], 3: [qPow, qRoot, qPowRule] },
+  geometria: { 1: [qAngleTri, qAngleCompSupp, qCircle], 2: [qAngleTri, qAngleCompSupp, qCircle, qPolyAngles], 3: [qAngleTri, qCircle, qPolyAngles, qCylinder, qAngleCompSupp] },
+  operaciones: { 1: [qOrder, qTables, qMcdMcm, qPrimeMult, qIntegers], 2: [qOrder, qTables, qMcdMcm, qPrimeMult, qIntegers], 3: [qOrder, qTables, qMcdMcm, qPrimeMult, qIntegers] },
+  problemas: { 1: [qRule3, qAges, qSpeed, qDiscount, qAverage, qChange], 2: [qRule3, qAges, qSpeed, qDiscount, qAverage, qChange], 3: [qRule3, qAges, qSpeed, qDiscount, qAverage, qChange] },
 };
 function makeQuestion(topics, level, avoidText) {
   for (let t = 0; t < 12; t++) {
@@ -441,6 +722,16 @@ function makeQuestion(topics, level, avoidText) {
 =================================================================== */
 const $ = s => document.querySelector(s);
 const TEAM_COLORS = ['#FF4D8D', '#4DA3FF', '#2DD4BF', '#FFC93C'];
+const TOPIC_INFO = {
+  fracciones: { n: 'Fracciones', e: '🍕', cls: 't-fr' },
+  decimales: { n: 'Decimales y %', e: '🔢', cls: 't-de' },
+  operaciones: { n: 'Operaciones', e: '➕', cls: 't-op' },
+  potencias: { n: 'Potencias y raíces', e: '⚡', cls: 't-po' },
+  geometria: { n: 'Geometría', e: '🔺', cls: 't-ge' },
+  formulas: { n: 'Fórmulas', e: '📐', cls: 't-fo' },
+  problemas: { n: 'Problemas', e: '🧩', cls: 't-pr' },
+};
+const emptyByTopic = () => Object.fromEntries(Object.keys(TOPIC_INFO).map(k => [k, [0, 0]]));
 const settings = { topics: ['fracciones', 'formulas'], level: 2, rounds: 12, time: 30, chuleta: true, teamCount: 3, names: ['Equipo 1', 'Equipo 2', 'Equipo 3', 'Equipo 4'] };
 let CURRENT_UID = null;
 /* Modo tarea: el estudiante abre el link de su profe (?tarea=ID) y juega solo, sin cuenta, contra 2 bots. */
@@ -494,6 +785,7 @@ $('#mute').onclick = () => { muted = !muted; $('#mute').textContent = muted ? '�
 =================================================================== */
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id)); window.scrollTo(0, 0); }
 function paintChips() {
+  if (!$('#chipTopics').children.length) Object.keys(TOPIC_INFO).forEach(k => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.topic = k; b.textContent = TOPIC_INFO[k].e + ' ' + TOPIC_INFO[k].n; $('#chipTopics').appendChild(b); });
   document.querySelectorAll('#chipTopics .chip').forEach(c => c.classList.toggle('on', settings.topics.includes(c.dataset.topic)));
   document.querySelectorAll('#chipLevel .chip').forEach(c => c.classList.toggle('on', +c.dataset.v === settings.level));
   document.querySelectorAll('#chipRounds .chip').forEach(c => c.classList.toggle('on', +c.dataset.v === settings.rounds));
@@ -530,12 +822,12 @@ function startGame() {
   ac(); sfx.click();
   if (CURRENT_UID && !ES_TAREA) saveGameData('mathquest', CURRENT_UID, { settings: { topics: settings.topics, level: settings.level, rounds: settings.rounds, time: settings.time, chuleta: settings.chuleta, teamCount: settings.teamCount, names: settings.names } });
   game = {
-    teams: Array.from({ length: settings.teamCount }, (_, i) => ({ name: settings.names[i] || 'Equipo ' + (i + 1), color: TEAM_COLORS[i], pts: 0, streak: 0, best: 0, ok: 0, tot: 0, byTopic: { fracciones: [0, 0], formulas: [0, 0] } })),
+    teams: Array.from({ length: settings.teamCount }, (_, i) => ({ name: settings.names[i] || 'Equipo ' + (i + 1), color: TEAM_COLORS[i], pts: 0, streak: 0, best: 0, ok: 0, tot: 0, byTopic: emptyByTopic() })),
     turn: 0, qIndex: 0, q: null, locked: false, lastText: '',
   };
   if (ES_TAREA) {
     game.teams = [{ name: settings.names[0] || 'Tú', color: TEAM_COLORS[0] }, { name: 'Bot Profe', color: TEAM_COLORS[1] }]
-      .map(t => ({ ...t, pts: 0, streak: 0, best: 0, ok: 0, tot: 0, byTopic: { fracciones: [0, 0], formulas: [0, 0] } }));
+      .map(t => ({ ...t, pts: 0, streak: 0, best: 0, ok: 0, tot: 0, byTopic: emptyByTopic() }));
   }
   showScreen('screen-game'); nextQuestion();
 }
@@ -556,7 +848,7 @@ function nextQuestion() {
   renderScores();
   $('#roundPill').textContent = `Pregunta ${game.qIndex}/${settings.rounds}`;
   $('#progBar').style.width = ((game.qIndex - 1) / settings.rounds * 100) + '%';
-  const tag = $('#qTag'); tag.textContent = q.topic === 'fracciones' ? '🍕 FRACCIONES' : '📐 FÓRMULAS'; tag.className = 'tag ' + (q.topic === 'fracciones' ? 't-fr' : 't-fo');
+  const tag = $('#qTag'), ti = TOPIC_INFO[q.topic] || TOPIC_INFO.fracciones; tag.textContent = ti.e + ' ' + ti.n.toUpperCase(); tag.className = 'tag ' + ti.cls;
   $('#qText').innerHTML = (game.teams.length > 1 && !ES_TAREA ? `<small style="display:block;font-size:.55em;color:${game.teams[game.turn].color};filter:brightness(.8)">Turno de ${esc(game.teams[game.turn].name)}</small>` : '') + q.text;
   $('#qVisual').innerHTML = q.visual;
   const ch = $('#qChuleta'); if (settings.chuleta && q.chuleta) { ch.hidden = false; ch.innerHTML = '📌 ' + esc(q.chuleta); } else ch.hidden = true;
@@ -631,8 +923,7 @@ function endGame() {
   const best = Math.max(...game.teams.map(t => t.best));
   $('#stats').innerHTML = `<div class="stat"><b>${tot ? Math.round(totOk / tot * 100) : 0}%</b>de aciertos (${totOk}/${tot})</div>
     <div class="stat"><b>🔥 ${best}</b>mejor racha seguida</div>
-    ${settings.topics.includes('fracciones') ? `<div class="stat"><b>${bt('fracciones')}</b>aciertos en fracciones 🍕</div>` : ''}
-    ${settings.topics.includes('formulas') ? `<div class="stat"><b>${bt('formulas')}</b>aciertos en fórmulas 📐</div>` : ''}`;
+${settings.topics.map(k => `<div class="stat"><b>${bt(k)}</b>aciertos en ${TOPIC_INFO[k].n.toLowerCase()} ${TOPIC_INFO[k].e}</div>`).join('')}`;
 }
 $('#btnPlay').onclick = startGame;
 $('#btnAgain').onclick = startGame;
@@ -659,7 +950,7 @@ async function arrancarTarea() {
     if (!res.ok || !j || !j.ok || j.game !== 'mathquest' || !j.data) throw new Error((j && j.error) || 'No se pudo abrir la tarea. Revisa tu conexión.');
     loadSettings({ settings: { ...j.data, teamCount: 1 } });
     $('#tareaTitulo').textContent = (j.title || 'MathQuest');
-    $('#tareaInfo').textContent = `${settings.rounds} preguntas · ${settings.topics.map(t => t === 'fracciones' ? 'fracciones' : 'fórmulas').join(' y ')} · juegas contra el Bot Profe.`;
+    $('#tareaInfo').textContent = `${settings.rounds} preguntas · ${settings.topics.map(t => (TOPIC_INFO[t] || TOPIC_INFO.fracciones).n.toLowerCase()).join(', ')} · juegas contra el Bot Profe.`;
     play.disabled = false; play.textContent = '▶ ¡JUGAR!';
     play.onclick = () => { const n = $('#tareaNombre').value.trim(); settings.names[0] = n || 'Tú'; startGame(); };
     $('#btnAgain').onclick = startGame;
