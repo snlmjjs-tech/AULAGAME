@@ -246,6 +246,7 @@ select option{color:#222}
   </div>
   <div class="homebar">
     <button class="btn" id="goEditor">📝 Mis palabras</button>
+    <button class="btn" id="shareTask">📚 Enviar a estudiantes</button>
     <span class="muted count" id="wordCount"></span>
     <button class="btn sm" id="goJoin">Soy estudiante: unirme con PIN</button>
   </div>
@@ -386,6 +387,7 @@ select option{color:#222}
 import { getCurrentUid } from "../shared/game-storage.js";
 import { refSala, escuchar, escribir, eliminar, agregar, leerSala } from "../shared/live-room.js";
 import { pintarQR } from "../shared/qr-inline.js";
+import { abrirCompartirTarea } from "../shared/task-share.js";
 
 /* ---------- utilidades ---------- */
 const $ = id => document.getElementById(id);
@@ -489,12 +491,24 @@ const SAMPLE = [
   { w: 'WEDNESDAY', h1: 'A day of the week', h2: 'It is in the middle of the week', h3: 'It comes after Tuesday', c: 'Days' }
 ];
 let words = store.get('colgado_words', null) || SAMPLE.map(x => ({ ...x }));
-const saveWords = () => store.set('colgado_words', words);
+/* Modo tarea: un estudiante abre el link de su profe (?tarea=ID) y juega solo en su casa, sin cuenta ni sala. */
+const TAREA_ID = (() => { const t = new URLSearchParams(location.search).get('tarea'); return t && /^[a-z0-9]{6,24}$/i.test(t) && !new URLSearchParams(location.search).get('room') ? t.toLowerCase() : ''; })();
+let TAREA_TITULO = '', TAREA_ERROR = '';
+if (TAREA_ID) {
+  try {
+    const _r = await fetch('https://aulagame-ai-questions.aulagame-snlmjjs.workers.dev/task/get?id=' + encodeURIComponent(TAREA_ID));
+    const _j = await _r.json().catch(() => null);
+    if (!_r.ok || !_j || !_j.ok || _j.game !== 'colgado' || !_j.data || !Array.isArray(_j.data.words)) throw new Error((_j && _j.error) || 'No se pudo abrir la tarea. Revisa tu conexión.');
+    words = _j.data.words; TAREA_TITULO = _j.title || '';
+  } catch (e) { TAREA_ERROR = e.message || String(e); words = []; }
+}
+const saveWords = () => { if (!TAREA_ID) store.set('colgado_words', words); };
 const validWords = () => words.filter(x => x.w && /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(x.w));
 const updCount = () => { $('wordCount').textContent = validWords().length + ' palabra' + (validWords().length === 1 ? '' : 's') + ' lista' + (validWords().length === 1 ? '' : 's'); };
 
 let S = Object.assign({ max: 6, time: 0, cat: true, hintCost: false, shuffle: true, auto: false, teams: 3, tnames: ['Equipo 1', 'Equipo 2', 'Equipo 3', 'Equipo 4'] }, store.get('colgado_settings', {}));
 let MODE = 'class';
+if (TAREA_ID) S = { max: 6, time: 0, cat: true, hintCost: false, shuffle: true, auto: false, teams: 3, tnames: ['Equipo 1', 'Equipo 2', 'Equipo 3', 'Equipo 4'] };
 
 /* ---------- editor ---------- */
 function renderEditor() {
@@ -877,6 +891,14 @@ $('heroHang').innerHTML = hangSVG(5);
 setMute(muted); updCount();
 const q = new URLSearchParams(location.search);
 if (q.get('room')) playerScreen(q.get('room'));
+else if (TAREA_ID) {
+  document.querySelector('#home .hero p').textContent = TAREA_ERROR || ('Tarea' + (TAREA_TITULO ? ': ' + TAREA_TITULO : '') + ' · juegas solo, con las palabras de tu profe. Adivina letra por letra antes de que el muñeco quede completo.');
+  document.querySelector('#home .modes').innerHTML = TAREA_ERROR ? '' : '<button class="mode m1" id="tareaPlay"><span class="ic">▶️</span><b>Jugar</b><span class="d">' + validWords().length + ' palabra' + (validWords().length === 1 ? '' : 's') + ' · tus errores y aciertos se cuentan al final.</span></button>';
+  document.querySelector('#home .homebar').style.display = 'none';
+  const tp = $('tareaPlay'); if (tp) tp.onclick = () => { MODE = 'class'; ac(); startClassic(); };
+} else {
+  $('shareTask').onclick = () => abrirCompartirTarea({ game: 'colgado', defaultTitle: 'El Colgado', studentPath: '/play/colgado/', getData: () => { const l = validWords(); return l.length ? { words: l } : null; } });
+}
 window.addEventListener('beforeunload', () => { if (H) eliminar(refSala('colgado', H.pin)); });
 </script>
 </body>

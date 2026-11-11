@@ -1099,7 +1099,6 @@ async function handleHotdog(request, env, url, origin, projectId) {
  *    Solo juegos de TASK_GAMES; el contenido se valida y se limita en tamaño.
  * ====================================================================== */
 
-const TASK_GAMES = { hotdogrun: true };
 const TASK_ID_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"; // sin letras/números confundibles
 
 function limpiarTexto(v, max) {
@@ -1121,6 +1120,27 @@ function sanitizarHotdog(data) {
   const bots = Math.max(0, Math.min(11, parseInt(data.bots, 10) || 7));
   return { v: 4, bots, levels };
 }
+
+/** Millonario: banco de preguntas de verbos + preguntas de cultura general (4 alternativas cada una). */
+function sanitizarMillonario(d) {
+  const limpiar = (arr, tipoPorDefecto, max) => (Array.isArray(arr) ? arr : []).slice(0, max).map((q) => {
+    const options = (Array.isArray(q && q.options) ? q.options : []).slice(0, 4).map((t) => limpiarTexto(t, 120));
+    return { prompt: limpiarTexto(q && q.prompt, 300), options, correct: parseInt(q && q.correct, 10), type: limpiarTexto(q && q.type, 12) || tipoPorDefecto };
+  }).filter((q) => q.prompt && q.options.length === 4 && q.options.every(Boolean) && Number.isInteger(q.correct) && q.correct >= 0 && q.correct <= 3);
+  const allQuestions = limpiar(d && d.allQuestions, "custom", 300);
+  if (allQuestions.length < 3) return null; // el juego necesita al menos 3 preguntas
+  return { allQuestions, cultureQuestions: limpiar(d && d.cultureQuestions, "culture", 60) };
+}
+
+/** Colgado: palabras o frases con hasta 3 pistas y categoría opcional. */
+function sanitizarColgado(d) {
+  const words = (Array.isArray(d && d.words) ? d.words : []).slice(0, 200).map((x) => ({
+    w: limpiarTexto(x && x.w, 30), h1: limpiarTexto(x && x.h1, 120), h2: limpiarTexto(x && x.h2, 120), h3: limpiarTexto(x && x.h3, 120), c: limpiarTexto(x && x.c, 40),
+  })).filter((x) => /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(x.w));
+  return words.length ? { words } : null;
+}
+
+const TASK_GAMES = { hotdogrun: sanitizarHotdog, millonario: sanitizarMillonario, colgado: sanitizarColgado };
 
 function tareaDocUrl(env, id, query) {
   const projectId = env.FIREBASE_PROJECT_ID || "aulagame-4c019";
@@ -1165,11 +1185,11 @@ async function handleTask(request, env, url, origin, projectId) {
     if (!perfil.premium) {
       return json({ ok: false, code: "NOT_PREMIUM", error: "Enviar juegos a estudiantes es una función exclusiva de Premium." }, 403, origin);
     }
-    const data = sanitizarHotdog(body.data);
-    if (!data) return json({ ok: false, error: "Agrega al menos una pregunta válida antes de enviar." }, 400, origin);
+    const data = TASK_GAMES[game](body.data);
+    if (!data) return json({ ok: false, error: "No hay contenido válido para enviar: revisa que tengas preguntas o palabras completas (Millonario necesita al menos 3 preguntas)." }, 400, origin);
     const serial = JSON.stringify(data);
     if (serial.length > 150000) return json({ ok: false, error: "El juego es demasiado grande para enviarlo." }, 413, origin);
-    const title = limpiarTexto(body.title, 80) || "Hot Dog Run";
+    const title = limpiarTexto(body.title, 80) || "Tarea de AulaGame";
     const bytes = new Uint8Array(10);
     crypto.getRandomValues(bytes);
     const id = Array.from(bytes, (b) => TASK_ID_ALPHABET[b % TASK_ID_ALPHABET.length]).join("");

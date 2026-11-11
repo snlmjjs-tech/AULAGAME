@@ -670,6 +670,7 @@ p{margin:0;}
 .student-roster{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; width:100%; }
 .student-options{ display:flex; flex-direction:column; gap:10px; width:100%; }
 .student-feedback{ font-family:var(--font-display); font-weight:700; font-size:15px; text-align:center; min-height:20px; }
+  body.tarea #btnGoEditor, body.tarea #btnGoQRHome, body.tarea #helpBtn, body.tarea #qrBtn, body.tarea .stepper{ display:none !important; }
 </style>
 </head>
 <body>
@@ -740,6 +741,7 @@ p{margin:0;}
       <div class="editor-toolbar">
         <span id="aiGenerateBtnContainer" style="display:inline-block;"></span>
         <button class="btn btn-primary" id="btnAddQuestion">+ Nueva pregunta</button>
+        <button class="btn btn-secondary" id="btnShareTask">📚 Enviar a estudiantes</button>
         <button class="btn btn-secondary" id="btnExport">⬇ Exportar (Excel)</button>
         <label class="btn btn-secondary" for="importFile" style="margin:0;">⬆ Importar (Excel)</label>
         <input type="file" id="importFile" accept=".xlsx,.xls">
@@ -996,11 +998,24 @@ import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
 import { crearSala, refSala, escuchar, escribir, marcaTiempo, idJugador } from "../shared/live-room.js";
 import { mostrarTutorial, mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
 import { renderAIButton } from "../shared/ai-questions.js";
+import { abrirCompartirTarea } from "../shared/task-share.js";
 
 /* ================= MODO QR: alumno vs. profesor ================= */
 const _paramsMillonario = new URLSearchParams(location.search);
 const SALA_ALUMNO = _paramsMillonario.get("room");
 const ES_ALUMNO = !!SALA_ALUMNO;
+/* Modo tarea: un estudiante abre el link de su profe (?tarea=ID) y juega solo en su casa, sin cuenta ni sala. */
+const TAREA_ID = (()=>{ const t = _paramsMillonario.get("tarea"); return t && /^[a-z0-9]{6,24}$/i.test(t) ? t.toLowerCase() : ""; })();
+const ES_TAREA = !!TAREA_ID && !ES_ALUMNO;
+let TAREA_DATA = null, TAREA_TITULO = "", TAREA_ERROR = "";
+if(ES_TAREA){
+  try{
+    const _res = await fetch("https://aulagame-ai-questions.aulagame-snlmjjs.workers.dev/task/get?id=" + encodeURIComponent(TAREA_ID));
+    const _j = await _res.json().catch(function(){ return null; });
+    if(!_res.ok || !_j || !_j.ok || _j.game !== "millonario" || !_j.data || !Array.isArray(_j.data.allQuestions)) throw new Error((_j && _j.error) || "No se pudo abrir la tarea. Revisa tu conexión.");
+    TAREA_DATA = _j.data; TAREA_TITULO = _j.title || "";
+  }catch(e){ TAREA_ERROR = e.message || String(e); }
+}
 
 /* ============================= DEFAULT QUESTION BANK ============================= */
 /* Extraído y curado desde la presentación original "WTM - VERBS" */
@@ -1026,7 +1041,10 @@ const DEFAULT_CULTURE_QUESTIONS = [
 /* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore.
    Un alumno que entra con ?room=... no tiene sesión de profesor: se salta el gate. */
 let SAVED_MILLONARIO = null, CURRENT_UID = null;
-if(!ES_ALUMNO){
+if(ES_TAREA){
+  SAVED_MILLONARIO = TAREA_DATA;
+  document.documentElement.style.visibility = ""; /* sin sesión de profe: se muestra la página de una vez */
+} else if(!ES_ALUMNO){
   const _r = await new Promise(function(resolve){
     initGameSync('millonario', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
   });
@@ -2181,9 +2199,28 @@ if(ES_ALUMNO){
       'Cada comodín solo se puede usar una vez por jugador en toda la partida.'
     ]
   });
+} else if(ES_TAREA){
+  document.body.classList.add("tarea");
+  state.playerCount = 1;
+  buildPlayerInputs();
+  $("playersBadge").textContent = "1 jugador";
+  const _sub = document.querySelector("#screen-home .subtitle");
+  if(_sub) _sub.textContent = TAREA_ERROR ? TAREA_ERROR : ("Tarea" + (TAREA_TITULO ? ": " + TAREA_TITULO : "") + " · juegas solo, con las preguntas de tu profe. Elige preguntas del tablero, usa tus comodines y junta la mayor cantidad de dinero.");
+  const _pills = document.querySelector("#screen-home .pill-row");
+  if(_pills) _pills.innerHTML = '<span class="pill">💰 Dinero sorpresa en cada pregunta</span><span class="pill">🎭 3 comodines</span><span class="pill">🏠 Juegas solo, desde tu casa</span>';
+  $("btnGoPlayers").textContent = "🎮 Empezar";
+  const _ps = document.querySelector("#screen-players .subtitle"); if(_ps) _ps.textContent = "¿Cómo te llamas?";
+  $("btnBackHome1").addEventListener("click", ()=>{ showScreen("home"); });
+  if(TAREA_ERROR){ $("btnGoPlayers").disabled = true; }
 } else {
   renderEditor();
   buildPlayerInputs();
+  $("btnShareTask").addEventListener("click", function(){
+    abrirCompartirTarea({
+      game: "millonario", defaultTitle: "Millonario quiz", studentPath: "/play/millonario/",
+      getData: function(){ return { allQuestions: state.allQuestions, cultureQuestions: state.cultureQuestions }; }
+    });
+  });
   mostrarTutorialSiPrimeraVez('millonario_profe', TUTORIAL_PROFE);
   document.getElementById('helpBtn').addEventListener('click', function(){
     mostrarTutorial('millonario_profe', TUTORIAL_PROFE);
