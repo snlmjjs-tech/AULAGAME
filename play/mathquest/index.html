@@ -197,6 +197,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 
   <div class="actions">
     <button class="btn" id="btnPlay" type="button">▶ ¡JUGAR!</button>
+    <button class="btn ghost" id="shareTaskBtn" type="button">📚 Enviar a estudiantes</button>
   </div>
 </section>
 
@@ -241,6 +242,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 <script type="module">
 import { initGameSync, saveGameData } from "../shared/game-storage.js";
 import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
+import { abrirCompartirTarea } from "../shared/task-share.js";
 
 /* ===================================================================
    GENERADOR DE PREGUNTAS (puro: no toca el DOM)
@@ -441,6 +443,9 @@ const $ = s => document.querySelector(s);
 const TEAM_COLORS = ['#FF4D8D', '#4DA3FF', '#2DD4BF', '#FFC93C'];
 const settings = { topics: ['fracciones', 'formulas'], level: 2, rounds: 12, time: 30, chuleta: true, teamCount: 3, names: ['Equipo 1', 'Equipo 2', 'Equipo 3', 'Equipo 4'] };
 let CURRENT_UID = null;
+/* Modo tarea: el estudiante abre el link de su profe (?tarea=ID) y juega solo, sin cuenta, contra 2 bots. */
+const TAREA_ID = (() => { const t = new URLSearchParams(location.search).get('tarea'); return t && /^[a-z0-9]{6,24}$/i.test(t) ? t.toLowerCase() : ''; })();
+const ES_TAREA = !!TAREA_ID;
 let game = null; /* {teams, turn, qIndex, q, locked, ...} */
 let timerRef = null;
 
@@ -523,11 +528,15 @@ $('#tPlus').onclick = () => { if (settings.teamCount < 4) { settings.teamCount++
 =================================================================== */
 function startGame() {
   ac(); sfx.click();
-  if (CURRENT_UID) saveGameData('mathquest', CURRENT_UID, { settings: { topics: settings.topics, level: settings.level, rounds: settings.rounds, time: settings.time, chuleta: settings.chuleta, teamCount: settings.teamCount, names: settings.names } });
+  if (CURRENT_UID && !ES_TAREA) saveGameData('mathquest', CURRENT_UID, { settings: { topics: settings.topics, level: settings.level, rounds: settings.rounds, time: settings.time, chuleta: settings.chuleta, teamCount: settings.teamCount, names: settings.names } });
   game = {
     teams: Array.from({ length: settings.teamCount }, (_, i) => ({ name: settings.names[i] || 'Equipo ' + (i + 1), color: TEAM_COLORS[i], pts: 0, streak: 0, best: 0, ok: 0, tot: 0, byTopic: { fracciones: [0, 0], formulas: [0, 0] } })),
     turn: 0, qIndex: 0, q: null, locked: false, lastText: '',
   };
+  if (ES_TAREA) {
+    game.teams = [{ name: settings.names[0] || 'Tú', color: TEAM_COLORS[0] }, { name: 'Pebre (bot)', color: TEAM_COLORS[1] }, { name: 'Tomate (bot)', color: TEAM_COLORS[2] }]
+      .map(t => ({ ...t, pts: 0, streak: 0, best: 0, ok: 0, tot: 0, byTopic: { fracciones: [0, 0], formulas: [0, 0] } }));
+  }
   showScreen('screen-game'); nextQuestion();
 }
 function renderScores() {
@@ -543,12 +552,12 @@ function mascot(face, text) { $('#mascot').textContent = face; $('#bubble').text
 function nextQuestion() {
   if (game.qIndex >= settings.rounds) return endGame();
   const q = makeQuestion(settings.topics, settings.level, game.lastText); game.q = q; game.lastText = q.text; game.locked = false;
-  game.qIndex++; game.turn = (game.qIndex - 1) % game.teams.length;
+  game.qIndex++; game.turn = ES_TAREA ? 0 : (game.qIndex - 1) % game.teams.length;
   renderScores();
   $('#roundPill').textContent = `Pregunta ${game.qIndex}/${settings.rounds}`;
   $('#progBar').style.width = ((game.qIndex - 1) / settings.rounds * 100) + '%';
   const tag = $('#qTag'); tag.textContent = q.topic === 'fracciones' ? '🍕 FRACCIONES' : '📐 FÓRMULAS'; tag.className = 'tag ' + (q.topic === 'fracciones' ? 't-fr' : 't-fo');
-  $('#qText').innerHTML = (game.teams.length > 1 ? `<small style="display:block;font-size:.55em;color:${game.teams[game.turn].color};filter:brightness(.8)">Turno de ${esc(game.teams[game.turn].name)}</small>` : '') + q.text;
+  $('#qText').innerHTML = (game.teams.length > 1 && !ES_TAREA ? `<small style="display:block;font-size:.55em;color:${game.teams[game.turn].color};filter:brightness(.8)">Turno de ${esc(game.teams[game.turn].name)}</small>` : '') + q.text;
   $('#qVisual').innerHTML = q.visual;
   const ch = $('#qChuleta'); if (settings.chuleta && q.chuleta) { ch.hidden = false; ch.innerHTML = '📌 ' + esc(q.chuleta); } else ch.hidden = true;
   const box = $('#answers'); box.innerHTML = '';
@@ -576,6 +585,10 @@ function answer(key, btn) {
   if (game.locked) return; game.locked = true; clearInterval(timerRef);
   const q = game.q, t = game.teams[game.turn], ok = key === q.correct;
   t.tot++; t.byTopic[q.topic][1]++;
+  if (ES_TAREA) game.teams.slice(1).forEach((b, i) => {  /* los bots también juegan cada pregunta */
+    b.tot++; b.byTopic[q.topic][1]++;
+    if (Math.random() < (i === 0 ? 0.72 : 0.55)) { b.ok++; b.byTopic[q.topic][0]++; b.streak++; b.best = Math.max(b.best, b.streak); b.pts += 100 + rnd(5, 45) + (b.streak >= 2 ? Math.min(100, (b.streak - 1) * 25) : 0); } else b.streak = 0;
+  });
   let gain = 0;
   if (ok) {
     t.ok++; t.byTopic[q.topic][0]++; t.streak++; t.best = Math.max(t.best, t.streak);
@@ -624,9 +637,36 @@ function endGame() {
 $('#btnPlay').onclick = startGame;
 $('#btnAgain').onclick = startGame;
 $('#btnMenu').onclick = () => { sfx.click(); paintChips(); showScreen('screen-menu'); };
+const shareBtn = $('#shareTaskBtn');
+if (shareBtn) shareBtn.addEventListener('click', () => abrirCompartirTarea({
+  game: 'mathquest', defaultTitle: 'MathQuest', studentPath: '/play/mathquest/',
+  getData: () => ({ topics: settings.topics, level: settings.level, rounds: settings.rounds, time: settings.time, chuleta: settings.chuleta })
+}));
 $('#btnQuit').onclick = () => { if (confirm('¿Salir de la partida actual?')) { clearInterval(timerRef); paintChips(); showScreen('screen-menu'); } };
 
-/* ---------- arranque: sesión de profe + ajustes guardados ---------- */
+/* ---------- arranque ---------- */
+async function arrancarTarea() {
+  document.documentElement.style.visibility = '';
+  document.querySelectorAll('#screen-menu .panel').forEach(p => p.style.display = 'none');
+  const sh = $('#shareTaskBtn'); if (sh) sh.style.display = 'none';
+  const play = $('#btnPlay'); play.disabled = true; play.textContent = 'Cargando tarea…';
+  const box = document.createElement('div'); box.className = 'panel'; box.id = 'tareaBox';
+  box.innerHTML = '<h3 id="tareaTitulo">Cargando…</h3><p class="hint" id="tareaInfo"></p><label class="team-in" style="margin-top:6px"><span style="font-weight:700">Tu nombre:</span><input id="tareaNombre" maxlength="18" placeholder="Escribe tu nombre" style="border-bottom:2px solid rgba(255,255,255,.5);color:#fff;background:transparent;border-top:0;border-left:0;border-right:0;font:inherit;font-weight:700;width:200px"></label>';
+  $('#screen-menu .actions').before(box);
+  try {
+    const res = await fetch('https://aulagame-ai-questions.aulagame-snlmjjs.workers.dev/task/get?id=' + encodeURIComponent(TAREA_ID));
+    const j = await res.json().catch(() => null);
+    if (!res.ok || !j || !j.ok || j.game !== 'mathquest' || !j.data) throw new Error((j && j.error) || 'No se pudo abrir la tarea. Revisa tu conexión.');
+    loadSettings({ settings: { ...j.data, teamCount: 1 } });
+    $('#tareaTitulo').textContent = (j.title || 'MathQuest');
+    $('#tareaInfo').textContent = `${settings.rounds} preguntas · ${settings.topics.map(t => t === 'fracciones' ? 'fracciones' : 'fórmulas').join(' y ')} · juegas contra 2 bots.`;
+    play.disabled = false; play.textContent = '▶ ¡JUGAR!';
+    play.onclick = () => { const n = $('#tareaNombre').value.trim(); settings.names[0] = n || 'Tú'; startGame(); };
+    $('#btnAgain').onclick = startGame;
+    $('#btnMenu').onclick = () => { sfx.click(); showScreen('screen-menu'); };
+  } catch (e) { $('#tareaTitulo').textContent = '⚠ ' + (e.message || e); play.style.display = 'none'; }
+}
+if (ES_TAREA) arrancarTarea(); else
 initGameSync('mathquest', function (saved, uid) {
   CURRENT_UID = uid; loadSettings(saved); paintChips();
   mostrarTutorialSiPrimeraVez('mathquest_profe', {
