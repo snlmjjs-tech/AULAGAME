@@ -187,6 +187,19 @@
   }
   .btn-header-login:hover{ filter:brightness(1.1); }
   .btn-header-login:active{ transform: scale(.965); transition-duration:.09s; }
+  .btn-header-premium{
+    display:inline-flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:1px;
+    background:linear-gradient(135deg,#FFE27A 0%,#FFB82E 50%,#E08A00 100%); color:#3a2300;
+    border:none; border-radius:16px; padding:7px 16px; line-height:1.15; cursor:pointer; text-align:left;
+    font-family:var(--font); text-shadow:0 1px 0 rgba(255,255,255,.45);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.7), inset 0 -2px 0 rgba(150,80,0,.35), 0 8px 20px -8px rgba(255,170,30,.85);
+    transition:transform .15s, filter .15s;
+  }
+  .btn-header-premium b{ font-size:13.5px; font-weight:900; letter-spacing:-.01em; }
+  .btn-header-premium small{ font-size:10.5px; font-weight:800; opacity:.85; }
+  .btn-header-premium:hover{ transform:translateY(-1px); filter:brightness(1.07); }
+  .btn-header-premium{ white-space:nowrap; } .btn-header-premium .hp-s{ display:none; }
+  @media (max-width:700px){ .btn-header-premium{ padding:8px 12px; } .btn-header-premium b{ font-size:12.5px; } .btn-header-premium small{ display:none; } .btn-header-premium .hp-l{ display:none; } .btn-header-premium .hp-s{ display:inline; } }
   .btn-header-whatsapp{
     display:inline-flex; align-items:center; gap:8px;
     background:linear-gradient(135deg,#2EE878,#128C4A); color:#fff; text-decoration:none;
@@ -1002,6 +1015,7 @@
 <header>
   <div class="wordmark">AULAGAMES<small>Plataforma de juegos didácticos</small></div>
   <div class="user-area">
+    <button type="button" class="btn-header-premium oculto" id="btn-header-premium"><b>⭐ <span class="hp-l">Hazte Premium por solo</span><span class="hp-s">Premium</span> $7.990</b><small>(USD 8 · sin suscripciones · de por vida)</small></button>
     <a class="btn-header-whatsapp" href="https://wa.me/56945984570?text=Hola%2C%20quiero%20saber%20m%C3%A1s%20sobre%20AulaGame." target="_blank" rel="noopener"><svg class="i" aria-hidden="true"><use href="#i-whatsapp"/></svg> <span class="txt-whatsapp">WhatsApp</span></a>
     <button class="btn-header-login" id="btn-iniciar-sesion" type="button">Iniciar sesión</button>
     <button class="avatar-btn oculto" id="btn-cuenta" type="button">
@@ -1946,7 +1960,7 @@
   // ---------- Cupos y contadores ----------
   function actualizarBotonesPagar(){
     var mostrar = !(uidActual && estadoActual.plan === "premium");
-    ["plan-gratuito-pagar", "btn-limite-pagar", "anuncio-pagar"].forEach(function(id){
+    ["plan-gratuito-pagar", "btn-limite-pagar", "anuncio-pagar", "btn-header-premium"].forEach(function(id){
       var el = document.getElementById(id);
       if(el) el.classList.toggle("oculto", !mostrar);
     });
@@ -2458,7 +2472,7 @@
       }
     });
   }
-  ["plan-gratuito-pagar", "btn-limite-pagar", "anuncio-pagar", "badge-demo-header"].forEach(function(id){
+  ["plan-gratuito-pagar", "btn-limite-pagar", "anuncio-pagar", "badge-demo-header", "btn-header-premium"].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.addEventListener("click", iniciarCompraPremium);
   });
