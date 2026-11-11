@@ -394,6 +394,7 @@ body{
       <div class="title-actions">
         <button class="btn btn-gold" id="playBtn">▶ PLAY</button>
         <button class="btn btn-outline-dark" id="editBtnTitle">✏ Editar preguntas</button>
+        <button class="btn btn-outline-dark" id="shareTaskBtn">📚 Enviar a estudiantes</button>
         <button class="btn btn-outline-dark" id="qrBtnTitle">📱 Conéctate con QR aquí</button>
       </div>
       <div class="menu-qr-panel" style="margin-top:22px; display:flex; flex-direction:column; align-items:center; gap:6px;">
@@ -495,6 +496,7 @@ import { refSala, escuchar, escribir, eliminar, marcaTiempo, idJugador } from ".
 import { pintarQR } from "../shared/qr-inline.js";
 import { mostrarTutorialSiPrimeraVez } from "../shared/tutorial-modal.js";
 import { renderAIButton } from "../shared/ai-questions.js";
+import { abrirCompartirTarea } from "../shared/task-share.js";
 /* ============================================================
    BET YOUR ANSWER — juego digital interactivo
    ============================================================ */
@@ -503,11 +505,25 @@ import { renderAIButton } from "../shared/ai-questions.js";
 const _paramsBYA = new URLSearchParams(location.search);
 const SALA_ALUMNO = _paramsBYA.get("room");
 const ES_ALUMNO = !!SALA_ALUMNO;
+/* Modo tarea: un estudiante abre el link de su profe (?tarea=ID) y juega solo contra 3 bots, sin cuenta ni sala.
+   Solo trivia y "regalo"; se autoevalúa (revela la respuesta y dice si la sabía). */
+const TAREA_ID = (()=>{ const t = _paramsBYA.get("tarea"); return t && /^[a-z0-9]{6,24}$/i.test(t) && !SALA_ALUMNO ? t.toLowerCase() : ""; })();
+const ES_TAREA = !!TAREA_ID;
+let TAREA_DATA = null, TAREA_TITULO = "", TAREA_ERROR = "";
+if(ES_TAREA){
+  try{
+    const _res = await fetch("https://aulagame-ai-questions.aulagame-snlmjjs.workers.dev/task/get?id=" + encodeURIComponent(TAREA_ID));
+    const _j = await _res.json().catch(function(){ return null; });
+    if(!_res.ok || !_j || !_j.ok || _j.game !== "betyouranswer" || !_j.data || !Array.isArray(_j.data.questions) || !_j.data.questions.length) throw new Error((_j && _j.error) || "No se pudo abrir la tarea. Revisa tu conexión.");
+    TAREA_DATA = _j.data; TAREA_TITULO = _j.title || "";
+  }catch(e){ TAREA_ERROR = e.message || String(e); }
+  document.documentElement.style.visibility = "";
+}
 
 /* Espera la sesión y carga (si existen) las preguntas guardadas del profesor en Firestore.
    Un alumno que entra con ?room=... no tiene sesión de profesor: se salta el gate. */
 let SAVED_BYA = null, CURRENT_UID = null;
-if(!ES_ALUMNO){
+if(!ES_ALUMNO && !ES_TAREA){
   const _r = await new Promise(function(resolve){
     initGameSync('betyouranswer', function(saved, uid){ resolve({ saved: saved, uid: uid }); });
   });
@@ -591,6 +607,15 @@ let gameData = {
   presentBoxes: [500,0,1000,800,10000,0,0,0,7000,11000,400,20000,0]
 };
 
+if(ES_TAREA && TAREA_DATA){
+  gameData.questions = TAREA_DATA.questions.map(function(q,i){ return { id:i+1, type:q.type, value:q.value, question:q.question, answer:q.answer, explanation:q.explanation||'', used:false }; });
+  gameData.teams = [
+    {id:1, name:'Tú', color:'#cf3864', score:0},
+    {id:2, name:'Pebre (bot)', color:'#5a7fe0', score:0, skill:.55},
+    {id:3, name:'Mostaza (bot)', color:'#1f9d6f', score:0, skill:.45},
+    {id:4, name:'Tomate (bot)', color:'#d9711f', score:0, skill:.35},
+  ];
+}
 let presentBoxesState = [...gameData.presentBoxes];
 let secretTimer = null, secretTimeLeft = 45;
 let salaActual = null;         // código de sala en vivo (null = modo QR no activado)
@@ -729,8 +754,8 @@ function renderTeamSetup(){
   grid.innerHTML = gameData.teams.map(t=>`
     <div class="team-setup-item">
       <span class="team-dot" style="background:${t.color}"></span>
-      <input type="text" value="${t.name}" data-team="${t.id}" class="team-name-input">
-      ${gameData.teams.length > 2 ? `<button type="button" class="team-remove-btn" data-remove-team="${t.id}" title="Quitar equipo" style="border:none;background:#3a2030;color:#ff9b9b;border-radius:50%;width:22px;height:22px;line-height:22px;cursor:pointer;font-size:.8rem;flex:none;">✕</button>` : ''}
+      <input type="text" value="${t.name}" data-team="${t.id}" class="team-name-input" ${ES_TAREA && t.id!==1?'disabled':''}>
+      ${gameData.teams.length > 2 && !ES_TAREA ? `<button type="button" class="team-remove-btn" data-remove-team="${t.id}" title="Quitar equipo" style="border:none;background:#3a2030;color:#ff9b9b;border-radius:50%;width:22px;height:22px;line-height:22px;cursor:pointer;font-size:.8rem;flex:none;">✕</button>` : ''}
     </div>
   `).join('');
   grid.querySelectorAll('.team-name-input').forEach(inp=>{
@@ -808,6 +833,28 @@ function renderBoard(){
   });
 }
 
+/* ---- Modo tarea: bots y final de la partida ---- */
+function resolverSolo(q, sabia){
+  sabia ? stingCorrect() : stingWrong();
+  awardTeam(gameData.teams[0].id, sabia ? q.value : -q.value);
+  gameData.teams.slice(1).forEach(function(b){ b.score += Math.random() < b.skill ? q.value : -q.value; });
+  markUsed(q.id); renderScoreboard(); closeModal(); comprobarFinSolo();
+}
+function botsRegalo(){
+  if(!ES_TAREA) return;
+  gameData.teams.slice(1).forEach(function(b){ b.score += gameData.presentBoxes[Math.floor(Math.random()*gameData.presentBoxes.length)]; });
+  renderScoreboard();
+}
+function comprobarFinSolo(){
+  if(!ES_TAREA || gameData.questions.some(q=>!q.used)) return;
+  setTimeout(function(){
+    const r = gameData.teams.slice().sort((a,b)=>b.score-a.score);
+    const gano = r[0].id === 1;
+    openModal('<h3>'+(gano?'🏆 ¡Ganaste!':'🏁 Fin del juego')+'</h3><div class="section-label">Resultado final</div>'
+      + r.map((t,i)=>'<p style="font-size:16px; margin:6px 0;"><b style="color:'+t.color+'">'+(i+1)+'. '+t.name+'</b> — '+fmt(t.score)+'</p>').join('')
+      + '<div class="action-row"><button class="btn btn-gold" onclick="location.reload()">↺ Jugar de nuevo</button></div>');
+  }, 1700);
+}
 function markUsed(id){
   const q = gameData.questions.find(x=>x.id===id);
   q.used = true;
@@ -854,14 +901,18 @@ function openQuestion(q){
       <div class="a-word">${q.answer}</div>
       <div class="a-expl">${q.explanation||''}</div>
     </div>
-    <div class="section-label">Otorgar / restar puntos</div>
-    ${teamAwardButtons(q)}
+    ${ES_TAREA ? '<div class="section-label">Piensa tu respuesta, revísala y dinos cómo te fue</div><div class="action-row"><button class="btn btn-small btn-correct" id="soloOk" disabled>✅ La sabía (+'+fmt(q.value)+')</button><button class="btn btn-small btn-outline" id="soloNo" disabled>❌ No la sabía (−'+fmt(q.value)+')</button></div>' : '<div class="section-label">Otorgar / restar puntos</div>'+teamAwardButtons(q)}
     <div class="action-row">
       <button class="btn btn-small btn-outline" id="markUsedBtn">✔ Marcar como usada y cerrar</button>
     </div>
   `;
   openModal(html);
-  $('#revealBtn').addEventListener('click', ()=>{ $('#answerBox').classList.add('show'); });
+  $('#revealBtn').addEventListener('click', ()=>{ $('#answerBox').classList.add('show'); if(ES_TAREA){ $('#soloOk').disabled=false; $('#soloNo').disabled=false; } });
+  if(ES_TAREA){
+    $('#markUsedBtn').style.display='none';
+    $('#soloOk').addEventListener('click', ()=>resolverSolo(q,true));
+    $('#soloNo').addEventListener('click', ()=>resolverSolo(q,false));
+  }
   bindAwardButtons($('#modalContent'), q.value);
   $('#markUsedBtn').addEventListener('click', ()=>{ markUsed(q.id); closeModal(); });
   if(salaActual){
@@ -944,6 +995,12 @@ function openPresent(q){
   `;
   openModal(html);
   let selectedTeam = null;
+  if(ES_TAREA){
+    selectedTeam = gameData.teams[0];
+    $('#presentTeamPicker').style.display='none';
+    $('#presentActionZone').style.display='block';
+    $('#presentActionZone > p').style.display='none';
+  }
   $('#presentTeamPicker').querySelectorAll('button').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       selectedTeam = gameData.teams.find(t=>t.id==btn.dataset.team);
@@ -955,7 +1012,8 @@ function openPresent(q){
     if(!selectedTeam) return;
     stingCorrect();
     awardTeam(selectedTeam.id, q.value);
-    markUsed(q.id); closeModal();
+    botsRegalo();
+    markUsed(q.id); closeModal(); comprobarFinSolo();
   });
   $('#openBoxesBtn').addEventListener('click', ()=>{
     if(!selectedTeam) return;
@@ -971,8 +1029,9 @@ function openPresent(q){
         presentBoxesState[idx] = null;
         val>0 ? stingCorrect() : stingWrong();
         awardTeam(selectedTeam.id, val);
+        botsRegalo();
         markUsed(q.id);
-        setTimeout(closeModal, 1400);
+        setTimeout(closeModal, 1400); comprobarFinSolo();
       }, {once:true});
     });
   });
@@ -1366,7 +1425,21 @@ if(ES_ALUMNO){
       'El profesor decide en el proyector si la respuesta fue correcta y reparte el dinero.'
     ]
   });
+} else if(ES_TAREA){
+  ["editBtnTitle","qrBtnTitle","qrBtn","shareTaskBtn","nextTurnBtn"].forEach(function(id){ const e=document.getElementById(id); if(e) e.style.display="none"; });
+  document.querySelectorAll(".menu-qr-panel,.turn-bar").forEach(function(e){ e.style.display="none"; });
+  document.querySelector("#screen-instructions p").innerHTML = TAREA_ERROR
+    ? "⚠ " + TAREA_ERROR
+    : (TAREA_TITULO ? "<b>"+TAREA_TITULO.replace(/[<>]/g,"")+"</b><br>" : "") + "Juegas solo contra 3 bots. Elige una casilla, piensa tu respuesta, revísala y dinos si la sabías. Si aciertas ganas el dinero, si fallas lo pierdes. Puedes cambiar tu nombre:";
+  if(TAREA_ERROR) document.getElementById("playBoardBtn").style.display = "none";
+  renderTeamSetup();
 } else {
+  document.getElementById("shareTaskBtn").addEventListener("click", function(){
+    abrirCompartirTarea({
+      game: "betyouranswer", defaultTitle: "Bet Your Answer", studentPath: "/play/betyouranswer/",
+      getData: function(){ return { questions: stripUsed(gameData.questions).filter(function(q){ return q.type==="trivia" || q.type==="present"; }) }; }
+    });
+  });
   renderTeamSetup();
   iniciarSalaQR();
   mostrarTutorialSiPrimeraVez('betyouranswer_profe', {
