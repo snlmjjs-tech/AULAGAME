@@ -15,18 +15,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root{
-    --bg-deep: #05060f;
-    --bg-mid: #0b0e21;
-    --panel: rgba(20, 24, 48, 0.85);
+    --bg-deep: #080D20;
+    --bg-mid: #111B38;
+    --panel: rgba(17, 27, 56, 0.88);
     --panel-light: rgba(255,255,255,0.06);
-    --border: rgba(255,255,255,0.12);
-    --accent: #ff5a4e;
-    --accent2: #22d3ee;
-    --good: #3fd670;
-    --bad: #e63946;
-    --gold: #ffd166;
-    --text: #eef1fb;
-    --text-dim: #9aa3c7;
+    --border: #253D75;
+    --accent: #FF5263;
+    --accent2: #26D9E8;
+    --good: #4CE6A0;
+    --bad: #FF5263;
+    --gold: #FFD45A;
+    --text: #F5F7FF;
+    --text-dim: #9fb0dc;
     --radius: 16px;
   }
   *{box-sizing:border-box;}
@@ -53,7 +53,7 @@
     font-size: clamp(22px, 4vw, 34px);
     margin:0;
     letter-spacing: .5px;
-    text-shadow: 0 0 18px rgba(255,90,78,.5), 0 0 40px rgba(34,211,238,.2);
+    text-shadow: 0 0 18px rgba(255,82,99,.5), 0 0 40px rgba(38,217,232,.2);
   }
   header.top h1 span.accent{color:var(--accent);}
   header.top h1 span.accent2{color:var(--accent2);}
@@ -319,22 +319,14 @@
     transform:translateX(-50%); background:#e9edf3; border:2px solid rgba(0,0,0,.55); border-radius:5px;
   }
 
-  .crew3d.eject{ animation: ejectTumble 2.3s cubic-bezier(.3,.55,.35,1) forwards; }
-  @keyframes ejectTumble{
-    0%   { transform: translate(-42vw,10px)  rotateZ(-6deg) scaleX(1)    scaleY(1);    filter: brightness(1.05); }
-    12%  { transform: translate(-34vw,-8px)  rotateZ(9deg)  scaleX(0.5)  scaleY(1.14); filter: brightness(0.78); }
-    25%  { transform: translate(-24vw,-18px) rotateZ(-8deg) scaleX(1)    scaleY(1);    filter: brightness(1.1); }
-    37%  { transform: translate(-14vw,-22px) rotateZ(8deg)  scaleX(0.5)  scaleY(1.14); filter: brightness(0.78); }
-    50%  { transform: translate(-2vw,-15px)  rotateZ(-7deg) scaleX(1)    scaleY(1);    filter: brightness(1.1); }
-    62%  { transform: translate(10vw,6px)    rotateZ(8deg)  scaleX(0.5)  scaleY(1.14); filter: brightness(0.78); }
-    75%  { transform: translate(22vw,18px)   rotateZ(-6deg) scaleX(1)    scaleY(1);    filter: brightness(1.1); }
-    87%  { transform: translate(32vw,4px)    rotateZ(5deg)  scaleX(0.65) scaleY(1.08); filter: brightness(0.85); }
-    100% { transform: translate(40vw,0px)    rotateZ(0deg)  scaleX(1)    scaleY(1);    filter: brightness(1); }
-  }
-  .crew3d.eject-idle{ animation: ejectIdle 3.2s ease-in-out infinite; animation-delay: 2.3s; }
-  @keyframes ejectIdle{
-    0%,100%{ transform: translate(40vw,0px) rotateZ(0deg)  scaleX(1)    scaleY(1);    filter: brightness(1); }
-    50%{     transform: translate(38vw,-11px) rotateZ(-4deg) scaleX(0.88) scaleY(1.03); filter: brightness(0.95); }
+  /* eyección: giro 2D + encogimiento hasta desaparecer (el cuerpo siempre se ve sólido) */
+  .crew3d.eject{ animation: ejectFly 3s cubic-bezier(.35,.1,.6,1) forwards; }
+  @keyframes ejectFly{
+    0%   { transform: translate(-34vw,6px) rotate(0deg) scale(1);   opacity:1; }
+    14%  { transform: translate(-26vw,-10px) rotate(70deg) scale(1);  opacity:1; }
+    60%  { transform: translate(8vw,-30px) rotate(420deg) scale(.7); opacity:1; }
+    88%  { transform: translate(34vw,-44px) rotate(700deg) scale(.22); opacity:1; }
+    100% { transform: translate(44vw,-48px) rotate(780deg) scale(0);   opacity:0; }
   }
 
   /* ---- Play view ---- */
@@ -366,31 +358,46 @@
 
   .center-col{display:flex; flex-direction:column; align-items:center; text-align:center; gap:14px; padding:20px 0;}
 
-  /* ---- Reveal overlay ---- */
+  /* ---- Cinemática de expulsión (4 escenas) ---- */
   #revealOverlay{
-    position:fixed; inset:0;
-    background-color:#05060a;
-    background-image:
-      radial-gradient(1.5px 1.5px at 10% 20%, #fff, transparent 100%),
-      radial-gradient(1.5px 1.5px at 80% 10%, #fff, transparent 100%),
-      radial-gradient(1px 1px at 30% 55%, #fff, transparent 100%),
-      radial-gradient(1.5px 1.5px at 65% 40%, #fff, transparent 100%),
-      radial-gradient(1px 1px at 90% 65%, #fff, transparent 100%),
-      radial-gradient(1.5px 1.5px at 15% 80%, #fff, transparent 100%),
-      radial-gradient(1px 1px at 45% 90%, #fff, transparent 100%),
-      radial-gradient(1.5px 1.5px at 55% 15%, #fff, transparent 100%),
-      radial-gradient(1px 1px at 75% 85%, #fff, transparent 100%),
-      radial-gradient(1px 1px at 25% 35%, #fff, transparent 100%);
-    background-repeat: repeat;
-    background-size: 340px 340px;
-    display:none; align-items:center; justify-content:center; z-index:1000; flex-direction:column; gap:18px;
-    text-align:center; padding:20px; overflow:hidden;
+    position:fixed; inset:0; z-index:1000; display:none; overflow:hidden; text-align:center;
+    background: radial-gradient(900px 500px at 50% 40%, #162552, #080D20 70%);
   }
-  #revealOverlay.show{display:flex;}
-  .reveal-text{font-size: clamp(20px, 4vw, 30px); font-weight:800; opacity:0; animation: fadeUp .5s ease forwards; animation-delay:1.9s;}
-  .reveal-text.safe{color:var(--good); text-shadow:0 0 20px rgba(63,214,112,.5);}
-  .reveal-text.bad{color:#ff6b6b; text-shadow:0 0 24px rgba(230,57,70,.6);}
-  .reveal-sub{color:var(--text-dim); font-size:14px; opacity:0; animation: fadeUp .5s ease forwards; animation-delay:2.1s;}
+  #revealOverlay.show{display:block;}
+  .ov-scene{position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:20px;}
+  .ov-scene.on{display:flex; animation:fadeUp .45s ease both;}
+  .meet-lights{position:absolute; inset:0; background:radial-gradient(circle at 50% 50%, rgba(255,82,99,.38), transparent 62%); animation:alarm .7s ease-in-out infinite alternate; pointer-events:none;}
+  @keyframes alarm{from{opacity:.2;}to{opacity:1;}}
+  .meet-title{position:relative; font-size:clamp(28px,7vw,64px); font-weight:900; letter-spacing:2px; color:#fff; padding:14px 30px; border:4px solid var(--accent); border-radius:14px; background:rgba(255,82,99,.2); text-shadow:0 0 22px rgba(255,82,99,.9); animation:shake .5s linear 2;}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-7px);}75%{transform:translateX(7px);}}
+  .meet-sub{position:relative; font-size:clamp(14px,2.6vw,20px); color:var(--text-dim);}
+  .vote-title{font-size:clamp(18px,3.6vw,28px); font-weight:800;}
+  .vote-ring{display:flex; flex-wrap:wrap; gap:14px 18px; justify-content:center; max-width:760px;}
+  .vote-ring .vr{display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px; font-weight:700; transition:transform .5s, opacity .5s, filter .5s;}
+  .vote-ring .vr .crewmate{width:46px; height:62px;}
+  .vote-ring.focus .vr{opacity:.25; filter:grayscale(.7); transform:scale(.9);}
+  .vote-ring.focus .vr.target{opacity:1; filter:none; transform:scale(1.35); text-shadow:0 0 12px var(--gold);}
+  .vote-ring .vr.target::after{content:'';}
+  #scEject{background:#02040c; justify-content:center;}
+  .streak{position:absolute; left:100%; height:2px; width:120px; background:linear-gradient(90deg,transparent,#fff); opacity:.8; animation:streak linear infinite;}
+  @keyframes streak{to{transform:translateX(-140vw);}}
+  .airlock{position:absolute; left:-30px; top:50%; width:150px; height:230px; margin-top:-115px; background:linear-gradient(90deg,#3a4770,#1b2545); border-right:6px solid #7d8fc7; border-radius:0 18px 18px 0; box-shadow:0 0 40px rgba(38,217,232,.25);}
+  .airlock::after{content:''; position:absolute; right:8px; top:18px; bottom:18px; width:10px; background:repeating-linear-gradient(180deg,#FFD45A 0 12px,#1b2545 12px 24px); border-radius:4px;}
+  #scEject .eject-track{animation:cam 3.2s ease-in-out both;}
+  @keyframes cam{from{transform:scale(1) rotate(-1.5deg);}to{transform:scale(1.12) rotate(1.5deg);}}
+  .eject-cap{position:relative; z-index:2; font-size:clamp(16px,3vw,24px); font-weight:800; color:var(--text);}
+  .res-title{font-size:clamp(30px,8vw,72px); font-weight:900; letter-spacing:1px; line-height:1.05; z-index:2;}
+  .res-word{font-size:clamp(18px,3.6vw,30px); font-weight:800; z-index:2; color:#fff;}
+  .res-sub{font-size:clamp(14px,2.8vw,22px); color:var(--text-dim); z-index:2; max-width:720px;}
+  .res-impostor .res-title{animation:toGreen 1.4s ease forwards;}
+  @keyframes toGreen{0%,35%{color:var(--accent); text-shadow:0 0 30px rgba(255,82,99,.9);}100%{color:var(--good); text-shadow:0 0 34px rgba(76,230,160,.8);}}
+  .res-innocent .res-title{color:var(--accent); text-shadow:0 0 30px rgba(255,82,99,.8);}
+  .res-none .res-title{color:var(--gold); text-shadow:0 0 28px rgba(255,212,90,.6);}
+  .particles{position:absolute; inset:0; pointer-events:none; overflow:hidden;}
+  .particles i{position:absolute; width:8px; height:8px; border-radius:50%; background:var(--p,#fff); left:50%; top:50%; opacity:0; animation:burst 1.8s ease-out forwards;}
+  @keyframes burst{0%{opacity:1; transform:translate(0,0) scale(1);}100%{opacity:0; transform:translate(var(--dx),var(--dy)) scale(.3);}}
+  #ovSkip{position:absolute; right:16px; bottom:16px; z-index:5;}
+  #revealContinueBtn{position:absolute; left:50%; bottom:28px; transform:translateX(-50%); z-index:5; font-size:16px; padding:13px 34px;}
   @keyframes fadeUp{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
 
   /* ---- Modal ---- */
@@ -439,24 +446,99 @@
   .vote-row.voted{ opacity:.4; cursor:default; }
   .vote-row .swatch{width:26px;height:26px;border-radius:50%; flex-shrink:0; border:2px solid rgba(255,255,255,.4);}
   .vote-count{font-size:13px; color:var(--text-dim); margin-left:auto;}
+
+  /* ---- Menú principal ---- */
+  #menuView{position:relative; min-height:calc(100vh - 80px); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:22px; padding:30px 0; overflow:hidden;}
+  .menu-planet{position:absolute; right:-120px; bottom:-140px; width:420px; height:420px; border-radius:50%; background:radial-gradient(circle at 30% 28%, #5a7bd8, #253D75 45%, #0d1738 78%); box-shadow:0 0 90px rgba(38,217,232,.25), inset -30px -30px 60px rgba(0,0,0,.45); pointer-events:none;}
+  .menu-planet::after{content:''; position:absolute; left:-30%; top:46%; width:160%; height:14%; border-radius:50%; border:6px solid rgba(255,212,90,.35); transform:rotate(-14deg);}
+  .menu-floaters{position:absolute; inset:0; pointer-events:none;}
+  .menu-floaters .fl{position:absolute; animation:floaty 6s ease-in-out infinite; opacity:.95;}
+  .menu-floaters .fl .crewmate{width:56px; height:76px;}
+  @keyframes floaty{0%,100%{transform:translateY(0) rotate(-8deg);}50%{transform:translateY(-22px) rotate(8deg);}}
+  .menu-title{position:relative; font-size:clamp(32px,8vw,72px); font-weight:900; margin:0; line-height:1.05; letter-spacing:1px; text-shadow:0 0 26px rgba(255,82,99,.55), 0 0 60px rgba(38,217,232,.25);}
+  .menu-title .accent{color:var(--accent);}
+  .menu-sub{position:relative; margin:0; color:var(--text-dim); font-size:clamp(14px,2.4vw,18px);}
+  .menu-buttons{position:relative; display:grid; grid-template-columns:repeat(2, minmax(150px, 230px)); gap:14px; width:100%; justify-content:center;}
+  .menu-btn{border:2px solid var(--border); border-radius:18px; padding:20px 12px; font-size:clamp(15px,2.8vw,20px); font-weight:900; letter-spacing:.5px; cursor:pointer; color:#07101f; transition:transform .15s, box-shadow .15s;}
+  .menu-btn:hover{transform:translateY(-3px) scale(1.03);}
+  .menu-btn small{display:block; font-size:12px; font-weight:700; opacity:.8; margin-top:3px;}
+  .menu-btn.play{background:linear-gradient(135deg,var(--good),#26D9E8); box-shadow:0 8px 24px rgba(76,230,160,.4); grid-column:1 / -1; font-size:clamp(20px,4vw,28px);}
+  .menu-btn.cfg{background:linear-gradient(135deg,var(--gold),#ffb347); box-shadow:0 8px 22px rgba(255,212,90,.3);}
+  .menu-btn.qr{background:linear-gradient(135deg,#26D9E8,#6aa8ff); box-shadow:0 8px 22px rgba(38,217,232,.3);}
+  .menu-btn.edit{background:linear-gradient(135deg,#ff8aa0,var(--accent)); box-shadow:0 8px 22px rgba(255,82,99,.3); grid-column:1 / -1;}
+  header.top .home-btn{margin-right:6px;}
+  .shoot{position:fixed; top:12%; left:-20%; width:140px; height:2px; background:linear-gradient(90deg,transparent,#fff); transform:rotate(18deg); animation:shoot 9s linear infinite; z-index:0; pointer-events:none;}
+  @keyframes shoot{0%{transform:translate(0,0) rotate(18deg); opacity:0;}4%{opacity:1;}16%{transform:translate(140vw,45vh) rotate(18deg); opacity:0;}100%{opacity:0;}}
+
+  /* ---- Rondas / personajes ---- */
+  .round-row.disabled-round{opacity:.5;}
+  .round-row .icon-btn.off{background:rgba(255,82,99,.25);}
+  .icon-btn:disabled{opacity:.3; cursor:not-allowed;}
+  .word-item.word-off{opacity:.45;}
+  .ronda-chk{display:flex; align-items:center; cursor:pointer;}
+  .ronda-chk input{width:18px; height:18px; accent-color:var(--accent2);}
+  .char-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; margin-top:10px;}
+  .char-card{background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:14px; padding:12px 10px; display:flex; flex-direction:column; align-items:center; gap:8px;}
+  .char-card.removed{opacity:.45; border-style:dashed;}
+  .char-card .crewmate{width:48px; height:64px;}
+  .char-card input{text-align:center;}
+  .set-row{display:flex; align-items:center; gap:8px; margin-top:12px; font-size:14px;}
+  .set-row input{width:18px; height:18px; accent-color:var(--accent2);}
+
+  /* ---- Pantalla de juego ---- */
+  .hud{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px;}
+  .hud .pill{background:rgba(255,255,255,.08); border:1px solid var(--border); padding:7px 14px; border-radius:999px; font-weight:800; font-size:13.5px;}
+  .hud .pill.timer{font-variant-numeric:tabular-nums; color:var(--accent2);}
+  .progress{height:10px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; margin:6px 0 12px;}
+  .progress i{display:block; height:100%; background:linear-gradient(90deg,var(--accent2),var(--good)); transition:width .5s;}
+  .teacher-bar{display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; padding:10px; border:1px dashed var(--border); border-radius:14px; background:rgba(0,0,0,.2);}
+  .board-wrap{position:relative;}
+  .paused-veil{position:absolute; inset:0; background:rgba(8,13,32,.8); backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:900; border-radius:14px; z-index:3;}
+  .crew-card.revealed .crewmate{opacity:.35; filter:grayscale(.6);}
+  .log-list{text-align:left; font-size:14px; line-height:1.7; max-height:50vh; overflow:auto;}
+  .sound-toggle{display:flex; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:4px 8px 4px 4px;}
+  .sound-toggle input[type=range]{width:80px; accent-color:var(--accent2);}
+  .sound-toggle button{box-shadow:none; width:38px; height:38px;}
+  *:focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
+  @media (max-width:600px){ .tabs{flex-wrap:wrap; justify-content:center; border-radius:18px;} .tab-btn{padding:9px 12px;} .tab-btn.tab-btn-jugar,.tab-btn.tab-btn-qr{padding:10px 16px; font-size:14px;} .menu-planet{width:260px; height:260px; right:-90px; bottom:-90px;} .teacher-bar .btn{flex:1 1 45%;} }
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important;}
+    .shoot,.streak,.menu-floaters .fl{display:none;}
+  }
 </style>
 </head>
 <body>
 
 <div id="stars"></div>
+<div class="shoot" aria-hidden="true"></div>
 
 <div id="app">
   <header class="top">
     <h1>🚀 ¿QUIÉN ES EL <span class="accent">IMPOSTOR</span>? <span class="accent2">·</span> Juego de Clase</h1>
     <div class="tabs">
-      <button class="tab-btn active" data-tab="setup">⚙️ Configurar</button>
+      <button class="tab-btn home-btn" data-tab="menu">🏠 Menú</button>
+      <button class="tab-btn" data-tab="setup">⚙️ Configurar</button>
       <button class="tab-btn tab-btn-jugar" data-tab="play">▶️ JUGAR</button>
       <button class="tab-btn tab-btn-qr" id="qrBtn">📱 CELULARES</button>
     </div>
   </header>
 
+  <!-- ===================== MENÚ PRINCIPAL ===================== -->
+  <div id="menuView">
+    <div class="menu-planet" aria-hidden="true"></div>
+    <div class="menu-floaters" id="menuFloaters" aria-hidden="true"></div>
+    <h1 class="menu-title">¿QUIÉN ES EL <span class="accent">IMPOSTOR</span>?</h1>
+    <p class="menu-sub">Repasa contenidos con tu curso: descubre al impostor entre la tripulación</p>
+    <div class="menu-buttons">
+      <button class="menu-btn play" id="menuPlay">▶ JUGAR<small>Empieza la partida</small></button>
+      <button class="menu-btn cfg" id="menuCfg">⚙ CONFIGURAR<small>Personajes y reglas</small></button>
+      <button class="menu-btn qr" id="menuQr">📱 CELULARES<small>QR para los alumnos</small></button>
+      <button class="menu-btn edit" id="menuEdit">✏ MODIFICAR PREGUNTAS<small>Rondas, contenido, Excel e IA</small></button>
+    </div>
+  </div>
+
   <!-- ===================== SETUP VIEW ===================== -->
-  <div id="setupView">
+  <div id="setupView" style="display:none;">
     <div class="card" style="display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
       <div style="display:flex; align-items:center; gap:8px; font-size:.9rem;">
         <span style="font-size:1.4rem;">👉</span>
@@ -490,7 +572,15 @@
       </div>
     </div>
 
-    <div class="setup-grid">
+    <div class="card" id="cfgPersonajes">
+      <h2>🧑‍🚀 Personajes <span class="count-badge" id="charCountBadge" style="margin-left:auto;"></span></h2>
+      <p class="muted">Elige quién juega. Un personaje eliminado no aparece en ninguna ronda ni se sortea como impostor (puedes restaurarlo). Mínimo 3.</p>
+      <div class="char-grid" id="charGrid"></div>
+      <div class="toolbar"><button class="btn btn-ghost btn-sm" id="charRestoreBtn">↺ Restaurar todos los personajes</button></div>
+      <label class="set-row"><input type="checkbox" id="setDefeat"> Los impostores ganan si quedan tantos como inocentes (derrota de la tripulación)</label>
+    </div>
+
+    <div class="setup-grid" id="roundsSection">
       <div class="card">
         <h2>🎯 Rondas <span class="count-badge" id="roundCountBadge" style="margin-left:auto;"></span></h2>
         <div class="round-list" id="roundList"></div>
@@ -557,20 +647,39 @@
   </div>
 </div>
 
-<div id="revealOverlay">
-  <div class="eject-track">
-    <div class="crew3d" id="revealCrewmate" style="--c:#999;">
-      <div class="backpack3d"></div>
-      <div class="arm3d l"></div><div class="arm3d r"></div>
-      <div class="torso3d"></div>
-      <div class="panel3d"></div>
-      <div class="helmet3d"><div class="visor3d"></div></div>
-      <div class="legs3d"><span></span><span></span></div>
-      <div class="shine"></div>
-    </div>
+<div id="revealOverlay" role="dialog" aria-label="Expulsión">
+  <div class="ov-scene" id="scMeeting">
+    <div class="meet-lights"></div>
+    <div class="meet-title">REUNIÓN DE EMERGENCIA</div>
+    <div class="meet-sub" id="meetSub">Todos a la sala de control…</div>
   </div>
-  <div class="reveal-text" id="revealText">—</div>
-  <div class="reveal-sub" id="revealSub"></div>
+  <div class="ov-scene" id="scVote">
+    <div class="vote-title" id="voteTitle">Votación</div>
+    <div class="vote-ring" id="voteRing"></div>
+  </div>
+  <div class="ov-scene" id="scEject">
+    <div id="ovStreaks"></div>
+    <div class="airlock"></div>
+    <div class="eject-track">
+      <div class="crew3d" id="revealCrewmate" style="--c:#999;">
+        <div class="backpack3d"></div>
+        <div class="arm3d l"></div><div class="arm3d r"></div>
+        <div class="torso3d"></div>
+        <div class="panel3d"></div>
+        <div class="helmet3d"><div class="visor3d"></div></div>
+        <div class="legs3d"><span></span><span></span></div>
+        <div class="shine"></div>
+      </div>
+    </div>
+    <div class="eject-cap" id="ejectCap"></div>
+  </div>
+  <div class="ov-scene" id="scResult">
+    <div class="particles" id="ovParticles"></div>
+    <div class="res-title" id="resTitle"></div>
+    <div class="res-word" id="revealText"></div>
+    <div class="res-sub" id="revealSub"></div>
+  </div>
+  <button class="btn btn-ghost btn-sm" id="ovSkip">⏭ Saltar</button>
   <button class="btn btn-primary" id="revealContinueBtn" style="display:none;">Continuar</button>
 </div>
 
@@ -582,7 +691,7 @@
   </div>
 </div>
 
-<div class="sound-toggle"><button id="soundBtn" title="Sonido">🔊</button></div>
+<div class="sound-toggle"><button id="soundBtn" title="Sonido activado / silenciar" aria-label="Sonido">🔊</button><input type="range" id="volRange" min="0" max="100" value="60" aria-label="Volumen" title="Volumen"></div>
 
 <script type="module">
 import { initGameSync, saveGameData, toast } from "../shared/game-storage.js";
@@ -609,6 +718,32 @@ const COLORS = [
   {key:'cyan',   hex:'#22d3ee', name:'Celeste'},
   {key:'orange', hex:'#fb923c', name:'Naranjo'}
 ];
+
+const DEFAULT_NAMES = {}; COLORS.forEach(c => DEFAULT_NAMES[c.key] = c.name);
+
+/* Configuración de personajes (global). Ausente = los 8 activos con su nombre original. */
+function charActive(key){ return !(state.chars && state.chars[key] && state.chars[key].active === false); }
+function activeColors(){ return COLORS.filter(c => charActive(c.key)); }
+/* Personajes que juegan en una ronda: activos globalmente y no desactivados en esa ronda. */
+function roundColors(round){
+  const off = round && Array.isArray(round.disabled) ? round.disabled : [];
+  return COLORS.filter(c => charActive(c.key) && !off.includes(c.key));
+}
+/* Impostores efectivos: 1–2 y nunca más que jugadores − 1. */
+function effImpostors(round){
+  const n = roundColors(round).length;
+  return Math.max(1, Math.min(round.impostorCount === 2 ? 2 : 1, n - 1));
+}
+function roundEnabled(r){ return r.enabled !== false; }
+function playRounds(){ return state.rounds.filter(roundEnabled); }
+function getSettings(){ return Object.assign({ defeatRule: true }, state.settings || {}); }
+function applyCharNames(){
+  COLORS.forEach(c => { const o = state.chars && state.chars[c.key]; c.name = (o && o.name && o.name.trim()) || DEFAULT_NAMES[c.key]; });
+}
+function colorByName(name){
+  const n = String(name || '').trim().toLowerCase();
+  return COLORS.find(c => c.name.toLowerCase() === n) || COLORS.find(c => DEFAULT_NAMES[c.key].toLowerCase() === n);
+}
 
 function blankWords(){
   const w = {};
@@ -643,12 +778,15 @@ const fallbackData = (!savedRounds || !savedClosing) ? exampleData() : null;
 
 let state = {
   rounds: savedRounds || fallbackData.rounds,
-  closing: savedClosing || fallbackData.closing
+  closing: savedClosing || fallbackData.closing,
+  chars: (SAVED_IMPOSTOR && SAVED_IMPOSTOR.chars && typeof SAVED_IMPOSTOR.chars === 'object') ? SAVED_IMPOSTOR.chars : {},
+  settings: (SAVED_IMPOSTOR && SAVED_IMPOSTOR.settings && typeof SAVED_IMPOSTOR.settings === 'object') ? SAVED_IMPOSTOR.settings : {}
 };
+applyCharNames();
 
 /* Guarda el contenido editable (rondas + actividad final) en Firestore, con respaldo local. */
 function persist(){
-  saveGameData('impostor', CURRENT_UID, { rounds: state.rounds, closing: state.closing }).then(function(ok){
+  saveGameData('impostor', CURRENT_UID, { rounds: state.rounds, closing: state.closing, chars: state.chars, settings: state.settings }).then(function(ok){
     if(ok) toast('✓ Guardado y sincronizado');
   });
 }
@@ -691,7 +829,8 @@ let play = {
 };
 
 let soundOn = true;
-let audioCtx = null;
+let audioCtx = null, masterGain = null, volume = 0.6;
+try{ const v = localStorage.getItem('impostor_vol'); if(v!==null) volume = Math.max(0, Math.min(1, parseFloat(v))); if(localStorage.getItem('impostor_mute')==='1') soundOn = false; }catch(e){}
 let salaActual = null;        // código de sala en vivo (null = modo QR no activado)
 let votosActuales = {};       // { [colorKey]: {votadoA, jugadorId} } — últimos votos recibidos de celulares
 
@@ -740,7 +879,7 @@ function exampleData(){
 =================================================================== */
 function ensureAudio(){
   if(!audioCtx){
-    try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ soundOn=false; }
+    try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); masterGain = audioCtx.createGain(); masterGain.gain.value = volume; masterGain.connect(audioCtx.destination); }catch(e){ soundOn=false; }
   }
   if(audioCtx && audioCtx.state === 'suspended'){ audioCtx.resume(); }
 }
@@ -749,13 +888,24 @@ function tone(freq, start, dur, type='sine', gainPeak=0.18){
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.type = type; osc.frequency.value = freq;
-  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.connect(gain); gain.connect(masterGain || audioCtx.destination);
   const t0 = audioCtx.currentTime + start;
   gain.gain.setValueAtTime(0, t0);
   gain.gain.linearRampToValueAtTime(gainPeak, t0 + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
   osc.start(t0); osc.stop(t0 + dur + 0.05);
 }
+function sweep(f0, f1, dur, type='sawtooth', peak=0.12){
+  if(!soundOn || !audioCtx) return;
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+  osc.type = type; osc.connect(gain); gain.connect(masterGain || audioCtx.destination);
+  const t0 = audioCtx.currentTime;
+  osc.frequency.setValueAtTime(f0, t0); osc.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+  gain.gain.setValueAtTime(peak, t0); gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  osc.start(t0); osc.stop(t0 + dur + 0.05);
+}
+function playSiren(){ ensureAudio(); for(let i=0;i<3;i++){ tone(640,i*0.5,0.24,'sawtooth',0.1); tone(860,i*0.5+0.25,0.24,'sawtooth',0.1); } }
+function playWhoosh(){ ensureAudio(); sweep(900, 80, 2.4, 'sawtooth', 0.09); }
 function playClick(){ ensureAudio(); tone(520, 0, 0.08, 'square', 0.08); }
 function playSafe(){ ensureAudio(); tone(440,0,.14,'sine',0.15); tone(660,0.1,.18,'sine',0.15); tone(880,0.2,.22,'sine',0.14); }
 function playImpostor(){ ensureAudio(); tone(220,0,.25,'sawtooth',0.16); tone(180,0.15,.3,'sawtooth',0.16); tone(140,0.3,.5,'sawtooth',0.16); }
@@ -832,16 +982,30 @@ function crewmateHTML(hex, extraClass=''){
 /* ===================================================================
    RENDER: TABS
 =================================================================== */
-document.querySelectorAll('.tab-btn').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    playClick();
-    ui.activeTab = btn.dataset.tab;
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b===btn));
-    document.getElementById('setupView').style.display = ui.activeTab==='setup' ? '' : 'none';
-    document.getElementById('playView').style.display = ui.activeTab==='play' ? '' : 'none';
-    if(ui.activeTab==='play') renderPlay();
-  });
+function goView(view, anchor){
+  ui.activeTab = view;
+  document.querySelectorAll('.tab-btn[data-tab]').forEach(b=>b.classList.toggle('active', b.dataset.tab===view));
+  document.getElementById('menuView').style.display = view==='menu' ? 'flex' : 'none';
+  document.getElementById('setupView').style.display = view==='setup' ? '' : 'none';
+  document.getElementById('playView').style.display = view==='play' ? '' : 'none';
+  document.querySelector('header.top').style.display = view==='menu' ? 'none' : '';
+  if(view!=='play') stopTimer();
+  if(view==='play') renderPlay();
+  if(view==='setup' && anchor){ const el = document.getElementById(anchor); if(el) setTimeout(()=>el.scrollIntoView({behavior:'smooth', block:'start'}), 30); }
+  else window.scrollTo(0,0);
+}
+document.querySelectorAll('.tab-btn[data-tab]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{ playClick(); goView(btn.dataset.tab); });
 });
+document.getElementById('menuPlay').addEventListener('click', ()=>{ playClick(); goView('play'); });
+document.getElementById('menuCfg').addEventListener('click', ()=>{ playClick(); goView('setup', 'cfgPersonajes'); });
+document.getElementById('menuEdit').addEventListener('click', ()=>{ playClick(); goView('setup', 'roundsSection'); });
+document.getElementById('menuQr').addEventListener('click', ()=>{ playClick(); abrirModalQR(); });
+(function menuFloaters(){
+  const box = document.getElementById('menuFloaters');
+  const pos = [[6,14],[84,10],[10,66],[74,62],[46,6]];
+  box.innerHTML = pos.map((p,i)=>`<div class="fl" style="left:${p[0]}%;top:${p[1]}%;animation-delay:${i*0.9}s;animation-duration:${5+i}s">${crewmateHTML(COLORS[(i*2)%COLORS.length].hex)}</div>`).join('');
+})();
 
 /* ===================================================================
    RENDER: SETUP — LISTA DE RONDAS
@@ -858,11 +1022,14 @@ function renderRoundList(){
     ui.activeRoundId = state.rounds[0].id;
   }
   list.innerHTML = state.rounds.map((r,i)=>`
-    <div class="round-row ${r.id===ui.activeRoundId?'active':''}" data-id="${r.id}">
+    <div class="round-row ${r.id===ui.activeRoundId?'active':''} ${roundEnabled(r)?'':'disabled-round'}" data-id="${r.id}">
       <div class="idx">${i+1}</div>
       <div class="title">${escapeHTML(r.title || 'Sin título')}</div>
-      <div class="count-badge">👤 impostor: ${r.impostorCount}</div>
+      <div class="count-badge">👤 ${effImpostors(r)}</div>
       <div class="row-actions">
+        <button class="icon-btn" data-act="up" title="Subir" ${i===0?'disabled':''}>↑</button>
+        <button class="icon-btn" data-act="down" title="Bajar" ${i===state.rounds.length-1?'disabled':''}>↓</button>
+        <button class="icon-btn ${roundEnabled(r)?'':'off'}" data-act="toggle" title="${roundEnabled(r)?'Desactivar (no se juega)':'Activar'}">${roundEnabled(r)?'👁':'🚫'}</button>
         <button class="icon-btn" data-act="dup" title="Duplicar">⧉</button>
         <button class="icon-btn" data-act="del" title="Eliminar">🗑️</button>
       </div>
@@ -880,6 +1047,9 @@ function renderRoundList(){
         e.stopPropagation(); playClick();
         const act = btn.dataset.act;
         const idx = state.rounds.findIndex(r=>r.id===id);
+        if(act==='up' && idx>0){ const t=state.rounds[idx]; state.rounds[idx]=state.rounds[idx-1]; state.rounds[idx-1]=t; renderRoundList(); persist(); return; }
+        if(act==='down' && idx<state.rounds.length-1){ const t=state.rounds[idx]; state.rounds[idx]=state.rounds[idx+1]; state.rounds[idx+1]=t; renderRoundList(); persist(); return; }
+        if(act==='toggle'){ state.rounds[idx].enabled = !roundEnabled(state.rounds[idx]); renderRoundList(); persist(); return; }
         if(act==='dup'){
           const copy = JSON.parse(JSON.stringify(state.rounds[idx]));
           copy.id = uid(); copy.title = copy.title + ' (copia)';
@@ -923,10 +1093,12 @@ function renderRoundEditor(id){
     <label class="field-label">Título de la ronda</label>
     <input type="text" id="editTitle" value="${escapeHTML(round.title)}" placeholder="Ej: Vocabulario Unidad 3">
     <div style="height:14px;"></div>
+    <label class="field-label">Jugadores en esta ronda: ${roundColors(round).length}</label>
+    <div style="height:8px;"></div>
     <label class="field-label">Cantidad de impostores</label>
     <div class="impostor-toggle">
-      <button class="btn btn-ghost btn-sm ${round.impostorCount===1?'selected':''}" data-count="1">1 impostor</button>
-      <button class="btn btn-ghost btn-sm ${round.impostorCount===2?'selected':''}" data-count="2">2 impostores</button>
+      <button class="btn btn-ghost btn-sm ${effImpostors(round)===1?'selected':''}" data-count="1">1 impostor</button>
+      <button class="btn btn-ghost btn-sm ${effImpostors(round)===2?'selected':''}" data-count="2" ${roundColors(round).length<3?'disabled title="Se necesitan al menos 3 jugadores"':''}>2 impostores</button>
     </div>
     <div style="height:16px;"></div>
     <label class="field-label">¿Quién será el impostor?</label>
@@ -937,26 +1109,29 @@ function renderRoundEditor(id){
     <div style="height:10px;"></div>
     ${mode==='manual' ? `
       <div class="manual-picker">
-        ${COLORS.map(c=>`
+        ${roundColors(round).map(c=>`
           <button class="pick-swatch ${round.manualImpostors.includes(c.key)?'picked':''}" data-pick="${c.key}" style="--c:${c.hex}">
             <span class="dot"></span>${c.name}
           </button>
         `).join('')}
       </div>
-      <p class="muted" style="margin-top:8px;">Selecciona exactamente <b>${round.impostorCount}</b> color${round.impostorCount>1?'es':''}. Elegidos: <b>${round.manualImpostors.length}/${round.impostorCount}</b></p>
+      <p class="muted" style="margin-top:8px;">Selecciona exactamente <b>${effImpostors(round)}</b> personaje${effImpostors(round)>1?'s':''}. Elegidos: <b>${round.manualImpostors.length}/${effImpostors(round)}</b></p>
     ` : `
-      <p class="muted" style="margin-top:2px;">Se sorteará al azar entre los 8 colores cada vez que juegues esta ronda.</p>
+      <p class="muted" style="margin-top:2px;">Se sorteará al azar entre los ${roundColors(round).length} personajes en juego cada vez que juegues esta ronda.</p>
     `}
     <div style="height:16px;"></div>
-    <label class="field-label">Contenido asignado a cada color (editable — cualquier asignatura)</label>
+    <label class="field-label">Contenido asignado a cada personaje (editable — cualquier asignatura)</label>
     <div class="word-grid" id="wordGrid">
-      ${COLORS.map(c=>`
-        <div class="word-item">
+      ${activeColors().map(c=>{
+        const on = roundColors(round).some(x=>x.key===c.key);
+        return `
+        <div class="word-item ${on?'':'word-off'}">
+          <label class="ronda-chk" title="${on?'Juega en esta ronda. Desmárcalo para sacarlo de esta ronda':'No juega en esta ronda. Márcalo para incluirlo'}"><input type="checkbox" data-incl="${c.key}" ${on?'checked':''}></label>
           <div class="swatch" style="background:${c.hex};"></div>
-          <input type="text" data-color="${c.key}" placeholder="${c.name}" value="${escapeHTML(round.words[c.key]||'')}">
-        </div>
-      `).join('')}
+          <input type="text" data-color="${c.key}" placeholder="${escapeHTML(c.name)}" value="${escapeHTML(round.words[c.key]||'')}">
+        </div>`; }).join('')}
     </div>
+    <p class="muted" style="margin-top:8px;">☑ marca quién juega en <b>esta</b> ronda. Para eliminar un personaje en todas las rondas usa la sección <b>Personajes</b>.</p>
   `;
   document.getElementById('editTitle').addEventListener('input', (e)=>{
     round.title = e.target.value; renderRoundListTitlesOnly(); persist();
@@ -965,7 +1140,7 @@ function renderRoundEditor(id){
     btn.addEventListener('click', ()=>{
       playClick();
       round.impostorCount = parseInt(btn.dataset.count,10);
-      round.manualImpostors = round.manualImpostors.slice(0, round.impostorCount);
+      round.manualImpostors = round.manualImpostors.slice(0, effImpostors(round));
       renderRoundEditor(id); renderRoundListTitlesOnly(); persist();
     });
   });
@@ -985,11 +1160,26 @@ function renderRoundEditor(id){
       const i = arr.indexOf(key);
       if(i>=0){ arr.splice(i,1); }
       else{
-        if(arr.length >= round.impostorCount) arr.shift();
+        if(arr.length >= effImpostors(round)) arr.shift();
         arr.push(key);
       }
       renderRoundEditor(id);
       persist();
+    });
+  });
+  card.querySelectorAll('[data-incl]').forEach(chk=>{
+    chk.addEventListener('change', ()=>{
+      playClick();
+      const key = chk.dataset.incl;
+      const off = Array.isArray(round.disabled) ? round.disabled : (round.disabled = []);
+      const i = off.indexOf(key);
+      if(chk.checked){ if(i>=0) off.splice(i,1); }
+      else{
+        if(roundColors(round).length <= 3){ chk.checked = true; toast('Se necesitan al menos 3 jugadores en la ronda'); return; }
+        if(i<0) off.push(key);
+      }
+      round.manualImpostors = round.manualImpostors.filter(k=>roundColors(round).some(c=>c.key===k)).slice(0, effImpostors(round));
+      renderRoundEditor(id); renderRoundListTitlesOnly(); persist();
     });
   });
   card.querySelectorAll('[data-color]').forEach(inp=>{
@@ -1000,6 +1190,56 @@ function renderRoundEditor(id){
   });
 }
 
+function renderCharConfig(){
+  const grid = document.getElementById('charGrid');
+  if(!grid) return;
+  const n = activeColors().length;
+  document.getElementById('charCountBadge').textContent = n + ' de ' + COLORS.length + ' jugando';
+  grid.innerHTML = COLORS.map(c=>{
+    const act = charActive(c.key);
+    return `<div class="char-card ${act?'':'removed'}">
+      ${crewmateHTML(c.hex)}
+      <input type="text" data-cname="${c.key}" maxlength="14" value="${escapeHTML(c.name)}" aria-label="Nombre de ${escapeHTML(DEFAULT_NAMES[c.key])}" ${act?'':'disabled'}>
+      <button class="btn btn-sm ${act?'btn-danger':'btn-primary'}" data-ctoggle="${c.key}">${act?'🗑 Eliminar':'↺ Restaurar'}</button>
+    </div>`;
+  }).join('');
+  document.getElementById('setDefeat').checked = getSettings().defeatRule;
+  grid.querySelectorAll('[data-cname]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const k = inp.dataset.cname;
+      state.chars[k] = Object.assign({}, state.chars[k], { name: inp.value });
+      applyCharNames(); persist();
+    });
+    inp.addEventListener('change', ()=>{
+      if(!inp.value.trim()){ inp.value = DEFAULT_NAMES[inp.dataset.cname]; state.chars[inp.dataset.cname].name = ''; applyCharNames(); persist(); }
+      renderRoundList(); renderJugadoresConectados(); publicarEstado('lobby');
+    });
+  });
+  grid.querySelectorAll('[data-ctoggle]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      playClick();
+      const k = btn.dataset.ctoggle;
+      if(charActive(k)){
+        if(activeColors().length <= 3){ alertMsg('Mínimo 3 personajes', 'Se necesitan al menos 3 personajes para poder jugar (1 impostor y al menos 2 inocentes).'); return; }
+        state.chars[k] = Object.assign({}, state.chars[k], { active:false });
+      } else {
+        state.chars[k] = Object.assign({}, state.chars[k], { active:true });
+      }
+      state.rounds.forEach(r=>{ r.manualImpostors = (r.manualImpostors||[]).filter(x=>charActive(x)); });
+      renderCharConfig(); renderRoundList(); publicarEstado('lobby'); persist();
+    });
+  });
+}
+document.getElementById('charRestoreBtn').addEventListener('click', ()=>{
+  playClick();
+  Object.keys(state.chars).forEach(k=>{ if(state.chars[k]) state.chars[k].active = true; });
+  renderCharConfig(); renderRoundList(); publicarEstado('lobby'); persist();
+});
+document.getElementById('setDefeat').addEventListener('change', (e)=>{
+  state.settings = Object.assign({}, state.settings, { defeatRule: e.target.checked });
+  persist();
+});
+
 function renderRoundListTitlesOnly(){
   // lightweight refresh to reflect title/impostor count changes without losing focus
   const list = document.getElementById('roundList');
@@ -1007,7 +1247,7 @@ function renderRoundListTitlesOnly(){
     const row = list.querySelector(`.round-row[data-id="${r.id}"]`);
     if(row){
       row.querySelector('.title').textContent = r.title || 'Sin título';
-      row.querySelector('.count-badge').textContent = '👤 impostor: ' + r.impostorCount;
+      row.querySelector('.count-badge').textContent = '👤 ' + effImpostors(r);
     }
   });
 }
@@ -1056,7 +1296,7 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
     return;
   }
   const wb = XLSX.utils.book_new();
-  const headers = ['Ronda','Titulo','Impostores','ModoImpostor','ImpostorManual', ...COLORS.map(c=>c.name)];
+  const headers = ['Ronda','Titulo','Impostores','ModoImpostor','ImpostorManual', ...COLORS.map(c=>c.name), 'Activa','Desactivados'];
   const rows = [headers];
   state.rounds.forEach((r,i)=>{
     const manualNames = (Array.isArray(r.manualImpostors) ? r.manualImpostors : [])
@@ -1065,11 +1305,13 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
       i+1, r.title, r.impostorCount,
       r.impostorMode==='manual' ? 'Manual' : 'Aleatorio',
       manualNames,
-      ...COLORS.map(c=>r.words[c.key]||'')
+      ...COLORS.map(c=>r.words[c.key]||''),
+      roundEnabled(r) ? 'Si' : 'No',
+      (Array.isArray(r.disabled) ? r.disabled : []).map(k=>COLORS.find(c=>c.key===k)?.name).filter(Boolean).join(', ')
     ]);
   });
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch:7},{wch:30},{wch:12},{wch:14},{wch:22}, ...COLORS.map(()=>({wch:22}))];
+  ws['!cols'] = [{wch:7},{wch:30},{wch:12},{wch:14},{wch:22}, ...COLORS.map(()=>({wch:22})), {wch:8},{wch:24}];
   XLSX.utils.book_append_sheet(wb, ws, 'Rondas');
 
   const closingRows = [['Titulo','Instrucciones','Notas'], [state.closing.title||'', state.closing.body||'', state.closing.extra||'']];
@@ -1104,7 +1346,7 @@ document.getElementById('importExcelFile').addEventListener('change', (e)=>{
       const newRounds = [];
       json.forEach((row, idx)=>{
         const words = blankWords();
-        COLORS.forEach(c=>{ words[c.key] = String(row[c.name] ?? '').trim(); });
+        COLORS.forEach(c=>{ words[c.key] = String(row[c.name] ?? row[DEFAULT_NAMES[c.key]] ?? '').trim(); });
         const rawTitle = String(row['Titulo'] ?? '').trim();
         const hasContent = rawTitle !== '' || Object.values(words).some(w=>w!=='');
         if(!hasContent) return; // fila vacía, se ignora
@@ -1117,11 +1359,14 @@ document.getElementById('importExcelFile').addEventListener('change', (e)=>{
         let manualImpostors = [];
         if(manualNamesRaw){
           manualImpostors = manualNamesRaw.split(',').map(n=>n.trim().toLowerCase())
-            .map(name => COLORS.find(c=>c.name.toLowerCase()===name)?.key)
+            .map(name => colorByName(name)?.key)
             .filter(Boolean)
             .slice(0, impostorCount);
         }
-        newRounds.push({ id: uid(), title: rawTitle || `Ronda ${idx+1}`, impostorCount, impostorMode, manualImpostors, words });
+        const actRaw = String(row['Activa'] ?? '').trim().toLowerCase();
+        const desact = String(row['Desactivados'] ?? '').split(',').map(n=>colorByName(n)?.key).filter(Boolean);
+        newRounds.push({ id: uid(), title: rawTitle || `Ronda ${idx+1}`, impostorCount, impostorMode, manualImpostors, words,
+          enabled: !(actRaw==='no' || actRaw==='false' || actRaw==='0'), disabled: desact });
       });
       if(!newRounds.length) throw new Error('sin filas válidas');
       state.rounds = newRounds;
@@ -1163,38 +1408,73 @@ document.getElementById('resetAllBtn').addEventListener('click', ()=>{
 /* ===================================================================
    PLAY: RENDER PRINCIPAL
 =================================================================== */
-function renderPlay(){
-  const wrap = document.getElementById('playContent');
-  if(state.rounds.length === 0){
-    wrap.innerHTML = `<div class="card"><div class="empty-state">No hay rondas configuradas todavía.<br>Ve a la pestaña <b>Configurar</b> para crear una ronda o cargar el ejemplo.</div></div>`;
-    return;
-  }
-  if(play.roundIndex >= state.rounds.length){
-    renderClosingScreen();
-    return;
-  }
-  if(play.phase === 'intro') renderIntroScreen();
-  else if(play.phase === 'voting') renderVotingScreen();
-  else if(play.phase === 'victory') renderVictoryScreen();
+Object.assign(play, { meeting: 1, log: [], paused: false, elapsed: 0, ejecting: false, outcome: '' });
+let timerId = null;
+const REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function currentRound(){ return playRounds()[play.roundIndex]; }
+function fmtTime(sec){ const m = Math.floor(sec/60), r = sec%60; return String(m).padStart(2,'0') + ':' + String(r).padStart(2,'0'); }
+function stopTimer(){ if(timerId){ clearInterval(timerId); timerId = null; } }
+function startTimer(){
+  stopTimer();
+  timerId = setInterval(()=>{
+    if(play.paused || play.ejecting || play.phase !== 'voting') return;
+    play.elapsed++;
+    const el = document.getElementById('timerEl');
+    if(el) el.textContent = '⏱ ' + fmtTime(play.elapsed);
+  }, 1000);
 }
 
-function currentRound(){ return state.rounds[play.roundIndex]; }
+/* Publica el estado en vivo para los celulares (personajes activos, nombres, quién juega y quién fue expulsado). */
+function publicarEstado(fase, extra){
+  if(!salaActual) return;
+  const round = ES_ALUMNO ? null : currentRound();
+  const jugando = (fase === 'lobby' || !round) ? activeColors().map(c=>c.key) : roundColors(round).map(c=>c.key);
+  const nombres = {}; COLORS.forEach(c => nombres[c.key] = c.name);
+  escribir(refSala('impostor', salaActual, 'estado'), Object.assign({
+    fase: fase, resultado: null, activos: activeColors().map(c=>c.key), nombres: nombres, jugando: jugando,
+    expulsados: Object.keys(play.revealed || {}), reunion: play.meeting || 0
+  }, extra || {}));
+}
+
+function renderPlay(){
+  const wrap = document.getElementById('playContent');
+  const rounds = playRounds();
+  if(rounds.length === 0){
+    wrap.innerHTML = `<div class="card"><div class="empty-state">No hay rondas activas.<br>Ve a <b>Configurar</b> para crear una ronda, activar una desactivada o cargar el ejemplo.</div></div>`;
+    return;
+  }
+  if(play.roundIndex < 0) play.roundIndex = 0;
+  if(play.roundIndex >= rounds.length && play.phase !== 'closing'){
+    play.phase = 'closing';
+  }
+  if(play.phase === 'closing'){ stopTimer(); renderClosingScreen(); return; }
+  if(play.phase === 'intro') renderIntroScreen();
+  else if(play.phase === 'voting') renderVotingScreen();
+  else if(play.phase === 'victory') renderEndScreen(true);
+  else if(play.phase === 'defeat') renderEndScreen(false);
+}
 
 function renderIntroScreen(){
+  stopTimer();
   const round = currentRound();
+  const players = roundColors(round);
+  const rounds = playRounds();
   const wrap = document.getElementById('playContent');
+  const eff = effImpostors(round);
   wrap.innerHTML = `
     <div class="card">
-      <div class="play-header">
-        <div class="round-pill">Ronda ${play.roundIndex+1} de ${state.rounds.length}</div>
-        <div class="round-pill">${escapeHTML(round.title)}</div>
+      <div class="hud">
+        <div class="pill">Ronda ${play.roundIndex+1} de ${rounds.length}</div>
+        <div class="pill">${escapeHTML(round.title)}</div>
+        <div class="pill">👥 ${players.length} jugadores</div>
       </div>
       <p class="muted">Repasa este contenido con el curso. Cuando estén listos, comiencen la votación para descubrir al impostor.</p>
-      ${round.impostorMode==='manual' && Array.isArray(round.manualImpostors) && round.manualImpostors.length===round.impostorCount
+      ${round.impostorMode==='manual' && Array.isArray(round.manualImpostors) && round.manualImpostors.filter(k=>players.some(c=>c.key===k)).length===eff
         ? `<p class="muted">🎯 Modo manual: tú elegiste quién será el impostor en esta ronda.</p>`
         : `<p class="muted">🎲 Modo aleatorio: se sorteará quién es el impostor al iniciar la votación.</p>`}
       <div class="intro-board">
-        ${COLORS.map(c=>`
+        ${players.map(c=>`
           <div class="intro-item">
             ${crewmateHTML(c.hex)}
             <div class="label">${escapeHTML(round.words[c.key] || '—')}</div>
@@ -1202,36 +1482,42 @@ function renderIntroScreen(){
         `).join('')}
       </div>
       <div class="center-col">
-        <button class="btn btn-primary" id="startVotingBtn">🗳️ Iniciar Votación (${round.impostorCount} impostor${round.impostorCount>1?'es':''})</button>
+        <button class="btn btn-primary" id="startVotingBtn" style="font-size:16px;padding:14px 28px;">🗳️ Iniciar Votación (${eff} impostor${eff>1?'es':''})</button>
+        <div class="toolbar" style="justify-content:center;">
+          <button class="btn btn-ghost btn-sm" id="prevRoundBtn" ${play.roundIndex===0?'disabled':''}>⬅ Ronda anterior</button>
+          <button class="btn btn-ghost btn-sm" id="skipRoundBtn">Saltar ronda ➡</button>
+        </div>
       </div>
     </div>
   `;
-  document.getElementById('startVotingBtn').addEventListener('click', ()=>{
-    playClick();
-    startVoting();
-  });
+  document.getElementById('startVotingBtn').addEventListener('click', ()=>{ playClick(); startVoting(); });
+  document.getElementById('prevRoundBtn').addEventListener('click', ()=>{ playClick(); play.roundIndex--; play.phase='intro'; renderPlay(); });
+  document.getElementById('skipRoundBtn').addEventListener('click', ()=>{ playClick(); play.roundIndex++; play.phase='intro'; renderPlay(); });
+}
+
+/* Sortea (o toma los manuales) los impostores entre los personajes que juegan en la ronda. */
+function sortearImpostores(round){
+  const players = roundColors(round).map(c=>c.key);
+  const eff = effImpostors(round);
+  const manual = Array.isArray(round.manualImpostors) ? round.manualImpostors.filter(k=>players.includes(k)) : [];
+  if(round.impostorMode === 'manual' && manual.length === eff) return manual.slice();
+  return shuffle(players.slice()).slice(0, eff);
 }
 
 function startVoting(){
   const round = currentRound();
-  const manual = Array.isArray(round.manualImpostors) ? round.manualImpostors.filter(k=>COLORS.some(c=>c.key===k)) : [];
-  if(round.impostorMode === 'manual' && manual.length === round.impostorCount){
-    play.impostors = manual.slice();
-  } else {
-    // sortear impostores al azar
-    const keys = COLORS.map(c=>c.key);
-    shuffle(keys);
-    play.impostors = keys.slice(0, round.impostorCount);
-  }
+  play.impostors = sortearImpostores(round);
   play.revealed = {};
-  play.remaining = round.impostorCount;
+  play.remaining = play.impostors.length;
+  play.meeting = 1; play.log = []; play.elapsed = 0; play.paused = false; play.ejecting = false;
   play.phase = 'voting';
-  renderPlay();
+  votosActuales = {};
   if(salaActual){
-    votosActuales = {};
-    escribir(refSala('impostor', salaActual, 'estado'), { fase: 'votando', resultado: null });
     escribir(refSala('impostor', salaActual, 'respuestas'), null);
+    publicarEstado('votando');
   }
+  startTimer();
+  renderPlay();
 }
 
 function shuffle(arr){
@@ -1244,107 +1530,241 @@ function shuffle(arr){
 
 function renderVotingScreen(){
   const round = currentRound();
+  const players = roundColors(round);
+  const rounds = playRounds();
   const wrap = document.getElementById('playContent');
+  const ejected = players.filter(c=>play.revealed[c.key]).length;
+  const pct = Math.round(ejected / Math.max(1, players.length - 1) * 100);
   wrap.innerHTML = `
     <div class="card">
-      <div class="play-header">
-        <div class="round-pill">Ronda ${play.roundIndex+1} de ${state.rounds.length}</div>
+      <div class="hud">
+        <div class="pill">Ronda ${play.roundIndex+1} de ${rounds.length}</div>
+        <div class="pill">🗳️ Reunión ${play.meeting}</div>
+        <div class="pill timer" id="timerEl">⏱ ${fmtTime(play.elapsed)}</div>
         <div class="impostor-counter" id="impostorCounter">Impostores restantes: ${play.remaining}</div>
+        <div class="pill">👥 ${players.length - ejected} en la nave</div>
       </div>
-      <p class="muted">Hagan clic sobre un personaje para expulsarlo y revelar si era el impostor.</p>
-      <div class="board" id="votingBoard">
-        ${COLORS.map(c=>{
-          const revealed = play.revealed[c.key];
-          const isImpostor = play.impostors.includes(c.key);
-          return `
-          <div class="crew-card ${revealed?'revealed':''}" data-color="${c.key}">
-            ${crewmateHTML(c.hex, revealed?'dead':'')}
-            <div class="label">${escapeHTML(round.words[c.key]||'—')}</div>
-            ${revealed ? `<div class="status ${isImpostor?'impostor':'safe'}">${isImpostor?'IMPOSTOR':'INOCENTE'}</div>` : ''}
-          </div>`;
-        }).join('')}
+      <div class="progress" title="Expulsados"><i style="width:${Math.min(100,pct)}%"></i></div>
+      <p class="muted"><b>${escapeHTML(round.title)}</b> — Toca un personaje para expulsarlo y revelar si era el impostor, o usa "Nadie expulsado".</p>
+      <div class="board-wrap">
+        <div class="board" id="votingBoard">
+          ${players.map(c=>{
+            const revealed = play.revealed[c.key];
+            const isImpostor = play.impostors.includes(c.key);
+            return `
+            <div class="crew-card ${revealed?'revealed':''}" data-color="${c.key}" ${revealed?'':'tabindex="0" role="button"'} aria-label="${escapeHTML(round.words[c.key]||c.name)}">
+              ${crewmateHTML(c.hex, revealed?'dead':'')}
+              <div class="label">${escapeHTML(round.words[c.key]||'—')}</div>
+              ${revealed ? `<div class="status ${isImpostor?'impostor':'safe'}">${isImpostor?'IMPOSTOR':'INOCENTE'}</div>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+        ${play.paused ? `<div class="paused-veil">⏸ Juego en pausa</div>` : ''}
+      </div>
+      <div class="teacher-bar" aria-label="Controles del profesor">
+        <button class="btn btn-ghost btn-sm" id="tbPause">${play.paused?'▶ Reanudar':'⏸ Pausar'}</button>
+        <button class="btn btn-gold btn-sm" id="tbNone">⏭ Nadie expulsado</button>
+        <button class="btn btn-ghost btn-sm" id="tbRestart">🔄 Reiniciar ronda</button>
+        <button class="btn btn-ghost btn-sm" id="tbChange">🎲 Cambiar impostor</button>
+        <button class="btn btn-ghost btn-sm" id="tbPrev" ${play.roundIndex===0?'disabled':''}>⬅ Anterior</button>
+        <button class="btn btn-ghost btn-sm" id="tbNext">Siguiente ➡</button>
+        <button class="btn btn-ghost btn-sm" id="tbResults">📋 Resultados</button>
+        <button class="btn btn-ghost btn-sm" id="tbPlayers">👥 Jugadores</button>
       </div>
       ${salaActual ? `
-        <div class="center-col" style="margin-top:14px;">
+        <div class="center-col" style="padding:6px 0 0;">
           <p class="muted" id="votoTally"></p>
-          <button class="btn btn-gold btn-sm" id="revelarVotosBtn">🔓 Revelar votos de los celulares</button>
+          <div class="toolbar" style="justify-content:center; margin-top:0;">
+            <button class="btn btn-primary btn-sm" id="expulsarVotadoBtn">🚀 Expulsar al más votado</button>
+            <button class="btn btn-gold btn-sm" id="revelarVotosBtn">🔓 Revelar votos de los celulares</button>
+          </div>
         </div>
       ` : ``}
     </div>
   `;
+  const $ = id => document.getElementById(id);
+  $('tbPause').addEventListener('click', ()=>{ playClick(); play.paused = !play.paused; renderVotingScreen(); });
+  $('tbNone').addEventListener('click', ()=>{ if(!play.paused) iniciarExpulsion(null, 'skip'); });
+  $('tbRestart').addEventListener('click', ()=> confirmAction('¿Reiniciar la ronda?', 'Se vuelve a la presentación de la ronda y se pierde el avance de esta votación.', ()=>{ play.phase='intro'; renderPlay(); if(salaActual) publicarEstado('lobby'); }));
+  $('tbChange').addEventListener('click', ()=> confirmAction('¿Cambiar de impostor?', 'Se vuelve a sortear (o a tomar tu elección manual) y se reinicia la votación de esta ronda.', ()=>{ startVoting(); toast('🎲 Impostor cambiado'); }));
+  $('tbPrev').addEventListener('click', ()=>{ playClick(); play.roundIndex--; play.phase='intro'; renderPlay(); if(salaActual) publicarEstado('lobby'); });
+  $('tbNext').addEventListener('click', ()=> confirmAction('¿Pasar a la siguiente ronda?', 'Se abandona esta ronda sin terminarla.', ()=>{ play.roundIndex++; play.phase='intro'; renderPlay(); if(salaActual) publicarEstado('lobby'); }));
+  $('tbResults').addEventListener('click', ()=>{ playClick(); mostrarResultados(); });
+  $('tbPlayers').addEventListener('click', ()=>{ playClick(); abrirModalQR(); });
   if(salaActual){
-    const tallyEl = document.getElementById('votoTally');
     const cuenta = Object.keys(votosActuales).length;
-    tallyEl.textContent = cuenta + ' voto' + (cuenta===1?'':'s') + ' recibido' + (cuenta===1?'':'s') + ' hasta ahora';
-    document.getElementById('revelarVotosBtn').addEventListener('click', ()=>{
+    $('votoTally').textContent = cuenta + ' voto' + (cuenta===1?'':'s') + ' recibido' + (cuenta===1?'':'s') + ' en esta reunión';
+    $('revelarVotosBtn').addEventListener('click', ()=>{
       const conteo = {};
-      Object.values(votosActuales).forEach(function(v){
-        conteo[v.votadoA] = (conteo[v.votadoA]||0) + 1;
-      });
-      escribir(refSala('impostor', salaActual, 'estado'), { fase: 'revelado', resultado: { conteo: conteo } });
+      Object.values(votosActuales).forEach(function(v){ conteo[v.votadoA] = (conteo[v.votadoA]||0) + 1; });
+      publicarEstado('revelado', { resultado: { conteo: conteo } });
       const texto = Object.keys(conteo).length
         ? Object.entries(conteo).map(function(e){ const c = COLORS.find(x=>x.key===e[0]); return (c?c.name:e[0]) + ': ' + e[1]; }).join(' · ')
         : 'Nadie votó todavía.';
       alertMsg('🔓 Votos revelados', texto);
     });
+    $('expulsarVotadoBtn').addEventListener('click', ()=>{
+      if(play.paused) return;
+      const conteo = {};
+      Object.values(votosActuales).forEach(function(v){ if(players.some(c=>c.key===v.votadoA) && !play.revealed[v.votadoA]) conteo[v.votadoA] = (conteo[v.votadoA]||0) + 1; });
+      const max = Math.max(0, ...Object.values(conteo));
+      const top = Object.keys(conteo).filter(k=>conteo[k]===max);
+      if(max === 0) iniciarExpulsion(null, 'none');
+      else if(top.length > 1) iniciarExpulsion(null, 'tie');
+      else iniciarExpulsion(top[0], 'votes');
+    });
   }
   wrap.querySelectorAll('.crew-card:not(.revealed)').forEach(card=>{
-    card.addEventListener('click', ()=> handleReveal(card.dataset.color));
+    const go = ()=>{ if(!play.paused) iniciarExpulsion(card.dataset.color, 'teacher'); };
+    card.addEventListener('click', go);
+    card.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); go(); } });
   });
 }
 
-function handleReveal(colorKey){
-  if(play.revealed[colorKey]) return;
+function mostrarResultados(){
   const round = currentRound();
-  const isImpostor = play.impostors.includes(colorKey);
-  play.revealed[colorKey] = true;
-  if(isImpostor) play.remaining--;
-
-  const colorObj = COLORS.find(c=>c.key===colorKey);
-  const overlay = document.getElementById('revealOverlay');
-  const crewEl = document.getElementById('revealCrewmate');
-  const textEl = document.getElementById('revealText');
-  const subEl = document.getElementById('revealSub');
-  const contBtn = document.getElementById('revealContinueBtn');
-
-  crewEl.style.setProperty('--c', colorObj.hex);
-  crewEl.classList.remove('eject','eject-idle'); void crewEl.offsetWidth; crewEl.classList.add('eject');
-  textEl.textContent = `${escapeHTML(round.words[colorKey]||colorObj.name)}`;
-  textEl.className = 'reveal-text ' + (isImpostor ? 'bad' : 'safe');
-  subEl.textContent = isImpostor ? '¡ERA EL IMPOSTOR!' : 'No era el impostor';
-  contBtn.style.display = 'none';
-  overlay.classList.add('show');
-
-  setTimeout(()=>{ if(isImpostor) playImpostor(); else playSafe(); }, 1700);
-  setTimeout(()=>{ crewEl.classList.add('eject-idle'); }, 2300);
-
-  setTimeout(()=>{
-    contBtn.style.display = 'inline-block';
-  }, 2500);
-
-  contBtn.onclick = ()=>{
-    overlay.classList.remove('show');
-    if(play.remaining <= 0){
-      play.phase = 'victory';
-      renderPlay();
-      setTimeout(()=>{ launchConfetti(); playVictory(); }, 150);
-    } else {
-      renderVotingScreen();
-    }
-  };
+  const rows = play.log.map(l=>{
+    if(!l.key) return `Reunión ${l.m}: nadie fue expulsado.`;
+    const c = COLORS.find(x=>x.key===l.key);
+    return `Reunión ${l.m}: ${c?c.name:l.key} (${round.words[l.key]||'—'}) — ${l.imp?'era IMPOSTOR':'era inocente'}.`;
+  });
+  const imp = play.impostors.map(k=>{ const c=COLORS.find(x=>x.key===k); return (c?c.name:k) + ' (' + (round.words[k]||'—') + ')'; }).join(' y ');
+  showModal({ title:'📋 Resultados de la ronda', body: (rows.length ? rows.join('\n') : 'Todavía no hubo reuniones.') + '\n\nImpostor(es) real(es): ' + imp + '\nTiempo: ' + fmtTime(play.elapsed),
+    actions:[{label:'Cerrar', cls:'btn-primary'}] });
+  document.getElementById('modalBody').style.whiteSpace = 'pre-wrap';
 }
 
-function renderVictoryScreen(){
+/* ---------------- Expulsión: el resultado sale del estado real, la cinemática solo lo muestra ---------------- */
+function iniciarExpulsion(colorKey, reason){
+  if(play.ejecting || play.paused) return;
+  play.ejecting = true;
   const round = currentRound();
+  const isImpostor = colorKey ? play.impostors.includes(colorKey) : false;
+  if(colorKey){
+    play.revealed[colorKey] = true;
+    if(isImpostor) play.remaining--;
+    play.log.push({ m: play.meeting, key: colorKey, imp: isImpostor });
+  } else {
+    play.log.push({ m: play.meeting, key: null, reason: reason });
+  }
+  const players = roundColors(round);
+  const innocentsLeft = players.filter(c=>!play.impostors.includes(c.key) && !play.revealed[c.key]).length;
+  let outcome = 'continue';
+  if(play.remaining <= 0) outcome = 'victory';
+  else if(getSettings().defeatRule && innocentsLeft <= play.remaining) outcome = 'defeat';
+  play.outcome = outcome;
+  if(salaActual){ votosActuales = {}; escribir(refSala('impostor', salaActual, 'respuestas'), null); }
+  correrCinematica({ key: colorKey, isImpostor, reason, round, players, outcome }, ()=>{
+    play.ejecting = false;
+    if(outcome === 'victory'){ play.phase = 'victory'; stopTimer(); renderPlay(); if(salaActual) publicarEstado('fin', { mensaje: '¡La tripulación ganó! Encontraron al impostor 🎉' }); setTimeout(()=>{ launchConfetti(); playVictory(); }, 150); }
+    else if(outcome === 'defeat'){ play.phase = 'defeat'; stopTimer(); renderPlay(); if(salaActual) publicarEstado('fin', { mensaje: 'Los impostores ganaron esta vez 😈' }); setTimeout(playImpostor, 150); }
+    else { play.meeting++; if(salaActual) publicarEstado('votando'); renderVotingScreen(); }
+  });
+}
+
+let ovTimers = [];
+function ovClear(){ ovTimers.forEach(clearTimeout); ovTimers = []; }
+function ovAt(ms, fn){ ovTimers.push(setTimeout(fn, REDUCED ? Math.round(ms*0.35) : ms)); }
+function ovScene(id){
+  document.querySelectorAll('#revealOverlay .ov-scene').forEach(el=>el.classList.toggle('on', el.id===id));
+}
+const NO_EXP_REASON = { skip: 'La votación fue saltada.', tie: 'Hubo un empate en la votación.', none: 'Nadie recibió votos.' };
+
+function correrCinematica(info, onDone){
+  const { key, isImpostor, reason, round, players, outcome } = info;
+  const overlay = document.getElementById('revealOverlay');
+  const colorObj = key ? COLORS.find(c=>c.key===key) : null;
+  const word = key ? (round.words[key] || colorObj.name) : '';
+  const ring = document.getElementById('voteRing');
+  const cont = document.getElementById('revealContinueBtn');
+  const skip = document.getElementById('ovSkip');
+  const crewEl = document.getElementById('revealCrewmate');
+  ovClear();
+  cont.style.display = 'none'; skip.style.display = '';
+  overlay.className = 'show';
+
+  // preparar escenas
+  ring.className = 'vote-ring';
+  ring.innerHTML = players.map(c=>`<div class="vr ${c.key===key?'target':''}" ${play.revealed[c.key] && c.key!==key ? 'style="visibility:hidden"' : ''}>${crewmateHTML(c.hex)}<span>${escapeHTML(c.name)}</span></div>`).join('');
+  document.getElementById('meetSub').textContent = 'Todos a la sala de control…';
+  document.getElementById('voteTitle').textContent = 'Votación en curso…';
+  document.getElementById('ejectCap').textContent = '';
+  const streaks = document.getElementById('ovStreaks');
+  if(!streaks.children.length){
+    for(let i=0;i<22;i++){ const d = document.createElement('i'); d.className='streak'; d.style.top = (Math.random()*100)+'%'; d.style.animationDuration = (0.6+Math.random()*1.1)+'s'; d.style.animationDelay = (-Math.random()*1.5)+'s'; d.style.width = (60+Math.random()*120)+'px'; streaks.appendChild(d); }
+  }
+  if(colorObj) crewEl.style.setProperty('--c', colorObj.hex);
+  crewEl.classList.remove('eject');
+
+  function resultado(){
+    ovClear();
+    skip.style.display = 'none';
+    overlay.className = 'show ' + (key ? (isImpostor ? 'res-impostor' : 'res-innocent') : 'res-none');
+    const title = document.getElementById('resTitle'), w = document.getElementById('revealText'), sub = document.getElementById('revealSub');
+    const left = play.remaining;
+    if(!key){
+      title.textContent = 'NO HUBO EXPULSIÓN';
+      w.textContent = '';
+      sub.textContent = (NO_EXP_REASON[reason] || 'Nadie fue expulsado.') + ' La ronda continúa.';
+    } else if(isImpostor){
+      title.textContent = '¡IMPOSTOR EXPULSADO!';
+      w.textContent = (colorObj.name + ' · ' + word);
+      sub.textContent = 'La tripulación ha eliminado al impostor' + (left>0 ? ' · Todavía queda' + (left>1?'n ':' ') + left : '');
+    } else {
+      title.textContent = 'ERA INOCENTE';
+      w.textContent = (colorObj.name + ' · ' + word);
+      sub.textContent = 'El impostor sigue entre nosotros' + (outcome==='defeat' ? ' · y los impostores toman la nave' : '');
+    }
+    ovScene('scResult');
+    const pc = document.getElementById('ovParticles');
+    pc.innerHTML = '';
+    if(!REDUCED){
+      const cols = !key ? ['#FFD45A','#F5F7FF'] : (isImpostor ? ['#4CE6A0','#FFD45A','#26D9E8'] : ['#FF5263','#ff9d6b']);
+      for(let k=0;k<32;k++){
+        const p = document.createElement('i'), a = Math.random()*Math.PI*2, d = 120 + Math.random()*260;
+        p.style.setProperty('--dx', Math.cos(a)*d+'px'); p.style.setProperty('--dy', Math.sin(a)*d+'px');
+        p.style.setProperty('--p', cols[k % cols.length]); p.style.animationDelay = (Math.random()*0.3)+'s';
+        pc.appendChild(p);
+      }
+    }
+    if(key){ if(isImpostor) playSafe(); else playImpostor(); }
+    cont.style.display = 'inline-block';
+    cont.focus();
+  }
+
+  cont.onclick = ()=>{ ovClear(); overlay.className = ''; onDone(); };
+  skip.onclick = resultado;
+
+  // línea de tiempo
+  ovScene('scMeeting'); playSiren();
+  ovAt(1500, ()=>{ ovScene('scVote'); });
+  if(key){
+    ovAt(2600, ()=>{ ring.classList.add('focus'); document.getElementById('voteTitle').textContent = ('¡' + colorObj.name + ' fue el señalado!'); });
+    ovAt(3800, ()=>{
+      ovScene('scEject'); playWhoosh();
+      document.getElementById('ejectCap').textContent = colorObj.name + ' sale al espacio…';
+      void crewEl.offsetWidth; crewEl.classList.add('eject');
+    });
+    ovAt(7000, resultado);
+  } else {
+    ovAt(2500, ()=>{ document.getElementById('voteTitle').textContent = NO_EXP_REASON[reason] || 'Nadie fue expulsado.'; });
+    ovAt(4300, resultado);
+  }
+}
+
+function renderEndScreen(win){
+  const round = currentRound();
+  const rounds = playRounds();
   const wrap = document.getElementById('playContent');
-  const isLast = play.roundIndex >= state.rounds.length - 1;
-  const impostorNames = play.impostors.map(k => round.words[k] || COLORS.find(c=>c.key===k).name).join(' y ');
+  const isLast = play.roundIndex >= rounds.length - 1;
+  const impostorNames = play.impostors.map(k => (COLORS.find(c=>c.key===k)||{name:k}).name + ' (' + (round.words[k] || '—') + ')').join(' y ');
   wrap.innerHTML = `
     <div class="card">
       <div class="center-col">
-        <div style="font-size:40px;">🎉</div>
-        <h2 style="margin:0;">¡Impostor${play.impostors.length>1?'es':''} encontrado${play.impostors.length>1?'s':''}!</h2>
-        <p class="muted">${escapeHTML(impostorNames)} ${play.impostors.length>1?'eran':'era'} el impostor.</p>
+        <div style="font-size:44px;">${win?'🎉':'😈'}</div>
+        <h2 style="margin:0;">${win ? `¡Impostor${play.impostors.length>1?'es':''} encontrado${play.impostors.length>1?'s':''}!` : '¡Ganaron los impostores!'}</h2>
+        <p class="muted">${escapeHTML(impostorNames)} ${play.impostors.length>1?'eran':'era'} ${play.impostors.length>1?'los impostores':'el impostor'}.</p>
+        <p class="muted">Reuniones: ${play.log.length} · Tiempo: ${fmtTime(play.elapsed)}</p>
         <div class="toolbar" style="justify-content:center;">
           <button class="btn btn-ghost" id="replayRoundBtn">🔄 Repetir esta ronda</button>
           <button class="btn btn-primary" id="nextRoundBtn">${isLast ? 'Ir a la actividad final →' : 'Siguiente ronda →'}</button>
@@ -1353,15 +1773,10 @@ function renderVictoryScreen(){
     </div>
   `;
   document.getElementById('replayRoundBtn').addEventListener('click', ()=>{
-    playClick();
-    play.phase = 'intro';
-    renderPlay();
+    playClick(); play.phase = 'intro'; renderPlay(); if(salaActual) publicarEstado('lobby');
   });
   document.getElementById('nextRoundBtn').addEventListener('click', ()=>{
-    playClick();
-    play.roundIndex++;
-    play.phase = 'intro';
-    renderPlay();
+    playClick(); play.roundIndex++; play.phase = 'intro'; renderPlay(); if(salaActual) publicarEstado('lobby');
   });
 }
 
@@ -1375,11 +1790,15 @@ function renderClosingScreen(){
         <p style="max-width:600px;">${escapeHTML(state.closing.body || '')}</p>
         ${state.closing.extra ? `<div class="adj-hint">${escapeHTML(state.closing.extra)}</div>` : ''}
         <div class="toolbar" style="justify-content:center;">
+          <button class="btn btn-ghost" id="backLastBtn">⬅ Volver a la última ronda</button>
           <button class="btn btn-ghost" id="restartGameBtn">🔁 Reiniciar juego completo</button>
         </div>
       </div>
     </div>
   `;
+  document.getElementById('backLastBtn').addEventListener('click', ()=>{
+    playClick(); play.roundIndex = Math.max(0, playRounds().length - 1); play.phase = 'intro'; renderPlay();
+  });
   document.getElementById('restartGameBtn').addEventListener('click', ()=>{
     playClick();
     play.roundIndex = 0; play.phase = 'intro';
@@ -1392,9 +1811,21 @@ function renderClosingScreen(){
 =================================================================== */
 document.getElementById('soundBtn').addEventListener('click', (e)=>{
   soundOn = !soundOn;
-  e.target.textContent = soundOn ? '🔊' : '🔇';
+  e.currentTarget.textContent = soundOn ? '🔊' : '🔇';
+  try{ localStorage.setItem('impostor_mute', soundOn ? '0' : '1'); }catch(err){}
   if(soundOn) ensureAudio();
 });
+(function initVol(){
+  const r = document.getElementById('volRange'), b = document.getElementById('soundBtn');
+  r.value = Math.round(volume*100); b.textContent = soundOn ? '🔊' : '🔇';
+  r.addEventListener('input', ()=>{
+    volume = r.value/100;
+    if(masterGain) masterGain.gain.value = volume;
+    try{ localStorage.setItem('impostor_vol', String(volume)); }catch(err){}
+    if(volume>0 && !soundOn){ soundOn = true; b.textContent='🔊'; try{ localStorage.setItem('impostor_mute','0'); }catch(err){} }
+  });
+  r.addEventListener('change', ()=>{ ensureAudio(); playClick(); });
+})();
 
 /* ===================================================================
    ESTRELLAS DE FONDO
@@ -1402,7 +1833,8 @@ document.getElementById('soundBtn').addEventListener('click', (e)=>{
 (function initStars(){
   const container = document.getElementById('stars');
   const frag = document.createDocumentFragment();
-  for(let i=0;i<80;i++){
+  const nStars = (window.innerWidth < 700 ? 40 : 80);
+  for(let i=0;i<nStars;i++){
     const s = document.createElement('div');
     s.className='star';
     const size = Math.random()*2+1;
@@ -1464,11 +1896,12 @@ async function iniciarSalaQR(){
   const codeElMenu = document.getElementById('qrSalaCodeMenu');
   if(codeEl) codeEl.textContent = r.sala;
   if(codeElMenu) codeElMenu.textContent = r.sala;
+  publicarEstado(play.phase === 'voting' ? 'votando' : 'lobby');
   if(!salaListenerListo){
     salaListenerListo = true;
     escuchar(refSala('impostor', salaActual, 'respuestas'), function(datos){
       votosActuales = datos || {};
-      if(play.phase === 'voting') renderVotingScreen();
+      if(play.phase === 'voting' && !play.ejecting) renderVotingScreen();
     });
     escuchar(refSala('impostor', salaActual, 'jugadores'), function(datos){
       jugadoresConectados = datos || {};
@@ -1513,15 +1946,18 @@ function initStudentView(){
   const playEl = document.getElementById('studentPlay');
   const gridEl = document.getElementById('studentColorGrid');
 
+  function nm(key){ return (estado && estado.nombres && estado.nombres[key]) || (COLORS.find(function(x){ return x.key === key; }) || {name:key}).name; }
   function renderColorGrid(){
     if(miColor !== null) return;
     gridEl.innerHTML = '';
+    const act = estado && Array.isArray(estado.activos) ? estado.activos : null;
     COLORS.forEach(function(c){
+      if(act && act.indexOf(c.key) < 0) return;
       const taken = !!coloresOcupados[c.key];
       const sw = document.createElement('div');
       sw.className = 'color-swatch' + (taken ? ' taken' : '');
       sw.style.background = c.hex;
-      sw.textContent = taken ? '' : c.name;
+      sw.textContent = taken ? '' : nm(c.key);
       if(!taken){
         sw.addEventListener('click', function(){ elegirColor(c.key); });
       }
@@ -1541,21 +1977,30 @@ function initStudentView(){
   function renderStudentPlay(){
     if(!estado || miColor === null) return;
     const fase = estado.fase || 'lobby';
-    if(fase !== ultimaFase){ ultimaFase = fase; yaVote = false; }
+    const faseId = fase + ':' + (estado.reunion || 0);
+    if(faseId !== ultimaFase){ ultimaFase = faseId; yaVote = false; }
+    const expulsados = estado.expulsados || [];
 
     const estadoEl = document.getElementById('studentEstado');
     const listEl = document.getElementById('studentVoteList');
 
-    if(fase === 'votando'){
+    if(fase === 'fin'){
+      estadoEl.textContent = estado.mensaje || 'La ronda terminó.';
+      listEl.innerHTML = '';
+    } else if(fase === 'votando' && expulsados.indexOf(miColor) >= 0){
+      estadoEl.textContent = '🚀 Fuiste expulsado de la nave. Mira la pantalla del profe.';
+      listEl.innerHTML = '';
+    } else if(fase === 'votando'){
       estadoEl.textContent = yaVote ? '✓ Ya votaste. Esperando al profe…' : '🗳️ ¿Quién crees que es el impostor?';
       listEl.innerHTML = '';
-      const disponibles = Object.keys(coloresOcupados);
+      const jugando = estado.jugando || null;
+      const disponibles = Object.keys(coloresOcupados).filter(function(k){ return expulsados.indexOf(k) < 0 && (!jugando || jugando.indexOf(k) >= 0); });
       disponibles.forEach(function(key){
         const c = COLORS.find(function(x){ return x.key === key; });
         if(!c) return;
         const row = document.createElement('div');
         row.className = 'vote-row' + (yaVote ? ' voted' : '');
-        row.innerHTML = '<span class="swatch" style="background:' + c.hex + '"></span><span>' + c.name + (key === miColor ? ' (tú)' : '') + '</span>';
+        row.innerHTML = '<span class="swatch" style="background:' + c.hex + '"></span><span>' + nm(key) + (key === miColor ? ' (tú)' : '') + '</span>';
         if(!yaVote){
           row.addEventListener('click', function(){
             yaVote = true;
@@ -1575,7 +2020,7 @@ function initStudentView(){
         if(!conteo[c.key]) return;
         const row = document.createElement('div');
         row.className = 'vote-row voted';
-        row.innerHTML = '<span class="swatch" style="background:' + c.hex + '"></span><span>' + c.name + '</span><span class="vote-count">' + conteo[c.key] + ' voto' + (conteo[c.key]===1?'':'s') + '</span>';
+        row.innerHTML = '<span class="swatch" style="background:' + c.hex + '"></span><span>' + nm(c.key) + '</span><span class="vote-count">' + conteo[c.key] + ' voto' + (conteo[c.key]===1?'':'s') + '</span>';
         listEl.appendChild(row);
       });
       if(!Object.keys(conteo).length){ listEl.innerHTML = '<p class="muted">Nadie votó en esta ronda.</p>'; }
@@ -1594,6 +2039,7 @@ function initStudentView(){
 
   escuchar(refSala('impostor', SALA_ALUMNO, 'estado'), function(datos){
     estado = datos;
+    renderColorGrid();
     if(miColor !== null) renderStudentPlay();
   });
 
@@ -1607,6 +2053,8 @@ function init(){
   // state.rounds/state.closing ya quedaron inicializados arriba (desde lo guardado en
   // Firestore, o el ejemplo por defecto si el profesor nunca ha guardado nada todavía).
   ui.activeRoundId = state.rounds.length ? state.rounds[0].id : null;
+  goView('menu');
+  renderCharConfig();
   renderRoundList();
   bindClosingInputs();
 }
