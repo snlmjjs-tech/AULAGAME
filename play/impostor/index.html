@@ -468,6 +468,8 @@
   .menu-btn.qr{background:linear-gradient(135deg,#26D9E8,#6aa8ff); box-shadow:0 8px 22px rgba(38,217,232,.3);}
   .menu-btn.edit{background:linear-gradient(135deg,#ff8aa0,var(--accent)); box-shadow:0 8px 22px rgba(255,82,99,.3); grid-column:1 / -1;}
   header.top .home-btn{margin-right:6px;}
+  #setupView[data-mode=cfg] .sec-edit{display:none;}
+  #setupView[data-mode=edit] .sec-cfg{display:none;}
   .shoot{position:fixed; top:12%; left:-20%; width:140px; height:2px; background:linear-gradient(90deg,transparent,#fff); transform:rotate(18deg); animation:shoot 9s linear infinite; z-index:0; pointer-events:none;}
   @keyframes shoot{0%{transform:translate(0,0) rotate(18deg); opacity:0;}4%{opacity:1;}16%{transform:translate(140vw,45vh) rotate(18deg); opacity:0;}100%{opacity:0;}}
 
@@ -575,7 +577,8 @@
     <h1>🚀 ¿QUIÉN ES EL <span class="accent">IMPOSTOR</span>? <span class="accent2">·</span> Juego de Clase</h1>
     <div class="tabs">
       <button class="tab-btn home-btn" data-tab="menu">🏠 Menú</button>
-      <button class="tab-btn" data-tab="setup">⚙️ Configurar</button>
+      <button class="tab-btn" data-tab="cfg">⚙️ Configurar</button>
+      <button class="tab-btn" data-tab="edit">✏️ Preguntas</button>
       <button class="tab-btn tab-btn-jugar" data-tab="play">▶️ JUGAR</button>
       <button class="tab-btn tab-btn-qr" id="qrBtn">📱 CELULARES</button>
     </div>
@@ -597,7 +600,7 @@
 
   <!-- ===================== SETUP VIEW ===================== -->
   <div id="setupView" style="display:none;" data-cmgroup="setup">
-    <div class="card" style="display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
+    <div class="card sec-cfg" style="display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
       <div style="display:flex; align-items:center; gap:8px; font-size:.9rem;">
         <span style="font-size:1.4rem;">👉</span>
         <span>Escanea este código para unirte desde tu celular</span>
@@ -608,7 +611,7 @@
         <p id="qrLinkCortoMenu" class="muted" style="font-size:.75rem; margin:2px 0 0;"></p>
       </div>
     </div>
-    <div class="card">
+    <div class="card sec-edit">
       <h2>📋 Cómo funciona</h2>
       <p class="muted">
         Este juego es <b>100% editable</b>: sirve para cualquier asignatura (inglés, historia, matemáticas, ciencias, etc.).
@@ -630,7 +633,7 @@
       </div>
     </div>
 
-    <div class="card" id="cfgPersonajes">
+    <div class="card sec-cfg" id="cfgPersonajes">
       <h2>🧑‍🚀 Personajes <span class="count-badge" id="charCountBadge" style="margin-left:auto;"></span></h2>
       <p class="muted">Elige quién juega. Un personaje eliminado no aparece en ninguna ronda ni se sortea como impostor (puedes restaurarlo). Mínimo 3.</p>
       <div class="char-grid" id="charGrid"></div>
@@ -638,7 +641,7 @@
       <label class="set-row"><input type="checkbox" id="setDefeat"> Los impostores ganan si quedan tantos como inocentes (derrota de la tripulación)</label>
     </div>
 
-    <div class="setup-grid" id="roundsSection">
+    <div class="setup-grid sec-edit" id="roundsSection">
       <div class="card">
         <h2>🎯 Rondas <span class="count-badge" id="roundCountBadge" style="margin-left:auto;"></span></h2>
         <div class="round-list" id="roundList"></div>
@@ -652,7 +655,7 @@
       </div>
     </div>
 
-    <div class="card final-activity">
+    <div class="card final-activity sec-edit">
       <h2>🏁 Actividad final (opcional)</h2>
       <p class="muted">Se muestra al terminar todas las rondas — ideal para cerrar la clase con una tarea escrita u oral.</p>
       <label class="field-label">Título</label>
@@ -855,8 +858,17 @@ function persist(){
 /* Agrega las rondas generadas por IA a state.rounds (mismo formato que "Nueva ronda" /
    "Cargar ejemplo"), refresca la lista para que el profesor pueda revisar y editar cada
    ronda normalmente, y autoguarda — igual que hace cualquier otra edición en este juego. */
+function esRondaEjemplo(r){
+  const sig = x => (x.title || '') + '|' + COLORS.map(c => (x.words && x.words[c.key]) || '').join('¦');
+  if(!esRondaEjemplo.sigs) esRondaEjemplo.sigs = new Set(exampleData().rounds.map(sig));
+  return esRondaEjemplo.sigs.has(sig(r));
+}
 function onAIGenerated(data){
   if(!data || !Array.isArray(data.rounds) || !data.rounds.length) return;
+  // las rondas de ejemplo de inglés que nadie editó se quitan: el profe pidió otro tema
+  const antes = state.rounds.length;
+  state.rounds = state.rounds.filter(r => !esRondaEjemplo(r));
+  const quitadas = antes - state.rounds.length;
   const newRounds = data.rounds.map(function(r){
     const words = blankWords();
     if(r.words) COLORS.forEach(function(c){ words[c.key] = r.words[c.key] || ''; });
@@ -873,7 +885,7 @@ function onAIGenerated(data){
   ui.activeRoundId = newRounds[0].id;
   renderRoundList();
   persist();
-  toast('✨ ' + newRounds.length + ' ronda(s) generadas — revísalas y edítalas si quieres');
+  toast('✨ ' + newRounds.length + ' ronda(s) generadas' + (quitadas ? ' (se quitó el ejemplo de inglés)' : '') + ' — revísalas y edítalas si quieres');
 }
 
 let ui = {
@@ -1048,22 +1060,25 @@ function crewmateHTML(hex, extraClass='', anim){
 =================================================================== */
 function goView(view, anchor){
   ui.activeTab = view;
-  document.querySelectorAll('.tab-btn[data-tab]').forEach(b=>b.classList.toggle('active', b.dataset.tab===view));
+  const isSetup = (view==='cfg' || view==='edit' || view==='setup');
+  const mode = view==='edit' ? 'edit' : 'cfg';
+  document.querySelectorAll('.tab-btn[data-tab]').forEach(b=>b.classList.toggle('active', b.dataset.tab===(isSetup ? mode : view)));
   document.getElementById('menuView').style.display = view==='menu' ? 'flex' : 'none';
-  document.getElementById('setupView').style.display = view==='setup' ? '' : 'none';
+  document.getElementById('setupView').style.display = isSetup ? '' : 'none';
+  document.getElementById('setupView').dataset.mode = mode;
   document.getElementById('playView').style.display = view==='play' ? '' : 'none';
   document.querySelector('header.top').style.display = view==='menu' ? 'none' : '';
   if(view!=='play') stopTimer();
   if(view==='play') renderPlay();
-  if(view==='setup' && anchor){ const el = document.getElementById(anchor); if(el) setTimeout(()=>el.scrollIntoView({behavior:'smooth', block:'start'}), 30); }
+  if(isSetup && anchor){ const el = document.getElementById(anchor); if(el) setTimeout(()=>el.scrollIntoView({behavior:'smooth', block:'start'}), 30); }
   else window.scrollTo(0,0);
 }
 document.querySelectorAll('.tab-btn[data-tab]').forEach(btn=>{
   btn.addEventListener('click', ()=>{ playClick(); goView(btn.dataset.tab); });
 });
 document.getElementById('menuPlay').addEventListener('click', ()=>{ playClick(); goView('play'); });
-document.getElementById('menuCfg').addEventListener('click', ()=>{ playClick(); goView('setup', 'cfgPersonajes'); });
-document.getElementById('menuEdit').addEventListener('click', ()=>{ playClick(); goView('setup', 'roundsSection'); });
+document.getElementById('menuCfg').addEventListener('click', ()=>{ playClick(); goView('cfg'); });
+document.getElementById('menuEdit').addEventListener('click', ()=>{ playClick(); goView('edit'); });
 document.getElementById('menuQr').addEventListener('click', ()=>{ playClick(); abrirModalQR(); });
 (function menuFloaters(){
   const box = document.getElementById('menuFloaters');
