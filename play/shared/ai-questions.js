@@ -72,7 +72,10 @@ function injectModalStyle() {
     .ai-q-modal p.ai-q-sub{margin:0 0 16px;font-size:13px;color:#666;}
     .ai-q-modal label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px;}
     .ai-q-modal input[type=text],.ai-q-modal input[type=number]{width:100%;box-sizing:border-box;
-      padding:10px 12px;border:1.5px solid #ccc;border-radius:8px;font-size:15px;}
+      padding:10px 12px;border:1.5px solid #ccc;border-radius:8px;font-size:15px;
+      color:#1c2233 !important;-webkit-text-fill-color:#1c2233;background:#fff !important;opacity:1;font-family:inherit;}
+    .ai-q-modal input::placeholder{color:#8a90a2 !important;-webkit-text-fill-color:#8a90a2;opacity:1;}
+    .ai-q-hint{font-size:12px;color:#667;margin:4px 0 0;}
     .ai-q-modal input:focus{outline:none;border-color:#7c5cff;}
     .ai-q-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;}
     .ai-q-btn{padding:10px 18px;border-radius:8px;border:none;font-weight:700;font-size:14px;cursor:pointer;}
@@ -92,7 +95,7 @@ function injectModalStyle() {
  * resuelve con `data` (la estructura específica del juego) si el profesor generó preguntas
  * con éxito, o `null` si canceló.
  */
-function openAIGeneratorModal({ uid, game, defaultCount, fixedCount, extraFields, maxCount }) {
+function openAIGeneratorModal({ uid, game, defaultCount, fixedCount, extraFields, maxCount, countLabel }) {
   injectModalStyle();
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
@@ -104,8 +107,8 @@ function openAIGeneratorModal({ uid, game, defaultCount, fixedCount, extraFields
         <label for="ai-q-subject">Tema o materia</label>
         <input type="text" id="ai-q-subject" placeholder="Ej: Verbos irregulares en pasado, Capitales de Sudamérica..." maxlength="200">
         ${fixedCount ? "" : `
-        <label for="ai-q-count">Cantidad de preguntas</label>
-        <input type="number" id="ai-q-count" min="1" max="${maxCount || 60}" value="${defaultCount || 10}">
+        <label for="ai-q-count">${countLabel || "Cantidad de preguntas"} (de 1 a ${maxCount || 60})</label>
+        <input type="number" id="ai-q-count" inputmode="numeric" min="1" max="${maxCount || 60}" value="${defaultCount || 10}">
         `}
         ${extraFields || ""}
         <div class="ai-q-error" id="ai-q-error" style="display:none;"></div>
@@ -123,6 +126,13 @@ function openAIGeneratorModal({ uid, game, defaultCount, fixedCount, extraFields
     const goBtn = overlay.querySelector("#ai-q-go");
     const cancelBtn = overlay.querySelector("#ai-q-cancel");
     subjectInput.focus();
+    if (countInput) {
+      const lim = maxCount || 60;
+      countInput.addEventListener("focus", () => countInput.select());   // al tocar el campo se reemplaza el número, no se le agregan dígitos
+      const fix = () => { let v = parseInt(countInput.value, 10); if (!(v >= 1)) v = defaultCount || 10; countInput.value = Math.min(lim, Math.max(1, v)); };
+      countInput.addEventListener("change", fix);
+      countInput.addEventListener("blur", fix);
+    }
 
     function close(result) {
       overlay.remove();
@@ -139,7 +149,7 @@ function openAIGeneratorModal({ uid, game, defaultCount, fixedCount, extraFields
         return;
       }
       let count = fixedCount || (countInput ? parseInt(countInput.value, 10) || defaultCount : defaultCount);
-      if (maxCount && count > maxCount) count = maxCount;
+      count = Math.max(1, Math.min(maxCount || 60, count));
 
       errorBox.style.display = "none";
       goBtn.disabled = true;
@@ -281,7 +291,7 @@ export function renderAIButton(container, options) {
     if (estado.esPremium) {
       btn.textContent = label || "✨ Generar con IA";
       btn.onclick = async () => {
-        const data = await openAIGeneratorModal({ uid, game, defaultCount, fixedCount, extraFields: options.extraFields, maxCount: options.maxCount });
+        const data = await openAIGeneratorModal({ uid, game, defaultCount, fixedCount, extraFields: options.extraFields, maxCount: options.maxCount, countLabel: options.countLabel });
         if (data && onGenerated) onGenerated(data);
       };
     } else {
