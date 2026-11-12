@@ -105,6 +105,23 @@ nuevo), solo necesitas repetir el paso 5 (`npx wrangler deploy`) — los secreto
 (`ANTHROPIC_API_KEY`, `FIREBASE_SERVICE_ACCOUNT_JSON`) se mantienen, no hace falta volver a
 configurarlos.
 
+## Correo de agradecimiento al comprar Premium
+
+Cuando un pago (PayPal o Mercado Pago) se aprueba y el Premium se activa, el Worker envía un correo de
+agradecimiento desde `soporte@aulagame.cl` (con copia oculta a ese mismo correo, para que quede registro de cada venta).
+Va al correo del comprador (el de PayPal/Mercado Pago) y al de su cuenta de AulaGame si es distinto. Se envía **una sola vez**
+por cuenta (marca `graciasEnviado` en `profes/{uid}`); si el servicio de correo falla se reintenta en el siguiente aviso de pago,
+y **nunca bloquea la activación del Premium**.
+
+Para que funcione hace falta (una sola vez):
+1. Crear una cuenta en https://resend.com (plan gratis: 3.000 correos al mes) y agregar el dominio `aulagame.cl` (Domains → Add Domain).
+2. Pegar en el DNS de `aulagame.cl` los registros que Resend muestra (SPF y DKIM) y esperar a que diga *Verified*.
+3. Crear una API key en Resend y cargarla: `npx wrangler secret put RESEND_API_KEY`.
+4. Para **recibir** lo que respondan al correo, `soporte@aulagame.cl` tiene que existir como buzón o reenvío
+   (por ejemplo, Cloudflare Email Routing si el DNS está en Cloudflare, Zoho Mail gratis o Google Workspace).
+
+Los datos de contacto (correo y WhatsApp) están en `wrangler.toml` (`SUPPORT_EMAIL`, `SUPPORT_WHATSAPP`, `MAIL_FROM`).
+
 ## Cobrar Premium con PayPal (pago único, de por vida)
 
 El botón **💳 Comprar Premium** del sitio abre PayPal. El cobro y la activación pasan en este

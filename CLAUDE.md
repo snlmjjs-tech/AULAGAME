@@ -87,6 +87,9 @@ es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
     campo `a` en las tarjetas de Monopoly, `teamAnswers` en Rosco) que el estudiante ve al tocar "Revelar respuesta" antes de marcar "La sabía / No la sabía"; la IA
     del Worker (`raceboard`, `evilgame`, `monopoly`, `rosco`) devuelve también `answers`. Sin respuesta guardada se muestra "Esta pregunta es abierta…".
     Botón del profe: `play/shared/task-share.js` (`abrirCompartirTarea`) en Millonario y Colgado.
+  - Correo de agradecimiento al comprar Premium: al activarse el Premium (PayPal o Mercado Pago) el Worker envía un correo desde `soporte@aulagame.cl` con Resend
+    (secreto `RESEND_API_KEY`; vars `MAIL_FROM`, `SUPPORT_EMAIL`, `SUPPORT_WHATSAPP` en `wrangler.toml`), una sola vez por cuenta (`graciasEnviado` en `profes/{uid}`),
+    al correo del comprador y al de su cuenta, con copia oculta a soporte. Si falta la clave o el servicio falla, no se envía y el Premium se activa igual.
   - `clasesIngles/{claseId}` — contenido de la intranet de inglés (sin Firebase Auth real ahí).
 - **Realtime Database** — salas en vivo (`salasVivo/{juego}/{sala}/...`): jugadores, equipos,
   buzz, respuestas, estado de la partida en tiempo real. También `pines/{pin}` para resolver PIN

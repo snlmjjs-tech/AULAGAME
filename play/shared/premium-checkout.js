@@ -26,6 +26,7 @@ function injectStyle() {
     .pp-acct{font-size:13px;background:#f1f4ff;border:1px solid #cfd8ff;border-radius:10px;padding:9px 12px;margin:0 0 14px;line-height:1.45}
     .pp-acct b{overflow-wrap:anywhere}
     .pp-msg{font-size:14px;margin:10px 0;min-height:1.2em}
+    .pp-help{font-size:12.5px;color:#667;text-align:center;margin:10px 0 0;line-height:1.5}.pp-help a{color:#5b35c4;font-weight:700}
     .pp-err{color:#b3261e}.pp-ok{color:#1b7f45;font-weight:700}
     .pp-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
     .pp-btn{padding:10px 18px;border-radius:10px;border:none;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;display:inline-block}
@@ -89,6 +90,7 @@ export function abrirCompraPremium(options) {
       <div class="pp-or" id="pp-or" style="display:none">o paga en dólares con tu cuenta PayPal</div>
       <div id="pp-buttons"></div>
       <div class="pp-msg" id="pp-msg"></div>
+      <p class="pp-help">¿Dudas con tu pago? <a href="mailto:soporte@aulagame.cl">soporte@aulagame.cl</a> · <a href="https://wa.me/56945984570" target="_blank" rel="noopener">WhatsApp +56 9 4598 4570</a></p>
       <div class="pp-actions">
         <a class="pp-btn pp-btn-wa" id="pp-wa" href="${WHATSAPP}" target="_blank" rel="noopener" style="display:none">💬 Escríbenos por WhatsApp</a>
         <button type="button" class="pp-btn pp-btn-ghost" id="pp-close">Cerrar</button>

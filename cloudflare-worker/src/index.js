@@ -85,7 +85,7 @@ function clamp(n, min, max) {
  *    el navegador. Usa OAuth2 con JWT firmado por la cuenta de servicio.
  * ====================================================================== */
 
-let cachedGoogleToken = null; // { token, expiresAt } — se reutiliza mientras el Worker esté "caliente"
+const cachedGoogleTokens = {}; // alcance -> { token, expiresAt }
 
 function base64url(input) {
   const bytes = typeof input === "string" ? new TextEncoder().encode(input) : new Uint8Array(input);
@@ -117,9 +117,10 @@ async function fetchWithRetry(url, options, attempts = 3) {
   return lastRes;
 }
 
-async function getGoogleAccessToken(env) {
+async function getGoogleAccessToken(env, scope = "https://www.googleapis.com/auth/datastore") {
   const now = Math.floor(Date.now() / 1000);
-  if (cachedGoogleToken && cachedGoogleToken.expiresAt > now + 60) return cachedGoogleToken.token;
+  const cached = cachedGoogleTokens[scope];
+  if (cached && cached.expiresAt > now + 60) return cached.token;
 
   let sa;
   try {
@@ -131,7 +132,7 @@ async function getGoogleAccessToken(env) {
   const header = { alg: "RS256", typ: "JWT" };
   const claim = {
     iss: sa.client_email,
-    scope: "https://www.googleapis.com/auth/datastore",
+    scope,
     aud: "https://oauth2.googleapis.com/token",
     exp: now + 3600,
     iat: now,
@@ -148,8 +149,8 @@ async function getGoogleAccessToken(env) {
   });
   if (!tokenRes.ok) throw new Error("No se pudo obtener el token de Google: " + (await tokenRes.text()));
   const tokenData = await tokenRes.json();
-  cachedGoogleToken = { token: tokenData.access_token, expiresAt: now + (tokenData.expires_in || 3600) };
-  return cachedGoogleToken.token;
+  cachedGoogleTokens[scope] = { token: tokenData.access_token, expiresAt: now + (tokenData.expires_in || 3600) };
+  return cachedGoogleTokens[scope].token;
 }
 
 /* ======================================================================
@@ -795,6 +796,111 @@ function verificarOrdenPagada(env, uid, order) {
   return { ok: true, orderID: order.id, captureID: cap.id, email };
 }
 
+/* ======================================================================
+ * D2. CORREO DE AGRADECIMIENTO AL COMPRAR PREMIUM
+ *    Se envía con Resend (https://resend.com) desde soporte@aulagame.cl, una sola vez por cuenta.
+ *    Necesita el secreto RESEND_API_KEY y el dominio aulagame.cl verificado en Resend; sin eso
+ *    se omite (el Premium se activa igual: el correo nunca puede bloquear un pago).
+ * ====================================================================== */
+
+const escHtml = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const correoValido = (e) => typeof e === "string" && e.length <= 254 && /^[^\s@<>]{1,64}@[^\s@<>]{1,190}\.[^\s@<>]{2,}$/.test(e);
+
+/** Correo con el que la persona entra a AulaGame (Firebase Auth). Si no se puede leer, devuelve "". */
+async function emailDeCuenta(env, uid) {
+  try {
+    const token = await getGoogleAccessToken(env, "https://www.googleapis.com/auth/identitytoolkit");
+    const projectId = env.FIREBASE_PROJECT_ID || "aulagame-4c019";
+    const res = await fetchWithRetry(`https://identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts:lookup`, {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token, "content-type": "application/json" },
+      body: JSON.stringify({ localId: [uid] }),
+    });
+    if (!res.ok) return "";
+    const j = await res.json();
+    return (j.users && j.users[0] && j.users[0].email) || "";
+  } catch (e) {
+    return "";
+  }
+}
+
+function contenidoCorreoGracias(env, c) {
+  const wa = env.SUPPORT_WHATSAPP || "56945984570", soporte = env.SUPPORT_EMAIL || "soporte@aulagame.cl";
+  const waTxt = "+" + wa.replace(/^(\d{2})(\d)(\d{4})(\d{4})$/, "$1 $2 $3 $4");
+  const waUrl = "https://wa.me/" + wa + "?text=" + encodeURIComponent("Hola, escribo por mi compra de AulaGame Premium.");
+  const fecha = new Date().toLocaleString("es-CL", { timeZone: "America/Santiago", dateStyle: "long", timeStyle: "short" });
+  const filas = [["Plan", "AulaGame Premium · de por vida"], ["Monto", c.monto], ["Método de pago", c.metodo], ["N° de pago", c.id], ["Fecha", fecha]];
+  if (c.cuenta) filas.splice(1, 0, ["Cuenta Premium", c.cuenta]);
+  const subject = "¡Gracias por confiar en AulaGame! Tu Premium ya está activo ⭐";
+  const text = [
+    "¡Gracias por confiar en AulaGame!", "",
+    "Recibimos tu pago y tu cuenta ya es Premium de por vida, sin mensualidades.", "",
+    ...filas.map(([k, v]) => `${k}: ${v}`), "",
+    "Ahora puedes: usar juegos ilimitados, crear preguntas con IA y enviar tareas a tus estudiantes (por ejemplo, por Google Classroom).", "",
+    "Entra aquí: https://aulagame.cl", "",
+    `¿Dudas o necesitas un comprobante? Responde este correo (${soporte}) o escríbenos por WhatsApp al ${waTxt}: ${waUrl}`, "",
+    "Con cariño,", "El equipo de AulaGame",
+  ].join("\n");
+  const fila = ([k, v]) => `<tr><td style="padding:7px 10px;background:#f7f4ff;border-bottom:2px solid #fff;font-weight:700;width:40%">${escHtml(k)}</td><td style="padding:7px 10px;background:#fbfaff;border-bottom:2px solid #fff;word-break:break-word">${escHtml(v)}</td></tr>`;
+  const html = `<!doctype html><html lang="es"><body style="margin:0;background:#f3effc;font-family:Segoe UI,Arial,sans-serif;color:#1b1340">
+<div style="max-width:560px;margin:0 auto;padding:24px 16px">
+ <div style="background:linear-gradient(135deg,#6a2bd9,#c026d3);border-radius:22px 22px 0 0;padding:30px 24px;text-align:center;color:#fff">
+  <div style="font-size:44px">⭐</div>
+  <h1 style="margin:6px 0 4px;font-size:25px;line-height:1.2">¡Gracias por confiar en AulaGame!</h1>
+  <p style="margin:0;opacity:.92;font-size:15px">Tu Premium de por vida ya está activo</p>
+ </div>
+ <div style="background:#fff;padding:24px;border-radius:0 0 22px 22px;box-shadow:0 8px 24px rgba(40,20,90,.12)">
+  <p style="margin:0 0 14px;font-size:15.5px;line-height:1.55">Hola 👋 Recibimos tu pago y tu cuenta ya es <b>Premium de por vida</b>, sin mensualidades. Nos alegra mucho que AulaGame sea parte de tus clases.</p>
+  <table role="presentation" style="width:100%;border-collapse:collapse;font-size:14px;margin:6px 0 16px">${filas.map(fila).join("")}</table>
+  <p style="margin:0 0 6px;font-weight:700">Ahora puedes:</p>
+  <ul style="margin:0 0 18px;padding-left:20px;font-size:14.5px;line-height:1.6">
+   <li>Usar todos los juegos sin límite</li><li>Crear preguntas con inteligencia artificial</li><li>Enviar tareas a tus estudiantes (por ejemplo, por Google Classroom)</li>
+  </ul>
+  <p style="text-align:center;margin:0 0 20px"><a href="https://aulagame.cl" style="display:inline-block;background:#FFC93C;color:#3a2300;text-decoration:none;font-weight:800;padding:13px 28px;border-radius:14px">Entrar a AulaGame</a></p>
+  <div style="background:#f7f4ff;border-radius:14px;padding:14px 16px;font-size:14px;line-height:1.55">
+   <b>¿Dudas o necesitas un comprobante?</b><br>
+   Responde este correo (<a href="mailto:${escHtml(soporte)}" style="color:#5b35c4">${escHtml(soporte)}</a>) o escríbenos por
+   <a href="${escHtml(waUrl)}" style="color:#128c4a;font-weight:700">WhatsApp ${escHtml(waTxt)}</a>.
+  </div>
+  <p style="margin:18px 0 0;font-size:14px">Con cariño,<br><b>El equipo de AulaGame</b></p>
+ </div>
+ <p style="text-align:center;font-size:12px;color:#7a6fa0;margin:14px 0 0">Recibes este correo porque compraste AulaGame Premium en aulagame.cl.</p>
+</div></body></html>`;
+  return { subject, text, html };
+}
+
+/** Envía el correo de agradecimiento una sola vez por cuenta. Nunca lanza errores. */
+async function notificarCompra(env, uid, compra) {
+  try {
+    if (!env.RESEND_API_KEY) { console.log("Correo de agradecimiento omitido: falta RESEND_API_KEY."); return; }
+    const doc = await getProfeDoc(env, uid);
+    if (doc && doc.graciasEnviado) return; // ya se envió (el aviso de pago puede llegar dos veces)
+    const cuenta = await emailDeCuenta(env, uid);
+    const destino = [compra.email, cuenta].map((e) => String(e || "").trim().toLowerCase()).filter((e, i, a) => correoValido(e) && a.indexOf(e) === i);
+    if (!destino.length) { console.log("Correo de agradecimiento omitido: no hay correo del comprador."); return; }
+    await patchProfeDoc(env, uid, { graciasEnviado: { stringValue: new Date().toISOString() } }); // se marca antes de enviar para no duplicar
+    const soporte = env.SUPPORT_EMAIL || "soporte@aulagame.cl";
+    const { subject, text, html } = contenidoCorreoGracias(env, { ...compra, cuenta });
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 8000);
+    let res;
+    try {
+      res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + env.RESEND_API_KEY, "content-type": "application/json" },
+        body: JSON.stringify({ from: env.MAIL_FROM || `AulaGame <${soporte}>`, to: destino.slice(0, 2), bcc: [soporte], reply_to: soporte, subject, html, text }),
+        signal: ctl.signal,
+      });
+    } finally { clearTimeout(t); }
+    if (!res.ok) {
+      console.error("Resend rechazó el correo de agradecimiento:", res.status, (await res.text()).slice(0, 300));
+      await patchProfeDoc(env, uid, { graciasEnviado: { nullValue: null } }).catch(() => {}); // para reintentar en el próximo aviso
+    }
+  } catch (e) {
+    console.error("No se pudo enviar el correo de agradecimiento:", e);
+    try { await patchProfeDoc(env, uid, { graciasEnviado: { nullValue: null } }); } catch (x) { /* nada más que hacer */ }
+  }
+}
+
 async function activarPremiumPagado(env, uid, pago) {
   await patchProfeDoc(env, uid, {
     plan: { stringValue: "premium" },
@@ -804,6 +910,7 @@ async function activarPremiumPagado(env, uid, pago) {
     paypalCaptureId: { stringValue: pago.captureID || "" },
     paypalPayerEmail: { stringValue: pago.email || "" },
   });
+  await notificarCompra(env, uid, { email: pago.email, metodo: "PayPal", monto: `USD ${premiumPrice(env)}`, id: pago.captureID || pago.orderID });
 }
 
 async function handlePaypal(request, env, url, origin, projectId) {
@@ -934,6 +1041,7 @@ async function activarPremiumMP(env, uid, pago) {
     mpPaymentId: { stringValue: pago.paymentID },
     mpPayerEmail: { stringValue: pago.email || "" },
   });
+  await notificarCompra(env, uid, { email: pago.email, metodo: "Mercado Pago", monto: `$${mpPrice(env).toLocaleString("es-CL")} CLP`, id: pago.paymentID });
 }
 
 function limpiarId(v) {

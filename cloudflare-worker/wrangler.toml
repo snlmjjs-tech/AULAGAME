@@ -15,6 +15,11 @@ PREMIUM_CURRENCY = "USD"
 # Mercado Pago (pesos chilenos). Precio del Premium de por vida, en CLP.
 MP_PRICE_CLP = "7990"
 
+# Correo de agradecimiento al comprar Premium (ver README, sección "Correo de agradecimiento").
+MAIL_FROM = "AulaGame <soporte@aulagame.cl>"
+SUPPORT_EMAIL = "soporte@aulagame.cl"
+SUPPORT_WHATSAPP = "56945984570"
+
 # Hot Dog Run: usos gratis por cuenta antes de pedir Premium.
 HOTDOG_FREE_USOS = "5"
 
@@ -23,3 +28,4 @@ HOTDOG_FREE_USOS = "5"
 #   FIREBASE_SERVICE_ACCOUNT_JSON -> el JSON completo de la cuenta de servicio de Firebase
 #   PAYPAL_CLIENT_SECRET         -> el "Secret" de tu app de PayPal (developer.paypal.com)
 #   MERCADOPAGO_ACCESS_TOKEN     -> el Access Token de producción de tu app de Mercado Pago
+#   RESEND_API_KEY               -> la API key de resend.com (envía el correo de agradecimiento; sin ella simplemente no se envía)
