@@ -858,34 +858,45 @@ function persist(){
 /* Agrega las rondas generadas por IA a state.rounds (mismo formato que "Nueva ronda" /
    "Cargar ejemplo"), refresca la lista para que el profesor pueda revisar y editar cada
    ronda normalmente, y autoguarda — igual que hace cualquier otra edición en este juego. */
-function esRondaEjemplo(r){
-  const sig = x => (x.title || '') + '|' + COLORS.map(c => (x.words && x.words[c.key]) || '').join('¦');
-  if(!esRondaEjemplo.sigs) esRondaEjemplo.sigs = new Set(exampleData().rounds.map(sig));
-  return esRondaEjemplo.sigs.has(sig(r));
-}
 function onAIGenerated(data){
   if(!data || !Array.isArray(data.rounds) || !data.rounds.length) return;
-  // las rondas de ejemplo de inglés que nadie editó se quitan: el profe pidió otro tema
-  const antes = state.rounds.length;
-  state.rounds = state.rounds.filter(r => !esRondaEjemplo(r));
-  const quitadas = antes - state.rounds.length;
+  const keys = COLORS.map(c=>c.key);
   const newRounds = data.rounds.map(function(r){
+    let vals = keys.map(k => (r.words && r.words[k]) || '');
+    // la opción falsa (impostor) viene marcada por la IA; se reparte al azar entre los colores
+    let falsaIdx = keys.indexOf(r.impostor);
+    const falsa = falsaIdx >= 0 ? vals[falsaIdx] : null;
+    const orden = shuffle(vals.map((v,i)=>i));
+    vals = orden.map(i=>vals[i]);
     const words = blankWords();
-    if(r.words) COLORS.forEach(function(c){ words[c.key] = r.words[c.key] || ''; });
+    keys.forEach((k,i)=>{ words[k] = vals[i]; });
+    const nuevaPos = falsa !== null ? orden.indexOf(falsaIdx) : -1;
     return {
       id: uid(),
       title: r.title || 'Nueva ronda',
       impostorCount: 1,
-      impostorMode: 'random',
-      manualImpostors: [],
+      impostorMode: nuevaPos >= 0 ? 'manual' : 'random',
+      manualImpostors: nuevaPos >= 0 ? [keys[nuevaPos]] : [],
       words: words
     };
   });
-  state.rounds.push(...newRounds);
-  ui.activeRoundId = newRounds[0].id;
-  renderRoundList();
-  persist();
-  toast('✨ ' + newRounds.length + ' ronda(s) generadas' + (quitadas ? ' (se quitó el ejemplo de inglés)' : '') + ' — revísalas y edítalas si quieres');
+  function agregar(reemplazar){
+    if(reemplazar) state.rounds = [];
+    state.rounds.push(...newRounds);
+    ui.activeRoundId = newRounds[0].id;
+    renderRoundList();
+    persist();
+    toast('✨ ' + newRounds.length + ' ronda(s) generadas — en cada una hay 1 opción FALSA (el impostor). Revísalas y edítalas si quieres');
+  }
+  if(!state.rounds.length){ agregar(false); return; }
+  showModal({
+    title: '✨ Rondas generadas',
+    body: 'Se generaron ' + newRounds.length + ' ronda(s) nuevas. Ahora tienes ' + state.rounds.length + ' ronda(s) guardadas. ¿Quieres reemplazarlas por las nuevas o agregar las nuevas al final?',
+    actions: [
+      {label:'Agregar al final', cls:'btn-ghost', onClick:()=>agregar(false)},
+      {label:'Reemplazar las actuales', cls:'btn-primary', onClick:()=>agregar(true)}
+    ]
+  });
 }
 
 let ui = {

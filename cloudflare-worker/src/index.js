@@ -465,9 +465,13 @@ const GAME_CONFIG = {
     build(subject, n) {
       return {
         userPrompt:
-          `Tema: "${subject}". Genera ${n} rondas para un juego tipo "Impostor/Codenames": cada ronda tiene un ` +
-          `título corto y exactamente 8 palabras (sustantivos concretos, en el mismo idioma que el tema) que ` +
-          `pertenecen claramente a esa temática, para que los jugadores las adivinen por pistas.`,
+          `Tema: "${subject}". Genera ${n} rondas para un juego de clase tipo "Among Us / Impostor" que sirve para repasar el tema. ` +
+          `Cada ronda tiene: (1) "title": una pregunta o consigna corta (por ejemplo "¿Qué colores son claros?" o "Causas de la Independencia de Chile"); ` +
+          `(2) exactamente 8 opciones en "words" (cada una breve, máximo 8 palabras), donde 7 son VERDADERAS o correctas para esa consigna y exactamente 1 es FALSA ` +
+          `pero creíble: esa es la del impostor (por ejemplo, para "¿Qué colores son claros?": celeste, amarillo, lima, blanco, rosado, crema, beige y negro → la falsa es "negro"); ` +
+          `(3) "impostor": la clave de color (green, red, blue, lime, white, pink, cyan u orange) donde pusiste la opción FALSA. ` +
+          `Reparte la posición de la falsa de forma variada entre rondas. Si la falsa es una oración, que sea claramente incorrecta para quien sabe el tema, y las verdaderas sean oraciones correctas. ` +
+          `Escribe en el mismo idioma del tema, adecuado a estudiantes, sin repetir rondas.`,
         tool: {
           name: "devolver_rondas",
           description: "Devuelve las rondas generadas.",
@@ -488,8 +492,9 @@ const GAME_CONFIG = {
                       },
                       required: ["green", "red", "blue", "lime", "white", "pink", "cyan", "orange"],
                     },
+                    impostor: { type: "string", enum: ["green", "red", "blue", "lime", "white", "pink", "cyan", "orange"] },
                   },
-                  required: ["title", "words"],
+                  required: ["title", "words", "impostor"],
                 },
               },
             },
