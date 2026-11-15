@@ -74,8 +74,8 @@ es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
     en un globo sobre su personaje. El profe, en la pantalla "en vivo", ve el registro de mensajes: 🚫 censura un mensaje (desaparece el globo
     de todos), ⛔ saca al alumno de la partida y el botón "Chat: activado/silenciado" lo apaga para todos. El profe (anfitrión) valida y retransmite.
   - Hot Dog Run, Parkour difícil: cada jugador tiene 5 balas de mostaza (tecla F o botón 🔫), cada una a un jugador distinto (el más cercano que
-    aún no haya recibido una suya); el impactado queda aturdido ~1,7 s. Online: el anfitrión valida (5 por jugador y por nivel, sin repetir objetivo);
-    offline: los bots también disparan. Persecución: la "pared" es ahora una carita tipo Pac-Man (algo más lenta: 92 + 1,5·t px/s).
+    aún no haya recibido una suya); el impactado queda aturdido ~1,7 s. Al empezar el nivel sale un anuncio de que se puede disparar; al gastar las 5 balas hay que esperar 10 s y se recargan 5 nuevas (con objetivos nuevos). Online: el anfitrión valida (5 por jugador, sin repetir objetivo hasta recargar; recarga ~10 s con 1,5 s de tolerancia);
+    offline: los bots también disparan y recargan. Online, la posición de los demás jugadores solo se extrapola 0,35 s en vertical y nunca más de 36 px bajo el último dato real (antes los compañeros parecían "caídos" cuando faltaba un paquete). Persecución: la "pared" es ahora una carita tipo Pac-Man (algo más lenta: 92 + 1,5·t px/s).
     Skins de completo: `BUNS` (12 estilos: normal, tostado, sin pan, Italiano, Dinámico, Chacarero, Con queso, Mexicano, Con tocino, Papas hilo, Dorado, Galaxia).
   - `tareas/{id}` — copias de juegos que un profe Premium (o en demo) envía a estudiantes (link para jugar solo en
     casa, p. ej. desde Classroom). Solo el Worker la lee y escribe (`POST /task/create`, `GET /task/get?id=`); las reglas

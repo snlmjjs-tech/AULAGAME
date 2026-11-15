@@ -1023,7 +1023,7 @@ const TYPES={
   lluvia:{n:'Lluvia de respuestas',tip:'Atrapa la respuesta correcta que cae del cielo. ¡Las incorrectas restan!',host:'Cada pregunta es una ronda: caen las opciones del cielo y hay que atrapar la correcta. Atrapar una incorrecta resta puntos.',w:'Ronda'},
   lava:{n:'Lava que sube',tip:'Trepa sin quemarte. Cada pregunta correcta congela la lava.',host:'Se trepa por plataformas mientras sube la lava. Cada pregunta acertada congela la lava unos segundos.',w:'Pregunta'},
   persecucion:{n:'Persecución',tip:'¡Corre! Una carita gigante quiere comerse los completos. Responder mal te frena.',host:'Una carita gigante tipo Pac-Man persigue a todos por un parkour corto. Responder mal frena y puede dejar eliminado.',w:'Pared'},
-  dificil:{n:'Parkour difícil',tip:'Plataformas móviles, sierras y resortes. ¡Con cuidado!',host:'Parkour más complicado con plataformas móviles y sierras. Cada pregunta es una pared.',w:'Pared'}
+  dificil:{n:'Parkour difícil',tip:'Plataformas móviles, sierras y resortes. ¡Con cuidado! Puedes disparar mostaza 🔫 (tecla F): 5 balas, recarga de 10 s.',host:'Parkour más complicado con plataformas móviles y sierras. Cada pregunta es una pared.',w:'Pared'}
 };
 const TYPE_ORDER=['parkour','autos','puente','cuadro','puertas','lluvia','lava','persecucion','dificil'];
 
@@ -2417,23 +2417,34 @@ function drawRoller(t){
 }
 
 /* ---------- Balas de mostaza (Parkour difícil): 5 por jugador, cada una a un jugador distinto ---------- */
-const MAXSHOTS=5;let bullets=[];
+const MAXSHOTS=5,RELOAD=10;let bullets=[];
 const pkey=p=>p.id!=null?p.id:p.name;
 function netGame(){return typeof upCh!=='undefined'&&typeof ROLE!=='undefined'&&ROLE==='player'&&!!upCh}
-function shotHud(){const g=document.getElementById('gShots');if(g&&me)g.textContent='🔫 '+(me.shots|0)}
+function shotHud(){const g=document.getElementById('gShots');if(!g||!me)return;const s=(me.shots|0)>0?'🔫 '+(me.shots|0):'🔫 recargando '+Math.max(1,Math.ceil(me.reload||0))+' s';if(g.textContent!==s)g.textContent=s}
+/* Recarga: al gastar las 5 balas hay que esperar RELOAD s y vuelven 5 (con objetivos nuevos). */
+function shotTick(dt){
+  if(!L||L.type!=='dificil'||state!=='race')return;
+  roster.forEach(p=>{
+    if((p.shots|0)>0||!(p.reload>0))return;
+    p.reload-=dt;
+    if(p.reload<=0){p.reload=0;p.shots=MAXSHOTS;p.shotAt=new Set();if(p===me){flash('🔫 ¡Balas recargadas! Tienes '+MAXSHOTS+' de nuevo',1800)}}
+  });
+  shotHud();
+}
 function shotReset(){
-  bullets=[];roster.forEach(p=>{p.shots=MAXSHOTS;p.shotAt=new Set()});
+  bullets=[];roster.forEach(p=>{p.shots=MAXSHOTS;p.shotAt=new Set();p.reload=0});
   const on=!!(L&&L.type==='dificil'),g=document.getElementById('gShots'),c=document.getElementById('cS');
   if(g){g.hidden=!on;shotHud()}
   if(c)c.hidden=!on;
+  if(on)flash('🔫 ¡En este nivel puedes DISPARAR mostaza a los demás! Toca el botón 🔫 o la tecla F · 5 balas; al gastarlas se recargan en '+RELOAD+' s',6500);
 }
 function spawnBullet(from,to){bullets.push({from,to,t:0,dur:.42,sx:from.x+from.w/2,sy:from.y+from.h*.4})}
 function fireShot(){
   if(!L||L.type!=='dificil'||state!=='race'||!me||me.out||me.fin||me.frozen)return;
-  if((me.shots|0)<=0){flash('Ya usaste tus 5 balas',1300);return}
+  if((me.shots|0)<=0){flash('Recargando… '+Math.max(1,Math.ceil(me.reload||0))+' s',1100);return}
   const c=roster.filter(p=>p!==me&&!p.out&&!p.fin&&!me.shotAt.has(pkey(p))).sort((a,b)=>Math.abs(a.x-me.x)-Math.abs(b.x-me.x));
   const t=c[0];if(!t){flash(me.shotAt.size?'Ya le disparaste a todos los que quedan':'No hay a quién disparar',1500);return}
-  me.shots--;me.shotAt.add(pkey(t));shotHud();spawnBullet(me,t);
+  me.shots--;me.shotAt.add(pkey(t));if(me.shots<=0){me.reload=RELOAD;flash('Sin balas: recargando '+RELOAD+' s',1800)}shotHud();spawnBullet(me,t);
   if(typeof sfxTone==='function'){sfxTone(520,.08,'square',.06);sfxTone(300,.12,'sawtooth',.05,.05)}
   if(netGame()){try{upCh.send({t:'shot',to:t.id})}catch(e){}}
 }
@@ -2445,11 +2456,12 @@ function applyHit(p,by){
 }
 function botShootTick(dt){
   if(!L||L.type!=='dificil'||state!=='race')return;
+  shotTick(dt);
   roster.forEach(p=>{
     if(!p.bot||p.out||p.fin||(p.shots|0)<=0)return;
     p.shotCd=(p.shotCd==null?4+Math.random()*5:p.shotCd)-dt;if(p.shotCd>0)return;p.shotCd=5+Math.random()*6;
     const c=roster.filter(q=>q!==p&&!q.out&&!q.fin&&!p.shotAt.has(pkey(q)));if(!c.length)return;
-    const t=c[Math.floor(Math.random()*c.length)];p.shots--;p.shotAt.add(pkey(t));spawnBullet(p,t);
+    const t=c[Math.floor(Math.random()*c.length)];p.shots--;p.shotAt.add(pkey(t));if(p.shots<=0)p.reload=RELOAD;spawnBullet(p,t);
   });
 }
 function drawBullets(t){

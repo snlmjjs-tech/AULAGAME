@@ -1204,7 +1204,7 @@ const TYPES={
   lluvia:{n:'Lluvia de respuestas',tip:'Atrapa la respuesta correcta que cae del cielo. ¡Las incorrectas restan!',host:'Cada pregunta es una ronda: caen las opciones del cielo y hay que atrapar la correcta. Atrapar una incorrecta resta puntos.',w:'Ronda'},
   lava:{n:'Lava que sube',tip:'Trepa sin quemarte. Cada pregunta correcta congela la lava.',host:'Se trepa por plataformas mientras sube la lava. Cada pregunta acertada congela la lava unos segundos.',w:'Pregunta'},
   persecucion:{n:'Persecución',tip:'¡Corre! Una carita gigante quiere comerse los completos. Responder mal te frena.',host:'Una carita gigante tipo Pac-Man persigue a todos por un parkour corto. Responder mal frena y puede dejar eliminado.',w:'Pared'},
-  dificil:{n:'Parkour difícil',tip:'Plataformas móviles, sierras y resortes. ¡Con cuidado!',host:'Parkour más complicado con plataformas móviles y sierras. Cada pregunta es una pared.',w:'Pared'}
+  dificil:{n:'Parkour difícil',tip:'Plataformas móviles, sierras y resortes. ¡Con cuidado! Puedes disparar mostaza 🔫 (tecla F): 5 balas, recarga de 10 s.',host:'Parkour más complicado con plataformas móviles y sierras. Cada pregunta es una pared.',w:'Pared'}
 };
 const TYPE_ORDER=['parkour','autos','puente','cuadro','puertas','lluvia','lava','persecucion','dificil'];
 
@@ -1992,6 +1992,7 @@ function update(dt){
     L.planes.forEach(c=>{c.x+=c.v*dt;if(c.x+c.w<c.x0)c.x=c.x1});
     if(L.type==='lava'){if(L.freeze>0)L.freeze-=dt;else L.lavaY-=(36+raceT*.13)*dt}
     roster.forEach(p=>{if(!p.out)step(p,dt)});
+    shotTick(dt);
     if(L.roller){
       L.roller.x+=(92+Math.min(raceT,40)*1.5)*dt;
       roster.forEach(p=>{if(p.remote)return;if(!p.out&&!p.fin&&p.x<L.roller.x+60){p.out=true;p.outT=raceT;p.outX=p.x;if(p===me){flash('¡Te comió la carita!',2400);if(qs)closeQ()}}});
@@ -2583,7 +2584,7 @@ function applySnap(m){
     const p=roster.find(q=>q.id===id);if(!p)continue;
     const a=m.s[id];
     if(!p.seen){p.x=a[0];p.y=a[1];p.seen=true}
-    p.nx=a[0];p.ny=a[1];p.vx=a[2];p.vy=a[15]||0;p.age=0;p.face=a[3]||1;p.og=!!a[4];p.stun=a[5]?1:0;p.boost=a[6]?1:0;
+    p.ay=a[1];p.nx=a[0];p.ny=a[1];p.vx=a[2];p.vy=a[15]||0;p.age=0;p.face=a[3]||1;p.og=!!a[4];p.stun=a[5]?1:0;p.boost=a[6]?1:0;
     p.fin=!!a[7];p.time=a[8];p.correct=a[9];p.wrong=a[10];p.out=!!a[11];p.outRound=a[12];p.outX=a[13];p.outT=a[14];
   }
   netLF=clamp(+m.q||1,1,6);
@@ -2594,7 +2595,9 @@ function remoteStep(p,dt){
   p.age=(p.age||0)+dt;
   if(p.age<2.5){
     p.nx+=p.vx*dt;
-    if(!p.og&&p.age<.6){p.ny+=p.vy*dt;p.vy=Math.min(1000,p.vy+1800*dt)}
+    /* Solo se extrapola un instante la altura y nunca más de 36 px por debajo del último dato real:
+       así un salto sin aviso reciente no deja al compañero "caído" bajo la plataforma. */
+    if(!p.og&&p.age<.35){p.ny+=p.vy*dt;p.vy=Math.min(1000,p.vy+1800*dt);if(p.ay!=null&&p.ny>p.ay+36)p.ny=p.ay+36}
   }
   const k=Math.min(1,dt*10);
   p.x+=(p.nx-p.x)*k;p.y+=(p.ny-p.y)*k;
@@ -2623,7 +2626,7 @@ function netTick(dt){
     const near=hasAudience(),lf=netLF,thr=(near?16:70)*lf,capI=2*Math.max(1,roster.length)/BUDGET,minI=Math.max(capI,(near?.08:.4)*lf),maxI=near?1:2,el=now-sent.t;
     if(el<minI)return;
     const pr=predictAt(sent,el);
-    if(f===sent.f&&me.correct===sent.c&&me.wrong===sent.w&&Math.hypot(me.x-pr[0],me.y-pr[1])<thr&&el<maxI)return;
+    if(f===sent.f&&me.correct===sent.c&&me.wrong===sent.w&&Math.hypot(me.x-pr[0],(me.y-pr[1])*2.5)<thr&&el<maxI)return;
   }
   forcePos=false;sent={x:me.x,y:me.y,vx:me.vx,vy:me.vy,f,c:me.correct,w:me.wrong,t:now};
   const tot=progTotal()||1;
@@ -2716,8 +2719,9 @@ function onHostUp(id,u){
   }
   else if(u.t==='shot'&&HS.phase==='play'&&quiz.levels[HS.idx]&&quiz.levels[HS.idx].type==='dificil'&&typeof u.to==='string'){
     const tg=HS.players.get(u.to),now=Date.now();
+    if((pl.shots|0)<=0&&pl.reloadAt&&now>=pl.reloadAt-1500){pl.shots=5;pl.shotAt=new Set();pl.reloadAt=0}
     if(tg&&tg!==pl&&!pl.sup&&(pl.shots|0)>0&&!(pl.shotAt&&pl.shotAt.has(u.to))&&now-(pl.shotT||0)>350){
-      pl.shotT=now;pl.shots--;(pl.shotAt=pl.shotAt||new Set()).add(u.to);
+      pl.shotT=now;pl.shots--;(pl.shotAt=pl.shotAt||new Set()).add(u.to);if(pl.shots<=0)pl.reloadAt=now+10000;
       try{down.send({t:'shot',id:id,to:u.to})}catch(e){}
     }
   }
@@ -2781,7 +2785,7 @@ function startLevelHost(){
   if(!list.length)return;
   HS.phase='play';HS.t0=Date.now();HS.graceAt=0;HS.forceEnd=false;HS.snapAcc=0;
   { const lvq=quiz.levels[HS.idx];HS.limit=isRaceType(lvq.type)?raceLimit(validQs(lvq).length):0;HS.deadline=HS.limit?HS.t0+(3.2+HS.limit+1.5)*1000:0; }
-  HS.players.forEach(p=>{p.inLevel=!p.gone;p.d=null;p.shots=5;p.shotAt=new Set()});
+  HS.players.forEach(p=>{p.inLevel=!p.gone;p.d=null;p.shots=5;p.shotAt=new Set();p.reloadAt=0});
   const seed=(parseInt(roomCode,10)%100000)*37+HS.idx*101+1;
   const msgL={t:'level',k:HS.t0,idx:HS.idx,seed,players:list.map(p=>({id:p.id,name:p.name,av:p.av}))};
   down.send(msgL);setTimeout(()=>{if(HS.phase==='play'&&ROLE==='host')down.send(msgL)},1200);
@@ -3301,23 +3305,34 @@ function drawRoller(t){
 }
 
 /* ---------- Balas de mostaza (Parkour difícil): 5 por jugador, cada una a un jugador distinto ---------- */
-const MAXSHOTS=5;let bullets=[];
+const MAXSHOTS=5,RELOAD=10;let bullets=[];
 const pkey=p=>p.id!=null?p.id:p.name;
 function netGame(){return typeof upCh!=='undefined'&&typeof ROLE!=='undefined'&&ROLE==='player'&&!!upCh}
-function shotHud(){const g=document.getElementById('gShots');if(g&&me)g.textContent='🔫 '+(me.shots|0)}
+function shotHud(){const g=document.getElementById('gShots');if(!g||!me)return;const s=(me.shots|0)>0?'🔫 '+(me.shots|0):'🔫 recargando '+Math.max(1,Math.ceil(me.reload||0))+' s';if(g.textContent!==s)g.textContent=s}
+/* Recarga: al gastar las 5 balas hay que esperar RELOAD s y vuelven 5 (con objetivos nuevos). */
+function shotTick(dt){
+  if(!L||L.type!=='dificil'||state!=='race')return;
+  roster.forEach(p=>{
+    if((p.shots|0)>0||!(p.reload>0))return;
+    p.reload-=dt;
+    if(p.reload<=0){p.reload=0;p.shots=MAXSHOTS;p.shotAt=new Set();if(p===me){flash('🔫 ¡Balas recargadas! Tienes '+MAXSHOTS+' de nuevo',1800)}}
+  });
+  shotHud();
+}
 function shotReset(){
-  bullets=[];roster.forEach(p=>{p.shots=MAXSHOTS;p.shotAt=new Set()});
+  bullets=[];roster.forEach(p=>{p.shots=MAXSHOTS;p.shotAt=new Set();p.reload=0});
   const on=!!(L&&L.type==='dificil'),g=document.getElementById('gShots'),c=document.getElementById('cS');
   if(g){g.hidden=!on;shotHud()}
   if(c)c.hidden=!on;
+  if(on)flash('🔫 ¡En este nivel puedes DISPARAR mostaza a los demás! Toca el botón 🔫 o la tecla F · 5 balas; al gastarlas se recargan en '+RELOAD+' s',6500);
 }
 function spawnBullet(from,to){bullets.push({from,to,t:0,dur:.42,sx:from.x+from.w/2,sy:from.y+from.h*.4})}
 function fireShot(){
   if(!L||L.type!=='dificil'||state!=='race'||!me||me.out||me.fin||me.frozen)return;
-  if((me.shots|0)<=0){flash('Ya usaste tus 5 balas',1300);return}
+  if((me.shots|0)<=0){flash('Recargando… '+Math.max(1,Math.ceil(me.reload||0))+' s',1100);return}
   const c=roster.filter(p=>p!==me&&!p.out&&!p.fin&&!me.shotAt.has(pkey(p))).sort((a,b)=>Math.abs(a.x-me.x)-Math.abs(b.x-me.x));
   const t=c[0];if(!t){flash(me.shotAt.size?'Ya le disparaste a todos los que quedan':'No hay a quién disparar',1500);return}
-  me.shots--;me.shotAt.add(pkey(t));shotHud();spawnBullet(me,t);
+  me.shots--;me.shotAt.add(pkey(t));if(me.shots<=0){me.reload=RELOAD;flash('Sin balas: recargando '+RELOAD+' s',1800)}shotHud();spawnBullet(me,t);
   if(typeof sfxTone==='function'){sfxTone(520,.08,'square',.06);sfxTone(300,.12,'sawtooth',.05,.05)}
   if(netGame()){try{upCh.send({t:'shot',to:t.id})}catch(e){}}
 }
