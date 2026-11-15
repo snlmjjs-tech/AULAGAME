@@ -2611,7 +2611,8 @@ let sent=null,netLF=1,netClock=0;/* reloj de juego (acumula el mismo dt limitado
 const flagsOf=()=>(me.face>0?1:0)|(me.og?2:0)|(me.stun>0?4:0)|(me.boost>0?8:0)|(me.fin?16:0)|(me.out?32:0);
 function predictAt(st,t){
   t=Math.min(t,2.5);
-  let y=st.y;if(!(st.f&2)){const tt=Math.min(t,.6);y=st.y+st.vy*tt+900*tt*tt}
+  /* Debe coincidir con remoteStep (lo que ven los demás): caída/salto solo 0,35 s y como máximo 36 px bajo el último dato. */
+  let y=st.y;if(!(st.f&2)){const tt=Math.min(t,.35);y=st.y+Math.min(36,st.vy*tt+900*tt*tt)}
   return [st.x+st.vx*t,y];
 }
 function hasAudience(){
