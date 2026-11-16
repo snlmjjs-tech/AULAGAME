@@ -399,6 +399,12 @@ dialog.dlg .row{justify-content:flex-end}
   .btn,.pill,.card,.cbtn,.ans button,.tab{border:1px solid ButtonText}
   .sw.on::after{border-color:Highlight}
 }
+.backhome{position:absolute;z-index:6;top:max(14px,env(safe-area-inset-top));left:max(14px,env(safe-area-inset-left));height:58px;padding:0 24px;border-radius:18px;border:1px solid var(--line);background:var(--surface);color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 2px 4px rgba(42,21,53,.1),0 8px 16px -8px rgba(42,21,53,.3);font-weight:800;font-size:18px;text-decoration:none;display:inline-flex;align-items:center;gap:10px;transition:transform .15s}
+.backhome span{font-size:22px;line-height:1}
+.backhome:hover{transform:translateY(-2px)}
+.backhome:focus-visible{outline:3px solid #ffd45a;outline-offset:2px}
+@media (max-width:520px){.backhome{height:50px;padding:0 16px;font-size:16px}}
+body:not([data-screen="home"]) .backhome{display:none}
 </style>
 <style id="ambient-css">
 /* =====================================================================
@@ -669,6 +675,8 @@ body[data-arena="1"] #game .rot svg{stroke:#2a1535;width:44px;height:44px}
 </style>
 </head>
 <body data-screen="home">
+<a class="backhome" href="/" aria-label="Volver a AulaGame"><span aria-hidden="true">←</span> AulaGame</a>
+<script>if(/[?&](tarea|bot)=/.test(location.search))document.querySelector(".backhome").style.display="none"</script>
 
 <!-- Iconos (un solo trazo, mismo peso) -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
