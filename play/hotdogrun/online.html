@@ -680,6 +680,22 @@ body[data-screen="game"]{overflow:hidden;overscroll-behavior:none;touch-action:n
   .ans button{min-height:40px;padding:5px 10px;border-radius:12px;border-bottom-width:3px;font-size:.92rem;gap:8px}
   .ans button kbd{width:26px;height:26px;border-radius:8px;font-size:.8rem}
 }
+/* celulares en horizontal: pregunta y botones translúcidos para que no tapen el juego */
+@media (max-height:520px) and (orientation:landscape){
+  #qOv.overlay{background:rgba(32,14,44,.05)}
+  .qbox{background:rgba(255,250,241,.46);border-color:rgba(255,255,255,.55);box-shadow:0 4px 16px rgba(0,0,0,.16);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+  .qbox .qt{text-shadow:0 1px 0 rgba(255,255,255,.85),0 0 6px rgba(255,255,255,.7)}
+  .qbar{opacity:.8}
+  .ans button{background:rgba(255,255,255,.58);box-shadow:none;border-color:rgba(42,21,53,.22)}
+  .ans button.ok{background:var(--ok)}.ans button.bad{background:var(--bad)}
+  /* mientras hay una pregunta abierta los botones de movimiento se esconden (no se usan) */
+  #qOv.on~.ctrls{visibility:hidden}
+  /* los avisos no tapan la pregunta: bajan al borde inferior mientras está abierta */
+  #game .stage:has(#qOv.on) .toast{top:auto;bottom:6px;font-size:.85rem;opacity:.9}
+  #game .ctrls .cbtn{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.34);box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;opacity:.75}
+  #game .ctrls .cbtn.j{background:linear-gradient(180deg,rgba(255,226,122,.42),rgba(255,197,51,.42));border-color:rgba(255,255,255,.45)}
+  #game .ctrls .cbtn.on,#game .ctrls .cbtn:active{opacity:1;background:rgba(255,255,255,.4)}
+}
 
 /* resultados */
 .res{width:min(94%,640px);padding:var(--s5) var(--s4) var(--s4);border-radius:30px;background:linear-gradient(180deg,var(--surface),var(--surface-2));gap:var(--s4)}
@@ -3325,7 +3341,7 @@ function shotReset(){
   const on=!!(L&&L.type==='dificil'),g=document.getElementById('gShots'),c=document.getElementById('cS');
   if(g){g.hidden=!on;shotHud()}
   if(c)c.hidden=!on;
-  if(on)flash('🔫 ¡En este nivel puedes DISPARAR mostaza a los demás! Toca el botón 🔫 o la tecla F · 5 balas; al gastarlas se recargan en '+RELOAD+' s',6500);
+  if(on)flash('🔫 ¡Aquí puedes DISPARAR mostaza! Botón 🔫 o tecla F · 5 balas, recarga '+RELOAD+' s',6500);
 }
 function spawnBullet(from,to){bullets.push({from,to,t:0,dur:.42,sx:from.x+from.w/2,sy:from.y+from.h*.4})}
 function fireShot(){
