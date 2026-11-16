@@ -96,6 +96,9 @@ h1 .b{color:var(--berry-ink)}
 .offline:active .go{box-shadow:inset 0 2px 0 rgba(255,255,255,.5),inset 0 -2px 0 rgba(150,95,0,.18),0 1px 0 #b57a00,0 4px 8px -4px rgba(240,168,0,.6)}
 
 /* ---- sonido (opcional) ---- */
+.backhome{position:fixed;z-index:6;top:max(14px,env(safe-area-inset-top));left:max(14px,env(safe-area-inset-left));height:48px;padding:0 18px;border-radius:16px;border:1px solid var(--line);background:var(--surface);color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 2px 4px rgba(42,21,53,.1),0 8px 16px -8px rgba(42,21,53,.3);font-weight:800;font-size:15px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:transform .15s}
+.backhome:hover{transform:translateY(-2px)}
+.backhome:focus-visible{outline:3px solid #ffd45a;outline-offset:2px}
 .snd{position:fixed;z-index:6;top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));width:48px;height:48px;border-radius:16px;border:1px solid var(--line);cursor:pointer;display:grid;place-items:center;color:var(--ink);
   background:var(--surface);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 2px 4px rgba(42,21,53,.1),0 8px 16px -8px rgba(42,21,53,.3);animation:fadeUp .6s var(--ease) 1.3s backwards;transition:transform .15s var(--ease)}
 .snd:active{transform:scale(.94)}
@@ -221,6 +224,7 @@ body[data-screen="game"] .fx{display:none}
 </style>
 </head>
 <body data-screen="home">
+<a class="backhome" href="/" aria-label="Volver a AulaGame"><span aria-hidden="true">←</span> AulaGame</a>
 <button class="snd" id="snd" aria-pressed="false" aria-label="Sonido: desactivado" title="Sonido">
   <svg class="off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.500v5h3.500l5 4v-13l-5 4z"/><path d="M16.500 9.500l5 5M21.500 9.500l-5 5"/></svg>
   <svg class="on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.500v5h3.500l5 4v-13l-5 4z"/><path d="M16 9a4 4 0 0 1 0 6M18.500 6.500a8 8 0 0 1 0 11"/></svg>
