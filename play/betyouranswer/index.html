@@ -376,6 +376,36 @@ body{
   text-align:center; background:#fff; color:var(--ink); box-sizing:border-box;
 }
 .student-input:focus{border-color:var(--pink-deep);}
+/* ===== v2 · pulido visual (vidrio oscuro, brillo por equipo, casillas con relieve) ===== */
+.topbar{background:linear-gradient(180deg,rgba(18,24,58,.92),rgba(11,15,36,.92)); border-bottom:1px solid rgba(243,189,76,.45); box-shadow:0 10px 30px rgba(3,5,18,.45); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);}
+.team-chip{--tc:#fff; position:relative; min-width:116px; padding:7px 14px 8px; border-radius:14px; border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.03)); box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 6px 16px rgba(3,5,18,.35); overflow:hidden;
+  transition:transform .2s var(--ease), box-shadow .25s var(--ease);}
+.team-chip::before{content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--tc); box-shadow:0 0 12px var(--tc);}
+.team-chip .tname{color:var(--tc) !important; font-size:11px; letter-spacing:.06em; text-shadow:0 0 10px rgba(0,0,0,.4);}
+.team-chip .tscore{color:#fff; font-size:19px; text-shadow:0 0 12px rgba(255,255,255,.18);}
+.team-chip.active-turn{transform:translateY(-3px); box-shadow:0 0 0 2px var(--yellow), 0 0 26px rgba(243,189,76,.45), 0 10px 22px rgba(3,5,18,.4) !important; background:linear-gradient(180deg,rgba(243,189,76,.22),rgba(243,189,76,.06));}
+.team-chip.active-turn::after{content:'TURNO'; position:absolute; bottom:3px; right:8px; font-size:8px; font-weight:800; letter-spacing:.12em; color:var(--yellow);}
+.turn-bar{border:1px solid rgba(255,255,255,.14); background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.03)); box-shadow:inset 0 1px 0 rgba(255,255,255,.1); border-radius:999px;}
+.tile{position:relative; overflow:hidden; border:2px solid rgba(255,255,255,.32); box-shadow:inset 0 2px 0 rgba(255,255,255,.45), inset 0 -8px 14px rgba(0,0,0,.18), 0 8px 18px rgba(3,5,18,.38);}
+.tile::before{content:''; position:absolute; left:-30%; top:-60%; width:160%; height:100%; background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.35) 50%,transparent 65%); transform:translateX(-60%); transition:transform .6s var(--ease); pointer-events:none;}
+.tile:hover::before{transform:translateX(60%);}
+.tile:hover{transform:translateY(-6px) scale(1.03); box-shadow:inset 0 2px 0 rgba(255,255,255,.55), 0 18px 32px rgba(3,5,18,.5), 0 0 22px rgba(255,255,255,.22);}
+.tile .tnum{font-size:clamp(24px,3.8vw,36px); letter-spacing:.02em;}
+.tile.used{filter:grayscale(.85) brightness(.55); border-color:rgba(255,255,255,.1);}
+.tile.used .tnum{text-decoration:line-through; text-decoration-thickness:3px;}
+.modal-content{border:1px solid rgba(255,255,255,.55); box-shadow:0 30px 80px rgba(3,5,18,.65), 0 0 0 4px rgba(243,189,76,.18);}
+.team-award-item{--tc:#999; border:1px solid color-mix(in srgb,var(--tc) 38%, #ddd); background:linear-gradient(180deg,#fff,#f5f1ff); border-left:5px solid var(--tc); border-radius:12px; transition:background .25s,opacity .25s,transform .2s;}
+.team-award-item .tn{font-size:13px;}
+.team-award-item{flex-direction:column; align-items:flex-start; gap:6px; padding:9px 12px;}
+.mini-award-btns button{width:32px; height:32px; font-size:19px; border-radius:10px; box-shadow:0 3px 8px rgba(3,5,18,.25), inset 0 1px 0 rgba(255,255,255,.4);}
+.mini-award-btns button:active{transform:scale(.92);}
+.team-award-item.done{opacity:.95; transform:none;}
+.team-award-item.done.gain{background:linear-gradient(180deg,#e8fff4,#cdf6e2); border-color:#34cf93;}
+.team-award-item.done.loss{background:linear-gradient(180deg,#fff0f2,#ffd9df); border-color:#ef4a66;}
+.award-done{white-space:nowrap; display:inline-flex; align-items:center; gap:4px; padding:5px 11px; border-radius:999px; font-family:'Roboto Mono',monospace; font-weight:800; font-size:12.5px; color:#fff; background:var(--correct);}
+.team-award-item.loss .award-done{background:var(--wrong);}
+@media (max-width:560px){.team-chip{min-width:98px; padding:6px 10px 7px}.team-chip .tscore{font-size:16px}}
 </style>
 </head>
 <body>
@@ -784,7 +814,7 @@ function eliminarEquipo(teamId){
 function renderScoreboard(){
   const el = $('#scoreboard');
   el.innerHTML = gameData.teams.map((t,i)=>`
-    <div class="team-chip ${i===gameData.currentTurn?'active-turn':''}" style="box-shadow:0 0 0 1px ${t.color} inset;">
+    <div class="team-chip ${i===gameData.currentTurn?'active-turn':''}" style="--tc:${t.color};">
       <div class="tname" style="color:${t.color}">${t.name}</div>
       <div class="tscore money-font" id="score-${t.id}">${fmt(t.score)}</div>
     </div>
@@ -859,25 +889,44 @@ function markUsed(id){
   renderBoard();
 }
 
+/* Registro (en memoria) de a qué equipos ya se les dio o quitó puntaje en cada pregunta:
+   un equipo solo puede ser premiado o descontado UNA vez por pregunta. */
+const awardedLog = new WeakMap();
+function awardedFor(q){ let m = awardedLog.get(q); if(!m){ m = {}; awardedLog.set(q, m); } return m; }
+function fmtDelta(n){ return (n>=0?'+':'−') + fmt(Math.abs(n)); }
 function teamAwardButtons(q, extraOnClick){
-  return `<div class="team-award-grid">${gameData.teams.map(t=>`
-    <div class="team-award-item">
+  const done = awardedFor(q);
+  return `<div class="team-award-grid">${gameData.teams.map(t=>{
+    const d = done[t.id];
+    const has = d !== undefined;
+    return `
+    <div class="team-award-item ${has?'done '+(d>=0?'gain':'loss'):''}" data-team-item="${t.id}" style="--tc:${t.color}">
       <span class="tn" style="color:${t.color}">${t.name}</span>
       <div class="mini-award-btns">
-        <button class="mini-minus" data-team="${t.id}" data-sign="-1">−</button>
-        <button class="mini-plus" data-team="${t.id}" data-sign="1">+</button>
+        ${has ? `<span class="award-done" title="Este equipo ya recibió su resultado en esta pregunta">${fmtDelta(d)} ✓</span>` : `
+        <button class="mini-minus" data-team="${t.id}" data-sign="-1" aria-label="Descontar a ${t.name}">−</button>
+        <button class="mini-plus" data-team="${t.id}" data-sign="1" aria-label="Premiar a ${t.name}">+</button>`}
       </div>
-    </div>`).join('')}</div>`;
+    </div>`;}).join('')}</div>`;
 }
-function bindAwardButtons(container, value, onAward){
+function bindAwardButtons(container, value, onAward, q){
   container.querySelectorAll('.mini-plus, .mini-minus').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const teamId = parseInt(btn.dataset.team);
       const sign = parseInt(btn.dataset.sign);
+      const done = q ? awardedFor(q) : null;
+      if(done && done[teamId] !== undefined) return;         // ya apostó/respondió: no se repite
       const amt = sign * value;
+      if(done) done[teamId] = amt;
       amt>0 ? stingCorrect() : stingWrong();
       awardTeam(teamId, amt);
       if(salaActual) escribir(refSala('betyouranswer', salaActual, 'respuestas/' + teamId), null);
+      const item = container.querySelector('[data-team-item="'+teamId+'"]');
+      if(item){
+        item.classList.add('done', amt>=0?'gain':'loss');
+        const wrap = item.querySelector('.mini-award-btns');
+        if(wrap) wrap.innerHTML = '<span class="award-done" title="Este equipo ya recibió su resultado en esta pregunta">' + fmtDelta(amt) + ' ✓</span>';
+      }
       if(onAward) onAward();
     });
   });
@@ -911,7 +960,7 @@ function openQuestion(q){
     $('#soloOk').addEventListener('click', ()=>resolverSolo(q,true));
     $('#soloNo').addEventListener('click', ()=>resolverSolo(q,false));
   }
-  bindAwardButtons($('#modalContent'), q.value);
+  bindAwardButtons($('#modalContent'), q.value, null, q);
   $('#markUsedBtn').addEventListener('click', ()=>{ markUsed(q.id); closeModal(); });
   if(salaActual){
     respuestasActuales = {};
@@ -954,7 +1003,7 @@ function openSecretWord(q){
   `;
   openModal(html);
   $('#secretWordText').addEventListener('click', e=>{ e.target.style.filter='none'; });
-  bindAwardButtons($('#modalContent'), q.value, ()=>{ if(secretTimer){clearInterval(secretTimer); secretTimer=null;} });
+  bindAwardButtons($('#modalContent'), q.value, ()=>{ if(secretTimer){clearInterval(secretTimer); secretTimer=null;} }, q);
   $('#markUsedBtn').addEventListener('click', ()=>{ markUsed(q.id); closeModal(); });
   $('#startTimerBtn').addEventListener('click', ()=>{
     if(secretTimer) return;
@@ -1056,7 +1105,7 @@ function openAdmin(){
   $('#exportBtn').addEventListener('click', exportData);
   $('#importFile').addEventListener('change', importData);
   $('#resetAllBtn').addEventListener('click', ()=>{
-    gameData.questions.forEach(q=>q.used=false);
+    gameData.questions.forEach(q=>{ q.used=false; awardedLog.delete(q); });
     presentBoxesState = [...gameData.presentBoxes];
     renderBoard();
     toast('Tablero reiniciado');
