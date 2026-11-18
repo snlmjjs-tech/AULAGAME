@@ -92,7 +92,7 @@ es el dominio viejo y solo existe para redirigir a aulagame.cl, ver más abajo).
   - Correo de agradecimiento al comprar Premium: al activarse el Premium (PayPal o Mercado Pago) el Worker envía un correo desde `soporte@aulagame.cl` con Resend
     (secreto `RESEND_API_KEY`; vars `MAIL_FROM`, `SUPPORT_EMAIL`, `SUPPORT_WHATSAPP` en `wrangler.toml`), una sola vez por cuenta (`graciasEnviado` en `profes/{uid}`),
     al correo del comprador y al de su cuenta, con copia oculta a soporte. Si falta la clave o el servicio falla, no se envía y el Premium se activa igual.
-  - Bet Your Answer: en cada pregunta un equipo solo puede recibir o perder puntos UNA vez (registro en memoria `awardedLog`; tras el +/− el equipo queda marcado con su resultado y bloqueado, también al reabrir la pregunta; "Reiniciar tablero" lo limpia).
+  - Bet Your Answer: en cada pregunta un equipo solo puede recibir o perder puntos UNA vez (registro en memoria `awardedLog`; tras el +/− el equipo queda marcado con su resultado y bloqueado). Los botones +/− de las preguntas normales solo aparecen DESPUÉS de "Revelar respuesta" (`revealedLog`). Cada equipo marcado tiene "＋ Extra" (suma un monto extra) y "↩ Corregir" (devuelve lo dado/quitado y permite elegir de nuevo). Una pregunta ya usada se puede reabrir para corregir puntos (no los regalos ni el modo tarea). "Reiniciar tablero" limpia todo.
   - `clasesIngles/{claseId}` — contenido de la intranet de inglés (sin Firebase Auth real ahí).
 - **Realtime Database** — salas en vivo (`salasVivo/{juego}/{sala}/...`): jugadores, equipos,
   buzz, respuestas, estado de la partida en tiempo real. También `pines/{pin}` para resolver PIN

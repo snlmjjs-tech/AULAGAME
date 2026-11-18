@@ -242,6 +242,7 @@ body{
   box-shadow:none; border-color:rgba(255,255,255,.1);
 }
 .tile.used:hover{transform:none; box-shadow:none;}
+.tile.used{cursor:pointer;}
 .tile.type-secret::after{content:"🤫"; position:absolute; top:6px; right:8px; font-size:12px;}
 .tile.type-present::after{content:"🎁"; position:absolute; top:6px; right:8px; font-size:12px;}
 .tile.type-bonus::after{content:"🎀"; position:absolute; top:6px; right:8px; font-size:12px;}
@@ -405,6 +406,16 @@ body{
 .team-award-item.done.loss{background:linear-gradient(180deg,#fff0f2,#ffd9df); border-color:#ef4a66;}
 .award-done{white-space:nowrap; display:inline-flex; align-items:center; gap:4px; padding:5px 11px; border-radius:999px; font-family:'Roboto Mono',monospace; font-weight:800; font-size:12.5px; color:#fff; background:var(--correct);}
 .team-award-item.loss .award-done{background:var(--wrong);}
+.award-undo{margin-left:6px; border:1.5px solid rgba(21,18,43,.35); background:#fff; color:var(--ink); border-radius:999px; padding:4px 11px; font:700 11.5px 'Poppins',sans-serif; cursor:pointer; box-shadow:0 2px 6px rgba(3,5,18,.18); transition:transform .15s, background .2s;}
+.award-extra{margin-left:6px; border:1.5px solid rgba(21,18,43,.35); background:#e8fff4; color:#0b5d3b; border-radius:999px; padding:4px 11px; font:700 11.5px 'Poppins',sans-serif; cursor:pointer; box-shadow:0 2px 6px rgba(3,5,18,.18);}
+.award-extra:hover{background:#cdf6e2;}
+.award-zone.locked{display:none;}
+.mini-award-btns button.award-undo,.mini-award-btns button.award-extra{width:auto; height:auto; font-size:11.5px; line-height:1.2; padding:5px 11px; border-radius:999px; white-space:nowrap; border:1.5px solid rgba(21,18,43,.35);}
+.mini-award-btns button.award-undo{background:#fff; color:var(--ink);}
+.mini-award-btns button.award-extra{background:#e8fff4; color:#0b5d3b;}
+.award-undo:hover{background:#fff4d6; transform:translateY(-1px);}
+.award-undo:active{transform:scale(.95);}
+.team-award-item .mini-award-btns{align-items:center; flex-wrap:wrap;}
 @media (max-width:560px){.team-chip{min-width:98px; padding:6px 10px 7px}.team-chip .tscore{font-size:16px}}
 </style>
 </head>
@@ -855,7 +866,7 @@ function renderBoard(){
   grid.querySelectorAll('.tile').forEach(tile=>{
     tile.addEventListener('click', ()=>{
       const q = gameData.questions.find(x=>x.id==tile.dataset.id);
-      if(q.used) return;
+      if(q.used && (ES_TAREA || q.type==='present')) return;   // reabrir una usada sirve para corregir puntos (no en regalos ni en tareas)
       openQuestion(q);
     });
   });
@@ -892,44 +903,61 @@ function markUsed(id){
 /* Registro (en memoria) de a qué equipos ya se les dio o quitó puntaje en cada pregunta:
    un equipo solo puede ser premiado o descontado UNA vez por pregunta. */
 const awardedLog = new WeakMap();
+const revealedLog = new WeakSet();   // preguntas cuya respuesta ya se reveló (recién ahí aparecen los botones +/−)
 function awardedFor(q){ let m = awardedLog.get(q); if(!m){ m = {}; awardedLog.set(q, m); } return m; }
 function fmtDelta(n){ return (n>=0?'+':'−') + fmt(Math.abs(n)); }
 function teamAwardButtons(q, extraOnClick){
-  const done = awardedFor(q);
-  return `<div class="team-award-grid">${gameData.teams.map(t=>{
-    const d = done[t.id];
-    const has = d !== undefined;
-    return `
-    <div class="team-award-item ${has?'done '+(d>=0?'gain':'loss'):''}" data-team-item="${t.id}" style="--tc:${t.color}">
+  // los botones de cada equipo los dibuja bindAwardButtons (según lo que ya se le dio o quitó)
+  return `<div class="team-award-grid">${gameData.teams.map(t=>`
+    <div class="team-award-item" data-team-item="${t.id}" style="--tc:${t.color}">
       <span class="tn" style="color:${t.color}">${t.name}</span>
-      <div class="mini-award-btns">
-        ${has ? `<span class="award-done" title="Este equipo ya recibió su resultado en esta pregunta">${fmtDelta(d)} ✓</span>` : `
-        <button class="mini-minus" data-team="${t.id}" data-sign="-1" aria-label="Descontar a ${t.name}">−</button>
-        <button class="mini-plus" data-team="${t.id}" data-sign="1" aria-label="Premiar a ${t.name}">+</button>`}
-      </div>
-    </div>`;}).join('')}</div>`;
+      <div class="mini-award-btns"></div>
+    </div>`).join('')}</div>`;
 }
 function bindAwardButtons(container, value, onAward, q){
-  container.querySelectorAll('.mini-plus, .mini-minus').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const teamId = parseInt(btn.dataset.team);
-      const sign = parseInt(btn.dataset.sign);
-      const done = q ? awardedFor(q) : null;
-      if(done && done[teamId] !== undefined) return;         // ya apostó/respondió: no se repite
-      const amt = sign * value;
-      if(done) done[teamId] = amt;
-      amt>0 ? stingCorrect() : stingWrong();
-      awardTeam(teamId, amt);
-      if(salaActual) escribir(refSala('betyouranswer', salaActual, 'respuestas/' + teamId), null);
-      const item = container.querySelector('[data-team-item="'+teamId+'"]');
-      if(item){
-        item.classList.add('done', amt>=0?'gain':'loss');
-        const wrap = item.querySelector('.mini-award-btns');
-        if(wrap) wrap.innerHTML = '<span class="award-done" title="Este equipo ya recibió su resultado en esta pregunta">' + fmtDelta(amt) + ' ✓</span>';
-      }
-      if(onAward) onAward();
-    });
-  });
+  const done = awardedFor(q);
+  function paint(teamId){
+    const item = container.querySelector('[data-team-item="'+teamId+'"]'); if(!item) return;
+    const wrap = item.querySelector('.mini-award-btns'), t = gameData.teams.find(x=>x.id===teamId), d = done[teamId];
+    item.classList.remove('done','gain','loss');
+    if(d === undefined){
+      wrap.innerHTML = '<button class="mini-minus" aria-label="Descontar a '+t.name+'">−</button><button class="mini-plus" aria-label="Premiar a '+t.name+'">+</button>';
+      wrap.querySelector('.mini-minus').addEventListener('click', ()=>apply(teamId, -1));
+      wrap.querySelector('.mini-plus').addEventListener('click', ()=>apply(teamId, 1));
+    } else {
+      item.classList.add('done', d>=0?'gain':'loss');
+      wrap.innerHTML = '<span class="award-done" title="Este equipo ya recibió su resultado en esta pregunta">'+fmtDelta(d)+' ✓</span>'
+        + '<button class="award-extra" title="Sumarle un poco más a este equipo">＋ Extra</button>'
+        + '<button class="award-undo" title="Deshacer: devuelve los puntos y permite elegir de nuevo">↩ Corregir</button>';
+      wrap.querySelector('.award-undo').addEventListener('click', ()=>undo(teamId));
+      wrap.querySelector('.award-extra').addEventListener('click', ()=>extra(teamId));
+    }
+  }
+  function apply(teamId, sign){
+    if(done[teamId] !== undefined) return;                    // ya apostó/respondió: para cambiarlo hay que usar "Corregir"
+    const amt = sign * value;
+    done[teamId] = amt;
+    amt>0 ? stingCorrect() : stingWrong();
+    awardTeam(teamId, amt);
+    if(salaActual) escribir(refSala('betyouranswer', salaActual, 'respuestas/' + teamId), null);
+    paint(teamId);
+    if(onAward) onAward();
+  }
+  function extra(teamId){
+    const t = gameData.teams.find(x=>x.id===teamId);
+    const raw = prompt('¿Cuánto extra le sumas a ' + t.name + '? (en pesos)', '1000');
+    const n = parseInt(String(raw||'').replace(/[^0-9]/g,''), 10);
+    if(!n || n<=0 || done[teamId] === undefined) return;
+    done[teamId] += n;
+    stingCorrect(); awardTeam(teamId, n); paint(teamId);
+  }
+  function undo(teamId){
+    const d = done[teamId]; if(d === undefined) return;
+    delete done[teamId];
+    awardTeam(teamId, -d);                                    // devuelve exactamente lo que se había dado o quitado
+    paint(teamId);
+  }
+  gameData.teams.forEach(t=>paint(t.id));
 }
 
 /* ----- Trivia question modal ----- */
@@ -948,13 +976,13 @@ function openQuestion(q){
       <div class="a-word">${q.answer}</div>
       <div class="a-expl">${q.explanation||''}</div>
     </div>
-    ${ES_TAREA ? '<div class="section-label">Piensa tu respuesta, revísala y dinos cómo te fue</div><div class="action-row"><button class="btn btn-small btn-correct" id="soloOk" disabled>✅ La sabía (+'+fmt(q.value)+')</button><button class="btn btn-small btn-outline" id="soloNo" disabled>❌ No la sabía (−'+fmt(q.value)+')</button></div>' : '<div class="section-label">Otorgar / restar puntos</div>'+teamAwardButtons(q)}
+    ${ES_TAREA ? '<div class="section-label">Piensa tu respuesta, revísala y dinos cómo te fue</div><div class="action-row"><button class="btn btn-small btn-correct" id="soloOk" disabled>✅ La sabía (+'+fmt(q.value)+')</button><button class="btn btn-small btn-outline" id="soloNo" disabled>❌ No la sabía (−'+fmt(q.value)+')</button></div>' : '<div id="awardZone" class="award-zone '+(revealedLog.has(q)||Object.keys(awardedFor(q)).length?'':'locked')+'"><div class="section-label">Otorgar / restar puntos</div>'+teamAwardButtons(q)+'</div>'}
     <div class="action-row">
       <button class="btn btn-small btn-outline" id="markUsedBtn">✔ Marcar como usada y cerrar</button>
     </div>
   `;
   openModal(html);
-  $('#revealBtn').addEventListener('click', ()=>{ $('#answerBox').classList.add('show'); if(ES_TAREA){ $('#soloOk').disabled=false; $('#soloNo').disabled=false; } });
+  $('#revealBtn').addEventListener('click', ()=>{ $('#answerBox').classList.add('show'); revealedLog.add(q); const az=$('#awardZone'); if(az) az.classList.remove('locked'); if(ES_TAREA){ $('#soloOk').disabled=false; $('#soloNo').disabled=false; } });
   if(ES_TAREA){
     $('#markUsedBtn').style.display='none';
     $('#soloOk').addEventListener('click', ()=>resolverSolo(q,true));
@@ -1105,7 +1133,7 @@ function openAdmin(){
   $('#exportBtn').addEventListener('click', exportData);
   $('#importFile').addEventListener('change', importData);
   $('#resetAllBtn').addEventListener('click', ()=>{
-    gameData.questions.forEach(q=>{ q.used=false; awardedLog.delete(q); });
+    gameData.questions.forEach(q=>{ q.used=false; awardedLog.delete(q); revealedLog.delete(q); });
     presentBoxesState = [...gameData.presentBoxes];
     renderBoard();
     toast('Tablero reiniciado');
