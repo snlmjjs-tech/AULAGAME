@@ -423,6 +423,9 @@ body{
 .mode-opt{display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border-radius:14px; border:2px solid rgba(255,255,255,.18); background:rgba(255,255,255,.05); cursor:pointer; transition:border-color .2s, background .2s;}
 .mode-opt:has(input:checked){border-color:var(--yellow); background:rgba(243,189,76,.14); box-shadow:0 0 0 3px rgba(243,189,76,.15);}
 .mode-opt input{margin-top:5px; accent-color:var(--yellow); width:18px; height:18px; flex:none;}
+.mode-sub{display:flex; gap:10px; align-items:flex-start; margin:-4px 0 0 34px; padding:8px 12px; font-size:12.5px; line-height:1.4; opacity:.9; cursor:pointer; border-left:3px solid rgba(243,189,76,.5);}
+.mode-sub input{margin-top:3px; width:16px; height:16px; accent-color:var(--yellow); flex:none;}
+.mode-picker.is-buzz .mode-sub{display:none;}
 .mode-opt b{font-size:15px;} .mode-opt small{display:block; font-size:12.5px; opacity:.8; line-height:1.4; margin-top:2px;}
 body.modo-chicharra .turn-bar{display:none;}
 .buzz-panel{display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 0 4px; padding:10px 12px; border-radius:14px; border:2px dashed rgba(207,56,100,.45); background:rgba(207,56,100,.08);}
@@ -487,6 +490,8 @@ body.modo-chicharra .turn-bar{display:none;}
         <div class="mode-title">Modo de juego (cuando juegan desde celulares)</div>
         <label class="mode-opt"><input type="radio" name="gameMode" value="turno" checked>
           <span><b>🔄 Por turno</b><small>Cada pregunta le toca a un equipo y solo ese equipo responde desde su celular. El turno avanza solo.</small></span></label>
+        <label class="mode-sub" id="allAnswerRow"><input type="checkbox" id="allAnswerChk">
+          <span><b>👥 Que todos los equipos puedan responder y apostar</b> en su celular, aunque el turno sea de un solo equipo (el turno igual rota). Lo puedes cambiar durante la partida.</span></label>
         <label class="mode-opt"><input type="radio" name="gameMode" value="chicharra">
           <span><b>🔔 Chicharra</b><small>El profe activa la chicharra y el primer equipo en tocarla responde. Si un equipo gana 2 veces seguidas, la 3ª espera 5 s en vez de 3 s.</small></span></label>
       </div>
@@ -513,6 +518,7 @@ body.modo-chicharra .turn-bar{display:none;}
         <span>Turno de:</span>
         <strong id="turnTeamLabel" style="color:var(--yellow)"></strong>
         <button class="btn btn-small btn-outline-dark" id="nextTurnBtn">Siguiente equipo ➜</button>
+        <button class="btn btn-small btn-outline-dark" id="allAnswerBtn" type="button" title="Si está activado, todos los equipos pueden responder y apostar desde su celular">👥 Todos responden: no</button>
       </div>
       <div class="board-grid" id="boardGrid"></div>
     </div>
@@ -700,6 +706,7 @@ if(ES_TAREA && TAREA_DATA){
   ];
 }
 gameData.mode = 'turno';   // 'turno' | 'chicharra'
+gameData.todosResponden = false;   // modo turno: ¿pueden responder y apostar todos los equipos desde su celular?
 const MAX_TEAMS = 10;
 const EXTRA_TEAMS = [
   {name:'Equipo Amarillo', color:'#c99a1c'}, {name:'Equipo Morado', color:'#7b5fd6'},
@@ -883,11 +890,19 @@ function agregarEquipo(){
 document.addEventListener('click', e=>{ if(e.target && e.target.id === 'addTeamBtn') agregarEquipo(); });
 document.addEventListener('change', e=>{
   if(e.target && e.target.name === 'gameMode'){ gameData.mode = e.target.value; aplicarModo(); }
+  if(e.target && e.target.id === 'allAnswerChk'){ gameData.todosResponden = e.target.checked; aplicarModo(); }
 });
 function aplicarModo(){
   document.body.classList.toggle('modo-chicharra', gameData.mode === 'chicharra');
+  const mp = document.getElementById('modePicker'); if(mp) mp.classList.toggle('is-buzz', gameData.mode === 'chicharra');
+  const chk = document.getElementById('allAnswerChk'); if(chk) chk.checked = !!gameData.todosResponden;
+  const btn = document.getElementById('allAnswerBtn');
+  if(btn){ btn.style.display = gameData.mode === 'chicharra' ? 'none' : ''; btn.textContent = '👥 Todos responden: ' + (gameData.todosResponden ? 'sí' : 'no'); btn.classList.toggle('btn-gold', !!gameData.todosResponden); }
   syncEstado();
 }
+document.addEventListener('click', e=>{
+  if(e.target && e.target.id === 'allAnswerBtn'){ gameData.todosResponden = !gameData.todosResponden; aplicarModo(); toast(gameData.todosResponden ? 'Ahora todos los equipos pueden responder y apostar' : 'Solo responde el equipo del turno'); }
+});
 
 /* Quita un equipo de la partida (mínimo 2 equipos). Útil si sobran equipos
    configurados de más para el curso que está jugando hoy. */
@@ -1482,6 +1497,7 @@ function syncEstado(){
   }));
   escribir(refSala('betyouranswer', salaActual, 'estado/turnoEquipoId'), gameData.teams[gameData.currentTurn].id);
   escribir(refSala('betyouranswer', salaActual, 'estado/modo'), gameData.mode);
+  escribir(refSala('betyouranswer', salaActual, 'estado/todosResponden'), !!gameData.todosResponden);
 }
 
 let jugadoresConectados = {}; // jugadorId -> {equipoId, unidoEn}
@@ -1669,8 +1685,11 @@ function initStudentView(){
       ansBox.style.display = puedeResponder ? '' : 'none';
     } else {
       buzzWrap.classList.add('hidden');
-      puedeResponder = String(estado.turnoEquipoId) === String(miEquipoId);
-      turnNote.textContent = puedeResponder ? '⭐ ¡Es el turno de tu equipo! Escribe tu respuesta.' : 'Es el turno de ' + nombreEquipo(estado.turnoEquipoId) + '. Mira la pregunta y espera tu turno.';
+      const esMiTurno = String(estado.turnoEquipoId) === String(miEquipoId);
+      puedeResponder = esMiTurno || estado.todosResponden === true;
+      turnNote.textContent = esMiTurno ? '⭐ ¡Es el turno de tu equipo! Escribe tu respuesta.'
+        : (puedeResponder ? 'Es el turno de ' + nombreEquipo(estado.turnoEquipoId) + ', pero todos pueden responder y apostar. ¡Escribe tu respuesta!'
+                          : 'Es el turno de ' + nombreEquipo(estado.turnoEquipoId) + '. Mira la pregunta y espera tu turno.');
       ansBox.style.display = puedeResponder ? '' : 'none';
     }
     inputEl.disabled = yaEnviado || !puedeResponder;
