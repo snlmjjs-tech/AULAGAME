@@ -417,6 +417,27 @@ body{
 .award-undo:active{transform:scale(.95);}
 .team-award-item .mini-award-btns{align-items:center; flex-wrap:wrap;}
 @media (max-width:560px){.team-chip{min-width:98px; padding:6px 10px 7px}.team-chip .tscore{font-size:16px}}
+/* ===== modos de juego, chicharra y vista del alumno ===== */
+.mode-picker{display:flex; flex-direction:column; gap:10px; margin:6px 0 18px; text-align:left;}
+.mode-title{font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; opacity:.8;}
+.mode-opt{display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border-radius:14px; border:2px solid rgba(255,255,255,.18); background:rgba(255,255,255,.05); cursor:pointer; transition:border-color .2s, background .2s;}
+.mode-opt:has(input:checked){border-color:var(--yellow); background:rgba(243,189,76,.14); box-shadow:0 0 0 3px rgba(243,189,76,.15);}
+.mode-opt input{margin-top:5px; accent-color:var(--yellow); width:18px; height:18px; flex:none;}
+.mode-opt b{font-size:15px;} .mode-opt small{display:block; font-size:12.5px; opacity:.8; line-height:1.4; margin-top:2px;}
+body.modo-chicharra .turn-bar{display:none;}
+.buzz-panel{display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 0 4px; padding:10px 12px; border-radius:14px; border:2px dashed rgba(207,56,100,.45); background:rgba(207,56,100,.08);}
+.buzz-panel .buzz-status{font-size:13.5px; font-weight:700; color:var(--ink);}
+.buzz-panel .buzz-winner{font-weight:800; padding:4px 12px; border-radius:999px; color:#fff;}
+.student-note{font-weight:700; font-size:14px; opacity:.95; margin:8px 0; min-height:18px;}
+.buzz-btn{width:min(70vw,260px); height:min(70vw,260px); border-radius:50%; border:8px solid #fff; font-size:78px; line-height:1; cursor:pointer; color:#fff;
+  background:radial-gradient(circle at 35% 30%, #ff9db3, #e0245a 60%, #a00f3a); box-shadow:0 14px 30px rgba(224,36,90,.5), inset 0 -10px 20px rgba(0,0,0,.25); margin:8px auto; display:block; transition:transform .1s;}
+.buzz-btn:active:not(:disabled){transform:scale(.94);}
+.buzz-btn:disabled{filter:grayscale(.8) brightness(.7); box-shadow:none; cursor:not-allowed; font-size:60px;}
+.student-reveal{margin-top:14px; padding:14px; border-radius:16px; background:rgba(52,207,147,.16); border:2px solid #34cf93; text-align:left;}
+.student-reveal .sr-title{font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#8bf0c3;}
+.student-reveal .sr-ans{font-size:20px; font-weight:800; margin:4px 0;}
+.student-reveal .sr-exp{font-size:13.5px; opacity:.9; line-height:1.45;}
+.hidden{display:none !important;}
 </style>
 </head>
 <body>
@@ -458,6 +479,17 @@ body{
       <p>Formen sus grupos para participar. Mientras más dinero consigan, mejor. ¡Buena suerte! 😉<br>
       Pueden editar el nombre de cada equipo antes de comenzar:</p>
       <div class="team-setup-grid" id="teamSetupGrid"></div>
+      <div class="title-actions" style="margin-top:0;">
+        <button class="btn btn-outline btn-small" id="addTeamBtn" type="button">➕ Agregar equipo</button>
+      </div>
+      <p class="muted-note" id="teamCountNote" style="font-size:12.5px; opacity:.75; margin:4px 0 14px;"></p>
+      <div class="mode-picker" id="modePicker" role="radiogroup" aria-label="Modo de juego">
+        <div class="mode-title">Modo de juego (cuando juegan desde celulares)</div>
+        <label class="mode-opt"><input type="radio" name="gameMode" value="turno" checked>
+          <span><b>🔄 Por turno</b><small>Cada pregunta le toca a un equipo y solo ese equipo responde desde su celular. El turno avanza solo.</small></span></label>
+        <label class="mode-opt"><input type="radio" name="gameMode" value="chicharra">
+          <span><b>🔔 Chicharra</b><small>El profe activa la chicharra y el primer equipo en tocarla responde. Si un equipo gana 2 veces seguidas, la 3ª espera 5 s en vez de 3 s.</small></span></label>
+      </div>
       <div class="title-actions">
         <button class="btn btn-gold" id="playBoardBtn">▶ PLAY</button>
         <button class="btn btn-outline" id="backTitleBtn">← Volver</button>
@@ -524,9 +556,21 @@ body{
     <div id="studentQuestionZone" class="hidden" style="width:100%;">
       <div class="value-badge money-font" id="studentValor">$0</div>
       <div class="q-text" id="studentQuestionText" style="color:#fff;"></div>
-      <input type="text" id="studentInput" class="student-input" placeholder="Escribe tu respuesta...">
-      <button class="btn btn-gold" id="studentEnviarBtn" style="margin-top:10px;">ENVIAR</button>
+      <p id="studentTurnNote" class="student-note"></p>
+      <div id="studentBuzz" class="hidden">
+        <div id="studentBuzzMsg" class="student-note"></div>
+        <button type="button" id="studentBuzzBtn" class="buzz-btn" disabled>🔔</button>
+      </div>
+      <div id="studentAnswerBox">
+        <input type="text" id="studentInput" class="student-input" placeholder="Escribe tu respuesta..." autocomplete="off">
+        <button class="btn btn-gold" id="studentEnviarBtn" style="margin-top:10px;">ENVIAR</button>
+      </div>
       <p id="studentSentHint" style="opacity:.8; font-size:13px; margin-top:8px;"></p>
+      <div id="studentReveal" class="student-reveal hidden">
+        <div class="sr-title">✅ Respuesta correcta</div>
+        <div class="sr-ans" id="studentRevealAns"></div>
+        <div class="sr-exp" id="studentRevealExp"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -655,6 +699,12 @@ if(ES_TAREA && TAREA_DATA){
     {id:2, name:'Bot Profe', color:'#5a7fe0', score:0, skill:.55},
   ];
 }
+gameData.mode = 'turno';   // 'turno' | 'chicharra'
+const MAX_TEAMS = 10;
+const EXTRA_TEAMS = [
+  {name:'Equipo Amarillo', color:'#c99a1c'}, {name:'Equipo Morado', color:'#7b5fd6'},
+  {name:'Equipo Café', color:'#8a5a3c'}, {name:'Equipo Lima', color:'#7fa81f'}
+];
 let presentBoxesState = [...gameData.presentBoxes];
 let secretTimer = null, secretTimeLeft = 45;
 let salaActual = null;         // código de sala en vivo (null = modo QR no activado)
@@ -675,10 +725,20 @@ function openModal(html){
   $('#modalContent').innerHTML = html;
   $('#modalOverlay').classList.remove('hidden');
 }
+function publicarReveal(q){
+  if(!salaActual) return;
+  escribir(refSala('betyouranswer', salaActual, 'estado/reveal'), { qid: q.id, respuesta: String(q.answer || ''), explicacion: String(q.explanation || '') });
+}
 function closeModal(){
   $('#modalOverlay').classList.add('hidden');
   if(secretTimer){clearInterval(secretTimer); secretTimer=null;}
-  if(salaActual) escribir(refSala('betyouranswer', salaActual, 'estado/preguntaActual'), null);
+  // la chicharra se apaga sola cuando ya no hay pregunta
+  buzz.activa = false; buzz.ganador = null; buzz.penalizado = null; clearTimeout(buzz.decide); buzz.decide = null;
+  if(salaActual){
+    escribir(refSala('betyouranswer', salaActual, 'estado/preguntaActual'), null);
+    escribir(refSala('betyouranswer', salaActual, 'estado/chicharra'), null);
+    escribir(refSala('betyouranswer', salaActual, 'estado/reveal'), null);
+  }
 }
 // El HTML de los modales usa onclick="closeModal()" inline (ver openQuestion/openSecretWord/
 // openPresent/openAdmin); en un <script type="module"> las funciones ya no cuelgan de window
@@ -807,6 +867,26 @@ function renderTeamSetup(){
   grid.querySelectorAll('[data-remove-team]').forEach(btn=>{
     btn.addEventListener('click', ()=> eliminarEquipo(Number(btn.getAttribute('data-remove-team'))));
   });
+  const add = $('#addTeamBtn'), note = $('#teamCountNote');
+  if(add){ add.disabled = gameData.teams.length >= MAX_TEAMS || ES_TAREA; add.style.display = ES_TAREA ? 'none' : ''; }
+  if(note) note.textContent = ES_TAREA ? '' : (gameData.teams.length + ' de ' + MAX_TEAMS + ' equipos');
+  const mp = $('#modePicker'); if(mp) mp.style.display = ES_TAREA ? 'none' : '';
+}
+function agregarEquipo(){
+  if(gameData.teams.length >= MAX_TEAMS) return;
+  const used = new Set(gameData.teams.map(t=>t.name));
+  const ex = EXTRA_TEAMS.find(e=>!used.has(e.name)) || { name:'Equipo ' + (gameData.teams.length+1), color:'#6b7a99' };
+  const id = Math.max.apply(null, gameData.teams.map(t=>t.id)) + 1;
+  gameData.teams.push({ id:id, name:ex.name, color:ex.color, score:0 });
+  renderTeamSetup(); renderScoreboard();
+}
+document.addEventListener('click', e=>{ if(e.target && e.target.id === 'addTeamBtn') agregarEquipo(); });
+document.addEventListener('change', e=>{
+  if(e.target && e.target.name === 'gameMode'){ gameData.mode = e.target.value; aplicarModo(); }
+});
+function aplicarModo(){
+  document.body.classList.toggle('modo-chicharra', gameData.mode === 'chicharra');
+  syncEstado();
 }
 
 /* Quita un equipo de la partida (mínimo 2 equipos). Útil si sobran equipos
@@ -833,10 +913,11 @@ function renderScoreboard(){
   $('#turnTeamLabel').textContent = gameData.teams[gameData.currentTurn].name;
   syncEstado();
 }
-$('#nextTurnBtn').addEventListener('click', ()=>{
+function avanzarTurno(){
   gameData.currentTurn = (gameData.currentTurn+1) % gameData.teams.length;
   renderScoreboard();
-});
+}
+$('#nextTurnBtn').addEventListener('click', avanzarTurno);
 
 function awardTeam(teamId, amount){
   const team = gameData.teams.find(t=>t.id===teamId);
@@ -896,8 +977,11 @@ function comprobarFinSolo(){
 }
 function markUsed(id){
   const q = gameData.questions.find(x=>x.id===id);
+  const was = q.used;
   q.used = true;
   renderBoard();
+  // modo por turno: al terminar la pregunta pasa el turno al siguiente equipo
+  if(!was && !ES_TAREA && gameData.mode === 'turno') avanzarTurno();
 }
 
 /* Registro (en memoria) de a qué equipos ya se les dio o quitó puntaje en cada pregunta:
@@ -960,6 +1044,73 @@ function bindAwardButtons(container, value, onAward, q){
   gameData.teams.forEach(t=>paint(t.id));
 }
 
+/* ---------------- CHICHARRA (modo chicharra) ----------------
+   El profe la activa mientras hay una pregunta abierta. En los celulares hay una cuenta regresiva de 3 s (5 s para el
+   equipo que ganó 2 veces seguidas) y luego se puede tocar. Gana quien tenga la marca de tiempo del servidor más baja. */
+const BUZZ_ESPERA = 3, BUZZ_ESPERA_PENAL = 5;
+const buzz = { activa:false, ronda:0, ganador:null, penalizado:null, racha:{ equipo:null, veces:0 }, decide:null, pulsos:{} };
+function teamById(id){ return gameData.teams.find(t=>String(t.id)===String(id)); }
+function buzzPublicar(){
+  if(!salaActual) return;
+  const hay = buzz.activa || buzz.ganador !== null;
+  escribir(refSala('betyouranswer', salaActual, 'estado/chicharra'), hay ? {
+    activa: buzz.activa, ronda: buzz.ronda, ganador: buzz.ganador === null ? null : String(buzz.ganador),
+    penalizado: buzz.penalizado === null ? null : String(buzz.penalizado), espera: BUZZ_ESPERA, esperaPenal: BUZZ_ESPERA_PENAL
+  } : null);
+}
+function buzzActivar(){
+  if(!salaActual){ toast('Primero conecta los celulares (QR)'); return; }
+  buzz.ronda++; buzz.activa = true; buzz.ganador = null; buzz.pulsos = {}; clearTimeout(buzz.decide); buzz.decide = null;
+  // quien ganó 2 veces seguidas espera 5 s esta vez; después todo vuelve a la normalidad
+  buzz.penalizado = buzz.racha.veces >= 2 ? buzz.racha.equipo : null;
+  if(buzz.penalizado !== null) buzz.racha = { equipo:null, veces:0 };
+  eliminar(refSala('betyouranswer', salaActual, 'buzz'));
+  buzzPublicar(); buzzPintar();
+}
+function buzzDesactivar(){
+  clearTimeout(buzz.decide); buzz.decide = null;
+  buzz.activa = false; buzz.ganador = null; buzz.penalizado = null;
+  buzzPublicar(); buzzPintar();
+}
+function buzzDecidir(){
+  buzz.decide = null;
+  if(!buzz.activa) return;
+  const ps = Object.values(buzz.pulsos).filter(p=>p && p.ronda === buzz.ronda && teamById(p.equipoId));
+  if(!ps.length) return;
+  const val = p => (typeof p.t === 'number' ? p.t : Date.now());
+  ps.sort((a,b)=>val(a)-val(b));
+  const g = ps[0].equipoId;
+  buzz.ganador = g; buzz.activa = false;
+  buzz.racha = (String(buzz.racha.equipo) === String(g)) ? { equipo:g, veces:buzz.racha.veces+1 } : { equipo:g, veces:1 };
+  stingCorrect();
+  buzzPublicar(); buzzPintar();
+}
+function buzzPintar(){
+  const st = document.getElementById('buzzStatus'), tg = document.getElementById('buzzToggle');
+  if(!st || !tg) return;
+  const pen = buzz.penalizado !== null ? teamById(buzz.penalizado) : null;
+  if(buzz.ganador !== null){
+    const t = teamById(buzz.ganador);
+    st.innerHTML = '<span class="buzz-winner" style="background:' + (t ? t.color : '#555') + '">🔔 ' + (t ? t.name : '?') + ' presionó primero</span>';
+    tg.textContent = '🔔 Activar de nuevo';
+  } else if(buzz.activa){
+    st.textContent = '⏳ Chicharra activa: los equipos ven la cuenta regresiva…' + (pen ? ' (' + pen.name + ' espera ' + BUZZ_ESPERA_PENAL + ' s por ganar 2 veces seguidas)' : '');
+    tg.textContent = '⏹ Desactivar chicharra';
+  } else {
+    st.textContent = 'Chicharra apagada.';
+    tg.textContent = '🔔 Activar chicharra';
+  }
+}
+function buzzBindModal(){
+  const tg = document.getElementById('buzzToggle'); if(!tg) return;
+  tg.addEventListener('click', ()=>{ buzz.activa ? buzzDesactivar() : buzzActivar(); });
+  buzzPintar();
+}
+function buzzPanelHTML(){
+  if(ES_TAREA || gameData.mode !== 'chicharra') return '';
+  return '<div class="buzz-panel"><button type="button" class="btn btn-small btn-gold" id="buzzToggle">🔔 Activar chicharra</button><span class="buzz-status" id="buzzStatus"></span></div>';
+}
+
 /* ----- Trivia question modal ----- */
 function openQuestion(q){
   if(q.type==='secret') return openSecretWord(q);
@@ -970,7 +1121,8 @@ function openQuestion(q){
     <h3>${q.type==='bonus'?'Caja Bonus':'Pregunta'}</h3>
     <div class="value-badge money-font">${fmt(q.value)}</div>
     <div class="q-text">${q.question}</div>
-    <p id="respuestaEntranteBox" style="font-size:13.5px; font-weight:700; color:var(--ink-soft); min-height:18px;"></p>
+    ${buzzPanelHTML()}
+    <div id="respuestaEntranteBox" style="font-size:13.5px; font-weight:700; color:var(--ink-soft); min-height:18px; margin:6px 0;"></div>
     <button class="btn btn-outline btn-small" id="revealBtn">👁 Revelar respuesta</button>
     <div class="answer-box" id="answerBox">
       <div class="a-word">${q.answer}</div>
@@ -982,7 +1134,9 @@ function openQuestion(q){
     </div>
   `;
   openModal(html);
-  $('#revealBtn').addEventListener('click', ()=>{ $('#answerBox').classList.add('show'); revealedLog.add(q); const az=$('#awardZone'); if(az) az.classList.remove('locked'); if(ES_TAREA){ $('#soloOk').disabled=false; $('#soloNo').disabled=false; } });
+  buzz.activa = false; buzz.ganador = null; buzz.penalizado = null; clearTimeout(buzz.decide); buzz.decide = null;
+  buzzBindModal();
+  $('#revealBtn').addEventListener('click', ()=>{ publicarReveal(q); $('#answerBox').classList.add('show'); revealedLog.add(q); const az=$('#awardZone'); if(az) az.classList.remove('locked'); if(ES_TAREA){ $('#soloOk').disabled=false; $('#soloNo').disabled=false; } });
   if(ES_TAREA){
     $('#markUsedBtn').style.display='none';
     $('#soloOk').addEventListener('click', ()=>resolverSolo(q,true));
@@ -993,6 +1147,8 @@ function openQuestion(q){
   if(salaActual){
     respuestasActuales = {};
     escribir(refSala('betyouranswer', salaActual, 'respuestas'), null);
+    escribir(refSala('betyouranswer', salaActual, 'estado/reveal'), null);
+    escribir(refSala('betyouranswer', salaActual, 'estado/chicharra'), null);
     escribir(refSala('betyouranswer', salaActual, 'estado/preguntaActual'), { id: q.id, texto: q.question, valor: q.value });
     renderRespuestaEntrante();
   }
@@ -1000,10 +1156,11 @@ function openQuestion(q){
 function renderRespuestaEntrante(){
   const box = document.getElementById('respuestaEntranteBox');
   if(!box) return;
-  const teamId = gameData.teams[gameData.currentTurn].id;
-  const resp = respuestasActuales[teamId];
-  box.textContent = (resp && resp.texto) ? ('📱 ' + gameData.teams[gameData.currentTurn].name + ' respondió: "' + resp.texto + '"') : '';
+  const filas = gameData.teams.filter(t=>respuestasActuales[t.id] && respuestasActuales[t.id].texto).map(t=>
+    '<div style="display:flex; gap:8px; align-items:baseline; margin:3px 0;"><span style="color:' + t.color + '; font-weight:800; white-space:nowrap;">📱 ' + escapeText(t.name) + ':</span><span>"' + escapeText(respuestasActuales[t.id].texto) + '"</span></div>');
+  box.innerHTML = filas.join('');
 }
+function escapeText(v){ const d = document.createElement('div'); d.textContent = v == null ? '' : String(v); return d.innerHTML; }
 
 /* ----- Secret word (taboo) modal ----- */
 function openSecretWord(q){
@@ -1295,7 +1452,7 @@ function importData(e){
 $('#playBtn').addEventListener('click', ()=>{ startMusic(); renderTeamSetup(); showScreen('screen-instructions'); });
 $('#editBtnTitle').addEventListener('click', ()=>{ startMusic(); openAdmin(); });
 $('#backTitleBtn').addEventListener('click', ()=> showScreen('screen-title'));
-$('#playBoardBtn').addEventListener('click', ()=>{ renderScoreboard(); renderBoard(); showScreen('screen-board'); });
+$('#playBoardBtn').addEventListener('click', ()=>{ aplicarModo(); renderScoreboard(); renderBoard(); showScreen('screen-board'); });
 $('#homeBtnBoard').addEventListener('click', ()=> showScreen('screen-title'));
 $('#muteBtnTitle').addEventListener('click', toggleMute);
 $('#muteBtnBoard').addEventListener('click', toggleMute);
@@ -1324,6 +1481,7 @@ function syncEstado(){
     return { id: t.id, nombre: t.name, color: t.color, score: t.score };
   }));
   escribir(refSala('betyouranswer', salaActual, 'estado/turnoEquipoId'), gameData.teams[gameData.currentTurn].id);
+  escribir(refSala('betyouranswer', salaActual, 'estado/modo'), gameData.mode);
 }
 
 let jugadoresConectados = {}; // jugadorId -> {equipoId, unidoEn}
@@ -1379,6 +1537,12 @@ async function iniciarSalaQR(){
       respuestasActuales = datos || {};
       renderRespuestaEntrante();
     });
+    escuchar(refSala('betyouranswer', salaActual, 'buzz'), function(datos){
+      buzz.pulsos = datos || {};
+      if(buzz.activa && buzz.ganador === null && !buzz.decide && Object.values(buzz.pulsos).some(p=>p && p.ronda === buzz.ronda)){
+        buzz.decide = setTimeout(buzzDecidir, 700);   // ventana corta para ordenar por la hora del servidor
+      }
+    });
     escuchar(refSala('betyouranswer', salaActual, 'jugadores'), function(datos){
       jugadoresConectados = datos || {};
       renderJugadoresConectados();
@@ -1433,6 +1597,11 @@ function initStudentView(){
     renderStudent();
   }
 
+  let rondaVista = null, cuentaFin = 0, cuentaTimer = null, yaPulse = false;
+  function nombreEquipo(id){
+    const t = ((estado && estado.equipos) || []).find(function(x){ return String(x.id) === String(id); });
+    return t ? t.nombre : 'otro equipo';
+  }
   function renderStudent(){
     if(!estado || miEquipoId === null) return;
     const p = estado.preguntaActual;
@@ -1444,20 +1613,92 @@ function initStudentView(){
       yaEnviado = false;
       inputEl.value = '';
       sentHintEl.textContent = '';
+      rondaVista = null; yaPulse = false;
     }
-    if(p){
-      estadoEl.textContent = '';
-      zone.classList.remove('hidden');
-      document.getElementById('studentValor').textContent = '$' + p.valor.toLocaleString('es-CL');
-      document.getElementById('studentQuestionText').textContent = p.texto;
-      inputEl.disabled = yaEnviado;
-      document.getElementById('studentEnviarBtn').disabled = yaEnviado;
-      if(yaEnviado) sentHintEl.textContent = '✓ Respuesta enviada, esperando al profe…';
-    } else {
+    const modo = estado.modo === 'chicharra' ? 'chicharra' : 'turno';
+    const chic = estado.chicharra || null;
+    const buzzWrap = document.getElementById('studentBuzz'), buzzBtn = document.getElementById('studentBuzzBtn'), buzzMsg = document.getElementById('studentBuzzMsg');
+    const turnNote = document.getElementById('studentTurnNote'), ansBox = document.getElementById('studentAnswerBox');
+    const rev = document.getElementById('studentReveal');
+    if(!p){
       zone.classList.add('hidden');
       estadoEl.textContent = 'Esperando a que el profe elija una pregunta…';
+      if(cuentaTimer){ clearInterval(cuentaTimer); cuentaTimer = null; }
+      return;
+    }
+    estadoEl.textContent = '';
+    zone.classList.remove('hidden');
+    document.getElementById('studentValor').textContent = '$' + p.valor.toLocaleString('es-CL');
+    document.getElementById('studentQuestionText').textContent = p.texto;
+
+    let puedeResponder = false;
+    if(modo === 'chicharra'){
+      turnNote.textContent = '';
+      buzzWrap.classList.remove('hidden');
+      if(chic && chic.ronda !== rondaVista){
+        // ronda nueva de chicharra: empieza mi cuenta regresiva (más larga si me toca esperar más)
+        rondaVista = chic.ronda; yaPulse = false;
+        const espera = (chic.penalizado !== null && chic.penalizado !== undefined && String(chic.penalizado) === String(miEquipoId)) ? (chic.esperaPenal || 5) : (chic.espera || 3);
+        cuentaFin = Date.now() + espera * 1000;
+        if(cuentaTimer) clearInterval(cuentaTimer);
+        cuentaTimer = setInterval(function(){ renderStudent(); if(Date.now() >= cuentaFin){ clearInterval(cuentaTimer); cuentaTimer = null; renderStudent(); } }, 200);
+      }
+      if(chic && chic.ganador !== null && chic.ganador !== undefined){
+        const soyYo = String(chic.ganador) === String(miEquipoId);
+        buzzBtn.disabled = true; buzzBtn.style.display = 'none';
+        buzzMsg.textContent = soyYo ? '🔔 ¡Presionaste primero! Escribe tu respuesta.' : '🔔 ' + nombreEquipo(chic.ganador) + ' presionó primero.';
+        puedeResponder = soyYo;
+      } else if(chic && chic.activa){
+        buzzBtn.style.display = 'block';
+        const resta = Math.max(0, Math.ceil((cuentaFin - Date.now()) / 1000));
+        const penal = chic.penalizado !== null && chic.penalizado !== undefined && String(chic.penalizado) === String(miEquipoId);
+        if(resta > 0){
+          buzzBtn.disabled = true; buzzBtn.textContent = resta;
+          buzzMsg.textContent = penal ? '⏳ Ganaste 2 veces seguidas: esta vez esperas ' + (chic.esperaPenal || 5) + ' s…' : 'Prepárate… el profe está leyendo la pregunta';
+        } else if(yaPulse){
+          buzzBtn.disabled = true; buzzBtn.textContent = '🔔';
+          buzzMsg.textContent = 'Chicharra enviada… esperando al profe';
+        } else {
+          buzzBtn.disabled = false; buzzBtn.textContent = '🔔';
+          buzzMsg.textContent = '¡TOCA LA CHICHARRA!';
+        }
+      } else {
+        buzzBtn.style.display = 'none'; buzzBtn.disabled = true;
+        buzzMsg.textContent = 'Esperando que el profe active la chicharra…';
+      }
+      ansBox.style.display = puedeResponder ? '' : 'none';
+    } else {
+      buzzWrap.classList.add('hidden');
+      puedeResponder = String(estado.turnoEquipoId) === String(miEquipoId);
+      turnNote.textContent = puedeResponder ? '⭐ ¡Es el turno de tu equipo! Escribe tu respuesta.' : 'Es el turno de ' + nombreEquipo(estado.turnoEquipoId) + '. Mira la pregunta y espera tu turno.';
+      ansBox.style.display = puedeResponder ? '' : 'none';
+    }
+    inputEl.disabled = yaEnviado || !puedeResponder;
+    document.getElementById('studentEnviarBtn').disabled = yaEnviado || !puedeResponder;
+    if(yaEnviado) sentHintEl.textContent = '✓ Respuesta enviada, esperando al profe…';
+
+    // respuesta correcta: solo después de que el profe pulsa "Revelar respuesta"
+    const r = estado.reveal;
+    if(r && r.qid === p.id){
+      document.getElementById('studentRevealAns').textContent = r.respuesta || '';
+      document.getElementById('studentRevealExp').textContent = r.explicacion || '';
+      rev.classList.remove('hidden');
+    } else {
+      rev.classList.add('hidden');
     }
   }
+
+  document.getElementById('studentBuzzBtn').addEventListener('click', function(){
+    const chic = estado && estado.chicharra;
+    if(!chic || !chic.activa || yaPulse || miEquipoId === null) return;
+    if(Date.now() < cuentaFin) return;                 // todavía en la cuenta regresiva
+    yaPulse = true;
+    try{ if(navigator.vibrate) navigator.vibrate(80); }catch(e){}
+    escribir(refSala('betyouranswer', SALA_ALUMNO, 'buzz/' + jugadorId + '_' + chic.ronda), {
+      equipoId: String(miEquipoId), jugadorId: jugadorId, ronda: chic.ronda, t: marcaTiempo()
+    });
+    renderStudent();
+  });
 
   document.getElementById('studentEnviarBtn').addEventListener('click', function(){
     const texto = inputEl.value.trim();
@@ -1496,7 +1737,8 @@ if(ES_ALUMNO){
     titulo: '¿Cómo se juega? 💰',
     pasos: [
       'Elige tu equipo tocándolo en la pantalla.',
-      'Cuando el profesor abra una pregunta, escribe tu respuesta y toca "ENVIAR".',
+      'Cuando el profesor abra una pregunta, escribe tu respuesta y toca "ENVIAR" (si es tu turno). En modo chicharra, espera la cuenta regresiva y toca la chicharra para responder.',
+      'Cuando el profe revele la respuesta, también te aparecerá en tu pantalla.',
       'El profesor decide en el proyector si la respuesta fue correcta y reparte el dinero.'
     ]
   });
