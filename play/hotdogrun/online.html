@@ -487,6 +487,16 @@ body[data-screen="lobby"] #lmBtn,body[data-screen="lobbyHost"] #lmBtn{display:in
 body:not([data-screen="home"]) .backhome{display:none}
 #home .home-top{padding-left:clamp(186px,15vw,340px)}
 @media (max-width:700px){#home .home-top{padding-left:0;margin-top:58px}}
+
+/* botones del profesor en vivo: arriba, grandes y siempre visibles */
+.live-actions{align-self:stretch;width:100%;position:sticky;top:0;z-index:20;display:flex;flex-direction:column;gap:10px;margin:6px 0 14px;padding:10px 0}
+.live-actions .btn{width:100%;justify-content:center}
+.live-next{min-height:78px;font-size:clamp(1.35rem,3.4vw,2.1rem);font-weight:800;letter-spacing:.01em;border-radius:22px;gap:14px;animation:nextPulse 1.4s ease-in-out infinite;box-shadow:0 10px 26px rgba(214,39,90,.35)}
+.live-next .ic{width:1.2em;height:1.2em;stroke-width:3}
+.live-next[hidden],.live-endbtn[hidden]{display:none}
+.live-endbtn{min-height:60px;font-size:clamp(1.1rem,2.6vw,1.5rem);font-weight:800;border-radius:18px}
+@keyframes nextPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+@media (prefers-reduced-motion:reduce){.live-next{animation:none}}
 </style>
 <style id="ambient-css">
 /* =====================================================================
@@ -927,6 +937,10 @@ body[data-arena="1"] #game .rot svg{stroke:#2a1535;width:44px;height:44px}
 <main id="live" class="screen">
   <div class="lobby-wrap">
     <div class="live-top"><h2 id="liveTitle">Nivel</h2><span class="pill cnt" id="liveClock">0:00</span></div>
+    <div class="live-actions" id="liveActions">
+      <button class="btn live-next" id="liveNext" hidden>Siguiente nivel <span aria-hidden="true">→</span></button>
+      <button class="btn danger live-endbtn" id="liveEnd">Terminar nivel</button>
+    </div>
     <p class="hint" id="liveSub" role="status"></p>
     <ol class="board" id="liveBoard" aria-label="Clasificación en vivo"></ol>
     <section class="chat" id="liveChat" aria-label="Chat de los estudiantes">
@@ -936,8 +950,6 @@ body[data-arena="1"] #game .rot svg{stroke:#2a1535;width:44px;height:44px}
     </section>
     <div class="row" style="justify-content:center">
       <button class="btn ghost" id="liveSup" type="button" hidden>🛡 Supervisor</button>
-      <button class="btn danger" id="liveEnd">Terminar nivel</button>
-      <button class="btn" id="liveNext" hidden>Siguiente nivel</button>
       <button class="btn ghost" id="liveClose">Cerrar sala</button>
     </div>
   </div>
@@ -2893,7 +2905,7 @@ function renderLive(){
     html=rk.slice(0,30).map((o,i)=>'<li><span class="rk">'+(i+1)+'</span><img alt="" src="'+avURL(o.p.av)+'"><span class="nm"><b>'+esc(o.p.name)+'</b>'+bar(o.fin?1000:o.pr)+'</span><span class="st'+(o.fin?' ok':'')+'">'+(o.out?'fuera':o.fin?ic('check')+' '+o.time.toFixed(1)+'s':(o.p.gone?'sin conexión':R(o.pr/10)+'%'))+'</span></li>').join('');
   }else{
     const rk=HS.phase==='final'?[...HS.players.values()].filter(p=>(p.inLevel||p.total)&&!p.sup).sort((a,b)=>b.total-a.total):HS.lastRes.rk.map(id=>HS.players.get(id)).filter(Boolean);
-    $('#liveSub').textContent=HS.phase==='final'?'La partida terminó.':'Los estudiantes ven los resultados de este nivel.';
+    $('#liveSub').textContent=HS.phase==='final'?'La partida terminó.':'Los estudiantes ven los resultados. Pulsa el botón de arriba para pasar al siguiente nivel.';
     html=rk.slice(0,30).map((p,i)=>'<li><span class="rk">'+(i+1)+'</span><img alt="" src="'+avURL(p.av)+'"><span class="nm"><b>'+esc(p.name)+'</b></span><span class="st">'+(HS.phase==='final'?p.total+' pts':'+'+p.lvlPts+' · '+p.total+' pts')+'</span></li>').join('');
   }
   $('#liveBoard').innerHTML=html;
